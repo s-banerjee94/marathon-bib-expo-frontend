@@ -38,6 +38,24 @@ testem.log
 /typings
 __screenshots__/
 
+# Git hooks and automation
+.husky/_/
+
 # System files
 .DS_Store
 Thumbs.db
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# OS-specific files
+.DS_Store
+.AppleDouble
+.LSOverride
+*.swp
+*.swo
+*~
+.github
+llms-full.txt
