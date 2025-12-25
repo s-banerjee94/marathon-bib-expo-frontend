@@ -1,0 +1,71 @@
+<div class="min-h-screen flex items-center justify-center p-4">
+  <div class="w-full max-w-md">
+    <p-card>
+      <ng-template pTemplate="header">
+        <div class="text-center pt-6 px-6">
+          <h1 class="text-3xl font-bold m-0 mb-2">Marathon Bib Expo</h1>
+          <p class="text-base m-0 opacity-70">Sign in to your account</p>
+        </div>
+      </ng-template>
+
+      <ng-template pTemplate="content">
+        @if (errorMessage()) {
+          <p-message severity="error" styleClass="w-full mb-4">
+            {{ errorMessage() }}
+          </p-message>
+        }
+
+        <form #loginForm="ngForm" (ngSubmit)="onLogin()" novalidate class="flex flex-col gap-2">
+          <div class="flex flex-col gap-1">
+            <label for="username" class="font-semibold">Username</label>
+            <input
+              pInputText
+              id="username"
+              name="username"
+              [ngModel]="username()"
+              (ngModelChange)="username.set($event)"
+              required
+              #usernameField="ngModel"
+              placeholder="Enter your username"
+              fluid="true"
+            />
+            @if (usernameField.invalid && (usernameField.touched || loginForm.submitted)) {
+              <p-message severity="error" size="small" variant="simple"
+                >Username is required.</p-message
+              >
+            }
+          </div>
+
+          <div class="flex flex-col gap-1">
+            <label for="password" class="font-semibold">Password</label>
+            <p-password
+              inputId="password"
+              name="password"
+              [ngModel]="password()"
+              (ngModelChange)="password.set($event)"
+              [toggleMask]="true"
+              [feedback]="false"
+              required
+              #passwordField="ngModel"
+              placeholder="Enter your password"
+              fluid="true"
+            ></p-password>
+            @if (passwordField.invalid && (passwordField.touched || loginForm.submitted)) {
+              <p-message severity="error" size="small" variant="simple"
+                >Password is required.</p-message
+              >
+            }
+          </div>
+
+          <p-button
+            type="submit"
+            [disabled]="!isFormValid() || isLoading()"
+            [loading]="isLoading()"
+            [label]="isLoading() ? 'Logging in...' : 'Login'"
+            styleClass="w-full mt-2"
+          ></p-button>
+        </form>
+      </ng-template>
+    </p-card>
+  </div>
+</div>
