@@ -24,13 +24,12 @@ export const errorInterceptor: HttpInterceptorFn = (request, next) => {
       }
 
       // Log errors in development mode
-      if (typeof window !== 'undefined' && (window as any)['ng']) {
+      if (typeof window !== 'undefined' && (window as unknown as Record<string, unknown>)['ng']) {
         // Development environment detected via Angular debug info
         console.error('HTTP Error:', {
           status: error.status,
-          statusText: error.statusText,
           url: error.url,
-          message: error.error?.message || error.statusText,
+          message: error.error?.message || 'HTTP Error',
           timestamp: new Date().toISOString(),
         });
       }

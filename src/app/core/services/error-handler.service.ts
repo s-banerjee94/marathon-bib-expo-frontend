@@ -1,7 +1,7 @@
-import { Injectable, inject, Optional } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { MessageService } from 'primeng/api';
 import { HttpErrorResponse } from '@angular/common/http';
-import { ErrorResponse, ErrorOverride } from '../models/error.model';
+import { ErrorOverride } from '../models/error.model';
 
 @Injectable({
   providedIn: 'root',
@@ -21,7 +21,7 @@ export class ErrorHandlerService {
    * Extract user-friendly error message from error response
    * Handles ErrorResponse from backend, HttpErrorResponse, or generic errors
    */
-  getErrorMessage(error: any, override?: ErrorOverride): string {
+  getErrorMessage(error: HttpErrorResponse | unknown, override?: ErrorOverride): string {
     // If override has custom message, use it
     if (override?.customMessage) {
       return override.customMessage;
@@ -29,12 +29,14 @@ export class ErrorHandlerService {
 
     // Check for validation errors first - if present, show ONLY those (more specific)
     if (this.hasValidationErrors(error)) {
-      return this.formatValidationErrors(error.error.validationErrors);
+      const err = error as { error: { validationErrors: string[] } };
+      return this.formatValidationErrors(err.error.validationErrors);
     }
 
     // Check for HTTP error response with error body
-    if (error?.error?.message) {
-      return error.error.message;
+    const errorWithMessage = error as { error?: { message?: string } };
+    if (errorWithMessage?.error?.message) {
+      return errorWithMessage.error.message;
     }
 
     // Handle HttpErrorResponse without body
@@ -58,7 +60,7 @@ export class ErrorHandlerService {
    * Display error as a PrimeNG toast notification
    * Only displays toast if MessageService is provided
    */
-  showError(error: any, summary?: string, override?: ErrorOverride): void {
+  showError(error: HttpErrorResponse | unknown, summary?: string, override?: ErrorOverride): void {
     // Skip if override explicitly disables toast
     if (override?.showToast === false) {
       return;
@@ -109,47 +111,53 @@ export class ErrorHandlerService {
   /**
    * Check if error has validation errors array
    */
-  hasValidationErrors(error: any): boolean {
+  hasValidationErrors(error: HttpErrorResponse | unknown): boolean {
+    const err = error as { error?: { validationErrors?: unknown[] } };
     return (
-      error?.error?.validationErrors &&
-      Array.isArray(error.error.validationErrors) &&
-      error.error.validationErrors.length > 0
+      err?.error?.validationErrors !== undefined &&
+      Array.isArray(err.error.validationErrors) &&
+      err.error.validationErrors.length > 0
     );
   }
 
   /**
    * Check if error is unauthorized (401)
    */
-  isUnauthorized(error: any): boolean {
-    return error?.status === 401 || error?.error?.status === 401;
+  isUnauthorized(error: HttpErrorResponse | unknown): boolean {
+    const err = error as { status?: number; error?: { status?: number } };
+    return err?.status === 401 || err?.error?.status === 401;
   }
 
   /**
    * Check if error is forbidden (403)
    */
-  isForbidden(error: any): boolean {
-    return error?.status === 403 || error?.error?.status === 403;
+  isForbidden(error: HttpErrorResponse | unknown): boolean {
+    const err = error as { status?: number; error?: { status?: number } };
+    return err?.status === 403 || err?.error?.status === 403;
   }
 
   /**
    * Check if error is not found (404)
    */
-  isNotFound(error: any): boolean {
-    return error?.status === 404 || error?.error?.status === 404;
+  isNotFound(error: HttpErrorResponse | unknown): boolean {
+    const err = error as { status?: number; error?: { status?: number } };
+    return err?.status === 404 || err?.error?.status === 404;
   }
 
   /**
    * Check if error is conflict (409) - typically duplicate resource
    */
-  isConflict(error: any): boolean {
-    return error?.status === 409 || error?.error?.status === 409;
+  isConflict(error: HttpErrorResponse | unknown): boolean {
+    const err = error as { status?: number; error?: { status?: number } };
+    return err?.status === 409 || err?.error?.status === 409;
   }
 
   /**
    * Check if error is validation error (400 with validationErrors)
    */
-  isValidationError(error: any): boolean {
-    const status = error?.status || error?.error?.status;
+  isValidationError(error: HttpErrorResponse | unknown): boolean {
+    const err = error as { status?: number; error?: { status?: number } };
+    const status = err?.status || err?.error?.status;
     return status === 400 && this.hasValidationErrors(error);
   }
 }
