@@ -28,27 +28,6 @@ export interface User {
 }
 
 /**
- * Organization model matching backend OrganizationResponse
- */
-export interface Organization {
-  id: number;
-  organizerName: string;
-  email: string;
-  phoneNumber: string;
-  website?: string;
-  addressLine1?: string;
-  addressLine2?: string;
-  city?: string;
-  stateProvince?: string;
-  postalCode?: string;
-  country?: string;
-  orgAdmin?: User;
-  enabled: boolean;
-  createdAt?: Date;
-  updatedAt?: Date;
-}
-
-/**
  * Create User Request DTO
  */
 export interface CreateUserRequest {
@@ -59,22 +38,6 @@ export interface CreateUserRequest {
   phoneNumber: string;
   role: UserRole;
   organizationId?: number;
-}
-
-/**
- * Create Organization Request DTO
- */
-export interface CreateOrganizationRequest {
-  organizerName: string;
-  email: string;
-  phoneNumber: string;
-  website?: string;
-  addressLine1?: string;
-  addressLine2?: string;
-  city?: string;
-  stateProvince?: string;
-  postalCode?: string;
-  country?: string;
 }
 
 /**
@@ -125,4 +88,34 @@ export const ROLE_PERMISSIONS: Record<UserRole, string[]> = {
   ],
   [UserRole.ORGANIZER_USER]: ['create_distributors', 'manage_distributors'],
   [UserRole.DISTRIBUTOR]: ['view_assigned_bibs', 'manage_assigned_bibs'],
+};
+
+/**
+ * Role availability map by user role
+ * Defines which roles each user type can create
+ * Hierarchy: ROOT > ADMIN > ORGANIZER_ADMIN > ORGANIZER_USER > DISTRIBUTOR
+ */
+export interface RoleOption {
+  label: string;
+  value: UserRole;
+}
+
+export const ROLE_AVAILABILITY: Record<UserRole, RoleOption[]> = {
+  [UserRole.ROOT]: [
+    { label: 'Admin', value: UserRole.ADMIN },
+    { label: 'Organizer Admin', value: UserRole.ORGANIZER_ADMIN },
+    { label: 'Organizer User', value: UserRole.ORGANIZER_USER },
+    { label: 'Distributor', value: UserRole.DISTRIBUTOR },
+  ],
+  [UserRole.ADMIN]: [
+    { label: 'Organizer Admin', value: UserRole.ORGANIZER_ADMIN },
+    { label: 'Organizer User', value: UserRole.ORGANIZER_USER },
+    { label: 'Distributor', value: UserRole.DISTRIBUTOR },
+  ],
+  [UserRole.ORGANIZER_ADMIN]: [
+    { label: 'Organizer User', value: UserRole.ORGANIZER_USER },
+    { label: 'Distributor', value: UserRole.DISTRIBUTOR },
+  ],
+  [UserRole.ORGANIZER_USER]: [{ label: 'Distributor', value: UserRole.DISTRIBUTOR }],
+  [UserRole.DISTRIBUTOR]: [],
 };

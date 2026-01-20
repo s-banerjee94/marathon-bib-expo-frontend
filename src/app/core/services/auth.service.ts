@@ -1,7 +1,7 @@
 import { Injectable, signal, inject } from '@angular/core';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
-import { catchError, tap, finalize } from 'rxjs/operators';
+import { catchError, tap, finalize, switchMap } from 'rxjs/operators';
 import { User, UserRole, AuthResponse, LoginRequest } from '../models/user.model';
 
 /**
@@ -13,16 +13,19 @@ import { User, UserRole, AuthResponse, LoginRequest } from '../models/user.model
   providedIn: 'root',
 })
 export class AuthService {
+  // Signals
   private currentUserSignal = signal<User | null>(this.loadUserFromStorage());
   private isAuthenticatedSignal = signal<boolean>(!!this.loadUserFromStorage());
   private loadingSignal = signal<boolean>(false);
 
+  // Public readonly signals
   currentUser = this.currentUserSignal.asReadonly();
   isAuthenticated = this.isAuthenticatedSignal.asReadonly();
   isLoading = this.loadingSignal.asReadonly();
 
-  private readonly tokenKey = 'marathon_auth_token';
-  private readonly userKey = 'marathon_user';
+  // Dependencies
+  private readonly tokenKey = 'auth_token';
+  private readonly userKey = 'auth_user';
   private readonly http = inject(HttpClient);
   private readonly authUrl = '/api/auth/login';
 
@@ -30,39 +33,27 @@ export class AuthService {
     this.restoreSessionFromStorage();
   }
 
+  // ============================================================================
+  // Core Authentication Methods
+  // ============================================================================
+
   /**
    * Login method - connects to backend API using RxJS
-   * Returns Observable for reactive handling
+   * 1. POST to /api/auth/login - returns token
+   * 2. Store auth token in localStorage
+   * 3. GET /api/users/me - fetch complete user details
+   * 4. Store complete user data and set authenticated state
    */
-  login(request: LoginRequest): Observable<AuthResponse> {
+  login(request: LoginRequest): Observable<User> {
     this.loadingSignal.set(true);
 
     return this.http.post<AuthResponse>(this.authUrl, request).pipe(
-      tap((authResponse) => this.setAuthState(authResponse)),
+      tap((authResponse) => this.storeAuthToken(authResponse.token)),
+      switchMap(() => this.fetchCurrentUser()),
+      tap((user) => this.setUserState(user)),
       catchError((error) => this.handleLoginError(error)),
       finalize(() => this.loadingSignal.set(false)),
     );
-  }
-
-  /**
-   * Handle login errors with specific messages
-   */
-  private handleLoginError(error: unknown): Observable<never> {
-    let errorMessage: string;
-
-    if (error instanceof HttpErrorResponse) {
-      if (error.status === 401) {
-        errorMessage = 'Invalid username or password';
-      } else if (error.status === 0) {
-        errorMessage = 'Unable to connect to server. Please check your connection.';
-      } else {
-        errorMessage = error.error?.message || 'Login failed. Please try again.';
-      }
-    } else {
-      errorMessage = 'An unexpected error occurred. Please try again.';
-    }
-
-    return throwError(() => new Error(errorMessage));
   }
 
   /**
@@ -74,6 +65,10 @@ export class AuthService {
     localStorage.removeItem(this.tokenKey);
     localStorage.removeItem(this.userKey);
   }
+
+  // ============================================================================
+  // User Query Methods
+  // ============================================================================
 
   /**
    * Get current user role
@@ -104,32 +99,86 @@ export class AuthService {
     return localStorage.getItem(this.tokenKey);
   }
 
-  /**
-   * Private helper: Set authentication state
-   */
-  private setAuthState(response: AuthResponse): void {
-    // Transform AuthResponse to User object
-    const user: User = {
-      id: response.id,
-      username: response.username,
-      email: '', // Not provided in login response
-      fullName: response.username,
-      phoneNumber: '',
-      role: response.role as UserRole,
-      organizationId: response.organizationId,
-      enabled: true,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
+  // ============================================================================
+  // Navigation Methods
+  // ============================================================================
 
+  /**
+   * Get dashboard route based on user role
+   */
+  getDashboardRoute(): string {
+    const role = this.getCurrentRole();
+
+    switch (role) {
+      case UserRole.ROOT:
+        return '/root-dashboard';
+      case UserRole.ADMIN:
+        return '/admin-dashboard';
+      case UserRole.ORGANIZER_ADMIN:
+        return '/organizer-dashboard';
+      case UserRole.ORGANIZER_USER:
+        return '/organizer-dashboard';
+      case UserRole.DISTRIBUTOR:
+        return '/distributer-dashboard';
+      default:
+        return '/login';
+    }
+  }
+
+  // ============================================================================
+  // Private Helper Methods
+  // ============================================================================
+
+  /**
+   * Store authentication token from login response
+   * This token will be used for subsequent API requests
+   */
+  private storeAuthToken(token: string): void {
+    localStorage.setItem(this.tokenKey, token);
+  }
+
+  /**
+   * Fetch complete user details from /me endpoint
+   * This is called after successful login to get full user data
+   */
+  private fetchCurrentUser(): Observable<User> {
+    return this.http.get<User>('/api/users/me');
+  }
+
+  /**
+   * Set user state after successful /me call
+   * Stores complete user data in signal and localStorage
+   * Sets authenticated flag to true
+   */
+  private setUserState(user: User): void {
     this.currentUserSignal.set(user);
     this.isAuthenticatedSignal.set(true);
-    localStorage.setItem(this.tokenKey, response.token);
     localStorage.setItem(this.userKey, JSON.stringify(user));
   }
 
   /**
-   * Private helper: Load user from localStorage
+   * Handle login errors with specific messages
+   */
+  private handleLoginError(error: unknown): Observable<never> {
+    let errorMessage: string;
+
+    if (error instanceof HttpErrorResponse) {
+      if (error.status === 401) {
+        errorMessage = 'Invalid username or password';
+      } else if (error.status === 0) {
+        errorMessage = 'Unable to connect to server. Please check your connection.';
+      } else {
+        errorMessage = error.error?.message || 'Login failed. Please try again.';
+      }
+    } else {
+      errorMessage = 'An unexpected error occurred. Please try again.';
+    }
+
+    return throwError(() => new Error(errorMessage));
+  }
+
+  /**
+   * Load user from localStorage
    */
   private loadUserFromStorage(): User | null {
     const userJson = localStorage.getItem(this.userKey);
@@ -144,7 +193,8 @@ export class AuthService {
   }
 
   /**
-   * Private helper: Restore session from storage on app load
+   * Restore session from storage on app load
+   * Restores both auth token and user data if available
    */
   private restoreSessionFromStorage(): void {
     const user = this.loadUserFromStorage();

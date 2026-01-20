@@ -7,7 +7,7 @@ import { UserRole } from '../models/user.model';
  * Auth Guard: Verify user is authenticated
  * Redirects to login if not authenticated
  */
-export const authGuard: CanActivateFn = (route, state) => {
+export const authGuard: CanActivateFn = (_route, _state) => {
   const authService = inject(AuthService);
   const router = inject(Router);
 
@@ -21,8 +21,9 @@ export const authGuard: CanActivateFn = (route, state) => {
 
 /**
  * Root Guard: Only ROOT users can access
+ * Used for: /root-dashboard
  */
-export const rootGuard: CanActivateFn = (route, state) => {
+export const rootGuard: CanActivateFn = (_route, _state) => {
   const authService = inject(AuthService);
   const router = inject(Router);
 
@@ -40,9 +41,10 @@ export const rootGuard: CanActivateFn = (route, state) => {
 };
 
 /**
- * Admin Guard: ADMIN and ROOT users can access
+ * Admin Guard: Only ADMIN users can access
+ * Used for: /admin-dashboard
  */
-export const adminGuard: CanActivateFn = (route, state) => {
+export const adminGuard: CanActivateFn = (_route, _state) => {
   const authService = inject(AuthService);
   const router = inject(Router);
 
@@ -51,7 +53,7 @@ export const adminGuard: CanActivateFn = (route, state) => {
     return false;
   }
 
-  if (authService.hasAnyRole([UserRole.ADMIN, UserRole.ROOT])) {
+  if (authService.hasRole(UserRole.ADMIN)) {
     return true;
   }
 
@@ -60,9 +62,10 @@ export const adminGuard: CanActivateFn = (route, state) => {
 };
 
 /**
- * Org Admin Guard: ORGANIZER_ADMIN, ADMIN, and ROOT users can access
+ * Root or Admin Guard: ROOT and ADMIN users can access
+ * Used for: /manage-organization (both ROOT and ADMIN can manage organizations)
  */
-export const orgAdminGuard: CanActivateFn = (route, state) => {
+export const rootOrAdminGuard: CanActivateFn = (_route, _state) => {
   const authService = inject(AuthService);
   const router = inject(Router);
 
@@ -71,7 +74,7 @@ export const orgAdminGuard: CanActivateFn = (route, state) => {
     return false;
   }
 
-  if (authService.hasAnyRole([UserRole.ORGANIZER_ADMIN, UserRole.ADMIN, UserRole.ROOT])) {
+  if (authService.hasAnyRole([UserRole.ROOT, UserRole.ADMIN])) {
     return true;
   }
 
@@ -80,9 +83,73 @@ export const orgAdminGuard: CanActivateFn = (route, state) => {
 };
 
 /**
- * Org User Guard: ORGANIZER_USER and above can access
+ * Org Admin Guard: Only ORGANIZER_ADMIN and ADMIN users can access
+ * Used for: Organizer admin features
  */
-export const orgUserGuard: CanActivateFn = (route, state) => {
+export const orgAdminGuard: CanActivateFn = (_route, _state) => {
+  const authService = inject(AuthService);
+  const router = inject(Router);
+
+  if (!authService.isAuthenticated()) {
+    router.navigate(['/login']);
+    return false;
+  }
+
+  if (authService.hasAnyRole([UserRole.ORGANIZER_ADMIN, UserRole.ADMIN])) {
+    return true;
+  }
+
+  router.navigate(['/unauthorized']);
+  return false;
+};
+
+/**
+ * Org User Guard: ORGANIZER_USER, ORGANIZER_ADMIN, and ADMIN users can access
+ * Used for: /organizer-dashboard
+ */
+export const orgUserGuard: CanActivateFn = (_route, _state) => {
+  const authService = inject(AuthService);
+  const router = inject(Router);
+
+  if (!authService.isAuthenticated()) {
+    router.navigate(['/login']);
+    return false;
+  }
+
+  if (authService.hasAnyRole([UserRole.ORGANIZER_USER, UserRole.ORGANIZER_ADMIN, UserRole.ADMIN])) {
+    return true;
+  }
+
+  router.navigate(['/unauthorized']);
+  return false;
+};
+
+/**
+ * Distributor Guard: Only DISTRIBUTOR users can access
+ * Used for: /distributer-dashboard
+ */
+export const distributorGuard: CanActivateFn = (_route, _state) => {
+  const authService = inject(AuthService);
+  const router = inject(Router);
+
+  if (!authService.isAuthenticated()) {
+    router.navigate(['/login']);
+    return false;
+  }
+
+  if (authService.hasRole(UserRole.DISTRIBUTOR)) {
+    return true;
+  }
+
+  router.navigate(['/unauthorized']);
+  return false;
+};
+
+/**
+ * User Creation Guard: ROOT, ADMIN, ORGANIZER_ADMIN, and ORGANIZER_USER can access
+ * Used for: /manage-user
+ */
+export const userCreationGuard: CanActivateFn = (_route, _state) => {
   const authService = inject(AuthService);
   const router = inject(Router);
 
@@ -93,10 +160,10 @@ export const orgUserGuard: CanActivateFn = (route, state) => {
 
   if (
     authService.hasAnyRole([
-      UserRole.ORGANIZER_USER,
-      UserRole.ORGANIZER_ADMIN,
-      UserRole.ADMIN,
       UserRole.ROOT,
+      UserRole.ADMIN,
+      UserRole.ORGANIZER_ADMIN,
+      UserRole.ORGANIZER_USER,
     ])
   ) {
     return true;
@@ -104,19 +171,4 @@ export const orgUserGuard: CanActivateFn = (route, state) => {
 
   router.navigate(['/unauthorized']);
   return false;
-};
-
-/**
- * Distributor Guard: All authenticated users can access
- */
-export const distributorGuard: CanActivateFn = (route, state) => {
-  const authService = inject(AuthService);
-  const router = inject(Router);
-
-  if (!authService.isAuthenticated()) {
-    router.navigate(['/login']);
-    return false;
-  }
-
-  return true;
 };
