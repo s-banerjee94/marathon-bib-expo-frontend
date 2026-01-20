@@ -59,3 +59,6 @@ Thumbs.db
 *~
 .github
 llms-full.txt
+.claude
+CLAUDE.
+swagger.json

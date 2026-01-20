@@ -29,14 +29,6 @@ export class Login {
   // Access loading state from auth service
   isLoading = this.authService.isLoading;
 
-  private readonly roleRoutes: Record<string, string> = {
-    ROOT: '/root-dashboard',
-    ADMIN: '/admin-dashboard',
-    ORGANIZER_ADMIN: '/organizer-dashboard',
-    ORGANIZER_USER: '/organizer-dashboard',
-    DISTRIBUTOR: '/distributer-dashboard',
-  };
-
   onLogin(): void {
     this.errorMessage.set('');
 
@@ -52,11 +44,7 @@ export class Login {
       })
       .subscribe({
         next: () => {
-          const userRole = this.authService.getCurrentRole();
-          const route = userRole
-            ? (this.roleRoutes[userRole] ?? '/root-dashboard')
-            : '/root-dashboard';
-
+          const route = this.authService.getDashboardRoute();
           this.router.navigate([route]);
         },
         error: (err: Error) => {
