@@ -1,0 +1,40 @@
+<div class="dashboard-container">
+  <header class="dashboard-header">
+    <h1>Admin Dashboard</h1>
+    @if (user(); as userData) {
+      <div class="user-info">
+        <span>Welcome, {{ userData.fullName }} (ADMIN)</span>
+        <button class="btn-logout" (click)="logout()">Logout</button>
+      </div>
+    }
+  </header>
+
+  <main class="dashboard-content">
+    <section class="dashboard-section">
+      <h2>Admin Controls</h2>
+      <div class="card-grid">
+        <div class="card">
+          <h3>Manage Organizations</h3>
+          <p>View and manage marathon organizers</p>
+          <div class="button-group">
+            <button (click)="goToOrganizationList()">View Organizations</button>
+            <button (click)="goToCreateOrganization()">Create Organization</button>
+          </div>
+        </div>
+        <div class="card">
+          <h3>Manage Users</h3>
+          <p>View and manage system users</p>
+          <div class="button-group">
+            <button (click)="goToUserList()">View Users</button>
+            <button (click)="goToCreateUser()">Create User</button>
+          </div>
+        </div>
+        <div class="card">
+          <h3>Organization Analytics</h3>
+          <p>View organizer statistics and reports</p>
+          <button>View Analytics</button>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>

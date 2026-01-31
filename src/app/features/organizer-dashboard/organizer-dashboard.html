@@ -1,0 +1,39 @@
+<div class="dashboard-container">
+  <header class="dashboard-header">
+    <h1>Organizer Admin Dashboard</h1>
+    @if (user(); as userData) {
+      <div class="user-info">
+        <span>Welcome, {{ userData.fullName }} (ORG ADMIN)</span>
+        <button class="btn-logout" (click)="logout()">Logout</button>
+      </div>
+    }
+  </header>
+
+  <main class="dashboard-content">
+    <section class="dashboard-section">
+      <h2>Organization Management</h2>
+      <div class="card-grid">
+        <div class="card">
+          <h3>Create Org Users</h3>
+          <p>Create organization users</p>
+          <button>Go to Users</button>
+        </div>
+        <div class="card">
+          <h3>Create Distributors</h3>
+          <p>Create bib distributors</p>
+          <button>Go to Distributors</button>
+        </div>
+        <div class="card">
+          <h3>Manage Users</h3>
+          <p>Manage organization users</p>
+          <button>Manage</button>
+        </div>
+        <div class="card">
+          <h3>Organization Analytics</h3>
+          <p>View organization statistics</p>
+          <button>View Analytics</button>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
