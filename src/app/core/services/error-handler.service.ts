@@ -81,6 +81,24 @@ export class ErrorHandlerService {
   }
 
   /**
+   * Display success message as a PrimeNG toast notification
+   * Only displays toast if MessageService is provided
+   */
+  showSuccess(message: string, summary?: string): void {
+    // Only show toast if MessageService is available
+    if (!this.messageService) {
+      return;
+    }
+
+    this.messageService.add({
+      severity: 'success',
+      summary: summary || 'Success',
+      detail: message,
+      life: 3000,
+    });
+  }
+
+  /**
    * Format validation errors array into readable string
    * Parses "fieldName: error message" format and extracts just the error message
    */

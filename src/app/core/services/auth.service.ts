@@ -3,6 +3,7 @@ import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
 import { catchError, tap, finalize, switchMap } from 'rxjs/operators';
 import { User, UserRole, AuthResponse, LoginRequest } from '../models/user.model';
+import { STORAGE_KEYS } from '../../shared/constants/storage-keys.constant';
 
 /**
  * Authentication Service
@@ -24,8 +25,8 @@ export class AuthService {
   isLoading = this.loadingSignal.asReadonly();
 
   // Dependencies
-  private readonly tokenKey = 'auth_token';
-  private readonly userKey = 'auth_user';
+  private readonly tokenKey = STORAGE_KEYS.AUTH_TOKEN;
+  private readonly userKey = STORAGE_KEYS.USER;
   private readonly http = inject(HttpClient);
   private readonly authUrl = '/api/auth/login';
 

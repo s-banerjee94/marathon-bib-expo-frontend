@@ -1,6 +1,6 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable, of, delay } from 'rxjs';
+import { Observable } from 'rxjs';
 import {
   CreateOrganizationRequest,
   Organization,
@@ -17,10 +17,6 @@ export class OrganizationService {
 
   createOrganization(request: CreateOrganizationRequest): Observable<Organization> {
     return this.http.post<Organization>(this.apiUrl, request);
-  }
-
-  getAllOrganizations(): Observable<Organization[]> {
-    return this.http.get<Organization[]>(this.apiUrl);
   }
 
   searchOrganizations(params: PageableParams): Observable<PageableResponse<Organization>> {
@@ -52,34 +48,15 @@ export class OrganizationService {
       httpParams = httpParams.set('deleted', params.deleted.toString());
     }
 
+    if (params.subscriptionTier) {
+      httpParams = httpParams.set('subscriptionTier', params.subscriptionTier);
+    }
+
     return this.http.get<PageableResponse<Organization>>(this.apiUrl, { params: httpParams });
   }
 
   getOrganizationById(id: number): Observable<Organization> {
     return this.http.get<Organization>(`${this.apiUrl}/${id}`);
-  }
-
-  // Mock method for edit mode (no backend integration)
-  getMockOrganizationById(id: number): Observable<Organization> {
-    const mockOrg: Organization = {
-      id: id,
-      organizerName: `Marathon Organizer ${id}`,
-      email: `org${id}@example.com`,
-      phoneNumber: `+1-555-${String(id).padStart(4, '0')}`,
-      website: `https://marathon${id}.example.com`,
-      addressLine1: `${id * 100} Race Street`,
-      addressLine2: id % 2 === 0 ? `Suite ${id}` : undefined,
-      city: 'Marathon City',
-      stateProvince: 'MC',
-      postalCode: `${String(id).padStart(5, '0')}`,
-      country: 'USA',
-      enabled: true,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
-
-    // Simulate network delay
-    return of(mockOrg).pipe(delay(500));
   }
 
   updateOrganization(id: number, request: UpdateOrganizationRequest): Observable<Organization> {

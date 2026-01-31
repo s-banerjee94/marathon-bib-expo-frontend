@@ -23,6 +23,7 @@ export interface User {
   organizationId?: number;
   organizationName?: string;
   enabled: boolean;
+  deleted?: boolean;
   createdAt?: Date;
   updatedAt?: Date;
 }
