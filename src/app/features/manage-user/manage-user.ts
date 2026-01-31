@@ -1,40 +1,31 @@
 import { Component, inject, signal, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { CommonModule, Location } from '@angular/common';
 import { FormsModule, NgForm } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, ActivatedRoute } from '@angular/router';
 import { InputTextModule } from 'primeng/inputtext';
 import { FloatLabelModule } from 'primeng/floatlabel';
 import { ButtonModule } from 'primeng/button';
 import { MessageModule } from 'primeng/message';
 import { CardModule } from 'primeng/card';
 import { SelectModule } from 'primeng/select';
-import { AutoCompleteModule, AutoCompleteSelectEvent } from 'primeng/autocomplete';
-import { ToastModule } from 'primeng/toast';
+import { SkeletonModule } from 'primeng/skeleton';
 import { MessageService } from 'primeng/api';
+import { DynamicDialogConfig, DynamicDialogRef } from 'primeng/dynamicdialog';
 import {
   CreateUserRequest,
+  User,
   UserRole,
   ROLE_AVAILABILITY,
   RoleOption,
 } from '../../core/models/user.model';
 import { Organization } from '../../core/models/organization.model';
-import { PageableResponse } from '../../core/models/api.model';
 import { UserService } from '../../core/services/user.service';
-import { OrganizationService } from '../../core/services/organization.service';
 import { AuthService } from '../../core/services/auth.service';
 import { ErrorHandlerService } from '../../core/services/error-handler.service';
-import {
-  roleRequiresOrganization,
-  roleRequiresEmailPhone,
-  buildOrganizationSearchParams,
-  AUTOCOMPLETE_DELAY,
-} from './manage-user.utils';
-import {
-  shouldShowError,
-  showSuccessAndNavigate,
-  initializeErrorHandler,
-} from '../../shared/utils/form.utils';
+import { roleRequiresOrganization, roleRequiresEmailPhone } from './manage-user.utils';
+import { shouldShowError, initializeErrorHandler } from '../../shared/utils/form.utils';
 import { FORM_INPUT_SIZE } from '../../shared/constants/form.constants';
+import { OrganizationSelector } from '../../components/organization-selector/organization-selector';
 
 @Component({
   selector: 'app-manage-user',
@@ -48,20 +39,26 @@ import { FORM_INPUT_SIZE } from '../../shared/constants/form.constants';
     MessageModule,
     CardModule,
     SelectModule,
-    AutoCompleteModule,
-    ToastModule,
+    SkeletonModule,
+    OrganizationSelector,
   ],
-  providers: [MessageService],
   templateUrl: './manage-user.html',
   styleUrl: './manage-user.css',
 })
 export class ManageUser implements OnInit {
   private userService = inject(UserService);
-  private organizationService = inject(OrganizationService);
   private authService = inject(AuthService);
   private router = inject(Router);
+  private route = inject(ActivatedRoute);
+  private location = inject(Location);
   private messageService = inject(MessageService);
   private errorHandler = inject(ErrorHandlerService);
+
+  // Optional injection for dialog mode
+  public dialogConfig = inject(DynamicDialogConfig, { optional: true });
+  public dialogRef = inject(DynamicDialogRef, { optional: true });
+
+  isDialogMode = signal(false);
 
   // Form data as plain object for ngModel binding
   user: CreateUserRequest = {
@@ -76,26 +73,54 @@ export class ManageUser implements OnInit {
 
   // Component state as signals
   isSubmitting = signal(false);
-  isLoadingOrganizations = signal(false);
+  isEditMode = signal(false);
+  userId = signal<number | null>(null);
+  isLoading = signal(false);
   currentUserRole = signal<UserRole | null>(null);
   availableRoles = signal<RoleOption[]>([]);
-  organizationSuggestions = signal<Organization[]>([]);
   selectedRole = signal<UserRole | null>(UserRole.ADMIN);
-  selectedOrganization = signal<Organization | null>(null);
 
   // Form input size (controlled centrally via constant)
   readonly inputSize = FORM_INPUT_SIZE;
-
-  // Constants for template
-  readonly autocompleteDelay = AUTOCOMPLETE_DELAY;
-
-  private hasLoadedInitialOrganizations = false;
 
   ngOnInit(): void {
     initializeErrorHandler(this.errorHandler, this.messageService);
 
     this.initializeCurrentUserRole();
     this.initializeAvailableRoles();
+
+    // Check if opened in dialog mode
+    if (this.dialogConfig?.data) {
+      this.isDialogMode.set(true);
+      const dialogData = this.dialogConfig.data;
+
+      if (dialogData.isEditMode && dialogData.userId) {
+        this.isEditMode.set(true);
+        this.userId.set(dialogData.userId);
+        this.loadUserData(dialogData.userId);
+      }
+    } else {
+      // Route-based mode (existing behavior)
+      this.isDialogMode.set(false);
+      const idParam = this.route.snapshot.paramMap.get('id');
+
+      if (idParam) {
+        const id = parseInt(idParam, 10);
+        if (!isNaN(id)) {
+          this.isEditMode.set(true);
+          this.userId.set(id);
+          this.loadUserData(id);
+        } else {
+          // Invalid ID, redirect to create mode
+          this.router.navigate(['/manage-user']);
+        }
+      } else {
+        // Create mode - default state
+        this.isEditMode.set(false);
+        this.userId.set(null);
+      }
+    }
+
     this.onRoleSelected();
   }
 
@@ -110,43 +135,52 @@ export class ManageUser implements OnInit {
     this.availableRoles.set(rolesForCurrentUser || []);
   }
 
-  private loadInitialOrganizations(): void {
-    this.isLoadingOrganizations.set(true);
-    const params = buildOrganizationSearchParams();
+  private loadUserData(id: number): void {
+    this.isLoading.set(true);
 
-    this.organizationService.searchOrganizations(params).subscribe({
-      next: (response: PageableResponse<Organization>) => {
-        this.organizationSuggestions.set(response.content);
-        this.isLoadingOrganizations.set(false);
-        this.hasLoadedInitialOrganizations = true;
+    this.userService.getUserById(id).subscribe({
+      next: (user: User) => {
+        this.populateFormFromUser(user);
+        this.isLoading.set(false);
       },
       error: (error) => {
-        this.isLoadingOrganizations.set(false);
+        this.isLoading.set(false);
         this.errorHandler.showError(error, 'Error', {
-          customMessage: 'Failed to load organizations. Please try again.',
+          customMessage: 'Failed to load user data. Please try again.',
         });
-        // Don't set hasLoadedInitialOrganizations to true on error, so user can retry
+        if (!this.isDialogMode()) {
+          this.router.navigate([this.authService.getDashboardRoute()]);
+        }
       },
     });
+  }
+
+  private populateFormFromUser(userData: User): void {
+    this.user = {
+      username: userData.username,
+      password: '', // Password not returned from backend
+      email: userData.email,
+      fullName: userData.fullName,
+      phoneNumber: userData.phoneNumber,
+      role: userData.role,
+      organizationId: userData.organizationId,
+    };
+
+    this.selectedRole.set(userData.role);
   }
 
   onRoleSelected(): void {
     if (this.selectedRole()) {
       this.user.role = this.selectedRole()!;
 
-      // Clear organization selection and suggestions when role changes
-      this.selectedOrganization.set(null);
+      // Clear organization selection when role changes
       this.user.organizationId = undefined;
-      this.organizationSuggestions.set([]);
 
       // Auto-set organizationId for org-based roles
       const currentRole = this.currentUserRole();
       if (currentRole === UserRole.ORGANIZER_ADMIN || currentRole === UserRole.ORGANIZER_USER) {
         this.user.organizationId = this.getCurrentOrganizationId();
       }
-
-      // Reset initial load flag when role changes
-      this.hasLoadedInitialOrganizations = false;
     }
   }
 
@@ -163,45 +197,6 @@ export class ManageUser implements OnInit {
 
   getCurrentOrganizationId(): number | undefined {
     return this.authService.currentUser()?.organizationId;
-  }
-
-  onOrganizationSearch(event: { query: string }): void {
-    const searchTerm = event.query?.trim() || '';
-
-    // Load initial organizations on first interaction (when dropdown clicked with no search)
-    if (!searchTerm && !this.hasLoadedInitialOrganizations) {
-      this.loadInitialOrganizations();
-      return;
-    }
-
-    // Search organizations with the provided search term
-    this.isLoadingOrganizations.set(true);
-    const params = buildOrganizationSearchParams(searchTerm);
-
-    this.organizationService.searchOrganizations(params).subscribe({
-      next: (response: PageableResponse<Organization>) => {
-        this.organizationSuggestions.set(response.content);
-        this.isLoadingOrganizations.set(false);
-      },
-      error: (error) => {
-        this.errorHandler.showError(error, 'Search Error', {
-          customMessage: 'Failed to search organizations. Please try again.',
-        });
-        this.isLoadingOrganizations.set(false);
-      },
-    });
-  }
-
-  onOrganizationSelect(event: AutoCompleteSelectEvent): void {
-    if (event && event.value && event.value.id) {
-      this.user.organizationId = event.value.id;
-      this.selectedOrganization.set(event.value);
-    }
-  }
-
-  onOrganizationClear(): void {
-    this.user.organizationId = undefined;
-    this.selectedOrganization.set(null);
   }
 
   isEmailRequired(): boolean {
@@ -231,28 +226,65 @@ export class ManageUser implements OnInit {
 
     this.isSubmitting.set(true);
 
-    this.userService.createUser(this.user).subscribe({
-      next: () => {
-        this.isSubmitting.set(false);
-        showSuccessAndNavigate(
-          this.messageService,
-          'User created successfully',
-          this.router,
-          this.authService.getDashboardRoute(),
-        );
-      },
-      error: (error) => {
-        this.isSubmitting.set(false);
-        this.errorHandler.showError(error, 'Error');
-      },
-    });
+    if (this.isEditMode() && this.userId()) {
+      // Edit mode - Note: Backend needs updateUser endpoint
+      // For now, show error that edit is not implemented
+      this.isSubmitting.set(false);
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Not Implemented',
+        detail: 'User editing is not yet implemented in the backend API.',
+      });
+    } else {
+      // Create mode
+      this.userService.createUser(this.user).subscribe({
+        next: (createdUser: User) => {
+          this.isSubmitting.set(false);
+
+          // Close dialog or reset form based on mode
+          if (this.isDialogMode() && this.dialogRef) {
+            // Close immediately - parent will show toast with custom message from dialog data
+            const successMessage = this.dialogConfig?.data?.successMessage;
+            this.dialogRef!.close({ user: createdUser, message: successMessage });
+          } else {
+            // Show toast for non-dialog mode
+            this.messageService.add({
+              severity: 'success',
+              summary: 'Success',
+              detail: 'User created successfully',
+            });
+            // Reset form for creating another user
+            setTimeout(() => {
+              form.resetForm();
+              this.user = {
+                username: '',
+                password: '',
+                email: '',
+                fullName: '',
+                phoneNumber: '',
+                role: UserRole.ADMIN,
+                organizationId: undefined,
+              };
+              this.selectedRole.set(UserRole.ADMIN);
+            }, 1500);
+          }
+        },
+        error: (error) => {
+          this.isSubmitting.set(false);
+          this.errorHandler.showError(error, 'Error');
+        },
+      });
+    }
   }
 
   getTitle(): string {
-    return 'Create User';
+    return this.isEditMode() ? 'Edit User' : 'Create User';
   }
 
   getSubmitButtonText(): string {
-    return this.isSubmitting() ? 'Creating...' : 'Create User';
+    if (this.isSubmitting()) {
+      return this.isEditMode() ? 'Updating...' : 'Creating...';
+    }
+    return this.isEditMode() ? 'Update User' : 'Create User';
   }
 }

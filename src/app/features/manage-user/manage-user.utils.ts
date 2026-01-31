@@ -1,5 +1,4 @@
 import { UserRole } from '../../core/models/user.model';
-import { PageableParams } from '../../core/models/api.model';
 
 // Roles that require organization selection
 export const ROLES_REQUIRING_ORGANIZATION = [
@@ -17,7 +16,6 @@ export const ROLES_REQUIRING_EMAIL_PHONE = [
 
 const DEFAULT_PAGE_SIZE = 20;
 const SEARCH_DEBOUNCE_MS = 400;
-const AUTOCOMPLETE_DELAY_MS = 600;
 
 /**
  * Check if a role requires organization selection
@@ -33,20 +31,5 @@ export function roleRequiresEmailPhone(role: UserRole | null): boolean {
   return role ? ROLES_REQUIRING_EMAIL_PHONE.includes(role) : false;
 }
 
-/**
- * Build pageable params for organization search
- */
-export function buildOrganizationSearchParams(searchTerm?: string): PageableParams {
-  return {
-    page: 0,
-    size: DEFAULT_PAGE_SIZE,
-    search: searchTerm || undefined,
-    enabled: true,
-    deleted: false,
-    sort: ['organizerName,desc'],
-  };
-}
-
 export const SEARCH_DEBOUNCE = SEARCH_DEBOUNCE_MS;
 export const DEFAULT_SEARCH_PAGE_SIZE = DEFAULT_PAGE_SIZE;
-export const AUTOCOMPLETE_DELAY = AUTOCOMPLETE_DELAY_MS;

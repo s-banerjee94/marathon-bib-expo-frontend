@@ -30,7 +30,7 @@
               fluid="true"
             />
             @if (usernameField.invalid && (usernameField.touched || loginForm.submitted)) {
-              <p-message severity="error" size="small" variant="simple"
+              <p-message severity="error" [size]="inputSize" variant="simple"
                 >Username is required.</p-message
               >
             }
@@ -51,7 +51,7 @@
               fluid="true"
             ></p-password>
             @if (passwordField.invalid && (passwordField.touched || loginForm.submitted)) {
-              <p-message severity="error" size="small" variant="simple"
+              <p-message severity="error" [size]="inputSize" variant="simple"
                 >Password is required.</p-message
               >
             }

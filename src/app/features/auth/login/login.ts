@@ -7,6 +7,7 @@ import { ButtonModule } from 'primeng/button';
 import { PasswordModule } from 'primeng/password';
 import { CardModule } from 'primeng/card';
 import { MessageModule } from 'primeng/message';
+import { FORM_INPUT_SIZE } from '../../../shared/constants/form.constants';
 
 @Component({
   selector: 'app-login',
@@ -28,6 +29,9 @@ export class Login {
 
   // Access loading state from auth service
   isLoading = this.authService.isLoading;
+
+  // Form input size (controlled centrally via constant)
+  readonly inputSize = FORM_INPUT_SIZE;
 
   onLogin(): void {
     this.errorMessage.set('');

@@ -1,5 +1,5 @@
 import { Component, inject, signal, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { CommonModule, Location } from '@angular/common';
 import { FormsModule, NgForm } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
 import { InputTextModule } from 'primeng/inputtext';
@@ -9,9 +9,9 @@ import { MessageModule } from 'primeng/message';
 import { CardModule } from 'primeng/card';
 import { SelectModule } from 'primeng/select';
 import { InputNumberModule } from 'primeng/inputnumber';
-import { ToastModule } from 'primeng/toast';
 import { SkeletonModule } from 'primeng/skeleton';
 import { MessageService } from 'primeng/api';
+import { DynamicDialogConfig, DynamicDialogRef } from 'primeng/dynamicdialog';
 import {
   CreateOrganizationRequest,
   SubscriptionTier,
@@ -20,8 +20,9 @@ import {
 import { OrganizationService } from '../../core/services/organization.service';
 import { AuthService } from '../../core/services/auth.service';
 import { ErrorHandlerService } from '../../core/services/error-handler.service';
-import { showSuccessAndNavigate, initializeErrorHandler } from '../../shared/utils/form.utils';
+import { initializeErrorHandler } from '../../shared/utils/form.utils';
 import { FORM_INPUT_SIZE } from '../../shared/constants/form.constants';
+import { SUBSCRIPTION_TIER_OPTIONS } from '../../shared/constants/subscription.constant';
 
 @Component({
   selector: 'app-manage-organization',
@@ -36,10 +37,8 @@ import { FORM_INPUT_SIZE } from '../../shared/constants/form.constants';
     CardModule,
     SelectModule,
     InputNumberModule,
-    ToastModule,
     SkeletonModule,
   ],
-  providers: [MessageService],
   templateUrl: './manage-organization.html',
   styleUrl: './manage-organization.css',
 })
@@ -48,8 +47,15 @@ export class ManageOrganization implements OnInit {
   private authService = inject(AuthService);
   private router = inject(Router);
   private route = inject(ActivatedRoute);
+  private location = inject(Location);
   private messageService = inject(MessageService);
   private errorHandler = inject(ErrorHandlerService);
+
+  // Optional injection for dialog mode
+  public dialogConfig = inject(DynamicDialogConfig, { optional: true });
+  public dialogRef = inject(DynamicDialogRef, { optional: true });
+
+  isDialogMode = signal(false);
 
   // Form data as plain object for ngModel binding
   organization: CreateOrganizationRequest = {
@@ -67,7 +73,7 @@ export class ManageOrganization implements OnInit {
     registrationNumber: '',
     maxOrganizerUsers: 5,
     maxDistributors: 30,
-    subscriptionTier: undefined,
+    subscriptionTier: SubscriptionTier.FREE,
     billingEmail: '',
   };
 
@@ -80,32 +86,41 @@ export class ManageOrganization implements OnInit {
   // Form input size (controlled centrally via constant)
   readonly inputSize = FORM_INPUT_SIZE;
 
-  subscriptionTiers = [
-    { label: 'Free', value: SubscriptionTier.FREE },
-    { label: 'Basic', value: SubscriptionTier.BASIC },
-    { label: 'Premium', value: SubscriptionTier.PREMIUM },
-    { label: 'Enterprise', value: SubscriptionTier.ENTERPRISE },
-  ];
+  readonly subscriptionTiers = SUBSCRIPTION_TIER_OPTIONS;
 
   ngOnInit(): void {
     initializeErrorHandler(this.errorHandler, this.messageService);
 
-    const idParam = this.route.snapshot.paramMap.get('id');
+    // Check if opened in dialog mode
+    if (this.dialogConfig?.data) {
+      this.isDialogMode.set(true);
+      const dialogData = this.dialogConfig.data;
 
-    if (idParam) {
-      const id = parseInt(idParam, 10);
-      if (!isNaN(id)) {
+      if (dialogData.isEditMode && dialogData.organizationId) {
         this.isEditMode.set(true);
-        this.organizationId.set(id);
-        this.loadOrganizationData(id);
-      } else {
-        // Invalid ID, redirect to create mode
-        this.router.navigate(['/manage-organization']);
+        this.organizationId.set(dialogData.organizationId);
+        this.loadOrganizationData(dialogData.organizationId);
       }
     } else {
-      // Create mode - default state
-      this.isEditMode.set(false);
-      this.organizationId.set(null);
+      // Route-based mode (existing behavior)
+      this.isDialogMode.set(false);
+      const idParam = this.route.snapshot.paramMap.get('id');
+
+      if (idParam) {
+        const id = parseInt(idParam, 10);
+        if (!isNaN(id)) {
+          this.isEditMode.set(true);
+          this.organizationId.set(id);
+          this.loadOrganizationData(id);
+        } else {
+          // Invalid ID, redirect to create mode
+          this.router.navigate(['/manage-organization']);
+        }
+      } else {
+        // Create mode - default state
+        this.isEditMode.set(false);
+        this.organizationId.set(null);
+      }
     }
   }
 
@@ -160,14 +175,25 @@ export class ManageOrganization implements OnInit {
       this.organizationService
         .updateOrganization(this.organizationId()!, this.organization)
         .subscribe({
-          next: () => {
+          next: (updatedOrg: Organization) => {
             this.isSubmitting.set(false);
-            showSuccessAndNavigate(
-              this.messageService,
-              'Organization updated successfully',
-              this.router,
-              this.authService.getDashboardRoute(),
-            );
+
+            // Close dialog or navigate back based on mode
+            if (this.isDialogMode() && this.dialogRef) {
+              // Close immediately - parent will show toast with custom message from dialog data
+              const successMessage = this.dialogConfig?.data?.successMessage;
+              this.dialogRef!.close({ organization: updatedOrg, message: successMessage });
+            } else {
+              // Show toast for non-dialog mode
+              this.messageService.add({
+                severity: 'success',
+                summary: 'Success',
+                detail: 'Organization updated successfully',
+              });
+              setTimeout(() => {
+                this.location.back();
+              }, 1500);
+            }
           },
           error: (error) => {
             this.isSubmitting.set(false);
@@ -177,14 +203,44 @@ export class ManageOrganization implements OnInit {
     } else {
       // Create mode
       this.organizationService.createOrganization(this.organization).subscribe({
-        next: () => {
+        next: (createdOrg: Organization) => {
           this.isSubmitting.set(false);
-          showSuccessAndNavigate(
-            this.messageService,
-            'Organization created successfully',
-            this.router,
-            this.authService.getDashboardRoute(),
-          );
+
+          // Close dialog or reset form based on mode
+          if (this.isDialogMode() && this.dialogRef) {
+            // Close immediately - parent will show toast with custom message from dialog data
+            const successMessage = this.dialogConfig?.data?.successMessage;
+            this.dialogRef!.close({ organization: createdOrg, message: successMessage });
+          } else {
+            // Show toast for non-dialog mode
+            this.messageService.add({
+              severity: 'success',
+              summary: 'Success',
+              detail: 'Organization created successfully',
+            });
+            // Reset form for creating another organization
+            setTimeout(() => {
+              form.resetForm();
+              this.organization = {
+                organizerName: '',
+                email: '',
+                phoneNumber: '',
+                website: '',
+                addressLine1: '',
+                addressLine2: '',
+                city: '',
+                stateProvince: '',
+                postalCode: '',
+                country: '',
+                taxId: '',
+                registrationNumber: '',
+                maxOrganizerUsers: 5,
+                maxDistributors: 30,
+                subscriptionTier: SubscriptionTier.FREE,
+                billingEmail: '',
+              };
+            }, 1500);
+          }
         },
         error: (error) => {
           this.isSubmitting.set(false);
