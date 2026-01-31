@@ -17,4 +17,7 @@ export const STORAGE_KEYS = {
   EVENT_TABLE_FILTERS: 'marathon_event_table_filters',
   PARTICIPANT_TABLE_COLUMNS: 'marathon_participant_table_columns',
   PARTICIPANT_TABLE_FILTERS: 'marathon_participant_table_filters',
+
+  // Layout preferences
+  LAYOUT_CONFIG: 'marathon_layout_config',
 } as const;

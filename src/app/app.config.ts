@@ -1,9 +1,6 @@
 import { ApplicationConfig, provideBrowserGlobalErrorListeners } from '@angular/core';
 import { provideRouter } from '@angular/router';
 import { providePrimeNG } from 'primeng/config';
-import Material from '@primeuix/themes/material';
-import Lara from '@primeuix/themes/lara';
-import Nora from '@primeuix/themes/nora';
 import Aura from '@primeuix/themes/aura';
 import { MessageService } from 'primeng/api';
 import { routes } from './app.routes';
@@ -23,12 +20,7 @@ export const appConfig: ApplicationConfig = {
       theme: {
         preset: Aura,
         options: {
-          prefix: 'be',
-          darkModeSelector: 'be-dark',
-          cssLayer: {
-            name: 'primeng',
-            order: 'theme, base, primeng',
-          },
+          darkModeSelector: '.app-dark',
         },
       },
     }),

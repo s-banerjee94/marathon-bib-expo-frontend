@@ -1,10 +1,43 @@
 <p-menubar class="">
   <ng-template pTemplate="start">
-    <div class="px-4 font-semibold text-gray-800">Marathon Bib Expo</div>
+    <div class="px-4 font-semibold">Marathon Bib Expo</div>
   </ng-template>
 
   <ng-template pTemplate="end">
-    <div class="pr-4">
+    <div class="flex items-center gap-2 pr-4">
+      <!-- Dark Mode Toggle -->
+      <button
+        type="button"
+        class="p-2 rounded-full cursor-pointer"
+        (click)="toggleDarkMode()"
+        [title]="layoutService.isDarkTheme() ? 'Switch to light mode' : 'Switch to dark mode'"
+      >
+        <i
+          class="pi text-lg"
+          [ngClass]="{
+            'pi-moon': layoutService.isDarkTheme(),
+            'pi-sun': !layoutService.isDarkTheme(),
+          }"
+        ></i>
+      </button>
+
+      <!-- Theme Configurator -->
+      <div class="relative">
+        <button
+          type="button"
+          class="p-2 rounded-full cursor-pointer"
+          pStyleClass="@next"
+          enterFromClass="hidden"
+          leaveToClass="hidden"
+          [hideOnOutsideClick]="true"
+          title="Theme settings"
+        >
+          <i class="pi pi-palette text-lg"></i>
+        </button>
+        <app-theme-configurator />
+      </div>
+
+      <!-- User Avatar Menu -->
       <p-avatar
         label="U"
         shape="circle"
