@@ -1,4 +1,4 @@
-<p-menubar class="">
+<p-menubar>
   <ng-template pTemplate="start">
     <div class="px-4 font-semibold">Marathon Bib Expo</div>
   </ng-template>
@@ -6,36 +6,27 @@
   <ng-template pTemplate="end">
     <div class="flex items-center gap-2 pr-4">
       <!-- Dark Mode Toggle -->
-      <button
-        type="button"
-        class="p-2 rounded-full cursor-pointer"
-        (click)="toggleDarkMode()"
-        [title]="layoutService.isDarkTheme() ? 'Switch to light mode' : 'Switch to dark mode'"
-      >
-        <i
-          class="pi text-lg"
-          [ngClass]="{
-            'pi-moon': layoutService.isDarkTheme(),
-            'pi-sun': !layoutService.isDarkTheme(),
-          }"
-        ></i>
-      </button>
+      <p-button
+        [icon]="layoutService.isDarkTheme() ? 'pi pi-moon' : 'pi pi-sun'"
+        [rounded]="true"
+        [text]="true"
+        (onClick)="layoutService.toggleDarkMode()"
+        [pTooltip]="layoutService.isDarkTheme() ? 'Switch to light mode' : 'Switch to dark mode'"
+      />
 
-      <!-- Theme Configurator -->
-      <div class="relative">
-        <button
-          type="button"
-          class="p-2 rounded-full cursor-pointer"
-          pStyleClass="@next"
-          enterFromClass="hidden"
-          leaveToClass="hidden"
-          [hideOnOutsideClick]="true"
-          title="Theme settings"
-        >
-          <i class="pi pi-palette text-lg"></i>
-        </button>
-        <app-theme-configurator />
-      </div>
+      <!-- Theme Configurator (only for logged in users) -->
+      @if (isAuthenticated()) {
+        <p-button
+          icon="pi pi-palette"
+          [rounded]="true"
+          [text]="true"
+          (onClick)="themePopover.toggle($event)"
+          pTooltip="Theme settings"
+        />
+        <p-popover #themePopover>
+          <app-theme-configurator />
+        </p-popover>
+      }
 
       <!-- User Avatar Menu -->
       <p-avatar

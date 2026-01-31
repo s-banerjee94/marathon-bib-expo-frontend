@@ -1,10 +1,13 @@
 import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AvatarModule } from 'primeng/avatar';
+import { ButtonModule } from 'primeng/button';
 import { MenuModule } from 'primeng/menu';
 import { MenubarModule } from 'primeng/menubar';
-import { StyleClassModule } from 'primeng/styleclass';
+import { PopoverModule } from 'primeng/popover';
+import { TooltipModule } from 'primeng/tooltip';
 import type { MenuItem } from 'primeng/api';
+import { AuthService } from '../../core/services/auth.service';
 import { LayoutService } from '../../core/services/layout.service';
 import { ThemeConfigurator } from '../theme-configurator/theme-configurator';
 
@@ -13,16 +16,21 @@ import { ThemeConfigurator } from '../theme-configurator/theme-configurator';
   standalone: true,
   imports: [
     CommonModule,
-    MenubarModule,
     AvatarModule,
+    ButtonModule,
+    MenubarModule,
     MenuModule,
-    StyleClassModule,
+    PopoverModule,
+    TooltipModule,
     ThemeConfigurator,
   ],
   templateUrl: './navbar.html',
 })
 export class Navbar {
+  private authService = inject(AuthService);
   layoutService = inject(LayoutService);
+
+  isAuthenticated = this.authService.isAuthenticated;
 
   items: MenuItem[] = [
     { label: 'Profile', command: () => this.onProfile() },
@@ -35,12 +43,5 @@ export class Navbar {
 
   protected onLogout(): void {
     // TODO: call AuthService.logout()
-  }
-
-  toggleDarkMode(): void {
-    this.layoutService.layoutConfig.update((state) => ({
-      ...state,
-      darkTheme: !state.darkTheme,
-    }));
   }
 }

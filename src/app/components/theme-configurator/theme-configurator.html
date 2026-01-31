@@ -1,14 +1,14 @@
-<div class="flex flex-col gap-4 text-surface-900 dark:text-surface-0">
+<div class="flex flex-col gap-4 w-64">
   <div>
     <span class="text-sm font-semibold">Primary</span>
     <div class="pt-2 flex gap-2 flex-wrap justify-start">
-      @for (primaryColor of primaryColors(); track primaryColor.name) {
+      @for (primaryColor of layoutService.primaryColors(); track primaryColor.name) {
         <button
           type="button"
           [title]="primaryColor.name"
           (click)="updateColors($event, 'primary', primaryColor)"
           [ngClass]="{
-            'outline outline-2': primaryColor.name === selectedPrimaryColor(),
+            'outline outline-primary': primaryColor.name === layoutService.selectedPrimary(),
           }"
           class="cursor-pointer w-5 h-5 rounded-full flex shrink-0 items-center justify-center outline-offset-1 shadow"
           [style]="{
@@ -22,15 +22,15 @@
   <div>
     <span class="text-sm font-semibold">Surface</span>
     <div class="pt-2 flex gap-2 flex-wrap justify-start">
-      @for (surface of surfaces; track surface.name) {
+      @for (surface of layoutService.surfaces; track surface.name) {
         <button
           type="button"
           [title]="surface.name"
           (click)="updateColors($event, 'surface', surface)"
           class="cursor-pointer w-5 h-5 rounded-full flex shrink-0 items-center justify-center p-0 outline-offset-1"
           [ngClass]="{
-            'outline outline-2': selectedSurfaceColor()
-              ? selectedSurfaceColor() === surface.name
+            'outline outline-primary': layoutService.selectedSurface()
+              ? layoutService.selectedSurface() === surface.name
               : layoutService.isDarkTheme()
                 ? surface.name === 'zinc'
                 : surface.name === 'slate',
@@ -45,8 +45,8 @@
   <div class="flex flex-col gap-2">
     <span class="text-sm font-semibold">Presets</span>
     <p-selectbutton
-      [options]="presetOptions"
-      [ngModel]="selectedPreset()"
+      [options]="layoutService.presetOptions"
+      [ngModel]="layoutService.selectedPreset()"
       (ngModelChange)="onPresetChange($event)"
       [allowEmpty]="false"
       size="small"
