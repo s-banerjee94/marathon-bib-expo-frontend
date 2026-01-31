@@ -1,0 +1,105 @@
+@if (showFloatLabel) {
+  <p-floatlabel variant="on">
+    <p-autocomplete
+      [inputId]="inputId"
+      [name]="inputId"
+      [(ngModel)]="selectedOrganization"
+      [suggestions]="organizationSuggestions()"
+      (completeMethod)="onOrganizationSearch($event)"
+      (onSelect)="onOrganizationSelect($event)"
+      (onClear)="onOrganizationClear()"
+      optionLabel="organizerName"
+      [dropdown]="true"
+      [showClear]="true"
+      [placeholder]="placeholder"
+      emptyMessage="No organizations found. Try a different search term."
+      [delay]="autocompleteDelay"
+      [forceSelection]="true"
+      [fluid]="fluid"
+      [required]="required"
+      [size]="size"
+      [disabled]="disabled"
+      [styleClass]="styleClass"
+      scrollHeight="300px"
+    >
+      <ng-template let-org pTemplate="item">
+        <div class="flex w-full items-center gap-3 py-1">
+          <p-avatar [label]="getInitials(org.organizerName)" shape="circle" />
+          <div class="flex flex-col flex-1 min-w-0">
+            <div class="flex items-center justify-between gap-2">
+              <span
+                class="font-semibold truncate"
+                [innerHTML]="org.organizerName | highlight: currentSearchTerm()"
+              ></span>
+              <p-tag
+                [value]="org.enabled ? 'Active' : 'Inactive'"
+                [severity]="org.enabled ? 'success' : 'danger'"
+                styleClass="text-xs shrink-0"
+              />
+            </div>
+            <span class="text-sm" [innerHTML]="org.email | highlight: currentSearchTerm()"></span>
+            @if (org.phoneNumber) {
+              <span
+                class="text-xs"
+                [innerHTML]="org.phoneNumber | highlight: currentSearchTerm()"
+              ></span>
+            }
+          </div>
+        </div>
+      </ng-template>
+    </p-autocomplete>
+    <label [for]="inputId">{{ label }}</label>
+  </p-floatlabel>
+} @else {
+  <p-autocomplete
+    [inputId]="inputId"
+    [name]="inputId"
+    [(ngModel)]="selectedOrganization"
+    [suggestions]="organizationSuggestions()"
+    (completeMethod)="onOrganizationSearch($event)"
+    (onSelect)="onOrganizationSelect($event)"
+    (onClear)="onOrganizationClear()"
+    optionLabel="organizerName"
+    [dropdown]="true"
+    [showClear]="true"
+    [placeholder]="placeholder"
+    emptyMessage="No organizations found. Try a different search term."
+    [delay]="autocompleteDelay"
+    [forceSelection]="true"
+    [fluid]="fluid"
+    [required]="required"
+    [size]="size"
+    [disabled]="disabled"
+    [styleClass]="styleClass"
+    scrollHeight="300px"
+  >
+    <ng-template let-org pTemplate="item">
+      <div class="flex w-full items-center gap-3 py-1">
+        <p-avatar [label]="getInitials(org.organizerName)" shape="circle" />
+        <div class="flex flex-col flex-1 min-w-0">
+          <div class="flex items-center justify-between gap-2">
+            <span
+              class="font-semibold truncate"
+              [innerHTML]="org.organizerName | highlight: currentSearchTerm()"
+            ></span>
+            <p-tag
+              [value]="org.enabled ? 'Active' : 'Inactive'"
+              [severity]="org.enabled ? 'success' : 'danger'"
+              styleClass="text-xs shrink-0"
+            />
+          </div>
+          <span class="text-sm" [innerHTML]="org.email | highlight: currentSearchTerm()"></span>
+          @if (org.phoneNumber) {
+            <span
+              class="text-xs"
+              [innerHTML]="org.phoneNumber | highlight: currentSearchTerm()"
+            ></span>
+          }
+        </div>
+      </div>
+    </ng-template>
+  </p-autocomplete>
+}
+
+<!-- Error message projection slot -->
+<ng-content select="[error]"></ng-content>

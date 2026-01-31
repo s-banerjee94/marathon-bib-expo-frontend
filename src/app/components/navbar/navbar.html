@@ -1,0 +1,18 @@
+<p-menubar class="">
+  <ng-template pTemplate="start">
+    <div class="px-4 font-semibold text-gray-800">Marathon Bib Expo</div>
+  </ng-template>
+
+  <ng-template pTemplate="end">
+    <div class="pr-4">
+      <p-avatar
+        label="U"
+        shape="circle"
+        size="normal"
+        styleClass="cursor-pointer"
+        (click)="menu.toggle($event)"
+      ></p-avatar>
+      <p-menu #menu [model]="items" popup="true"></p-menu>
+    </div>
+  </ng-template>
+</p-menubar>
