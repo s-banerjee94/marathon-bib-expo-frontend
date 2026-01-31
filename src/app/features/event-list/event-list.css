@@ -1,0 +1,17 @@
+/* Event List Component Styles */
+
+/* Ensure table is responsive */
+:host ::ng-deep .p-datatable .p-datatable-wrapper {
+  overflow-x: auto;
+}
+
+/* Make long text in cells wrap properly */
+:host ::ng-deep .p-datatable td {
+  word-wrap: break-word;
+  max-width: 300px;
+}
+
+/* Hover effect for table rows */
+:host ::ng-deep .p-datatable tbody tr:hover {
+  background-color: var(--surface-hover);
+}
