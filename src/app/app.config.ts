@@ -2,6 +2,10 @@ import { ApplicationConfig, provideBrowserGlobalErrorListeners } from '@angular/
 import { provideRouter } from '@angular/router';
 import { providePrimeNG } from 'primeng/config';
 import Material from '@primeuix/themes/material';
+import Lara from '@primeuix/themes/lara';
+import Nora from '@primeuix/themes/nora';
+import Aura from '@primeuix/themes/aura';
+import { MessageService } from 'primeng/api';
 import { routes } from './app.routes';
 import { AuthService } from './core/services/auth.service';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
@@ -14,9 +18,10 @@ export const appConfig: ApplicationConfig = {
     provideRouter(routes),
     provideHttpClient(withInterceptors([authInterceptor, errorInterceptor])),
     AuthService,
+    MessageService,
     providePrimeNG({
       theme: {
-        preset: Material,
+        preset: Aura,
         options: {
           prefix: 'be',
           darkModeSelector: 'be-dark',

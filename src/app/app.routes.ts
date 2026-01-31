@@ -47,6 +47,17 @@ export const routes: Routes = [
     canActivate: [rootOrAdminGuard],
   },
   {
+    path: 'organizations',
+    loadComponent: () =>
+      import('./features/organization-list/organization-list').then((m) => m.OrganizationList),
+    canActivate: [rootOrAdminGuard],
+  },
+  {
+    path: 'users',
+    loadComponent: () => import('./features/user-list/user-list').then((m) => m.UserList),
+    canActivate: [rootOrAdminGuard],
+  },
+  {
     path: 'manage-user',
     loadComponent: () => import('./features/manage-user/manage-user').then((m) => m.ManageUser),
     canActivate: [userCreationGuard],
@@ -58,6 +69,39 @@ export const routes: Routes = [
         (m) => m.OrganizerDashboard,
       ),
     canActivate: [orgUserGuard], // Both ORGANIZER_ADMIN and ORGANIZER_USER can access
+  },
+  {
+    path: 'events',
+    loadComponent: () => import('./features/event-list/event-list').then((m) => m.EventList),
+    canActivate: [userCreationGuard], // ROOT, ADMIN, ORGANIZER_ADMIN, ORGANIZER_USER
+  },
+  {
+    path: 'manage-event',
+    loadComponent: () => import('./features/manage-event/manage-event').then((m) => m.ManageEvent),
+    canActivate: [userCreationGuard], // ROOT, ADMIN, ORGANIZER_ADMIN, ORGANIZER_USER
+  },
+  {
+    path: 'manage-event/:id',
+    loadComponent: () => import('./features/manage-event/manage-event').then((m) => m.ManageEvent),
+    canActivate: [userCreationGuard], // ROOT, ADMIN, ORGANIZER_ADMIN, ORGANIZER_USER
+  },
+  {
+    path: 'participants',
+    loadComponent: () =>
+      import('./features/participant-list/participant-list').then((m) => m.ParticipantList),
+    canActivate: [userCreationGuard], // ROOT, ADMIN, ORGANIZER_ADMIN, ORGANIZER_USER
+  },
+  {
+    path: 'participant-form',
+    loadComponent: () =>
+      import('./features/participant-form/participant-form').then((m) => m.ParticipantForm),
+    canActivate: [userCreationGuard], // ORGANIZER_ADMIN, ORGANIZER_USER, ADMIN, ROOT
+  },
+  {
+    path: 'participant-form/:eventId/:bibNumber',
+    loadComponent: () =>
+      import('./features/participant-form/participant-form').then((m) => m.ParticipantForm),
+    canActivate: [userCreationGuard], // ORGANIZER_ADMIN, ORGANIZER_USER, ADMIN, ROOT
   },
   {
     path: 'distributer-dashboard',
