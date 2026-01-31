@@ -1,0 +1,148 @@
+<div class="p-4">
+  <!-- Header -->
+  <div class="mb-6">
+    <h1 class="text-3xl font-bold">Participant Management</h1>
+    <p class="mt-2">
+      View and manage event participants. Select an organization and event to get started.
+    </p>
+  </div>
+
+  <!-- Filter Section -->
+  <p-card class="mb-6">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 p-2 md:p-4">
+      <!-- Organization Selector -->
+      <app-organization-selector
+        label="Organization"
+        placeholder="Type to search organizations..."
+        [required]="true"
+        [selectedOrganizationId]="selectedOrganizationId()"
+        (organizationIdChange)="onOrganizationChange($event)"
+      ></app-organization-selector>
+
+      <!-- Event Selector -->
+      <app-event-selector
+        label="Event"
+        placeholder="Type to search events..."
+        [required]="true"
+        [selectedEventId]="selectedEventId()"
+        [organizationId]="selectedOrganizationId()"
+        [disabled]="!selectedOrganizationId()"
+        (eventIdChange)="onEventChange($event)"
+      ></app-event-selector>
+    </div>
+  </p-card>
+
+  <!-- Empty State -->
+  @if (!canShowTable()) {
+    <p-card class="text-center">
+      <div class="p-8">
+        <i class="pi pi-users text-6xl mb-4 block"></i>
+        <h3 class="text-xl font-semibold mb-2">No Event Selected</h3>
+        <p>Please select an organization and event to manage participants.</p>
+      </div>
+    </p-card>
+  }
+
+  <!-- Tabs Section -->
+  @if (canShowTable()) {
+    <p-card>
+      <p-tabs [(value)]="activeTab">
+        <p-tablist>
+          <p-tab value="manage">Imported Participants</p-tab>
+          <p-tab value="history">Import History</p-tab>
+        </p-tablist>
+
+        <p-tabpanels>
+          <!-- Tab 1: Imported Participants -->
+          <p-tabpanel value="manage">
+            <app-participant-table-tab
+              [participants]="participants()"
+              [isLoading]="isLoading()"
+              [hasMore]="hasMore()"
+              [visibleColumns]="visibleColumns()"
+              (loadMore)="loadMore()"
+              (viewParticipant)="openViewDialog($event)"
+              (editParticipant)="openEditDialog($event)"
+              (deleteParticipant)="deleteParticipant($event)"
+              (importClick)="openImportDialog()"
+              (exportClick)="openExportDialog()"
+              (createClick)="openCreateDialog()"
+            />
+          </p-tabpanel>
+
+          <!-- Tab 2: Import History -->
+          <p-tabpanel value="history">
+            <app-import-history-tab
+              [importHistory]="importHistory()"
+              [isLoadingHistory]="isLoadingHistory()"
+              [selectedImportId]="selectedImportId()"
+              [importErrors]="importHistoryErrors()"
+              [isLoadingErrors]="isLoadingImportErrors()"
+              [hasMoreErrors]="hasMoreImportErrors()"
+              (importSelect)="onImportSelect($event)"
+              (loadMoreErrors)="loadMoreImportErrors()"
+            />
+          </p-tabpanel>
+        </p-tabpanels>
+      </p-tabs>
+    </p-card>
+  }
+</div>
+
+<!-- Confirmation Dialog -->
+<p-confirmDialog></p-confirmDialog>
+
+<!-- View Participant Dialog -->
+<app-participant-view-dialog [(visible)]="showViewDialog" [participant]="viewParticipant()" />
+
+<!-- Export Dialog -->
+<app-participant-export-dialog
+  [(visible)]="showExportDialog"
+  [allColumns]="allColumns"
+  [isExporting]="isExporting()"
+  (exportConfirmed)="confirmExport($event)"
+/>
+
+<!-- Import Dialog -->
+<app-participant-import-dialog
+  [(visible)]="showImportDialog"
+  [isUploading]="isUploading()"
+  [importResponse]="importResponse()"
+  (importRequested)="handleImport($event)"
+  (resetClicked)="resetImport()"
+  (closed)="onImportDialogClosed()"
+/>
+
+<!-- Create/Edit Participant Form Dialog -->
+<p-dialog
+  [header]="formDialogHeader()"
+  [(visible)]="showFormDialog"
+  [modal]="true"
+  [draggable]="false"
+  [resizable]="false"
+  [style]="{ width: '95vw', maxWidth: '700px', maxHeight: '90vh' }"
+>
+  @if (formDialogData()) {
+    <app-participant-form
+      #participantFormComponent
+      [dialogData]="formDialogData()!"
+      (formSubmitSuccess)="onFormSubmitSuccess()"
+    ></app-participant-form>
+  }
+
+  <ng-template pTemplate="footer">
+    <p-button
+      label="Cancel"
+      icon="pi pi-times"
+      (onClick)="closeFormDialog()"
+      severity="secondary"
+      [outlined]="true"
+    ></p-button>
+    <p-button
+      [label]="formDialogData()?.isEditMode ? 'Update' : 'Create'"
+      icon="pi pi-check"
+      (onClick)="submitFormDialog()"
+      severity="primary"
+    ></p-button>
+  </ng-template>
+</p-dialog>

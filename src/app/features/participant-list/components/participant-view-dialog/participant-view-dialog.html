@@ -1,0 +1,137 @@
+<p-dialog
+  header="Participant Details"
+  [(visible)]="visible"
+  [modal]="true"
+  [draggable]="false"
+  [resizable]="false"
+  [style]="{ width: '95vw', maxWidth: '600px', maxHeight: '90vh' }"
+>
+  @if (participant()) {
+    <div class="space-y-2 sm:space-y-3 lg:space-y-4">
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3 lg:gap-4">
+        <div>
+          <p class="text-xs sm:text-sm text-gray-600">BIB Number</p>
+          <p class="font-semibold text-sm sm:text-base">
+            {{ participant()!.bibNumber | defaultValue }}
+          </p>
+        </div>
+        <div>
+          <p class="text-xs sm:text-sm text-gray-600">Chip Number</p>
+          <p class="font-semibold text-sm sm:text-base">
+            {{ participant()!.chipNumber | defaultValue }}
+          </p>
+        </div>
+        <div class="sm:col-span-2">
+          <p class="text-xs sm:text-sm text-gray-600">Full Name</p>
+          <p class="font-semibold text-sm sm:text-base">
+            {{ participant()!.fullName | defaultValue }}
+          </p>
+        </div>
+        <div>
+          <p class="text-xs sm:text-sm text-gray-600">Race</p>
+          <p class="font-semibold text-sm sm:text-base">
+            {{ participant()!.raceName | defaultValue }}
+          </p>
+        </div>
+        <div>
+          <p class="text-xs sm:text-sm text-gray-600">Category</p>
+          <p class="font-semibold text-sm sm:text-base">
+            {{ participant()!.categoryName | defaultValue }}
+          </p>
+        </div>
+        <div>
+          <p class="text-xs sm:text-sm text-gray-600">Gender</p>
+          <p-tag
+            [value]="getGenderDisplay(participant()!.gender)"
+            [severity]="getGenderSeverity(participant()!.gender)"
+            size="small"
+            [rounded]="true"
+          ></p-tag>
+        </div>
+        <div>
+          <p class="text-xs sm:text-sm text-gray-600">Age</p>
+          <p class="font-semibold text-sm sm:text-base">{{ participant()!.age | defaultValue }}</p>
+        </div>
+        <div class="sm:col-span-2">
+          <p class="text-xs sm:text-sm text-gray-600">Date of Birth</p>
+          <p class="font-semibold text-sm sm:text-base">
+            {{ participant()!.dateOfBirth | defaultValue }}
+          </p>
+        </div>
+        <div class="sm:col-span-2">
+          <p class="text-xs sm:text-sm text-gray-600">Email</p>
+          <p class="font-semibold text-sm sm:text-base break-all">
+            {{ participant()!.email | defaultValue }}
+          </p>
+        </div>
+        <div class="sm:col-span-2">
+          <p class="text-xs sm:text-sm text-gray-600">Phone Number</p>
+          <p class="font-semibold text-sm sm:text-base">
+            {{ participant()!.phoneNumber | defaultValue }}
+          </p>
+        </div>
+        <div>
+          <p class="text-xs sm:text-sm text-gray-600">City</p>
+          <p class="font-semibold text-sm sm:text-base">{{ participant()!.city | defaultValue }}</p>
+        </div>
+        <div>
+          <p class="text-xs sm:text-sm text-gray-600">Country</p>
+          <p class="font-semibold text-sm sm:text-base">
+            {{ participant()!.country | defaultValue }}
+          </p>
+        </div>
+        <div class="sm:col-span-2">
+          <p class="text-xs sm:text-sm text-gray-600">BIB Collection Status</p>
+          @if (participant()!.bibCollectedAt) {
+            <p-tag value="Collected" severity="success" size="small" [rounded]="true"></p-tag>
+            <p class="text-xs sm:text-sm mt-1">{{ participant()!.bibCollectedAt }}</p>
+          } @else {
+            <p-tag value="Pending" severity="warn" size="small" [rounded]="true"></p-tag>
+          }
+        </div>
+        @if (participant()!.emergencyContactName || participant()!.emergencyContactPhone) {
+          <div class="sm:col-span-2 border-t pt-3 sm:pt-4">
+            <p class="text-xs sm:text-sm font-semibold mb-2">Emergency Contact</p>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <div>
+                <p class="text-xs text-gray-600">Name</p>
+                <p class="font-semibold text-sm">
+                  {{ participant()!.emergencyContactName | defaultValue }}
+                </p>
+              </div>
+              <div>
+                <p class="text-xs text-gray-600">Phone</p>
+                <p class="font-semibold text-sm">
+                  {{ participant()!.emergencyContactPhone | defaultValue }}
+                </p>
+              </div>
+            </div>
+          </div>
+        }
+        @if (participant()!.goodies && getGoodiesKeys(participant()!.goodies).length > 0) {
+          <div class="sm:col-span-2 border-t pt-3 sm:pt-4">
+            <p class="text-xs sm:text-sm font-semibold mb-2">Goodies</p>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              @for (key of getGoodiesKeys(participant()!.goodies); track key) {
+                <div>
+                  <p class="text-xs text-gray-600">{{ key }}</p>
+                  <p class="font-semibold text-sm">{{ participant()!.goodies![key] }}</p>
+                </div>
+              }
+            </div>
+          </div>
+        }
+        @if (participant()!.notes) {
+          <div class="sm:col-span-2 border-t pt-3 sm:pt-4">
+            <p class="text-xs sm:text-sm text-gray-600">Notes</p>
+            <p class="font-semibold text-sm sm:text-base">{{ participant()!.notes }}</p>
+          </div>
+        }
+      </div>
+    </div>
+  }
+
+  <ng-template pTemplate="footer">
+    <p-button label="Close" icon="pi pi-times" (onClick)="close()" severity="secondary"></p-button>
+  </ng-template>
+</p-dialog>

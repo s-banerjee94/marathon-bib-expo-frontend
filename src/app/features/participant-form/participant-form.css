@@ -1,0 +1,13 @@
+/* Participant Form Styles */
+
+/* Ensure form inputs have proper spacing */
+p-floatlabel {
+  display: block;
+  width: 100%;
+}
+
+/* Style for validation messages */
+p-message {
+  display: block;
+  margin-top: 0.5rem;
+}

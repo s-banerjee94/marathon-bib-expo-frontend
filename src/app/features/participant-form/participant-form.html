@@ -1,0 +1,829 @@
+<!-- Route Mode: Show as Card -->
+@if (!isDialogMode()) {
+  <div class="flex justify-center items-start min-h-screen p-6">
+    <p-card class="w-full max-w-4xl shadow-lg">
+      <ng-template pTemplate="title">
+        <h2 class="text-2xl font-bold">{{ getTitle() }}</h2>
+      </ng-template>
+      <ng-template pTemplate="content">
+        <!-- Organization & Event Selectors (Route Mode Only) -->
+        @if (showOrganizationSelector() || showEventSelector()) {
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            <!-- Organization Selector -->
+            @if (showOrganizationSelector()) {
+              <div class="flex flex-col gap-1">
+                <app-organization-selector
+                  [selectedOrganizationId]="selectedOrganizationId()"
+                  (organizationIdChange)="onOrganizationChange($event)"
+                  [required]="true"
+                  label="Organization *"
+                >
+                  @if (!selectedOrganizationId()) {
+                    <p-message severity="error" [size]="inputSize" variant="simple">
+                      Organization is required.
+                    </p-message>
+                  }
+                </app-organization-selector>
+              </div>
+            }
+
+            <!-- Event Selector -->
+            @if (showEventSelector()) {
+              <div class="flex flex-col gap-1">
+                <app-event-selector
+                  [selectedEventId]="selectedEventId()"
+                  [organizationId]="selectedOrganizationId()"
+                  (eventIdChange)="onEventChange($event)"
+                  [required]="true"
+                  [disabled]="!selectedOrganizationId()"
+                  label="Event *"
+                >
+                  @if (!selectedEventId()) {
+                    <p-message severity="error" [size]="inputSize" variant="simple">
+                      Event is required.
+                    </p-message>
+                  }
+                </app-event-selector>
+              </div>
+            }
+          </div>
+        }
+
+        <!-- Loading Skeleton or Form -->
+        @if (isLoading()) {
+          <div class="flex flex-col gap-4">
+            <p-skeleton height="3rem" />
+            <p-skeleton height="3rem" />
+            <p-skeleton height="3rem" />
+            <p-skeleton height="3rem" />
+          </div>
+        } @else {
+          <form
+            #participantForm="ngForm"
+            (ngSubmit)="onSubmit(participantForm)"
+            class="flex flex-col gap-4"
+          >
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <!-- Chip Number -->
+              <div class="flex flex-col gap-1">
+                <p-floatlabel variant="on">
+                  <input
+                    pInputText
+                    id="chipNumber"
+                    name="chipNumber"
+                    [(ngModel)]="participant.chipNumber"
+                    #chipNumber="ngModel"
+                    required
+                    autocomplete="off"
+                    fluid="true"
+                    [pSize]="inputSize"
+                    [disabled]="!selectedEventId()"
+                    [invalid]="shouldShowError(chipNumber, participantForm.submitted)"
+                  />
+                  <label for="chipNumber">Chip Number *</label>
+                </p-floatlabel>
+
+                @if (shouldShowError(chipNumber, participantForm.submitted)) {
+                  <p-message severity="error" [size]="inputSize" variant="simple">
+                    Chip number is required.
+                  </p-message>
+                }
+              </div>
+
+              <!-- BIB Number -->
+              <div class="flex flex-col gap-1">
+                <p-floatlabel variant="on">
+                  <input
+                    pInputText
+                    id="bibNumber"
+                    name="bibNumber"
+                    [(ngModel)]="participant.bibNumber"
+                    #bibNumber="ngModel"
+                    required
+                    autocomplete="off"
+                    [disabled]="!selectedEventId() || isEditMode()"
+                    fluid="true"
+                    [pSize]="inputSize"
+                    [invalid]="shouldShowError(bibNumber, participantForm.submitted)"
+                  />
+                  <label for="bibNumber">BIB Number *</label>
+                </p-floatlabel>
+
+                @if (shouldShowError(bibNumber, participantForm.submitted)) {
+                  <p-message severity="error" [size]="inputSize" variant="simple">
+                    BIB number is required.
+                  </p-message>
+                }
+              </div>
+
+              <!-- Full Name -->
+              <div class="flex flex-col gap-1 md:col-span-2">
+                <p-floatlabel variant="on">
+                  <input
+                    pInputText
+                    id="fullName"
+                    name="fullName"
+                    [(ngModel)]="participant.fullName"
+                    #fullName="ngModel"
+                    required
+                    autocomplete="off"
+                    fluid="true"
+                    [pSize]="inputSize"
+                    [disabled]="!selectedEventId()"
+                    [invalid]="shouldShowError(fullName, participantForm.submitted)"
+                  />
+                  <label for="fullName">Full Name *</label>
+                </p-floatlabel>
+
+                @if (shouldShowError(fullName, participantForm.submitted)) {
+                  <p-message severity="error" [size]="inputSize" variant="simple">
+                    Full name is required.
+                  </p-message>
+                }
+              </div>
+
+              <!-- Race ID -->
+              <div class="flex flex-col gap-1">
+                <p-floatlabel variant="on">
+                  <input
+                    pInputText
+                    id="raceId"
+                    name="raceId"
+                    [(ngModel)]="participant.raceId"
+                    #raceId="ngModel"
+                    required
+                    autocomplete="off"
+                    fluid="true"
+                    [pSize]="inputSize"
+                    [invalid]="shouldShowError(raceId, participantForm.submitted)"
+                  />
+                  <label for="raceId">Race ID *</label>
+                </p-floatlabel>
+
+                @if (shouldShowError(raceId, participantForm.submitted)) {
+                  <p-message severity="error" [size]="inputSize" variant="simple">
+                    Race ID is required.
+                  </p-message>
+                }
+              </div>
+
+              <!-- Race Name -->
+              <div class="flex flex-col gap-1">
+                <p-floatlabel variant="on">
+                  <input
+                    pInputText
+                    id="raceName"
+                    name="raceName"
+                    [(ngModel)]="participant.raceName"
+                    #raceName="ngModel"
+                    required
+                    autocomplete="off"
+                    fluid="true"
+                    [pSize]="inputSize"
+                    [invalid]="shouldShowError(raceName, participantForm.submitted)"
+                  />
+                  <label for="raceName">Race Name *</label>
+                </p-floatlabel>
+
+                @if (shouldShowError(raceName, participantForm.submitted)) {
+                  <p-message severity="error" [size]="inputSize" variant="simple">
+                    Race name is required.
+                  </p-message>
+                }
+              </div>
+
+              <!-- Category ID -->
+              <div class="flex flex-col gap-1">
+                <p-floatlabel variant="on">
+                  <input
+                    pInputText
+                    id="categoryId"
+                    name="categoryId"
+                    [(ngModel)]="participant.categoryId"
+                    #categoryId="ngModel"
+                    required
+                    autocomplete="off"
+                    fluid="true"
+                    [pSize]="inputSize"
+                    [invalid]="shouldShowError(categoryId, participantForm.submitted)"
+                  />
+                  <label for="categoryId">Category ID *</label>
+                </p-floatlabel>
+
+                @if (shouldShowError(categoryId, participantForm.submitted)) {
+                  <p-message severity="error" [size]="inputSize" variant="simple">
+                    Category ID is required.
+                  </p-message>
+                }
+              </div>
+
+              <!-- Category Name -->
+              <div class="flex flex-col gap-1">
+                <p-floatlabel variant="on">
+                  <input
+                    pInputText
+                    id="categoryName"
+                    name="categoryName"
+                    [(ngModel)]="participant.categoryName"
+                    #categoryName="ngModel"
+                    required
+                    autocomplete="off"
+                    fluid="true"
+                    [pSize]="inputSize"
+                    [invalid]="shouldShowError(categoryName, participantForm.submitted)"
+                  />
+                  <label for="categoryName">Category Name *</label>
+                </p-floatlabel>
+
+                @if (shouldShowError(categoryName, participantForm.submitted)) {
+                  <p-message severity="error" [size]="inputSize" variant="simple">
+                    Category name is required.
+                  </p-message>
+                }
+              </div>
+
+              <!-- Gender -->
+              <div class="flex flex-col gap-1">
+                <p-floatlabel variant="on">
+                  <p-select
+                    inputId="gender"
+                    name="gender"
+                    [(ngModel)]="participant.gender"
+                    #gender="ngModel"
+                    [options]="genderOptions"
+                    required
+                    fluid="true"
+                    [invalid]="shouldShowError(gender, participantForm.submitted)"
+                  ></p-select>
+                  <label for="gender">Gender *</label>
+                </p-floatlabel>
+
+                @if (shouldShowError(gender, participantForm.submitted)) {
+                  <p-message severity="error" [size]="inputSize" variant="simple">
+                    Gender is required.
+                  </p-message>
+                }
+              </div>
+
+              <!-- Phone Number -->
+              <div class="flex flex-col gap-1">
+                <p-floatlabel variant="on">
+                  <input
+                    pInputText
+                    id="phoneNumber"
+                    name="phoneNumber"
+                    type="tel"
+                    [(ngModel)]="participant.phoneNumber"
+                    #phoneNumber="ngModel"
+                    autocomplete="tel"
+                    fluid="true"
+                    [pSize]="inputSize"
+                  />
+                  <label for="phoneNumber">Phone Number</label>
+                </p-floatlabel>
+              </div>
+
+              <!-- Email -->
+              <div class="flex flex-col gap-1">
+                <p-floatlabel variant="on">
+                  <input
+                    pInputText
+                    id="email"
+                    name="email"
+                    type="email"
+                    [(ngModel)]="participant.email"
+                    #email="ngModel"
+                    email
+                    autocomplete="email"
+                    fluid="true"
+                    [pSize]="inputSize"
+                    [invalid]="shouldShowError(email, participantForm.submitted)"
+                  />
+                  <label for="email">Email</label>
+                </p-floatlabel>
+
+                @if (shouldShowError(email, participantForm.submitted)) {
+                  <p-message severity="error" [size]="inputSize" variant="simple">
+                    @if (email.hasError('email')) {
+                      Please enter a valid email.
+                    }
+                  </p-message>
+                }
+              </div>
+
+              <!-- Date of Birth -->
+              <div class="flex flex-col gap-1">
+                <p-floatlabel variant="on">
+                  <input
+                    pInputText
+                    id="dateOfBirth"
+                    name="dateOfBirth"
+                    [(ngModel)]="participant.dateOfBirth"
+                    #dateOfBirth="ngModel"
+                    placeholder="dd-mm-yyyy"
+                    autocomplete="off"
+                    fluid="true"
+                    [pSize]="inputSize"
+                  />
+                  <label for="dateOfBirth">Date of Birth (dd-mm-yyyy)</label>
+                </p-floatlabel>
+              </div>
+
+              <!-- Age -->
+              <div class="flex flex-col gap-1">
+                <p-floatlabel variant="on">
+                  <p-inputNumber
+                    inputId="age"
+                    name="age"
+                    [(ngModel)]="participant.age"
+                    #age="ngModel"
+                    fluid="true"
+                  ></p-inputNumber>
+                  <label for="age">Age</label>
+                </p-floatlabel>
+              </div>
+
+              <!-- City -->
+              <div class="flex flex-col gap-1">
+                <p-floatlabel variant="on">
+                  <input
+                    pInputText
+                    id="city"
+                    name="city"
+                    [(ngModel)]="participant.city"
+                    #city="ngModel"
+                    autocomplete="off"
+                    fluid="true"
+                    [pSize]="inputSize"
+                  />
+                  <label for="city">City</label>
+                </p-floatlabel>
+              </div>
+
+              <!-- Country -->
+              <div class="flex flex-col gap-1">
+                <p-floatlabel variant="on">
+                  <input
+                    pInputText
+                    id="country"
+                    name="country"
+                    [(ngModel)]="participant.country"
+                    #country="ngModel"
+                    autocomplete="off"
+                    fluid="true"
+                    [pSize]="inputSize"
+                  />
+                  <label for="country">Country</label>
+                </p-floatlabel>
+              </div>
+
+              <!-- Emergency Contact Name -->
+              <div class="flex flex-col gap-1">
+                <p-floatlabel variant="on">
+                  <input
+                    pInputText
+                    id="emergencyContactName"
+                    name="emergencyContactName"
+                    [(ngModel)]="participant.emergencyContactName"
+                    #emergencyContactName="ngModel"
+                    autocomplete="off"
+                    fluid="true"
+                    [pSize]="inputSize"
+                  />
+                  <label for="emergencyContactName">Emergency Contact Name</label>
+                </p-floatlabel>
+              </div>
+
+              <!-- Emergency Contact Phone -->
+              <div class="flex flex-col gap-1">
+                <p-floatlabel variant="on">
+                  <input
+                    pInputText
+                    id="emergencyContactPhone"
+                    name="emergencyContactPhone"
+                    type="tel"
+                    [(ngModel)]="participant.emergencyContactPhone"
+                    #emergencyContactPhone="ngModel"
+                    autocomplete="off"
+                    fluid="true"
+                    [pSize]="inputSize"
+                  />
+                  <label for="emergencyContactPhone">Emergency Contact Phone</label>
+                </p-floatlabel>
+              </div>
+
+              <!-- Notes -->
+              <div class="flex flex-col gap-1 md:col-span-2">
+                <p-floatlabel variant="on">
+                  <textarea
+                    pInputText
+                    id="notes"
+                    name="notes"
+                    [(ngModel)]="participant.notes"
+                    #notes="ngModel"
+                    rows="3"
+                    autocomplete="off"
+                    fluid="true"
+                  ></textarea>
+                  <label for="notes">Notes</label>
+                </p-floatlabel>
+              </div>
+            </div>
+
+            <!-- Form Actions -->
+            <div class="flex justify-end gap-3 pt-4 border-t">
+              <button
+                pButton
+                type="button"
+                label="Cancel"
+                icon="pi pi-times"
+                (click)="onCancel()"
+                [disabled]="isSubmitting()"
+                severity="secondary"
+                [outlined]="true"
+              ></button>
+              <button
+                pButton
+                type="submit"
+                [disabled]="isSubmitting() || participantForm.invalid"
+                severity="primary"
+              >
+                <span pButtonLabel>{{ getSubmitButtonText() }}</span>
+              </button>
+            </div>
+          </form>
+        }
+      </ng-template>
+    </p-card>
+  </div>
+}
+
+<!-- Dialog Mode: Show without Card wrapper -->
+@if (isDialogMode()) {
+  @if (isLoading()) {
+    <div class="flex flex-col gap-4">
+      <p-skeleton height="3rem" />
+      <p-skeleton height="3rem" />
+      <p-skeleton height="3rem" />
+      <p-skeleton height="3rem" />
+    </div>
+  } @else {
+    <form
+      id="participantFormDialog"
+      #participantFormDialog="ngForm"
+      (ngSubmit)="onSubmit(participantFormDialog)"
+      class="flex flex-col gap-4 mt-2"
+    >
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <!-- Chip Number -->
+        <div class="flex flex-col gap-1">
+          <p-floatlabel variant="on">
+            <input
+              pInputText
+              id="chipNumberDialog"
+              name="chipNumber"
+              [(ngModel)]="participant.chipNumber"
+              #chipNumberDialog="ngModel"
+              required
+              autocomplete="off"
+              fluid="true"
+              [invalid]="shouldShowError(chipNumberDialog, participantFormDialog.submitted)"
+            />
+            <label for="chipNumberDialog">Chip Number *</label>
+          </p-floatlabel>
+
+          @if (shouldShowError(chipNumberDialog, participantFormDialog.submitted)) {
+            <p-message severity="error" [size]="inputSize" variant="simple">
+              Chip number is required.
+            </p-message>
+          }
+        </div>
+
+        <!-- BIB Number -->
+        <div class="flex flex-col gap-1">
+          <p-floatlabel variant="on">
+            <input
+              pInputText
+              id="bibNumberDialog"
+              name="bibNumber"
+              [(ngModel)]="participant.bibNumber"
+              #bibNumberDialog="ngModel"
+              required
+              autocomplete="off"
+              [disabled]="isEditMode()"
+              fluid="true"
+              [invalid]="shouldShowError(bibNumberDialog, participantFormDialog.submitted)"
+            />
+            <label for="bibNumberDialog">BIB Number *</label>
+          </p-floatlabel>
+
+          @if (shouldShowError(bibNumberDialog, participantFormDialog.submitted)) {
+            <p-message severity="error" [size]="inputSize" variant="simple">
+              BIB number is required.
+            </p-message>
+          }
+        </div>
+
+        <!-- Full Name -->
+        <div class="flex flex-col gap-1 md:col-span-2">
+          <p-floatlabel variant="on">
+            <input
+              pInputText
+              id="fullNameDialog"
+              name="fullName"
+              [(ngModel)]="participant.fullName"
+              #fullNameDialog="ngModel"
+              required
+              autocomplete="off"
+              fluid="true"
+              [invalid]="shouldShowError(fullNameDialog, participantFormDialog.submitted)"
+            />
+            <label for="fullNameDialog">Full Name *</label>
+          </p-floatlabel>
+
+          @if (shouldShowError(fullNameDialog, participantFormDialog.submitted)) {
+            <p-message severity="error" [size]="inputSize" variant="simple">
+              Full name is required.
+            </p-message>
+          }
+        </div>
+
+        <!-- Race ID -->
+        <div class="flex flex-col gap-1">
+          <p-floatlabel variant="on">
+            <input
+              pInputText
+              id="raceIdDialog"
+              name="raceId"
+              [(ngModel)]="participant.raceId"
+              #raceIdDialog="ngModel"
+              required
+              autocomplete="off"
+              fluid="true"
+              [invalid]="shouldShowError(raceIdDialog, participantFormDialog.submitted)"
+            />
+            <label for="raceIdDialog">Race ID *</label>
+          </p-floatlabel>
+
+          @if (shouldShowError(raceIdDialog, participantFormDialog.submitted)) {
+            <p-message severity="error" [size]="inputSize" variant="simple">
+              Race ID is required.
+            </p-message>
+          }
+        </div>
+
+        <!-- Race Name -->
+        <div class="flex flex-col gap-1">
+          <p-floatlabel variant="on">
+            <input
+              pInputText
+              id="raceNameDialog"
+              name="raceName"
+              [(ngModel)]="participant.raceName"
+              #raceNameDialog="ngModel"
+              required
+              autocomplete="off"
+              fluid="true"
+              [invalid]="shouldShowError(raceNameDialog, participantFormDialog.submitted)"
+            />
+            <label for="raceNameDialog">Race Name *</label>
+          </p-floatlabel>
+
+          @if (shouldShowError(raceNameDialog, participantFormDialog.submitted)) {
+            <p-message severity="error" [size]="inputSize" variant="simple">
+              Race name is required.
+            </p-message>
+          }
+        </div>
+
+        <!-- Category ID -->
+        <div class="flex flex-col gap-1">
+          <p-floatlabel variant="on">
+            <input
+              pInputText
+              id="categoryIdDialog"
+              name="categoryId"
+              [(ngModel)]="participant.categoryId"
+              #categoryIdDialog="ngModel"
+              required
+              autocomplete="off"
+              fluid="true"
+              [invalid]="shouldShowError(categoryIdDialog, participantFormDialog.submitted)"
+            />
+            <label for="categoryIdDialog">Category ID *</label>
+          </p-floatlabel>
+
+          @if (shouldShowError(categoryIdDialog, participantFormDialog.submitted)) {
+            <p-message severity="error" [size]="inputSize" variant="simple">
+              Category ID is required.
+            </p-message>
+          }
+        </div>
+
+        <!-- Category Name -->
+        <div class="flex flex-col gap-1">
+          <p-floatlabel variant="on">
+            <input
+              pInputText
+              id="categoryNameDialog"
+              name="categoryName"
+              [(ngModel)]="participant.categoryName"
+              #categoryNameDialog="ngModel"
+              required
+              autocomplete="off"
+              fluid="true"
+              [invalid]="shouldShowError(categoryNameDialog, participantFormDialog.submitted)"
+            />
+            <label for="categoryNameDialog">Category Name *</label>
+          </p-floatlabel>
+
+          @if (shouldShowError(categoryNameDialog, participantFormDialog.submitted)) {
+            <p-message severity="error" [size]="inputSize" variant="simple">
+              Category name is required.
+            </p-message>
+          }
+        </div>
+
+        <!-- Gender -->
+        <div class="flex flex-col gap-1">
+          <p-floatlabel variant="on">
+            <p-select
+              inputId="genderDialog"
+              name="gender"
+              [(ngModel)]="participant.gender"
+              #genderDialog="ngModel"
+              [options]="genderOptions"
+              required
+              fluid="true"
+              [invalid]="shouldShowError(genderDialog, participantFormDialog.submitted)"
+            ></p-select>
+            <label for="genderDialog">Gender *</label>
+          </p-floatlabel>
+
+          @if (shouldShowError(genderDialog, participantFormDialog.submitted)) {
+            <p-message severity="error" [size]="inputSize" variant="simple">
+              Gender is required.
+            </p-message>
+          }
+        </div>
+
+        <!-- Phone Number -->
+        <div class="flex flex-col gap-1">
+          <p-floatlabel variant="on">
+            <input
+              pInputText
+              id="phoneNumberDialog"
+              name="phoneNumber"
+              type="tel"
+              [(ngModel)]="participant.phoneNumber"
+              #phoneNumberDialog="ngModel"
+              autocomplete="tel"
+              fluid="true"
+            />
+            <label for="phoneNumberDialog">Phone Number</label>
+          </p-floatlabel>
+        </div>
+
+        <!-- Email -->
+        <div class="flex flex-col gap-1">
+          <p-floatlabel variant="on">
+            <input
+              pInputText
+              id="emailDialog"
+              name="email"
+              type="email"
+              [(ngModel)]="participant.email"
+              #emailDialog="ngModel"
+              email
+              autocomplete="email"
+              fluid="true"
+              [invalid]="shouldShowError(emailDialog, participantFormDialog.submitted)"
+            />
+            <label for="emailDialog">Email</label>
+          </p-floatlabel>
+
+          @if (shouldShowError(emailDialog, participantFormDialog.submitted)) {
+            <p-message severity="error" [size]="inputSize" variant="simple">
+              @if (emailDialog.hasError('email')) {
+                Please enter a valid email.
+              }
+            </p-message>
+          }
+        </div>
+
+        <!-- Date of Birth -->
+        <div class="flex flex-col gap-1">
+          <p-floatlabel variant="on">
+            <input
+              pInputText
+              id="dateOfBirthDialog"
+              name="dateOfBirth"
+              [(ngModel)]="participant.dateOfBirth"
+              #dateOfBirthDialog="ngModel"
+              placeholder="dd-mm-yyyy"
+              autocomplete="off"
+              fluid="true"
+            />
+            <label for="dateOfBirthDialog">Date of Birth (dd-mm-yyyy)</label>
+          </p-floatlabel>
+        </div>
+
+        <!-- Age -->
+        <div class="flex flex-col gap-1">
+          <p-floatlabel variant="on">
+            <p-inputNumber
+              inputId="ageDialog"
+              name="age"
+              [(ngModel)]="participant.age"
+              #ageDialog="ngModel"
+              fluid="true"
+            ></p-inputNumber>
+            <label for="ageDialog">Age</label>
+          </p-floatlabel>
+        </div>
+
+        <!-- City -->
+        <div class="flex flex-col gap-1">
+          <p-floatlabel variant="on">
+            <input
+              pInputText
+              id="cityDialog"
+              name="city"
+              [(ngModel)]="participant.city"
+              #cityDialog="ngModel"
+              autocomplete="off"
+              fluid="true"
+            />
+            <label for="cityDialog">City</label>
+          </p-floatlabel>
+        </div>
+
+        <!-- Country -->
+        <div class="flex flex-col gap-1">
+          <p-floatlabel variant="on">
+            <input
+              pInputText
+              id="countryDialog"
+              name="country"
+              [(ngModel)]="participant.country"
+              #countryDialog="ngModel"
+              autocomplete="off"
+              fluid="true"
+            />
+            <label for="countryDialog">Country</label>
+          </p-floatlabel>
+        </div>
+
+        <!-- Emergency Contact Name -->
+        <div class="flex flex-col gap-1">
+          <p-floatlabel variant="on">
+            <input
+              pInputText
+              id="emergencyContactNameDialog"
+              name="emergencyContactName"
+              [(ngModel)]="participant.emergencyContactName"
+              #emergencyContactNameDialog="ngModel"
+              autocomplete="off"
+              fluid="true"
+            />
+            <label for="emergencyContactNameDialog">Emergency Contact Name</label>
+          </p-floatlabel>
+        </div>
+
+        <!-- Emergency Contact Phone -->
+        <div class="flex flex-col gap-1">
+          <p-floatlabel variant="on">
+            <input
+              pInputText
+              id="emergencyContactPhoneDialog"
+              name="emergencyContactPhone"
+              type="tel"
+              [(ngModel)]="participant.emergencyContactPhone"
+              #emergencyContactPhoneDialog="ngModel"
+              autocomplete="off"
+              fluid="true"
+            />
+            <label for="emergencyContactPhoneDialog">Emergency Contact Phone</label>
+          </p-floatlabel>
+        </div>
+
+        <!-- Notes -->
+        <div class="flex flex-col gap-1 md:col-span-2">
+          <p-floatlabel variant="on">
+            <textarea
+              pInputText
+              id="notesDialog"
+              name="notes"
+              [(ngModel)]="participant.notes"
+              #notesDialog="ngModel"
+              rows="3"
+              autocomplete="off"
+              fluid="true"
+            ></textarea>
+            <label for="notesDialog">Notes</label>
+          </p-floatlabel>
+        </div>
+      </div>
+    </form>
+  }
+}

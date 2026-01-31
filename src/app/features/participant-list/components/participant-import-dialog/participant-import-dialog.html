@@ -1,0 +1,134 @@
+<!-- Import Participants Dialog -->
+<p-dialog
+  header="Import Participants"
+  [(visible)]="visible"
+  [modal]="true"
+  [closable]="!isUploading()"
+  [closeOnEscape]="!isUploading()"
+  [draggable]="false"
+  [resizable]="false"
+  [style]="{ width: '600px' }"
+>
+  <div class="space-y-4">
+    <!-- Import Instructions -->
+    <p-message severity="info">
+      Upload a CSV file to import participants. The file should include required columns: BIB
+      Number, Chip Number, Full Name, Race, Category, Gender.
+    </p-message>
+
+    <!-- Warning Message -->
+    @if (!importResponse() && !isUploading()) {
+      <p-message severity="warn">
+        Warning: This will DELETE all existing participants for this event before importing the CSV
+        file. This action cannot be undone.
+      </p-message>
+    }
+
+    <!-- File Upload -->
+    @if (!importResponse() && !isUploading()) {
+      <div>
+        <label class="block text-sm font-medium mb-2"> Select CSV File * </label>
+        <p-fileUpload
+          mode="basic"
+          accept=".csv"
+          [auto]="false"
+          [maxFileSize]="10000000"
+          [disabled]="isUploading()"
+          (onSelect)="onFileSelect($event)"
+          chooseLabel="Choose CSV File"
+          [chooseIcon]="'pi pi-file'"
+        ></p-fileUpload>
+        @if (selectedFile()) {
+          <p class="text-sm mt-2 text-gray-700">
+            <i class="pi pi-file mr-2"></i>Selected: <strong>{{ selectedFile()?.name }}</strong>
+          </p>
+        }
+      </div>
+    }
+
+    <!-- Upload Status -->
+    @if (isUploading()) {
+      <div class="text-center py-12 bg-blue-50 rounded-lg">
+        <i class="pi pi-spin pi-spinner text-6xl text-blue-500"></i>
+        <p class="mt-4 font-medium text-xl">Uploading and processing...</p>
+        <p class="text-sm mt-2 text-gray-600">Please wait, this may take a few moments</p>
+      </div>
+    }
+
+    <!-- Import Response -->
+    @if (importResponse()) {
+      <div>
+        <!-- Success Response -->
+        @if (importResponse()!.success) {
+          <p-message severity="success" styleClass="mb-4">
+            Import Completed Successfully!
+          </p-message>
+
+          <div class="grid grid-cols-3 gap-4 mb-4">
+            <div class="p-4 bg-gray-50 rounded-lg text-center">
+              <p class="text-sm text-gray-600">Total Rows</p>
+              <p class="text-2xl font-bold text-gray-900">{{ importResponse()!.totalRows }}</p>
+            </div>
+            <div class="p-4 bg-green-50 rounded-lg text-center">
+              <p class="text-sm text-green-600">Successfully Imported</p>
+              <p class="text-2xl font-bold text-green-900">{{ importResponse()!.successCount }}</p>
+            </div>
+            <div class="p-4 bg-red-50 rounded-lg text-center">
+              <p class="text-sm text-red-600">Failed</p>
+              <p class="text-2xl font-bold text-red-900">{{ importResponse()!.failureCount }}</p>
+            </div>
+          </div>
+
+          <p-message severity="info">{{ importResponse()!.message }}</p-message>
+        }
+
+        <!-- Error Response -->
+        @if (!importResponse()!.success) {
+          <p-message severity="error">Import Failed: {{ importResponse()!.message }}</p-message>
+        }
+      </div>
+    }
+  </div>
+
+  <ng-template pTemplate="footer">
+    @if (!importResponse()) {
+      <p-button
+        label="Cancel"
+        icon="pi pi-times"
+        (onClick)="close()"
+        [disabled]="isUploading()"
+        severity="secondary"
+        [outlined]="true"
+      ></p-button>
+      <p-button
+        label="Import"
+        [icon]="isUploading() ? 'pi pi-spin pi-spinner' : 'pi pi-upload'"
+        (onClick)="import()"
+        [disabled]="!selectedFile() || isUploading()"
+        severity="success"
+      ></p-button>
+    } @else {
+      @if (selectedFile()) {
+        <p-button
+          label="Clear Selection"
+          icon="pi pi-times"
+          (onClick)="clearFile()"
+          severity="secondary"
+          [outlined]="true"
+        ></p-button>
+      }
+      <p-button
+        label="Import Another File"
+        icon="pi pi-refresh"
+        (onClick)="reset()"
+        severity="primary"
+      ></p-button>
+      <p-button
+        label="Close"
+        icon="pi pi-check"
+        (onClick)="close()"
+        severity="secondary"
+      ></p-button>
+    }
+  </ng-template>
+</p-dialog>
