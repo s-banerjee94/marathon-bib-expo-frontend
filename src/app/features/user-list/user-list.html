@@ -1,0 +1,287 @@
+<div class="p-6">
+  <p-confirmpopup />
+
+  <div class="mb-6">
+    <h1 class="text-3xl font-bold mb-2">Users</h1>
+    <p class="text-gray-600">Manage system users and their roles</p>
+  </div>
+
+  <!-- Search, Filters, and Actions -->
+  <div class="mb-4 flex flex-wrap items-center justify-between gap-4">
+    <p-iconfield class="flex-1 max-w-md">
+      <p-inputicon class="pi pi-search" />
+      <input
+        type="text"
+        pInputText
+        [pSize]="inputSize"
+        [value]="searchTerm()"
+        (input)="onSearchInput($any($event.target).value)"
+        placeholder="Search users (min 2 chars)..."
+        class="w-full"
+      />
+      @if (isLoading() && searchTerm().length >= 2) {
+        <p-inputicon class="pi pi-spinner pi-spin" />
+      } @else if (searchTerm()) {
+        <p-inputicon class="pi pi-times cursor-pointer" (click)="clearSearch()" />
+      }
+    </p-iconfield>
+
+    <div class="flex items-center gap-2">
+      <p-button
+        label="Create User"
+        icon="pi pi-plus"
+        [size]="inputSize"
+        (click)="onCreate()"
+      ></p-button>
+    </div>
+  </div>
+
+  <!-- Filter and Sort Options -->
+  <div class="mb-4 flex flex-wrap items-center gap-6">
+    <div class="flex items-center gap-2">
+      <p-checkbox
+        inputId="filterEnabled"
+        [ngModel]="filterEnabled()"
+        (ngModelChange)="filterEnabled.set($event); onFilterChange()"
+        [binary]="true"
+      />
+      <label for="filterEnabled" class="cursor-pointer">Show Enabled Only</label>
+    </div>
+
+    <div class="flex items-center gap-2">
+      <p-checkbox
+        inputId="filterIncludeDeleted"
+        [ngModel]="filterIncludeDeleted()"
+        (ngModelChange)="filterIncludeDeleted.set($event); onFilterChange()"
+        [binary]="true"
+      />
+      <label for="filterIncludeDeleted" class="cursor-pointer">Include Deleted</label>
+    </div>
+
+    <p-floatlabel variant="on">
+      <p-select
+        inputId="sortSelect"
+        [options]="sortOptions"
+        [ngModel]="selectedSort()"
+        (ngModelChange)="onSortChange($event)"
+        optionLabel="label"
+        optionValue="value"
+        [showClear]="true"
+        [size]="inputSize"
+        class="w-48"
+      />
+      <label for="sortSelect">Sort By</label>
+    </p-floatlabel>
+
+    <div class="flex items-center gap-2">
+      <label for="columnSelect">Columns:</label>
+      <p-multiselect
+        inputId="columnSelect"
+        [options]="cols()"
+        [(ngModel)]="selectedCols"
+        (ngModelChange)="onColumnSelectionChange()"
+        optionLabel="header"
+        placeholder="Select Columns"
+        [maxSelectedLabels]="2"
+        [size]="inputSize"
+      />
+    </div>
+  </div>
+
+  <!-- Users Table -->
+  <p-table
+    [value]="displayData()"
+    [lazy]="true"
+    [paginator]="true"
+    [rows]="pageSize()"
+    [totalRecords]="totalRecords()"
+    [first]="currentPage() * pageSize()"
+    (onLazyLoad)="onPageChange($event)"
+    [rowsPerPageOptions]="[5, 10, 20, 50]"
+    [size]="inputSize"
+  >
+    <ng-template pTemplate="header">
+      <tr>
+        @for (col of visibleCols; track col.field) {
+          <th>
+            <span>{{ col.header }}</span>
+            @if (isSorted(col.field)) {
+              <i [class]="getSortIcon(col.field)" class="ml-2"></i>
+            }
+          </th>
+        }
+        <th>Action</th>
+      </tr>
+    </ng-template>
+
+    <ng-template pTemplate="body" let-user>
+      <tr>
+        @for (col of visibleCols; track col.field) {
+          <td>
+            @if (isLoading()) {
+              <p-skeleton />
+            } @else {
+              @if (col.field === 'phoneNumber') {
+                <a href="tel:{{ getCellValue(user, col.field) }}" class="hover:underline">
+                  {{ getCellValue(user, col.field) | defaultValue }}
+                </a>
+              } @else if (col.field === 'email') {
+                <a href="mailto:{{ getCellValue(user, col.field) }}" class="hover:underline">
+                  {{ getCellValue(user, col.field) | defaultValue }}
+                </a>
+              } @else if (col.field === 'organizationName' && user.organizationId) {
+                <span
+                  class="cursor-pointer border-b border-dotted border-gray-400"
+                  (click)="openOrganizationPopover($event, user.organizationId)"
+                >
+                  {{ getCellValue(user, col.field) | defaultValue }}
+                </span>
+              } @else if (col.field === 'enabled') {
+                @if (togglingUserId() === user.id) {
+                  <p-tag
+                    value="Loading..."
+                    severity="secondary"
+                    [rounded]="true"
+                    [style]="{
+                      '--be-tag-font-size': '0.75rem',
+                      '--be-tag-padding': '0.25rem 0.5rem',
+                    }"
+                  >
+                    <i class="pi pi-spinner pi-spin mr-1 text-xs"></i>
+                  </p-tag>
+                } @else {
+                  <p-tag
+                    [value]="user.enabled ? 'Enabled' : 'Disabled'"
+                    [severity]="user.enabled ? 'success' : 'danger'"
+                    [rounded]="true"
+                    [style]="{
+                      '--be-tag-font-size': '0.75rem',
+                      '--be-tag-padding': '0.25rem 0.5rem',
+                    }"
+                    styleClass="cursor-pointer hover:opacity-80 transition-opacity"
+                    pTooltip="Click to toggle status"
+                    tooltipPosition="top"
+                    (click)="toggleUserEnabled($event, user)"
+                  />
+                }
+              } @else if (col.field === 'deleted') {
+                <p-tag
+                  [value]="user.deleted ? 'Deleted' : 'Active'"
+                  [severity]="user.deleted ? 'danger' : 'success'"
+                  [rounded]="true"
+                  [style]="{
+                    '--be-tag-font-size': '0.75rem',
+                    '--be-tag-padding': '0.25rem 0.5rem',
+                  }"
+                />
+              } @else if (col.field === 'role') {
+                <p-tag
+                  [value]="user.role"
+                  [severity]="getRoleSeverity(user.role)"
+                  [rounded]="true"
+                  [style]="{
+                    '--be-tag-font-size': '0.75rem',
+                    '--be-tag-padding': '0.25rem 0.5rem',
+                  }"
+                />
+              } @else if (col.field === 'createdAt' || col.field === 'updatedAt') {
+                {{ getDateValue(user, col.field) | defaultValue | date: 'dd-MM-yyyy' }}
+              } @else {
+                {{ getCellValue(user, col.field) | defaultValue }}
+              }
+            }
+          </td>
+        }
+        <td>
+          @if (isLoading()) {
+            <p-skeleton width="5rem" height="2rem" />
+          } @else {
+            <div class="flex items-center gap-1">
+              <p-button
+                icon="pi pi-pencil"
+                [rounded]="true"
+                [text]="true"
+                severity="info"
+                pTooltip="Edit"
+                tooltipPosition="top"
+                [size]="inputSize"
+                (click)="onEdit(user)"
+              ></p-button>
+              <p-button
+                icon="pi pi-trash"
+                [rounded]="true"
+                [text]="true"
+                severity="danger"
+                pTooltip="Delete"
+                tooltipPosition="top"
+                [size]="inputSize"
+              ></p-button>
+            </div>
+          }
+        </td>
+      </tr>
+    </ng-template>
+
+    <ng-template pTemplate="emptymessage">
+      <tr>
+        <td [attr.colspan]="visibleCols.length + 1" class="text-center">
+          @if (!isLoading()) {
+            <div class="py-8 text-gray-500">
+              <i class="pi pi-users text-4xl mb-3"></i>
+              <p>No users found</p>
+            </div>
+          }
+        </td>
+      </tr>
+    </ng-template>
+  </p-table>
+</div>
+
+<p-popover #orgPopover appendTo="body" (onHide)="currentOrganizationDetails.set(null)">
+  @if (loadingOrganizationId() !== null) {
+    <div class="flex items-center gap-2 px-3 py-2">
+      <i class="pi pi-spinner pi-spin"></i>
+      <span>Loading...</span>
+    </div>
+  } @else if (currentOrganizationDetails()) {
+    <div class="min-w-50">
+      <div class="flex items-center justify-between">
+        <h3 class="font-semibold text-base flex-1 pr-2">
+          {{ currentOrganizationDetails()!.organizerName }}
+        </h3>
+        <p-button
+          icon="pi pi-external-link"
+          [rounded]="true"
+          [text]="true"
+          size="small"
+          pTooltip="Open in new tab"
+          tooltipPosition="top"
+          styleClass="!w-6 !h-6 !p-0 !text-xs"
+        />
+      </div>
+
+      <p-divider />
+
+      <div class="space-y-1">
+        <div class="flex items-center gap-2">
+          <i class="pi pi-envelope text-gray-500 text-sm w-4"></i>
+          <a
+            href="mailto:{{ currentOrganizationDetails()!.email }}"
+            class="text-blue-600 hover:underline text-sm"
+          >
+            {{ currentOrganizationDetails()!.email }}
+          </a>
+        </div>
+        <div class="flex items-center gap-2">
+          <i class="pi pi-phone text-gray-500 text-sm w-4"></i>
+          <a
+            href="tel:{{ currentOrganizationDetails()!.phoneNumber }}"
+            class="text-blue-600 hover:underline text-sm"
+          >
+            {{ currentOrganizationDetails()!.phoneNumber }}
+          </a>
+        </div>
+      </div>
+    </div>
+  }
+</p-popover>
