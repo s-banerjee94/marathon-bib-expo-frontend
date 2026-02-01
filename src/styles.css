@@ -1,3 +1,299 @@
 @import 'tailwindcss';
 @import 'tailwindcss-primeui';
 @import 'primeicons/primeicons.css';
+
+/* ============================================================================
+   Layout Variables
+   ============================================================================ */
+:root {
+  --sidebar-width: 250px;
+  --sidebar-width-mobile: 320px;
+  --topbar-height: 56px;
+  --layout-transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ============================================================================
+   Blocked Scroll (for mobile overlay)
+   ============================================================================ */
+body.blocked-scroll {
+  overflow: hidden;
+}
+
+/* ============================================================================
+   Topbar/Navbar Styles
+   ============================================================================ */
+.layout-topbar {
+  position: fixed !important;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: var(--topbar-height);
+  z-index: 999;
+  background-color: var(--p-surface-0) !important;
+  border-bottom: 1px solid var(--p-surface-200) !important;
+  border-radius: 0 !important;
+}
+
+.app-dark .layout-topbar {
+  background-color: var(--p-surface-900) !important;
+  border-bottom-color: var(--p-surface-700) !important;
+}
+
+/* ============================================================================
+   Layout Wrapper
+   ============================================================================ */
+.layout-wrapper {
+  min-height: 100vh;
+}
+
+/* ============================================================================
+   Sidebar Styles
+   ============================================================================ */
+.layout-sidebar {
+  position: fixed;
+  top: var(--topbar-height);
+  left: 0;
+  width: var(--sidebar-width);
+  height: calc(100vh - var(--topbar-height));
+  overflow-y: auto;
+  overflow-x: hidden;
+  z-index: 998;
+  transition:
+    transform var(--layout-transition),
+    box-shadow var(--layout-transition);
+  background-color: var(--p-surface-0);
+  border-right: 1px solid var(--p-surface-200);
+  padding: 1rem;
+  box-shadow: none;
+}
+
+.app-dark .layout-sidebar {
+  background-color: var(--p-surface-900);
+  border-right-color: var(--p-surface-700);
+}
+
+/* Static mode - sidebar always visible on desktop */
+.layout-static .layout-sidebar {
+  transform: translateX(0);
+}
+
+/* Static inactive - sidebar hidden on desktop */
+.layout-static-inactive .layout-sidebar {
+  transform: translateX(-100%);
+}
+
+/* Overlay mode - sidebar hidden by default */
+.layout-overlay .layout-sidebar {
+  transform: translateX(-100%);
+}
+
+/* Overlay active - sidebar visible */
+.layout-overlay-active .layout-sidebar {
+  transform: translateX(0);
+}
+
+/* ============================================================================
+   Main Content Styles
+   ============================================================================ */
+.layout-main {
+  margin-left: 0;
+  min-height: calc(100vh - var(--topbar-height));
+  padding-top: var(--topbar-height);
+  transition: margin-left var(--layout-transition);
+}
+
+.layout-main-container {
+  padding: 1.5rem;
+}
+
+/* Static mode - main content offset by sidebar width */
+.layout-static .layout-main {
+  margin-left: var(--sidebar-width);
+}
+
+/* Static inactive - main content full width */
+.layout-static-inactive .layout-main {
+  margin-left: 0;
+}
+
+/* ============================================================================
+   Menu Styles
+   ============================================================================ */
+.layout-menu {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.layout-menu li {
+  margin-bottom: 0.25rem;
+}
+
+.menu-link {
+  display: flex;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+  color: var(--p-text-color);
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.menu-link:hover {
+  background-color: var(--p-surface-100);
+}
+
+.app-dark .menu-link:hover {
+  background-color: var(--p-surface-800);
+}
+
+.menu-link.active-route {
+  background-color: var(--p-primary-50);
+  color: var(--p-primary-500);
+}
+
+.app-dark .menu-link.active-route {
+  background-color: color-mix(in srgb, var(--p-primary-500), transparent 85%);
+  color: var(--p-primary-400);
+}
+
+.menu-icon {
+  margin-right: 0.75rem;
+  font-size: 1.125rem;
+}
+
+.menu-label {
+  flex: 1;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.menu-toggle-icon {
+  transition: transform 0.2s ease;
+}
+
+.menu-toggle-icon.rotate-180 {
+  transform: rotate(180deg);
+}
+
+.menu-badge {
+  margin-left: auto;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
+  border-radius: 0.25rem;
+  background-color: var(--p-primary-500);
+  color: white;
+}
+
+.menu-separator {
+  height: 1px;
+  margin: 0.5rem 0;
+  background-color: var(--p-surface-200);
+}
+
+.app-dark .menu-separator {
+  background-color: var(--p-surface-700);
+}
+
+/* Submenu styles */
+.submenu {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease;
+  padding-left: 1rem;
+}
+
+.submenu.submenu-visible {
+  max-height: 500px;
+}
+
+.submenu .menu-link {
+  padding: 0.5rem 1rem;
+  font-size: 0.8125rem;
+}
+
+/* ============================================================================
+   Overlay Mask (for mobile sidebar)
+   ============================================================================ */
+.layout-mask {
+  position: fixed;
+  top: var(--topbar-height);
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.4);
+  z-index: 997;
+  cursor: pointer;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* ============================================================================
+   Mobile/Tablet Styles - Drawer Behavior
+   ============================================================================ */
+@media (max-width: 991px) {
+  .layout-sidebar {
+    width: var(--sidebar-width-mobile);
+    max-width: 85vw;
+    transform: translateX(-100%);
+    border-right: none;
+  }
+
+  .layout-mobile-active .layout-sidebar {
+    transform: translateX(0);
+    box-shadow:
+      4px 0 6px -1px rgba(0, 0, 0, 0.1),
+      8px 0 15px -3px rgba(0, 0, 0, 0.15);
+  }
+
+  .app-dark .layout-mobile-active .layout-sidebar {
+    box-shadow:
+      4px 0 6px -1px rgba(0, 0, 0, 0.3),
+      8px 0 20px -3px rgba(0, 0, 0, 0.4);
+  }
+
+  .layout-main {
+    margin-left: 0 !important;
+  }
+}
+
+/* Small mobile devices - slightly narrower drawer */
+@media (max-width: 480px) {
+  .layout-sidebar {
+    width: 85vw;
+    max-width: 300px;
+  }
+}
+
+/* Touch-friendly menu items on mobile */
+@media (max-width: 991px) {
+  .menu-link {
+    padding: 0.875rem 1rem;
+    min-height: 48px; /* Touch-friendly target size */
+  }
+
+  .menu-icon {
+    font-size: 1.25rem;
+  }
+
+  .menu-label {
+    font-size: 0.9375rem;
+  }
+
+  .submenu .menu-link {
+    padding: 0.75rem 1rem;
+    min-height: 44px;
+  }
+}

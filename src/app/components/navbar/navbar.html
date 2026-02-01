@@ -1,6 +1,17 @@
-<p-menubar>
+<p-menubar styleClass="layout-topbar">
   <ng-template pTemplate="start">
-    <div class="px-4 font-semibold">Marathon Bib Expo</div>
+    <div class="flex items-center">
+      @if (isAuthenticated()) {
+        <p-button
+          icon="pi pi-bars"
+          [text]="true"
+          [rounded]="true"
+          (onClick)="onMenuToggle($event)"
+          pTooltip="Toggle menu"
+        />
+      }
+      <span class="px-4 font-semibold">Marathon Bib Expo</span>
+    </div>
   </ng-template>
 
   <ng-template pTemplate="end">

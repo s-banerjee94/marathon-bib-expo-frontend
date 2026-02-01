@@ -1,7 +1,18 @@
 <p-toast />
 
-<app-navbar></app-navbar>
+<div class="layout-wrapper" [ngClass]="layoutClasses()">
+  <app-navbar></app-navbar>
 
-<main class="app-main">
-  <router-outlet></router-outlet>
-</main>
+  @if (isAuthenticated()) {
+    <app-sidebar></app-sidebar>
+    @if (layoutService.layoutState().mobileMenuActive) {
+      <div class="layout-mask" (click)="onMaskClick()"></div>
+    }
+  }
+
+  <main class="layout-main">
+    <div class="layout-main-container">
+      <router-outlet></router-outlet>
+    </div>
+  </main>
+</div>

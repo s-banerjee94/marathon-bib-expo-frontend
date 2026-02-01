@@ -37,6 +37,11 @@ export class Navbar {
     { label: 'Log out', command: () => this.onLogout() },
   ];
 
+  onMenuToggle(event: Event): void {
+    event.stopPropagation();
+    this.layoutService.onMenuToggle();
+  }
+
   protected onProfile(): void {
     // TODO: navigate to profile
   }

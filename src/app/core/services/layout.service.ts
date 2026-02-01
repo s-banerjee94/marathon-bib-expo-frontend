@@ -12,6 +12,13 @@ export interface LayoutConfig {
   primary: string;
   surface: string | null;
   darkTheme: boolean;
+  menuMode: 'static' | 'overlay';
+}
+
+export interface LayoutState {
+  staticMenuDesktopInactive: boolean;
+  overlayMenuActive: boolean;
+  mobileMenuActive: boolean;
 }
 
 export interface SurfacePalette {
@@ -37,6 +44,13 @@ const DEFAULT_CONFIG: LayoutConfig = {
   primary: 'emerald',
   surface: null,
   darkTheme: false,
+  menuMode: 'static',
+};
+
+const DEFAULT_LAYOUT_STATE: LayoutState = {
+  staticMenuDesktopInactive: false,
+  overlayMenuActive: false,
+  mobileMenuActive: false,
 };
 
 const PRESETS = {
@@ -56,11 +70,23 @@ export class LayoutService {
   private initialized = false;
 
   layoutConfig = signal<LayoutConfig>(this.loadConfig());
+  layoutState = signal<LayoutState>(DEFAULT_LAYOUT_STATE);
 
   isDarkTheme = computed(() => this.layoutConfig().darkTheme);
   selectedPrimary = computed(() => this.layoutConfig().primary);
   selectedSurface = computed(() => this.layoutConfig().surface);
   selectedPreset = computed(() => this.layoutConfig().preset);
+  menuMode = computed(() => this.layoutConfig().menuMode);
+
+  isSidebarActive = computed(() => {
+    const state = this.layoutState();
+    const config = this.layoutConfig();
+
+    if (this.isDesktop()) {
+      return config.menuMode === 'static' && !state.staticMenuDesktopInactive;
+    }
+    return state.overlayMenuActive || state.mobileMenuActive;
+  });
 
   presetOptions = Object.keys(PRESETS);
 
@@ -261,6 +287,37 @@ export class LayoutService {
 
   toggleDarkMode(): void {
     this.layoutConfig.update((state) => ({ ...state, darkTheme: !state.darkTheme }));
+  }
+
+  onMenuToggle(): void {
+    if (this.isDesktop()) {
+      this.layoutState.update((state) => ({
+        ...state,
+        staticMenuDesktopInactive: !state.staticMenuDesktopInactive,
+      }));
+    } else {
+      this.layoutState.update((state) => ({
+        ...state,
+        mobileMenuActive: !state.mobileMenuActive,
+      }));
+    }
+  }
+
+  hideMenu(): void {
+    this.layoutState.update((state) => ({
+      ...state,
+      overlayMenuActive: false,
+      mobileMenuActive: false,
+    }));
+  }
+
+  isDesktop(): boolean {
+    if (!isPlatformBrowser(this.platformId)) return true;
+    return window.innerWidth > 991;
+  }
+
+  isMobile(): boolean {
+    return !this.isDesktop();
   }
 
   updateColors(type: 'primary' | 'surface', color: SurfacePalette): void {

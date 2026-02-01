@@ -1,0 +1,54 @@
+@if (item().separator) {
+  <li class="menu-separator"></li>
+} @else {
+  <li [ngClass]="{ 'active-menuitem': isActive() || isExpanded() }">
+    @if (item().routerLink && !hasSubmenu) {
+      <!-- Regular menu item with router link -->
+      <a
+        [routerLink]="item().routerLink"
+        class="menu-link"
+        [ngClass]="{ 'active-route': isActive() }"
+        pRipple
+        (click)="onItemClick($event)"
+      >
+        @if (item().icon) {
+          <i [class]="item().icon" class="menu-icon"></i>
+        }
+        <span class="menu-label">{{ item().label }}</span>
+        @if (item().badge) {
+          <span class="menu-badge" [ngClass]="item().badgeClass">{{ item().badge }}</span>
+        }
+      </a>
+    } @else {
+      <!-- Parent menu item with submenu -->
+      <a
+        class="menu-link"
+        [ngClass]="{ 'active-route': isActive() }"
+        pRipple
+        (click)="onItemClick($event)"
+      >
+        @if (item().icon) {
+          <i [class]="item().icon" class="menu-icon"></i>
+        }
+        <span class="menu-label">{{ item().label }}</span>
+        @if (item().badge) {
+          <span class="menu-badge" [ngClass]="item().badgeClass">{{ item().badge }}</span>
+        }
+        @if (hasSubmenu) {
+          <i
+            class="pi pi-fw pi-angle-down menu-toggle-icon"
+            [ngClass]="{ 'rotate-180': isExpanded() }"
+          ></i>
+        }
+      </a>
+    }
+
+    @if (hasSubmenu) {
+      <ul class="submenu" [ngClass]="{ 'submenu-visible': isExpanded() }">
+        @for (child of item().items; track child.label; let i = $index) {
+          <app-menuitem [item]="child" [index]="i" [parentKey]="key"></app-menuitem>
+        }
+      </ul>
+    }
+  </li>
+}
