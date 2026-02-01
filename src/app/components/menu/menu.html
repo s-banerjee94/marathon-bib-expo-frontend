@@ -1,4 +1,4 @@
-<ul class="layout-menu">
+<ul class="list-none p-0 m-0">
   @for (item of filteredMenu(); track item.label; let i = $index) {
     <app-menuitem [item]="item" [index]="i"></app-menuitem>
   }
