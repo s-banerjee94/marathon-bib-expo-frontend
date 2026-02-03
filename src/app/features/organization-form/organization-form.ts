@@ -25,7 +25,7 @@ import { FORM_INPUT_SIZE } from '../../shared/constants/form.constants';
 import { SUBSCRIPTION_TIER_OPTIONS } from '../../shared/constants/subscription.constant';
 
 @Component({
-  selector: 'app-manage-organization',
+  selector: 'app-organization-form',
   standalone: true,
   imports: [
     CommonModule,
@@ -39,10 +39,10 @@ import { SUBSCRIPTION_TIER_OPTIONS } from '../../shared/constants/subscription.c
     InputNumberModule,
     SkeletonModule,
   ],
-  templateUrl: './manage-organization.html',
-  styleUrl: './manage-organization.css',
+  templateUrl: './organization-form.html',
+  styleUrl: './organization-form.css',
 })
-export class ManageOrganization implements OnInit {
+export class OrganizationForm implements OnInit {
   private organizationService = inject(OrganizationService);
   private authService = inject(AuthService);
   private router = inject(Router);
@@ -114,7 +114,7 @@ export class ManageOrganization implements OnInit {
           this.loadOrganizationData(id);
         } else {
           // Invalid ID, redirect to create mode
-          this.router.navigate(['/manage-organization']);
+          this.router.navigate(['/organization-form']);
         }
       } else {
         // Create mode - default state

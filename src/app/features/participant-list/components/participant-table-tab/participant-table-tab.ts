@@ -1,9 +1,10 @@
-import { Component, input, output } from '@angular/core';
+import { Component, computed, input, output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
 import { ButtonModule } from 'primeng/button';
 import { TooltipModule } from 'primeng/tooltip';
+import { SkeletonModule } from 'primeng/skeleton';
 import { Participant } from '../../../../core/models/participant.model';
 import { DefaultValuePipe } from '../../../../shared/pipes/default-value.pipe';
 import { getGenderDisplay, getGenderSeverity } from '../../../../shared/utils/participant.utils';
@@ -12,7 +13,15 @@ import { getGenderDisplay, getGenderSeverity } from '../../../../shared/utils/pa
   selector: 'app-participant-table-tab',
   standalone: true,
   templateUrl: './participant-table-tab.html',
-  imports: [CommonModule, TableModule, TagModule, ButtonModule, TooltipModule, DefaultValuePipe],
+  imports: [
+    CommonModule,
+    TableModule,
+    TagModule,
+    ButtonModule,
+    TooltipModule,
+    SkeletonModule,
+    DefaultValuePipe,
+  ],
 })
 export class ParticipantTableTab {
   participants = input.required<Participant[]>();
@@ -30,6 +39,15 @@ export class ParticipantTableTab {
 
   getGenderDisplay = getGenderDisplay;
   getGenderSeverity = getGenderSeverity;
+
+  // Skeleton rows for initial loading state
+  skeletonRows = Array(5).fill({});
+
+  // Computed: true when loading and no data yet (initial load)
+  isInitialLoading = computed(() => this.isLoading() && this.participants().length === 0);
+
+  // Computed: true when loading but already have data (load more)
+  isLoadingMore = computed(() => this.isLoading() && this.participants().length > 0);
 
   isColumnVisible(field: string): boolean {
     return this.visibleColumns().includes(field);

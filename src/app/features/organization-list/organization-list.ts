@@ -23,7 +23,7 @@ import { OrganizationService } from '../../core/services/organization.service';
 import { ORGANIZATION_COLUMNS } from '../../shared/constants/organization-columns.constant';
 import { STORAGE_KEYS } from '../../shared/constants/storage-keys.constant';
 import { ORGANIZATION_SORT_OPTIONS } from '../../shared/constants/sort-options.constant';
-import { ManageOrganization } from '../manage-organization/manage-organization';
+import { OrganizationForm } from '../organization-form/organization-form';
 import { DefaultValuePipe } from '../../shared/pipes/default-value.pipe';
 import { BaseTableComponent } from '../../shared/base/base-table.component';
 import { TableFilterPreferences } from '../../shared/models/table-config.model';
@@ -150,8 +150,21 @@ export class OrganizationList extends BaseTableComponent<
     }
   }
 
+  getColumnAlignment(field: string): string {
+    // Center alignment for status/tag columns
+    if (['enabled', 'deleted', 'subscriptionTier', 'subscriptionStatus'].includes(field)) {
+      return 'text-center';
+    }
+    // Right alignment for numeric columns
+    if (['id', 'maxEvents', 'maxParticipantsPerEvent'].includes(field)) {
+      return 'text-right';
+    }
+    // Left alignment for all other columns (default)
+    return '';
+  }
+
   onCreate(): void {
-    this.openDialog(ManageOrganization, 'Create Organization', {
+    this.openDialog(OrganizationForm, 'Create Organization', {
       isEditMode: false,
       successMessage: {
         severity: 'success',
@@ -188,7 +201,7 @@ export class OrganizationList extends BaseTableComponent<
   }
 
   onEdit(org: Organization): void {
-    this.openDialog(ManageOrganization, 'Edit Organization', {
+    this.openDialog(OrganizationForm, 'Edit Organization', {
       organizationId: org.id,
       isEditMode: true,
       successMessage: {

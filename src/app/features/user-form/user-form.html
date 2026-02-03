@@ -1,0 +1,483 @@
+<!-- Route Mode: Show as Centered Card -->
+@if (!isDialogMode()) {
+  <div class="flex justify-center items-start min-h-screen p-6">
+    <p-card class="w-full max-w-2xl shadow-lg">
+      <ng-template pTemplate="title">
+        <h2 class="text-2xl font-bold">{{ getTitle() }}</h2>
+      </ng-template>
+      <ng-template pTemplate="content">
+        <!-- Loading Skeleton -->
+        @if (isLoading()) {
+          <div class="flex flex-col gap-4">
+            <p-skeleton height="3rem" />
+            <p-skeleton height="3rem" />
+            <p-skeleton height="3rem" />
+            <p-skeleton height="3rem" />
+            <p-skeleton height="3rem" />
+            <p-skeleton height="3rem" />
+          </div>
+        } @else {
+          <form #userForm="ngForm" (ngSubmit)="onSubmit(userForm)" class="flex flex-col gap-4">
+            <!-- ROLE SELECTION -->
+            <div class="flex flex-col gap-1">
+              <p-floatlabel variant="on">
+                <p-select
+                  id="roleSelect"
+                  name="roleSelect"
+                  [(ngModel)]="selectedRole"
+                  (onChange)="onRoleSelected()"
+                  [options]="availableRoles() || []"
+                  optionLabel="label"
+                  optionValue="value"
+                  placeholder="Choose a role..."
+                  [checkmark]="true"
+                  required
+                  fluid="true"
+                  [size]="inputSize"
+                ></p-select>
+                <label for="roleSelect">Role *</label>
+              </p-floatlabel>
+            </div>
+
+            <!-- ORGANIZATION SELECTION -->
+            @if (showOrganizationDropdown()) {
+              <div class="flex flex-col gap-1">
+                <app-organization-selector
+                  inputId="organizationId"
+                  label="Organization *"
+                  [required]="true"
+                  [size]="inputSize"
+                  [selectedOrganizationId]="user.organizationId"
+                  (organizationIdChange)="user.organizationId = $event || 0"
+                >
+                  @if (userForm.submitted && !user.organizationId) {
+                    <p-message severity="error" [size]="inputSize" variant="simple">
+                      Organization is required.
+                    </p-message>
+                  }
+                </app-organization-selector>
+              </div>
+            }
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <!-- Username -->
+              <div class="flex flex-col gap-1">
+                <p-floatlabel variant="on">
+                  <input
+                    pInputText
+                    id="username"
+                    name="username"
+                    [(ngModel)]="user.username"
+                    #username="ngModel"
+                    required
+                    minlength="3"
+                    maxlength="50"
+                    pattern="^[a-zA-Z0-9_-]+$"
+                    autocomplete="username"
+                    fluid="true"
+                    [pSize]="inputSize"
+                    [invalid]="shouldShowError(username, userForm.submitted)"
+                  />
+                  <label for="username">Username *</label>
+                </p-floatlabel>
+
+                @if (shouldShowError(username, userForm.submitted)) {
+                  <p-message severity="error" [size]="inputSize" variant="simple">
+                    @if (username.hasError('required')) {
+                      Username is required.
+                    }
+                    @if (username.hasError('minlength')) {
+                      Username must be at least 3 characters.
+                    }
+                    @if (username.hasError('maxlength')) {
+                      Username must not exceed 50 characters.
+                    }
+                    @if (username.hasError('pattern')) {
+                      Username can only contain letters, numbers, underscores, and hyphens.
+                    }
+                  </p-message>
+                }
+              </div>
+
+              <!-- Password -->
+              <div class="flex flex-col gap-1">
+                <p-floatlabel variant="on">
+                  <input
+                    pInputText
+                    type="password"
+                    id="password"
+                    name="password"
+                    [(ngModel)]="user.password"
+                    #password="ngModel"
+                    required
+                    minlength="8"
+                    maxlength="100"
+                    autocomplete="new-password"
+                    fluid="true"
+                    [pSize]="inputSize"
+                    [invalid]="shouldShowError(password, userForm.submitted)"
+                  />
+                  <label for="password">Password *</label>
+                </p-floatlabel>
+
+                @if (shouldShowError(password, userForm.submitted)) {
+                  <p-message severity="error" [size]="inputSize" variant="simple">
+                    @if (password.hasError('required')) {
+                      Password is required.
+                    }
+                    @if (password.hasError('minlength')) {
+                      Password must be at least 8 characters.
+                    }
+                  </p-message>
+                }
+              </div>
+
+              <!-- Full Name -->
+              <div class="flex flex-col gap-1">
+                <p-floatlabel variant="on">
+                  <input
+                    pInputText
+                    id="fullName"
+                    name="fullName"
+                    [(ngModel)]="user.fullName"
+                    #fullName="ngModel"
+                    required
+                    maxlength="100"
+                    autocomplete="name"
+                    fluid="true"
+                    [pSize]="inputSize"
+                    [invalid]="shouldShowError(fullName, userForm.submitted)"
+                  />
+                  <label for="fullName">Full Name *</label>
+                </p-floatlabel>
+
+                @if (shouldShowError(fullName, userForm.submitted)) {
+                  <p-message severity="error" [size]="inputSize" variant="simple">
+                    @if (fullName.hasError('required')) {
+                      Full name is required.
+                    }
+                    @if (fullName.hasError('maxlength')) {
+                      Full name must not exceed 100 characters.
+                    }
+                  </p-message>
+                }
+              </div>
+
+              <!-- Email -->
+              <div class="flex flex-col gap-1">
+                <p-floatlabel variant="on">
+                  <input
+                    pInputText
+                    type="email"
+                    id="email"
+                    name="email"
+                    [(ngModel)]="user.email"
+                    #email="ngModel"
+                    email
+                    maxlength="100"
+                    autocomplete="email"
+                    fluid="true"
+                    [pSize]="inputSize"
+                    [required]="isEmailRequired()"
+                    [invalid]="shouldShowError(email, userForm.submitted)"
+                  />
+                  <label for="email">Email{{ isEmailRequired() ? ' *' : '' }}</label>
+                </p-floatlabel>
+
+                @if (shouldShowError(email, userForm.submitted)) {
+                  <p-message severity="error" [size]="inputSize" variant="simple">
+                    @if (email.hasError('required')) {
+                      Email is required.
+                    }
+                    @if (email.hasError('email')) {
+                      Please enter a valid email.
+                    }
+                  </p-message>
+                }
+              </div>
+
+              <!-- Phone Number -->
+              <div class="flex flex-col gap-1">
+                <p-floatlabel variant="on">
+                  <input
+                    pInputText
+                    type="tel"
+                    id="phoneNumber"
+                    name="phoneNumber"
+                    [(ngModel)]="user.phoneNumber"
+                    #phoneNumber="ngModel"
+                    maxlength="20"
+                    autocomplete="tel"
+                    fluid="true"
+                    [pSize]="inputSize"
+                    [required]="isPhoneRequired()"
+                    [invalid]="shouldShowError(phoneNumber, userForm.submitted)"
+                  />
+                  <label for="phoneNumber">Phone Number{{ isPhoneRequired() ? ' *' : '' }}</label>
+                </p-floatlabel>
+
+                @if (shouldShowError(phoneNumber, userForm.submitted)) {
+                  <p-message severity="error" [size]="inputSize" variant="simple">
+                    Phone number is required.
+                  </p-message>
+                }
+              </div>
+            </div>
+
+            <!-- Submit Button -->
+            <div class="flex justify-end gap-3 pt-4 border-t">
+              <button
+                pButton
+                type="submit"
+                severity="primary"
+                [disabled]="isSubmitting() || isLoading() || userForm.invalid"
+              >
+                <span pButtonLabel>{{ getSubmitButtonText() }}</span>
+              </button>
+            </div>
+          </form>
+        }
+      </ng-template>
+    </p-card>
+  </div>
+}
+
+<!-- Dialog Mode: Direct Form without Card -->
+@if (isDialogMode()) {
+  <!-- Loading Skeleton -->
+  @if (isLoading()) {
+    <div class="flex flex-col gap-4">
+      <p-skeleton height="3rem" />
+      <p-skeleton height="3rem" />
+      <p-skeleton height="3rem" />
+      <p-skeleton height="3rem" />
+      <p-skeleton height="3rem" />
+      <p-skeleton height="3rem" />
+    </div>
+  } @else {
+    <form
+      id="userFormDialog"
+      #userFormDialog="ngForm"
+      (ngSubmit)="onSubmit(userFormDialog)"
+      class="flex flex-col gap-4 mt-2"
+    >
+      <!-- ROLE SELECTION -->
+      <div class="flex flex-col gap-1">
+        <p-floatlabel variant="on">
+          <p-select
+            id="roleSelectDialog"
+            name="roleSelectDialog"
+            [(ngModel)]="selectedRole"
+            (onChange)="onRoleSelected()"
+            [options]="availableRoles() || []"
+            optionLabel="label"
+            optionValue="value"
+            placeholder="Choose a role..."
+            [checkmark]="true"
+            required
+            fluid="true"
+            [size]="inputSize"
+          ></p-select>
+          <label for="roleSelectDialog">Role *</label>
+        </p-floatlabel>
+      </div>
+
+      <!-- ORGANIZATION SELECTION -->
+      @if (showOrganizationDropdown()) {
+        <div class="flex flex-col gap-1">
+          <app-organization-selector
+            inputId="organizationIdDialog"
+            label="Organization *"
+            [required]="true"
+            [size]="inputSize"
+            [selectedOrganizationId]="user.organizationId"
+            (organizationIdChange)="user.organizationId = $event || 0"
+          >
+            @if (userFormDialog.submitted && !user.organizationId) {
+              <p-message severity="error" [size]="inputSize" variant="simple">
+                Organization is required.
+              </p-message>
+            }
+          </app-organization-selector>
+        </div>
+      }
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <!-- Username -->
+        <div class="flex flex-col gap-1">
+          <p-floatlabel variant="on">
+            <input
+              pInputText
+              id="usernameDialog"
+              name="usernameDialog"
+              [(ngModel)]="user.username"
+              #usernameDialog="ngModel"
+              required
+              minlength="3"
+              maxlength="50"
+              pattern="^[a-zA-Z0-9_-]+$"
+              autocomplete="username"
+              fluid="true"
+              [pSize]="inputSize"
+              [invalid]="shouldShowError(usernameDialog, userFormDialog.submitted)"
+            />
+            <label for="usernameDialog">Username *</label>
+          </p-floatlabel>
+
+          @if (shouldShowError(usernameDialog, userFormDialog.submitted)) {
+            <p-message severity="error" [size]="inputSize" variant="simple">
+              @if (usernameDialog.hasError('required')) {
+                Username is required.
+              }
+              @if (usernameDialog.hasError('minlength')) {
+                Username must be at least 3 characters.
+              }
+              @if (usernameDialog.hasError('maxlength')) {
+                Username must not exceed 50 characters.
+              }
+              @if (usernameDialog.hasError('pattern')) {
+                Username can only contain letters, numbers, underscores, and hyphens.
+              }
+            </p-message>
+          }
+        </div>
+
+        <!-- Password -->
+        <div class="flex flex-col gap-1">
+          <p-floatlabel variant="on">
+            <input
+              pInputText
+              type="password"
+              id="passwordDialog"
+              name="passwordDialog"
+              [(ngModel)]="user.password"
+              #passwordDialog="ngModel"
+              required
+              minlength="8"
+              maxlength="100"
+              autocomplete="new-password"
+              fluid="true"
+              [pSize]="inputSize"
+              [invalid]="shouldShowError(passwordDialog, userFormDialog.submitted)"
+            />
+            <label for="passwordDialog">Password *</label>
+          </p-floatlabel>
+
+          @if (shouldShowError(passwordDialog, userFormDialog.submitted)) {
+            <p-message severity="error" [size]="inputSize" variant="simple">
+              @if (passwordDialog.hasError('required')) {
+                Password is required.
+              }
+              @if (passwordDialog.hasError('minlength')) {
+                Password must be at least 8 characters.
+              }
+            </p-message>
+          }
+        </div>
+
+        <!-- Full Name -->
+        <div class="flex flex-col gap-1">
+          <p-floatlabel variant="on">
+            <input
+              pInputText
+              id="fullNameDialog"
+              name="fullNameDialog"
+              [(ngModel)]="user.fullName"
+              #fullNameDialog="ngModel"
+              required
+              maxlength="100"
+              autocomplete="name"
+              fluid="true"
+              [pSize]="inputSize"
+              [invalid]="shouldShowError(fullNameDialog, userFormDialog.submitted)"
+            />
+            <label for="fullNameDialog">Full Name *</label>
+          </p-floatlabel>
+
+          @if (shouldShowError(fullNameDialog, userFormDialog.submitted)) {
+            <p-message severity="error" [size]="inputSize" variant="simple">
+              @if (fullNameDialog.hasError('required')) {
+                Full name is required.
+              }
+              @if (fullNameDialog.hasError('maxlength')) {
+                Full name must not exceed 100 characters.
+              }
+            </p-message>
+          }
+        </div>
+
+        <!-- Email -->
+        <div class="flex flex-col gap-1">
+          <p-floatlabel variant="on">
+            <input
+              pInputText
+              type="email"
+              id="emailDialog"
+              name="emailDialog"
+              [(ngModel)]="user.email"
+              #emailDialog="ngModel"
+              email
+              maxlength="100"
+              autocomplete="email"
+              fluid="true"
+              [pSize]="inputSize"
+              [required]="isEmailRequired()"
+              [invalid]="shouldShowError(emailDialog, userFormDialog.submitted)"
+            />
+            <label for="emailDialog">Email{{ isEmailRequired() ? ' *' : '' }}</label>
+          </p-floatlabel>
+
+          @if (shouldShowError(emailDialog, userFormDialog.submitted)) {
+            <p-message severity="error" [size]="inputSize" variant="simple">
+              @if (emailDialog.hasError('required')) {
+                Email is required.
+              }
+              @if (emailDialog.hasError('email')) {
+                Please enter a valid email.
+              }
+            </p-message>
+          }
+        </div>
+
+        <!-- Phone Number -->
+        <div class="flex flex-col gap-1">
+          <p-floatlabel variant="on">
+            <input
+              pInputText
+              type="tel"
+              id="phoneNumberDialog"
+              name="phoneNumberDialog"
+              [(ngModel)]="user.phoneNumber"
+              #phoneNumberDialog="ngModel"
+              maxlength="20"
+              autocomplete="tel"
+              fluid="true"
+              [pSize]="inputSize"
+              [required]="isPhoneRequired()"
+              [invalid]="shouldShowError(phoneNumberDialog, userFormDialog.submitted)"
+            />
+            <label for="phoneNumberDialog">Phone Number{{ isPhoneRequired() ? ' *' : '' }}</label>
+          </p-floatlabel>
+
+          @if (shouldShowError(phoneNumberDialog, userFormDialog.submitted)) {
+            <p-message severity="error" [size]="inputSize" variant="simple">
+              Phone number is required.
+            </p-message>
+          }
+        </div>
+      </div>
+
+      <!-- Submit Button -->
+      <div class="flex justify-end gap-3 pt-4 border-t">
+        <button
+          pButton
+          type="submit"
+          severity="primary"
+          [disabled]="isSubmitting() || isLoading() || userFormDialog.invalid"
+        >
+          <span pButtonLabel>{{ getSubmitButtonText() }}</span>
+        </button>
+      </div>
+    </form>
+  }
+}

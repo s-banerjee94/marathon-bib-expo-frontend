@@ -30,7 +30,7 @@ import { UserRole } from '../../core/models/user.model';
 import { EVENT_COLUMNS } from '../../shared/constants/event-columns.constant';
 import { STORAGE_KEYS } from '../../shared/constants/storage-keys.constant';
 import { EVENT_SORT_OPTIONS } from '../../shared/constants/sort-options.constant';
-import { ManageEvent } from '../manage-event/manage-event';
+import { EventForm } from '../event-form/event-form';
 import { DefaultValuePipe } from '../../shared/pipes/default-value.pipe';
 import { BaseTableComponent } from '../../shared/base/base-table.component';
 import { TableFilterPreferences } from '../../shared/models/table-config.model';
@@ -241,9 +241,22 @@ export class EventList extends BaseTableComponent<Event, EventFilterPreferences>
     return `${start} - ${end}`;
   }
 
+  getColumnAlignment(field: string): string {
+    // Center alignment for status/tag columns
+    if (['status', 'enabled'].includes(field)) {
+      return 'text-center';
+    }
+    // Right alignment for numeric columns
+    if (['id', 'organizationId', 'latitude', 'longitude'].includes(field)) {
+      return 'text-right';
+    }
+    // Left alignment for all other columns (default)
+    return '';
+  }
+
   onCreate(): void {
     const currentUser = this.authService.currentUser();
-    this.openDialog(ManageEvent, 'Create Event', {
+    this.openDialog(EventForm, 'Create Event', {
       isEditMode: false,
       organizationId: this.isRootOrAdmin ? undefined : currentUser?.organizationId,
       successMessage: {
@@ -277,7 +290,7 @@ export class EventList extends BaseTableComponent<Event, EventFilterPreferences>
   }
 
   onEdit(event: Event): void {
-    this.openDialog(ManageEvent, 'Edit Event', {
+    this.openDialog(EventForm, 'Edit Event', {
       eventId: event.id,
       isEditMode: true,
       successMessage: {

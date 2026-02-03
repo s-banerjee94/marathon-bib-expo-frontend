@@ -26,7 +26,7 @@ import { Organization } from '../../core/models/organization.model';
 import { USER_COLUMNS } from '../../shared/constants/user-columns.constant';
 import { STORAGE_KEYS } from '../../shared/constants/storage-keys.constant';
 import { USER_SORT_OPTIONS } from '../../shared/constants/sort-options.constant';
-import { ManageUser } from '../manage-user/manage-user';
+import { UserForm } from '../user-form/user-form';
 import { DefaultValuePipe } from '../../shared/pipes/default-value.pipe';
 import { BaseTableComponent } from '../../shared/base/base-table.component';
 import { TableFilterPreferences } from '../../shared/models/table-config.model';
@@ -150,6 +150,19 @@ export class UserList extends BaseTableComponent<User, UserFilterPreferences> {
     }
   }
 
+  getColumnAlignment(field: string): string {
+    // Center alignment for status/tag columns
+    if (['enabled', 'deleted', 'role'].includes(field)) {
+      return 'text-center';
+    }
+    // Right alignment for numeric columns
+    if (['id'].includes(field)) {
+      return 'text-right';
+    }
+    // Left alignment for all other columns (default)
+    return '';
+  }
+
   openOrganizationPopover(event: Event, organizationId: number): void {
     // Check if already cached
     if (this.organizationCache.has(organizationId)) {
@@ -238,7 +251,7 @@ export class UserList extends BaseTableComponent<User, UserFilterPreferences> {
   }
 
   onCreate(): void {
-    this.openDialog(ManageUser, 'Create User', {
+    this.openDialog(UserForm, 'Create User', {
       isEditMode: false,
       successMessage: {
         severity: 'success',
@@ -272,7 +285,7 @@ export class UserList extends BaseTableComponent<User, UserFilterPreferences> {
   }
 
   onEdit(user: User): void {
-    this.openDialog(ManageUser, 'Edit User', {
+    this.openDialog(UserForm, 'Edit User', {
       userId: user.id,
       isEditMode: true,
       successMessage: {

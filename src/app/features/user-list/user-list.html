@@ -19,9 +19,7 @@
         placeholder="Search users (min 2 chars)..."
         class="w-full"
       />
-      @if (isLoading() && searchTerm().length >= 2) {
-        <p-inputicon class="pi pi-spinner pi-spin" />
-      } @else if (searchTerm()) {
+      @if (searchTerm()) {
         <p-inputicon class="pi pi-times cursor-pointer" (click)="clearSearch()" />
       }
     </p-iconfield>
@@ -99,28 +97,37 @@
     (onLazyLoad)="onPageChange($event)"
     [rowsPerPageOptions]="[5, 10, 20, 50]"
     [size]="inputSize"
+    [scrollable]="true"
+    scrollHeight="600px"
   >
     <ng-template pTemplate="header">
       <tr>
         @for (col of visibleCols; track col.field) {
-          <th>
+          <th [class]="getColumnAlignment(col.field)">
             <span>{{ col.header }}</span>
             @if (isSorted(col.field)) {
               <i [class]="getSortIcon(col.field)" class="ml-2"></i>
             }
           </th>
         }
-        <th>Action</th>
+        <th class="text-center">Action</th>
       </tr>
     </ng-template>
 
     <ng-template pTemplate="body" let-user>
       <tr>
-        @for (col of visibleCols; track col.field) {
-          <td>
-            @if (isLoading()) {
+        @if (isLoading()) {
+          @for (col of visibleCols; track col.field) {
+            <td [class]="getColumnAlignment(col.field)">
               <p-skeleton />
-            } @else {
+            </td>
+          }
+          <td class="text-center">
+            <p-skeleton width="5rem" height="2rem" />
+          </td>
+        } @else {
+          @for (col of visibleCols; track col.field) {
+            <td [class]="getColumnAlignment(col.field)">
               @if (col.field === 'phoneNumber') {
                 <a href="tel:{{ getCellValue(user, col.field) }}" class="hover:underline">
                   {{ getCellValue(user, col.field) | defaultValue }}
@@ -138,17 +145,7 @@
                 </span>
               } @else if (col.field === 'enabled') {
                 @if (togglingUserId() === user.id) {
-                  <p-tag
-                    value="Loading..."
-                    severity="secondary"
-                    [rounded]="true"
-                    [style]="{
-                      '--be-tag-font-size': '0.75rem',
-                      '--be-tag-padding': '0.25rem 0.5rem',
-                    }"
-                  >
-                    <i class="pi pi-spinner pi-spin mr-1 text-xs"></i>
-                  </p-tag>
+                  <p-skeleton width="5rem" height="1.5rem" />
                 } @else {
                   <p-tag
                     [value]="user.enabled ? 'Enabled' : 'Disabled'"
@@ -189,14 +186,10 @@
               } @else {
                 {{ getCellValue(user, col.field) | defaultValue }}
               }
-            }
-          </td>
-        }
-        <td>
-          @if (isLoading()) {
-            <p-skeleton width="5rem" height="2rem" />
-          } @else {
-            <div class="flex items-center gap-1">
+            </td>
+          }
+          <td class="text-center">
+            <div class="flex items-center justify-center gap-1">
               <p-button
                 icon="pi pi-pencil"
                 [rounded]="true"
@@ -217,18 +210,19 @@
                 [size]="inputSize"
               ></p-button>
             </div>
-          }
-        </td>
+          </td>
+        }
       </tr>
     </ng-template>
 
     <ng-template pTemplate="emptymessage">
       <tr>
-        <td [attr.colspan]="visibleCols.length + 1" class="text-center">
+        <td [attr.colspan]="visibleCols.length + 1">
           @if (!isLoading()) {
-            <div class="py-8 text-gray-500">
-              <i class="pi pi-users text-4xl mb-3"></i>
-              <p>No users found</p>
+            <div class="flex flex-col items-center justify-center py-12 px-4">
+              <i class="pi pi-users text-6xl mb-4 opacity-30"></i>
+              <p class="text-lg font-medium mb-1">No users found</p>
+              <p class="text-sm opacity-60">Try adjusting your search or filters</p>
             </div>
           }
         </td>
@@ -239,9 +233,10 @@
 
 <p-popover #orgPopover appendTo="body" (onHide)="currentOrganizationDetails.set(null)">
   @if (loadingOrganizationId() !== null) {
-    <div class="flex items-center gap-2 px-3 py-2">
-      <i class="pi pi-spinner pi-spin"></i>
-      <span>Loading...</span>
+    <div class="px-3 py-2">
+      <p-skeleton width="200px" height="1.5rem" styleClass="mb-2" />
+      <p-skeleton width="150px" height="1rem" styleClass="mb-1" />
+      <p-skeleton width="150px" height="1rem" />
     </div>
   } @else if (currentOrganizationDetails()) {
     <div class="min-w-50">

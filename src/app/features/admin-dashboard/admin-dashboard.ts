@@ -21,7 +21,7 @@ export class AdminDashboard {
   }
 
   goToCreateOrganization() {
-    this.router.navigate(['/manage-organization']);
+    this.router.navigate(['/organization-form']);
   }
 
   goToOrganizationList() {
@@ -33,6 +33,6 @@ export class AdminDashboard {
   }
 
   goToCreateUser() {
-    this.router.navigate(['/manage-user']);
+    this.router.navigate(['/user-form']);
   }
 }

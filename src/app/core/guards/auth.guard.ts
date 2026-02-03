@@ -63,7 +63,7 @@ export const adminGuard: CanActivateFn = (_route, _state) => {
 
 /**
  * Root or Admin Guard: ROOT and ADMIN users can access
- * Used for: /manage-organization (both ROOT and ADMIN can manage organizations)
+ * Used for: /organization-form (both ROOT and ADMIN can manage organizations)
  */
 export const rootOrAdminGuard: CanActivateFn = (_route, _state) => {
   const authService = inject(AuthService);
@@ -147,7 +147,7 @@ export const distributorGuard: CanActivateFn = (_route, _state) => {
 
 /**
  * User Creation Guard: ROOT, ADMIN, ORGANIZER_ADMIN, and ORGANIZER_USER can access
- * Used for: /manage-user
+ * Used for: /user-form, /event-form, /participant-form
  */
 export const userCreationGuard: CanActivateFn = (_route, _state) => {
   const authService = inject(AuthService);

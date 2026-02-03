@@ -31,19 +31,15 @@ export const routes: Routes = [
     canActivate: [adminGuard],
   },
   {
-    path: 'manage-organization',
+    path: 'organization-form',
     loadComponent: () =>
-      import('./features/manage-organization/manage-organization').then(
-        (m) => m.ManageOrganization,
-      ),
+      import('./features/organization-form/organization-form').then((m) => m.OrganizationForm),
     canActivate: [rootOrAdminGuard],
   },
   {
-    path: 'manage-organization/:id',
+    path: 'organization-form/:id',
     loadComponent: () =>
-      import('./features/manage-organization/manage-organization').then(
-        (m) => m.ManageOrganization,
-      ),
+      import('./features/organization-form/organization-form').then((m) => m.OrganizationForm),
     canActivate: [rootOrAdminGuard],
   },
   {
@@ -58,8 +54,8 @@ export const routes: Routes = [
     canActivate: [rootOrAdminGuard],
   },
   {
-    path: 'manage-user',
-    loadComponent: () => import('./features/manage-user/manage-user').then((m) => m.ManageUser),
+    path: 'user-form',
+    loadComponent: () => import('./features/user-form/user-form').then((m) => m.UserForm),
     canActivate: [userCreationGuard],
   },
   {
@@ -76,13 +72,13 @@ export const routes: Routes = [
     canActivate: [userCreationGuard], // ROOT, ADMIN, ORGANIZER_ADMIN, ORGANIZER_USER
   },
   {
-    path: 'manage-event',
-    loadComponent: () => import('./features/manage-event/manage-event').then((m) => m.ManageEvent),
+    path: 'event-form',
+    loadComponent: () => import('./features/event-form/event-form').then((m) => m.EventForm),
     canActivate: [userCreationGuard], // ROOT, ADMIN, ORGANIZER_ADMIN, ORGANIZER_USER
   },
   {
-    path: 'manage-event/:id',
-    loadComponent: () => import('./features/manage-event/manage-event').then((m) => m.ManageEvent),
+    path: 'event-form/:id',
+    loadComponent: () => import('./features/event-form/event-form').then((m) => m.EventForm),
     canActivate: [userCreationGuard], // ROOT, ADMIN, ORGANIZER_ADMIN, ORGANIZER_USER
   },
   {

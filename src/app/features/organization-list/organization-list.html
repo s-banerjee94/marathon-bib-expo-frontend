@@ -19,9 +19,7 @@
         placeholder="Search organizations (min 2 chars)..."
         class="w-full"
       />
-      @if (isLoading() && searchTerm().length >= 2) {
-        <p-inputicon class="pi pi-spinner pi-spin" />
-      } @else if (searchTerm()) {
+      @if (searchTerm()) {
         <p-inputicon class="pi pi-times cursor-pointer" (click)="clearSearch()" />
       }
     </p-iconfield>
@@ -98,27 +96,36 @@
     [rowsPerPageOptions]="[5, 10, 50, 100]"
     (onLazyLoad)="onPageChange($event)"
     [size]="inputSize"
+    [scrollable]="true"
+    scrollHeight="600px"
   >
     <ng-template pTemplate="header">
       <tr>
         @for (col of visibleCols; track col.field) {
-          <th>
+          <th [class]="getColumnAlignment(col.field)">
             <span>{{ col.header }}</span>
             @if (isSorted(col.field)) {
               <i [class]="getSortIcon(col.field)" class="ml-2"></i>
             }
           </th>
         }
-        <th>Action</th>
+        <th class="text-center">Action</th>
       </tr>
     </ng-template>
     <ng-template pTemplate="body" let-org>
       <tr>
-        @for (col of visibleCols; track col.field) {
-          <td>
-            @if (isLoading()) {
+        @if (isLoading()) {
+          @for (col of visibleCols; track col.field) {
+            <td [class]="getColumnAlignment(col.field)">
               <p-skeleton />
-            } @else {
+            </td>
+          }
+          <td class="text-center">
+            <p-skeleton width="5rem" height="2rem" />
+          </td>
+        } @else {
+          @for (col of visibleCols; track col.field) {
+            <td [class]="getColumnAlignment(col.field)">
               @if (col.field === 'phoneNumber') {
                 <a href="tel:{{ getCellValue(org, col.field) }}" class="hover:underline">
                   {{ getCellValue(org, col.field) | defaultValue }}
@@ -198,14 +205,10 @@
               } @else {
                 {{ getCellValue(org, col.field) | defaultValue }}
               }
-            }
-          </td>
-        }
-        <td>
-          @if (isLoading()) {
-            <p-skeleton width="5rem" height="2rem" />
-          } @else {
-            <div class="flex items-center gap-1">
+            </td>
+          }
+          <td class="text-center">
+            <div class="flex items-center justify-center gap-1">
               <p-button
                 icon="pi pi-pencil"
                 [rounded]="true"
@@ -226,18 +229,19 @@
                 [size]="inputSize"
               ></p-button>
             </div>
-          }
-        </td>
+          </td>
+        }
       </tr>
     </ng-template>
 
     <ng-template pTemplate="emptymessage">
       <tr>
-        <td [attr.colspan]="visibleCols.length + 1" class="text-center">
+        <td [attr.colspan]="visibleCols.length + 1">
           @if (!isLoading()) {
-            <div class="py-8 text-gray-500">
-              <i class="pi pi-building text-4xl mb-3"></i>
-              <p>No organizations found</p>
+            <div class="flex flex-col items-center justify-center py-12 px-4">
+              <i class="pi pi-building text-6xl mb-4 opacity-30"></i>
+              <p class="text-lg font-medium mb-1">No organizations found</p>
+              <p class="text-sm opacity-60">Try adjusting your search or filters</p>
             </div>
           }
         </td>

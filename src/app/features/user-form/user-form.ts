@@ -22,13 +22,13 @@ import { Organization } from '../../core/models/organization.model';
 import { UserService } from '../../core/services/user.service';
 import { AuthService } from '../../core/services/auth.service';
 import { ErrorHandlerService } from '../../core/services/error-handler.service';
-import { roleRequiresOrganization, roleRequiresEmailPhone } from './manage-user.utils';
+import { roleRequiresOrganization, roleRequiresEmailPhone } from './user-form.utils';
 import { shouldShowError, initializeErrorHandler } from '../../shared/utils/form.utils';
 import { FORM_INPUT_SIZE } from '../../shared/constants/form.constants';
 import { OrganizationSelector } from '../../components/organization-selector/organization-selector';
 
 @Component({
-  selector: 'app-manage-user',
+  selector: 'app-user-form',
   standalone: true,
   imports: [
     CommonModule,
@@ -42,10 +42,10 @@ import { OrganizationSelector } from '../../components/organization-selector/org
     SkeletonModule,
     OrganizationSelector,
   ],
-  templateUrl: './manage-user.html',
-  styleUrl: './manage-user.css',
+  templateUrl: './user-form.html',
+  styleUrl: './user-form.css',
 })
-export class ManageUser implements OnInit {
+export class UserForm implements OnInit {
   private userService = inject(UserService);
   private authService = inject(AuthService);
   private router = inject(Router);
@@ -112,7 +112,7 @@ export class ManageUser implements OnInit {
           this.loadUserData(id);
         } else {
           // Invalid ID, redirect to create mode
-          this.router.navigate(['/manage-user']);
+          this.router.navigate(['/user-form']);
         }
       } else {
         // Create mode - default state

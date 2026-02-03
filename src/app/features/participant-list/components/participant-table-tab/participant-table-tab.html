@@ -27,7 +27,12 @@
 
 <!-- Participant Table -->
 <div>
-  <p-table [value]="participants()" [scrollable]="true" scrollHeight="500px" size="small">
+  <p-table
+    [value]="isInitialLoading() ? skeletonRows : participants()"
+    [scrollable]="true"
+    scrollHeight="500px"
+    size="small"
+  >
     <!-- Table Headers -->
     <ng-template pTemplate="header">
       <tr>
@@ -79,115 +84,123 @@
     <!-- Table Body -->
     <ng-template pTemplate="body" let-participant>
       <tr>
-        @if (isColumnVisible('bibNumber')) {
-          <td class="font-bold">
-            {{ participant.bibNumber | defaultValue }}
-          </td>
-        }
-        @if (isColumnVisible('chipNumber')) {
-          <td>
-            {{ participant.chipNumber | defaultValue }}
-          </td>
-        }
-        @if (isColumnVisible('fullName')) {
-          <td>
-            {{ participant.fullName | defaultValue }}
-          </td>
-        }
-        @if (isColumnVisible('raceName')) {
-          <td>
-            {{ participant.raceName | defaultValue }}
-          </td>
-        }
-        @if (isColumnVisible('categoryName')) {
-          <td>
-            {{ participant.categoryName | defaultValue }}
-          </td>
-        }
-        @if (isColumnVisible('gender')) {
-          <td>
-            <p-tag
-              [value]="getGenderDisplay(participant.gender)"
-              [severity]="getGenderSeverity(participant.gender)"
-              size="small"
-              [rounded]="true"
-            ></p-tag>
-          </td>
-        }
-        @if (isColumnVisible('email')) {
-          <td>
-            {{ participant.email | defaultValue }}
-          </td>
-        }
-        @if (isColumnVisible('phoneNumber')) {
-          <td>
-            {{ participant.phoneNumber | defaultValue }}
-          </td>
-        }
-        @if (isColumnVisible('age')) {
-          <td>
-            {{ participant.age | defaultValue }}
-          </td>
-        }
-        @if (isColumnVisible('dateOfBirth')) {
-          <td>
-            {{ participant.dateOfBirth | defaultValue }}
-          </td>
-        }
-        @if (isColumnVisible('city')) {
-          <td>
-            {{ participant.city | defaultValue }}
-          </td>
-        }
-        @if (isColumnVisible('country')) {
-          <td>
-            {{ participant.country | defaultValue }}
-          </td>
-        }
-        @if (isColumnVisible('bibCollectedAt')) {
-          <td>
-            @if (participant.bibCollectedAt) {
-              <p-tag value="Collected" severity="success" size="small" [rounded]="true"></p-tag>
-            } @else {
-              <p-tag value="Pending" severity="warn" size="small" [rounded]="true"></p-tag>
-            }
-          </td>
-        }
-        @if (isColumnVisible('actions')) {
-          <td>
-            <div class="flex gap-2">
-              <p-button
-                icon="pi pi-eye"
-                severity="info"
-                [text]="true"
+        @if (isInitialLoading()) {
+          @for (col of visibleColumns(); track col) {
+            <td>
+              <p-skeleton />
+            </td>
+          }
+        } @else {
+          @if (isColumnVisible('bibNumber')) {
+            <td class="font-bold">
+              {{ participant.bibNumber | defaultValue }}
+            </td>
+          }
+          @if (isColumnVisible('chipNumber')) {
+            <td>
+              {{ participant.chipNumber | defaultValue }}
+            </td>
+          }
+          @if (isColumnVisible('fullName')) {
+            <td>
+              {{ participant.fullName | defaultValue }}
+            </td>
+          }
+          @if (isColumnVisible('raceName')) {
+            <td>
+              {{ participant.raceName | defaultValue }}
+            </td>
+          }
+          @if (isColumnVisible('categoryName')) {
+            <td>
+              {{ participant.categoryName | defaultValue }}
+            </td>
+          }
+          @if (isColumnVisible('gender')) {
+            <td>
+              <p-tag
+                [value]="getGenderDisplay(participant.gender)"
+                [severity]="getGenderSeverity(participant.gender)"
                 size="small"
-                (onClick)="onView(participant)"
-                pTooltip="View Details"
-                tooltipPosition="top"
                 [rounded]="true"
-              ></p-button>
-              <p-button
-                icon="pi pi-pencil"
-                severity="warn"
-                [text]="true"
-                size="small"
-                (onClick)="onEdit(participant)"
-                pTooltip="Edit"
-                tooltipPosition="top"
-                [rounded]="true"
-              ></p-button>
-              <p-button
-                icon="pi pi-trash"
-                severity="danger"
-                [text]="true"
-                size="small"
-                (onClick)="onDelete(participant)"
-                pTooltip="Delete"
-                tooltipPosition="top"
-                [rounded]="true"
-              ></p-button>
-            </div>
-          </td>
+              ></p-tag>
+            </td>
+          }
+          @if (isColumnVisible('email')) {
+            <td>
+              {{ participant.email | defaultValue }}
+            </td>
+          }
+          @if (isColumnVisible('phoneNumber')) {
+            <td>
+              {{ participant.phoneNumber | defaultValue }}
+            </td>
+          }
+          @if (isColumnVisible('age')) {
+            <td>
+              {{ participant.age | defaultValue }}
+            </td>
+          }
+          @if (isColumnVisible('dateOfBirth')) {
+            <td>
+              {{ participant.dateOfBirth | defaultValue }}
+            </td>
+          }
+          @if (isColumnVisible('city')) {
+            <td>
+              {{ participant.city | defaultValue }}
+            </td>
+          }
+          @if (isColumnVisible('country')) {
+            <td>
+              {{ participant.country | defaultValue }}
+            </td>
+          }
+          @if (isColumnVisible('bibCollectedAt')) {
+            <td>
+              @if (participant.bibCollectedAt) {
+                <p-tag value="Collected" severity="success" size="small" [rounded]="true"></p-tag>
+              } @else {
+                <p-tag value="Pending" severity="warn" size="small" [rounded]="true"></p-tag>
+              }
+            </td>
+          }
+          @if (isColumnVisible('actions')) {
+            <td>
+              <div class="flex gap-2">
+                <p-button
+                  icon="pi pi-eye"
+                  severity="info"
+                  [text]="true"
+                  size="small"
+                  (onClick)="onView(participant)"
+                  pTooltip="View Details"
+                  tooltipPosition="top"
+                  [rounded]="true"
+                ></p-button>
+                <p-button
+                  icon="pi pi-pencil"
+                  severity="warn"
+                  [text]="true"
+                  size="small"
+                  (onClick)="onEdit(participant)"
+                  pTooltip="Edit"
+                  tooltipPosition="top"
+                  [rounded]="true"
+                ></p-button>
+                <p-button
+                  icon="pi pi-trash"
+                  severity="danger"
+                  [text]="true"
+                  size="small"
+                  (onClick)="onDelete(participant)"
+                  pTooltip="Delete"
+                  tooltipPosition="top"
+                  [rounded]="true"
+                ></p-button>
+              </div>
+            </td>
+          }
         }
       </tr>
     </ng-template>
@@ -196,9 +209,11 @@
     <ng-template pTemplate="emptymessage">
       <tr>
         <td [attr.colspan]="visibleColumns().length" class="text-center py-12">
-          <i class="pi pi-inbox text-4xl mb-3 block"></i>
-          <p class="text-lg">No participants found</p>
-          <p class="text-sm text-gray-600 mt-2">Import a CSV or add participants manually</p>
+          @if (!isLoading()) {
+            <i class="pi pi-inbox text-4xl mb-3 block"></i>
+            <p class="text-lg">No participants found</p>
+            <p class="text-sm text-gray-600 mt-2">Import a CSV or add participants manually</p>
+          }
         </td>
       </tr>
     </ng-template>
@@ -215,11 +230,11 @@
       ></p-button>
     }
 
-    <!-- Loading Indicator -->
-    @if (isLoading()) {
+    <!-- Loading Indicator (only for load more, not initial load) -->
+    @if (isLoadingMore()) {
       <div>
         <i class="pi pi-spin pi-spinner text-2xl"></i>
-        <p class="mt-2">Loading participants...</p>
+        <p class="mt-2">Loading more participants...</p>
       </div>
     }
 

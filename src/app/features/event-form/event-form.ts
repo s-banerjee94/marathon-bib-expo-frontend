@@ -28,12 +28,12 @@ import { FORM_INPUT_SIZE } from '../../shared/constants/form.constants';
 import { OrganizationSelector } from '../../components/organization-selector/organization-selector';
 
 /**
- * Manage Event Component
+ * Event Form Component
  * Handles both create and edit operations for events
  * Can be opened as a standalone route or as a dynamic dialog
  */
 @Component({
-  selector: 'app-manage-event',
+  selector: 'app-event-form',
   standalone: true,
   imports: [
     CommonModule,
@@ -49,9 +49,9 @@ import { OrganizationSelector } from '../../components/organization-selector/org
     SkeletonModule,
     OrganizationSelector,
   ],
-  templateUrl: './manage-event.html',
+  templateUrl: './event-form.html',
 })
-export class ManageEvent implements OnInit {
+export class EventForm implements OnInit {
   private eventService = inject(EventService);
   private authService = inject(AuthService);
   private router = inject(Router);

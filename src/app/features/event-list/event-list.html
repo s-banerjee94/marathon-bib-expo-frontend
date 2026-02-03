@@ -27,9 +27,7 @@
         class="w-full"
       />
       <!-- Show spinner during search or clear button when search has value -->
-      @if (isLoading() && searchTerm().length >= 2) {
-        <p-inputicon class="pi pi-spinner pi-spin" />
-      } @else if (searchTerm()) {
+      @if (searchTerm()) {
         <p-inputicon class="pi pi-times cursor-pointer" (click)="clearSearch()" />
       }
     </p-iconfield>
@@ -118,12 +116,14 @@
     [rowsPerPageOptions]="[5, 10, 50, 100]"
     (onLazyLoad)="onPageChange($event)"
     [size]="inputSize"
+    [scrollable]="true"
+    scrollHeight="600px"
   >
     <!-- Table Header -->
     <ng-template pTemplate="header">
       <tr>
         @for (col of visibleCols; track col.field) {
-          <th>
+          <th [class]="getColumnAlignment(col.field)">
             <span>{{ col.header }}</span>
             <!-- Show sort indicator if column is currently sorted -->
             @if (isSorted(col.field)) {
@@ -131,23 +131,29 @@
             }
           </th>
         }
-        <th>Action</th>
+        <th class="text-center">Action</th>
       </tr>
     </ng-template>
 
     <!-- Table Body -->
     <ng-template pTemplate="body" let-event>
       <tr>
-        @for (col of visibleCols; track col.field) {
-          <td>
-            <!-- Show skeleton during loading -->
-            @if (isLoading()) {
+        @if (isLoading()) {
+          @for (col of visibleCols; track col.field) {
+            <td [class]="getColumnAlignment(col.field)">
               <p-skeleton />
-            } @else {
+            </td>
+          }
+          <td class="text-center">
+            <p-skeleton width="5rem" height="2rem" />
+          </td>
+        } @else {
+          @for (col of visibleCols; track col.field) {
+            <td [class]="getColumnAlignment(col.field)">
               <!-- Event Status - show colored tag (clickable if user can change status) -->
               @if (col.field === 'status') {
                 @if (changingStatusEventId() === event.id) {
-                  <i class="pi pi-spinner pi-spin"></i>
+                  <p-skeleton width="5rem" height="1.5rem" />
                 } @else if (getCellValue(event, col.field)) {
                   <p-tag
                     [value]="$any(getCellValue(event, col.field))"
@@ -171,7 +177,7 @@
               <!-- Enabled Status - show colored tag (clickable for ROOT/ADMIN only) -->
               @else if (col.field === 'enabled') {
                 @if (togglingEventId() === event.id) {
-                  <i class="pi pi-spinner pi-spin"></i>
+                  <p-skeleton width="5rem" height="1.5rem" />
                 } @else {
                   <p-tag
                     [value]="event.enabled ? 'Enabled' : 'Disabled'"
@@ -250,16 +256,12 @@
               @else {
                 {{ getCellValue(event, col.field) | defaultValue }}
               }
-            }
-          </td>
-        }
+            </td>
+          }
 
-        <!-- Action Column -->
-        <td>
-          @if (isLoading()) {
-            <p-skeleton width="5rem" height="2rem" />
-          } @else {
-            <div class="flex items-center gap-1">
+          <!-- Action Column -->
+          <td class="text-center">
+            <div class="flex items-center justify-center gap-1">
               <!-- Edit button -->
               <p-button
                 icon="pi pi-pencil"
@@ -283,19 +285,20 @@
                 (click)="onDelete(event, $event)"
               ></p-button>
             </div>
-          }
-        </td>
+          </td>
+        }
       </tr>
     </ng-template>
 
     <!-- Empty State -->
     <ng-template pTemplate="emptymessage">
       <tr>
-        <td [attr.colspan]="visibleCols.length + 1" class="text-center">
+        <td [attr.colspan]="visibleCols.length + 1">
           @if (!isLoading()) {
-            <div class="py-8 text-gray-500">
-              <i class="pi pi-calendar text-4xl mb-3"></i>
-              <p>No events found</p>
+            <div class="flex flex-col items-center justify-center py-12 px-4">
+              <i class="pi pi-calendar text-6xl mb-4 opacity-30"></i>
+              <p class="text-lg font-medium mb-1">No events found</p>
+              <p class="text-sm opacity-60">Try adjusting your search or filters</p>
             </div>
           }
         </td>
@@ -307,9 +310,10 @@
 <p-popover #orgPopover appendTo="body" (onHide)="currentOrganizationDetails.set(null)">
   <ng-template #content>
     @if (loadingOrganizationId() !== null) {
-      <div class="flex items-center gap-2 px-3 py-2">
-        <i class="pi pi-spinner pi-spin"></i>
-        <span>Loading...</span>
+      <div class="px-3 py-2">
+        <p-skeleton width="200px" height="1.5rem" styleClass="mb-2" />
+        <p-skeleton width="150px" height="1rem" styleClass="mb-1" />
+        <p-skeleton width="150px" height="1rem" />
       </div>
     } @else if (currentOrganizationDetails()) {
       <div class="min-w-50">
