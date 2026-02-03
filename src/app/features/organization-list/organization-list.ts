@@ -63,58 +63,19 @@ export class OrganizationList extends BaseTableComponent<
   Organization,
   OrganizationFilterPreferences
 > {
-  private organizationService = inject(OrganizationService);
-
   // Organization-specific filter
   filterDeleted = signal(false);
-
+  // Organization-specific sort options
+  readonly sortOptions = ORGANIZATION_SORT_OPTIONS;
   // Base class requirements
   protected override columnPreferenceKey = STORAGE_KEYS.ORG_TABLE_COLUMNS;
   protected override filterPreferenceKey = STORAGE_KEYS.ORG_TABLE_FILTERS;
   protected override allColumns = ORGANIZATION_COLUMNS;
-
-  // Organization-specific sort options
-  readonly sortOptions = ORGANIZATION_SORT_OPTIONS;
+  private organizationService = inject(OrganizationService);
 
   constructor() {
     super();
     this.initializeColumns();
-  }
-
-  protected override loadData(): void {
-    this.isLoading.set(true);
-
-    const params: PageableParams = {
-      ...this.buildPageableParams(),
-      deleted: this.filterDeleted(),
-    };
-
-    this.organizationService.searchOrganizations(params).subscribe({
-      next: (response) => this.handleLoadSuccess(response),
-      error: (error) => this.handleLoadError(error),
-    });
-  }
-
-  protected override getDefaultFilterPreferences(): OrganizationFilterPreferences {
-    return {
-      enabled: true,
-      deleted: false,
-      sort: [],
-    };
-  }
-
-  protected override getCurrentFilterPreferences(): OrganizationFilterPreferences {
-    return {
-      enabled: this.filterEnabled(),
-      deleted: this.filterDeleted(),
-      sort: this.filterSort(),
-    };
-  }
-
-  protected override applyFilterPreferences(prefs: OrganizationFilterPreferences): void {
-    this.filterEnabled.set(prefs.enabled);
-    this.filterDeleted.set(prefs.deleted);
-    this.filterSort.set(prefs.sort);
   }
 
   getSubscriptionTierSeverity(tier: string): 'danger' | 'success' | 'info' | 'warn' | 'secondary' {
@@ -236,5 +197,41 @@ export class OrganizationList extends BaseTableComponent<
         },
       );
     }
+  }
+
+  protected override loadData(): void {
+    this.isLoading.set(true);
+
+    const params: PageableParams = {
+      ...this.buildPageableParams(),
+      deleted: this.filterDeleted(),
+    };
+
+    this.organizationService.searchOrganizations(params).subscribe({
+      next: (response) => this.handleLoadSuccess(response),
+      error: (error) => this.handleLoadError(error),
+    });
+  }
+
+  protected override getDefaultFilterPreferences(): OrganizationFilterPreferences {
+    return {
+      enabled: true,
+      deleted: false,
+      sort: [],
+    };
+  }
+
+  protected override getCurrentFilterPreferences(): OrganizationFilterPreferences {
+    return {
+      enabled: this.filterEnabled(),
+      deleted: this.filterDeleted(),
+      sort: this.filterSort(),
+    };
+  }
+
+  protected override applyFilterPreferences(prefs: OrganizationFilterPreferences): void {
+    this.filterEnabled.set(prefs.enabled);
+    this.filterDeleted.set(prefs.deleted);
+    this.filterSort.set(prefs.sort);
   }
 }

@@ -1,5 +1,5 @@
 import { Component, computed, effect, inject, PLATFORM_ID } from '@angular/core';
-import { isPlatformBrowser, CommonModule } from '@angular/common';
+import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { RouterOutlet } from '@angular/router';
 import { ToastModule } from 'primeng/toast';
 import { Navbar } from './components/navbar/navbar';
@@ -15,12 +15,9 @@ import { AuthService } from './core/services/auth.service';
   styleUrl: './app.css',
 })
 export class App {
-  private platformId = inject(PLATFORM_ID);
   layoutService = inject(LayoutService);
   authService = inject(AuthService);
-
   isAuthenticated = this.authService.isAuthenticated;
-
   layoutClasses = computed(() => {
     const config = this.layoutService.layoutConfig();
     const state = this.layoutService.layoutState();
@@ -33,6 +30,7 @@ export class App {
       'layout-overlay-active': state.overlayMenuActive,
     };
   });
+  private platformId = inject(PLATFORM_ID);
 
   constructor() {
     effect(() => {

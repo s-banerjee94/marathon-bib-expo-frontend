@@ -1,8 +1,8 @@
-import { Injectable, signal, inject } from '@angular/core';
+import { inject, Injectable, signal } from '@angular/core';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
-import { catchError, tap, finalize, switchMap } from 'rxjs/operators';
-import { User, UserRole, AuthResponse, LoginRequest } from '../models/user.model';
+import { catchError, finalize, switchMap, tap } from 'rxjs/operators';
+import { AuthResponse, LoginRequest, User, UserRole } from '../models/user.model';
 import { STORAGE_KEYS } from '../../shared/constants/storage-keys.constant';
 import { BASE_URI } from '../../shared/constants/api.constant';
 
@@ -17,12 +17,11 @@ import { BASE_URI } from '../../shared/constants/api.constant';
 export class AuthService {
   // Signals
   private currentUserSignal = signal<User | null>(this.loadUserFromStorage());
-  private isAuthenticatedSignal = signal<boolean>(!!this.loadUserFromStorage());
-  private loadingSignal = signal<boolean>(false);
-
   // Public readonly signals
   currentUser = this.currentUserSignal.asReadonly();
+  private isAuthenticatedSignal = signal<boolean>(!!this.loadUserFromStorage());
   isAuthenticated = this.isAuthenticatedSignal.asReadonly();
+  private loadingSignal = signal<boolean>(false);
   isLoading = this.loadingSignal.asReadonly();
 
   // Dependencies

@@ -1,7 +1,7 @@
-import { Component, inject, signal, OnInit } from '@angular/core';
+import { Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule, Location } from '@angular/common';
 import { FormsModule, NgForm } from '@angular/forms';
-import { Router, ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { InputTextModule } from 'primeng/inputtext';
 import { TextareaModule } from 'primeng/textarea';
 import { FloatLabelModule } from 'primeng/floatlabel';
@@ -15,15 +15,15 @@ import { MessageService } from 'primeng/api';
 import { DynamicDialogConfig, DynamicDialogRef } from 'primeng/dynamicdialog';
 import {
   CreateEventRequest,
-  UpdateEventRequest,
-  EventStatus,
   Event,
+  EventStatus,
+  UpdateEventRequest,
 } from '../../core/models/event.model';
 import { EventService } from '../../core/services/event.service';
 import { AuthService } from '../../core/services/auth.service';
 import { ErrorHandlerService } from '../../core/services/error-handler.service';
 import { UserRole } from '../../core/models/user.model';
-import { shouldShowError, initializeErrorHandler } from '../../shared/utils/form.utils';
+import { initializeErrorHandler, shouldShowError } from '../../shared/utils/form.utils';
 import { FORM_INPUT_SIZE } from '../../shared/constants/form.constants';
 import { OrganizationSelector } from '../../components/organization-selector/organization-selector';
 
@@ -52,23 +52,10 @@ import { OrganizationSelector } from '../../components/organization-selector/org
   templateUrl: './event-form.html',
 })
 export class EventForm implements OnInit {
-  private eventService = inject(EventService);
-  private authService = inject(AuthService);
-  private router = inject(Router);
-  private route = inject(ActivatedRoute);
-  private location = inject(Location);
-  private messageService = inject(MessageService);
-  private errorHandler = inject(ErrorHandlerService);
-
   // Optional injection for dialog mode
   public dialogConfig = inject(DynamicDialogConfig, { optional: true });
   public dialogRef = inject(DynamicDialogRef, { optional: true });
-
   isDialogMode = signal(false);
-
-  // Check if user is ROOT or ADMIN (can create events for any organization)
-  readonly isRootOrAdmin = this.authService.hasAnyRole([UserRole.ROOT, UserRole.ADMIN]);
-
   // Form data as plain object for ngModel binding
   event: CreateEventRequest = {
     eventName: '',
@@ -85,16 +72,13 @@ export class EventForm implements OnInit {
     status: EventStatus.DRAFT,
     organizationId: 0,
   };
-
   // Component state as signals
   isSubmitting = signal(false);
   isEditMode = signal(false);
   eventId = signal<number | null>(null);
   isLoading = signal(false);
-
   // Form input size (controlled centrally via constant)
   readonly inputSize = FORM_INPUT_SIZE;
-
   // Event status options for dropdown
   readonly statusOptions = [
     { label: 'Draft', value: EventStatus.DRAFT },
@@ -102,10 +86,18 @@ export class EventForm implements OnInit {
     { label: 'Cancelled', value: EventStatus.CANCELLED },
     { label: 'Completed', value: EventStatus.COMPLETED },
   ];
-
   // Template utility function
   shouldShowError = shouldShowError;
   protected datetime12h: any;
+  private eventService = inject(EventService);
+  private authService = inject(AuthService);
+  // Check if user is ROOT or ADMIN (can create events for any organization)
+  readonly isRootOrAdmin = this.authService.hasAnyRole([UserRole.ROOT, UserRole.ADMIN]);
+  private router = inject(Router);
+  private route = inject(ActivatedRoute);
+  private location = inject(Location);
+  private messageService = inject(MessageService);
+  private errorHandler = inject(ErrorHandlerService);
 
   ngOnInit(): void {
     initializeErrorHandler(this.errorHandler, this.messageService);
@@ -145,6 +137,68 @@ export class EventForm implements OnInit {
   }
 
   /**
+   * Show organization dropdown only for ROOT/ADMIN
+   */
+  showOrganizationDropdown(): boolean {
+    return this.isRootOrAdmin;
+  }
+
+  /**
+   * Submit form - create or update event
+   */
+  onSubmit(form: NgForm): void {
+    if (form.invalid) {
+      return;
+    }
+
+    // Validate organizationId is set
+    if (!this.event.organizationId) {
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Error',
+        detail: 'Organization is required. Please select an organization.',
+      });
+      return;
+    }
+
+    this.isSubmitting.set(true);
+
+    if (this.isEditMode()) {
+      this.updateEvent();
+    } else {
+      this.createEvent();
+    }
+  }
+
+  /**
+   * Cancel and go back or close dialog
+   */
+  handleCancel(): void {
+    if (this.isDialogMode()) {
+      this.dialogRef?.close();
+    } else {
+      this.location.back();
+    }
+  }
+
+  /**
+   * Get page title based on mode
+   */
+  getTitle(): string {
+    return this.isEditMode() ? 'Edit Event' : 'Create Event';
+  }
+
+  /**
+   * Get submit button text based on state
+   */
+  getSubmitButtonText(): string {
+    if (this.isSubmitting()) {
+      return this.isEditMode() ? 'Updating...' : 'Creating...';
+    }
+    return this.isEditMode() ? 'Update Event' : 'Create Event';
+  }
+
+  /**
    * Load event data for edit mode
    */
   private loadEvent(id: number): void {
@@ -181,40 +235,6 @@ export class EventForm implements OnInit {
       status: event.status,
       organizationId: event.organizationId,
     };
-  }
-
-  /**
-   * Show organization dropdown only for ROOT/ADMIN
-   */
-  showOrganizationDropdown(): boolean {
-    return this.isRootOrAdmin;
-  }
-
-  /**
-   * Submit form - create or update event
-   */
-  onSubmit(form: NgForm): void {
-    if (form.invalid) {
-      return;
-    }
-
-    // Validate organizationId is set
-    if (!this.event.organizationId) {
-      this.messageService.add({
-        severity: 'error',
-        summary: 'Error',
-        detail: 'Organization is required. Please select an organization.',
-      });
-      return;
-    }
-
-    this.isSubmitting.set(true);
-
-    if (this.isEditMode()) {
-      this.updateEvent();
-    } else {
-      this.createEvent();
-    }
   }
 
   /**
@@ -284,33 +304,5 @@ export class EventForm implements OnInit {
         this.isSubmitting.set(false);
       },
     });
-  }
-
-  /**
-   * Cancel and go back or close dialog
-   */
-  handleCancel(): void {
-    if (this.isDialogMode()) {
-      this.dialogRef?.close();
-    } else {
-      this.location.back();
-    }
-  }
-
-  /**
-   * Get page title based on mode
-   */
-  getTitle(): string {
-    return this.isEditMode() ? 'Edit Event' : 'Create Event';
-  }
-
-  /**
-   * Get submit button text based on state
-   */
-  getSubmitButtonText(): string {
-    if (this.isSubmitting()) {
-      return this.isEditMode() ? 'Updating...' : 'Creating...';
-    }
-    return this.isEditMode() ? 'Update Event' : 'Create Event';
   }
 }

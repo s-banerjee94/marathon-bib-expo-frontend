@@ -18,27 +18,27 @@
     <p-iconfield class="flex-1 max-w-md">
       <p-inputicon class="pi pi-search" />
       <input
-        type="text"
-        pInputText
+        (input)="onSearchInput($any($event.target).value)"
         [pSize]="inputSize"
         [value]="searchTerm()"
-        (input)="onSearchInput($any($event.target).value)"
-        placeholder="Search events (min 2 chars)..."
         class="w-full"
+        pInputText
+        placeholder="Search events (min 2 chars)..."
+        type="text"
       />
       <!-- Show spinner during search or clear button when search has value -->
       @if (searchTerm()) {
-        <p-inputicon class="pi pi-times cursor-pointer" (click)="clearSearch()" />
+        <p-inputicon (click)="clearSearch()" class="pi pi-times cursor-pointer" />
       }
     </p-iconfield>
 
     <!-- Action buttons -->
     <div class="flex items-center gap-2">
       <p-button
-        label="New Event"
-        icon="pi pi-plus"
-        [size]="inputSize"
         (click)="onCreate()"
+        [size]="inputSize"
+        icon="pi pi-plus"
+        label="New Event"
       ></p-button>
     </div>
   </div>
@@ -48,27 +48,27 @@
     <!-- Organization Filter (only visible for ROOT/ADMIN) -->
     @if (isRootOrAdmin) {
       <app-organization-selector
-        inputId="organizationFilter"
-        label="Organization"
+        (organizationIdChange)="handleOrgFilterChange($event)"
         [showFloatLabel]="true"
         [size]="inputSize"
+        inputId="organizationFilter"
+        label="Organization"
         styleClass="w-64"
-        (organizationIdChange)="handleOrgFilterChange($event)"
       />
     }
 
     <!-- Status Filter (single select - API accepts one status value) -->
     <p-floatlabel variant="on">
       <p-select
-        inputId="statusFilter"
-        [options]="statusOptions"
-        [ngModel]="filterStatus()[0]"
         (ngModelChange)="filterStatus.set($event ? [$event] : []); onFilterChange()"
-        optionLabel="label"
-        optionValue="value"
+        [ngModel]="filterStatus()[0]"
+        [options]="statusOptions"
         [showClear]="true"
         [size]="inputSize"
         class="w-48"
+        inputId="statusFilter"
+        optionLabel="label"
+        optionValue="value"
       />
       <label for="statusFilter">Status</label>
     </p-floatlabel>
@@ -76,15 +76,15 @@
     <!-- Sort Dropdown -->
     <p-floatlabel variant="on">
       <p-select
-        inputId="sortSelect"
-        [options]="sortOptions"
-        [ngModel]="selectedSort()"
         (ngModelChange)="onSortChange($event)"
-        optionLabel="label"
-        optionValue="value"
+        [ngModel]="selectedSort()"
+        [options]="sortOptions"
         [showClear]="true"
         [size]="inputSize"
         class="w-48"
+        inputId="sortSelect"
+        optionLabel="label"
+        optionValue="value"
       />
       <label for="sortSelect">Sort By</label>
     </p-floatlabel>
@@ -93,30 +93,30 @@
     <div class="flex items-center gap-2">
       <label for="columnSelect">Columns:</label>
       <p-multiselect
-        inputId="columnSelect"
-        [options]="cols()"
-        [(ngModel)]="selectedCols"
         (ngModelChange)="onColumnSelectionChange()"
+        [(ngModel)]="selectedCols"
+        [maxSelectedLabels]="2"
+        [options]="cols()"
+        [size]="inputSize"
+        inputId="columnSelect"
         optionLabel="header"
         placeholder="Select Columns"
-        [maxSelectedLabels]="2"
-        [size]="inputSize"
       />
     </div>
   </div>
 
   <!-- Events Data Table -->
   <p-table
-    [value]="displayData()"
-    [rows]="pageSize()"
-    [totalRecords]="totalRecords()"
+    (onLazyLoad)="onPageChange($event)"
+    [first]="currentPage() * pageSize()"
     [lazy]="true"
     [paginator]="true"
-    [first]="currentPage() * pageSize()"
     [rowsPerPageOptions]="[5, 10, 50, 100]"
-    (onLazyLoad)="onPageChange($event)"
-    [size]="inputSize"
+    [rows]="pageSize()"
     [scrollable]="true"
+    [size]="inputSize"
+    [totalRecords]="totalRecords()"
+    [value]="displayData()"
     scrollHeight="600px"
   >
     <!-- Table Header -->
@@ -136,7 +136,7 @@
     </ng-template>
 
     <!-- Table Body -->
-    <ng-template pTemplate="body" let-event>
+    <ng-template let-event pTemplate="body">
       <tr>
         @if (isLoading()) {
           @for (col of visibleCols; track col.field) {
@@ -145,7 +145,7 @@
             </td>
           }
           <td class="text-center">
-            <p-skeleton width="5rem" height="2rem" />
+            <p-skeleton height="2rem" width="5rem" />
           </td>
         } @else {
           @for (col of visibleCols; track col.field) {
@@ -153,22 +153,22 @@
               <!-- Event Status - show colored tag (clickable if user can change status) -->
               @if (col.field === 'status') {
                 @if (changingStatusEventId() === event.id) {
-                  <p-skeleton width="5rem" height="1.5rem" />
+                  <p-skeleton height="1.5rem" width="5rem" />
                 } @else if (getCellValue(event, col.field)) {
                   <p-tag
-                    [value]="$any(getCellValue(event, col.field))"
-                    [severity]="getEventStatusSeverity($any(getCellValue(event, col.field)))"
+                    (click)="showStatusMenu(statusMenu, $event, event)"
+                    [pTooltip]="canChangeStatus ? 'Click to change status' : ''"
                     [rounded]="true"
+                    [severity]="getEventStatusSeverity($any(getCellValue(event, col.field)))"
+                    [styleClass]="
+                      canChangeStatus ? 'cursor-pointer hover:opacity-80 transition-opacity' : ''
+                    "
                     [style]="{
                       '--be-tag-font-size': '0.75rem',
                       '--be-tag-padding': '0.25rem 0.5rem',
                     }"
-                    [styleClass]="
-                      canChangeStatus ? 'cursor-pointer hover:opacity-80 transition-opacity' : ''
-                    "
-                    [pTooltip]="canChangeStatus ? 'Click to change status' : ''"
+                    [value]="$any(getCellValue(event, col.field))"
                     tooltipPosition="top"
-                    (click)="showStatusMenu(statusMenu, $event, event)"
                   />
                 } @else {
                   {{ getCellValue(event, col.field) | defaultValue }}
@@ -177,22 +177,22 @@
               <!-- Enabled Status - show colored tag (clickable for ROOT/ADMIN only) -->
               @else if (col.field === 'enabled') {
                 @if (togglingEventId() === event.id) {
-                  <p-skeleton width="5rem" height="1.5rem" />
+                  <p-skeleton height="1.5rem" width="5rem" />
                 } @else {
                   <p-tag
-                    [value]="event.enabled ? 'Enabled' : 'Disabled'"
-                    [severity]="event.enabled ? 'success' : 'danger'"
+                    (click)="isRootOrAdmin ? toggleEventEnabled($event, event) : null"
+                    [pTooltip]="isRootOrAdmin ? 'Click to toggle status' : ''"
                     [rounded]="true"
+                    [severity]="event.enabled ? 'success' : 'danger'"
+                    [styleClass]="
+                      isRootOrAdmin ? 'cursor-pointer hover:opacity-80 transition-opacity' : ''
+                    "
                     [style]="{
                       '--be-tag-font-size': '0.75rem',
                       '--be-tag-padding': '0.25rem 0.5rem',
                     }"
-                    [styleClass]="
-                      isRootOrAdmin ? 'cursor-pointer hover:opacity-80 transition-opacity' : ''
-                    "
-                    [pTooltip]="isRootOrAdmin ? 'Click to toggle status' : ''"
+                    [value]="event.enabled ? 'Enabled' : 'Disabled'"
                     tooltipPosition="top"
-                    (click)="isRootOrAdmin ? toggleEventEnabled($event, event) : null"
                   />
                 }
               }
@@ -206,7 +206,7 @@
               }
               <!-- Event description - truncate if too long -->
               @else if (col.field === 'eventDescription') {
-                <div class="max-w-xs truncate" [title]="getCellValue(event, col.field)">
+                <div [title]="getCellValue(event, col.field)" class="max-w-xs truncate">
                   {{ getCellValue(event, col.field) | defaultValue }}
                 </div>
               }
@@ -214,10 +214,10 @@
               @else if (col.field === 'logoUrl') {
                 @if (getCellValue(event, col.field)) {
                   <a
-                    href="{{ getCellValue(event, col.field) }}"
-                    target="_blank"
-                    rel="noopener noreferrer"
                     class="hover:underline text-blue-600"
+                    href="{{ getCellValue(event, col.field) }}"
+                    rel="noopener noreferrer"
+                    target="_blank"
                   >
                     View Logo
                   </a>
@@ -246,8 +246,8 @@
               <!-- Organization ID - clickable to show details in popover -->
               @else if (col.field === 'organizationId' && event.organizationId) {
                 <span
-                  class="cursor-pointer border-b border-dotted border-gray-400"
                   (click)="openOrganizationPopover($event, event.organizationId)"
+                  class="cursor-pointer border-b border-dotted border-gray-400"
                 >
                   {{ getCellValue(event, col.field) | defaultValue }}
                 </span>
@@ -264,25 +264,25 @@
             <div class="flex items-center justify-center gap-1">
               <!-- Edit button -->
               <p-button
-                icon="pi pi-pencil"
-                [rounded]="true"
-                [text]="true"
-                severity="info"
-                pTooltip="Edit"
-                tooltipPosition="top"
-                [size]="inputSize"
                 (click)="onEdit(event)"
+                [rounded]="true"
+                [size]="inputSize"
+                [text]="true"
+                icon="pi pi-pencil"
+                pTooltip="Edit"
+                severity="info"
+                tooltipPosition="top"
               ></p-button>
               <!-- Delete button -->
               <p-button
-                icon="pi pi-trash"
-                [rounded]="true"
-                [text]="true"
-                severity="danger"
-                pTooltip="Delete"
-                tooltipPosition="top"
-                [size]="inputSize"
                 (click)="onDelete(event, $event)"
+                [rounded]="true"
+                [size]="inputSize"
+                [text]="true"
+                icon="pi pi-trash"
+                pTooltip="Delete"
+                severity="danger"
+                tooltipPosition="top"
               ></p-button>
             </div>
           </td>
@@ -307,13 +307,13 @@
   </p-table>
 </div>
 
-<p-popover #orgPopover appendTo="body" (onHide)="currentOrganizationDetails.set(null)">
+<p-popover #orgPopover (onHide)="currentOrganizationDetails.set(null)" appendTo="body">
   <ng-template #content>
     @if (loadingOrganizationId() !== null) {
       <div class="px-3 py-2">
-        <p-skeleton width="200px" height="1.5rem" styleClass="mb-2" />
-        <p-skeleton width="150px" height="1rem" styleClass="mb-1" />
-        <p-skeleton width="150px" height="1rem" />
+        <p-skeleton height="1.5rem" styleClass="mb-2" width="200px" />
+        <p-skeleton height="1rem" styleClass="mb-1" width="150px" />
+        <p-skeleton height="1rem" width="150px" />
       </div>
     } @else if (currentOrganizationDetails()) {
       <div class="min-w-50">
@@ -322,13 +322,13 @@
             {{ currentOrganizationDetails()!.organizerName }}
           </h3>
           <p-button
-            icon="pi pi-external-link"
             [rounded]="true"
             [text]="true"
-            size="small"
+            icon="pi pi-external-link"
             pTooltip="Open in new tab"
-            tooltipPosition="top"
+            size="small"
             styleClass="!w-6 !h-6 !p-0 !text-xs"
+            tooltipPosition="top"
           />
         </div>
 
@@ -338,8 +338,8 @@
           <div class="flex items-center gap-2">
             <i class="pi pi-envelope text-gray-500 text-sm w-4"></i>
             <a
-              href="mailto:{{ currentOrganizationDetails()!.email }}"
               class="text-blue-600 hover:underline text-sm"
+              href="mailto:{{ currentOrganizationDetails()!.email }}"
             >
               {{ currentOrganizationDetails()!.email }}
             </a>
@@ -347,8 +347,8 @@
           <div class="flex items-center gap-2">
             <i class="pi pi-phone text-gray-500 text-sm w-4"></i>
             <a
-              href="tel:{{ currentOrganizationDetails()!.phoneNumber }}"
               class="text-blue-600 hover:underline text-sm"
+              href="tel:{{ currentOrganizationDetails()!.phoneNumber }}"
             >
               {{ currentOrganizationDetails()!.phoneNumber }}
             </a>

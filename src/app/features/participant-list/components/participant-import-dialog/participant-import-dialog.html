@@ -1,13 +1,13 @@
 <!-- Import Participants Dialog -->
 <p-dialog
-  header="Import Participants"
   [(visible)]="visible"
-  [modal]="true"
   [closable]="!isUploading()"
   [closeOnEscape]="!isUploading()"
   [draggable]="false"
+  [modal]="true"
   [resizable]="false"
   [style]="{ width: '600px' }"
+  header="Import Participants"
 >
   <div class="space-y-4">
     <!-- Import Instructions -->
@@ -29,14 +29,14 @@
       <div>
         <label class="block text-sm font-medium mb-2"> Select CSV File * </label>
         <p-fileUpload
-          mode="basic"
-          accept=".csv"
-          [auto]="false"
-          [maxFileSize]="10000000"
-          [disabled]="isUploading()"
           (onSelect)="onFileSelect($event)"
-          chooseLabel="Choose CSV File"
+          [auto]="false"
           [chooseIcon]="'pi pi-file'"
+          [disabled]="isUploading()"
+          [maxFileSize]="10000000"
+          accept=".csv"
+          chooseLabel="Choose CSV File"
+          mode="basic"
         ></p-fileUpload>
         @if (selectedFile()) {
           <p class="text-sm mt-2 text-gray-700">
@@ -93,40 +93,40 @@
   <ng-template pTemplate="footer">
     @if (!importResponse()) {
       <p-button
-        label="Cancel"
-        icon="pi pi-times"
         (onClick)="close()"
         [disabled]="isUploading()"
-        severity="secondary"
         [outlined]="true"
+        icon="pi pi-times"
+        label="Cancel"
+        severity="secondary"
       ></p-button>
       <p-button
-        label="Import"
-        [icon]="isUploading() ? 'pi pi-spin pi-spinner' : 'pi pi-upload'"
         (onClick)="import()"
         [disabled]="!selectedFile() || isUploading()"
+        [icon]="isUploading() ? 'pi pi-spin pi-spinner' : 'pi pi-upload'"
+        label="Import"
         severity="success"
       ></p-button>
     } @else {
       @if (selectedFile()) {
         <p-button
-          label="Clear Selection"
-          icon="pi pi-times"
           (onClick)="clearFile()"
-          severity="secondary"
           [outlined]="true"
+          icon="pi pi-times"
+          label="Clear Selection"
+          severity="secondary"
         ></p-button>
       }
       <p-button
-        label="Import Another File"
-        icon="pi pi-refresh"
         (onClick)="reset()"
+        icon="pi pi-refresh"
+        label="Import Another File"
         severity="primary"
       ></p-button>
       <p-button
-        label="Close"
-        icon="pi pi-check"
         (onClick)="close()"
+        icon="pi pi-check"
+        label="Close"
         severity="secondary"
       ></p-button>
     }

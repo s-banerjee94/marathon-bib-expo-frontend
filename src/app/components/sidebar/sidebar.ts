@@ -12,10 +12,9 @@ import { MenuComponent } from '../menu/menu';
   templateUrl: './sidebar.html',
 })
 export class SidebarComponent implements OnDestroy {
+  layoutService = inject(LayoutService);
   private router = inject(Router);
   private el = inject(ElementRef);
-  layoutService = inject(LayoutService);
-
   private routerSubscription: Subscription;
 
   constructor() {

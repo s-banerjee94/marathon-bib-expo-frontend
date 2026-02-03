@@ -2,22 +2,22 @@
 <div class="mb-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
   <div class="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
     <p-button
-      label="Import Participants"
-      icon="pi pi-upload"
       (onClick)="onImport()"
+      icon="pi pi-upload"
+      label="Import Participants"
       severity="primary"
     ></p-button>
     <p-button
-      label="Add Participant"
-      icon="pi pi-plus"
       (onClick)="onCreate()"
+      icon="pi pi-plus"
+      label="Add Participant"
       severity="success"
     ></p-button>
     <p-button
-      label="Export CSV"
-      icon="pi pi-download"
       (onClick)="onExport()"
       [outlined]="true"
+      icon="pi pi-download"
+      label="Export CSV"
     ></p-button>
   </div>
   <div class="text-sm text-gray-600">
@@ -28,8 +28,8 @@
 <!-- Participant Table -->
 <div>
   <p-table
-    [value]="isInitialLoading() ? skeletonRows : participants()"
     [scrollable]="true"
+    [value]="isInitialLoading() ? skeletonRows : participants()"
     scrollHeight="500px"
     size="small"
   >
@@ -82,7 +82,7 @@
     </ng-template>
 
     <!-- Table Body -->
-    <ng-template pTemplate="body" let-participant>
+    <ng-template let-participant pTemplate="body">
       <tr>
         @if (isInitialLoading()) {
           @for (col of visibleColumns(); track col) {
@@ -119,10 +119,10 @@
           @if (isColumnVisible('gender')) {
             <td>
               <p-tag
-                [value]="getGenderDisplay(participant.gender)"
-                [severity]="getGenderSeverity(participant.gender)"
-                size="small"
                 [rounded]="true"
+                [severity]="getGenderSeverity(participant.gender)"
+                [value]="getGenderDisplay(participant.gender)"
+                size="small"
               ></p-tag>
             </td>
           }
@@ -159,9 +159,9 @@
           @if (isColumnVisible('bibCollectedAt')) {
             <td>
               @if (participant.bibCollectedAt) {
-                <p-tag value="Collected" severity="success" size="small" [rounded]="true"></p-tag>
+                <p-tag [rounded]="true" severity="success" size="small" value="Collected"></p-tag>
               } @else {
-                <p-tag value="Pending" severity="warn" size="small" [rounded]="true"></p-tag>
+                <p-tag [rounded]="true" severity="warn" size="small" value="Pending"></p-tag>
               }
             </td>
           }
@@ -169,34 +169,34 @@
             <td>
               <div class="flex gap-2">
                 <p-button
-                  icon="pi pi-eye"
-                  severity="info"
-                  [text]="true"
-                  size="small"
                   (onClick)="onView(participant)"
+                  [rounded]="true"
+                  [text]="true"
+                  icon="pi pi-eye"
                   pTooltip="View Details"
+                  severity="info"
+                  size="small"
                   tooltipPosition="top"
-                  [rounded]="true"
                 ></p-button>
                 <p-button
-                  icon="pi pi-pencil"
-                  severity="warn"
-                  [text]="true"
-                  size="small"
                   (onClick)="onEdit(participant)"
-                  pTooltip="Edit"
-                  tooltipPosition="top"
                   [rounded]="true"
+                  [text]="true"
+                  icon="pi pi-pencil"
+                  pTooltip="Edit"
+                  severity="warn"
+                  size="small"
+                  tooltipPosition="top"
                 ></p-button>
                 <p-button
-                  icon="pi pi-trash"
-                  severity="danger"
-                  [text]="true"
-                  size="small"
                   (onClick)="onDelete(participant)"
-                  pTooltip="Delete"
-                  tooltipPosition="top"
                   [rounded]="true"
+                  [text]="true"
+                  icon="pi pi-trash"
+                  pTooltip="Delete"
+                  severity="danger"
+                  size="small"
+                  tooltipPosition="top"
                 ></p-button>
               </div>
             </td>
@@ -223,10 +223,10 @@
   <div class="text-center mt-4">
     @if (hasMore() && !isLoading()) {
       <p-button
-        label="Load More"
-        icon="pi pi-arrow-down"
         (onClick)="onLoadMore()"
         [outlined]="true"
+        icon="pi pi-arrow-down"
+        label="Load More"
       ></p-button>
     }
 

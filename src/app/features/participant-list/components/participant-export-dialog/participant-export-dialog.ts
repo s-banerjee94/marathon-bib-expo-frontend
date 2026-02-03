@@ -1,4 +1,4 @@
-import { Component, input, output, model, signal } from '@angular/core';
+import { Component, input, model, output, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DialogModule } from 'primeng/dialog';

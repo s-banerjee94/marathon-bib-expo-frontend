@@ -1,4 +1,4 @@
-import { Injectable, effect, signal, computed, PLATFORM_ID, inject } from '@angular/core';
+import { computed, effect, inject, Injectable, PLATFORM_ID, signal } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { $t, updatePreset, updateSurfacePalette } from '@primeuix/themes';
 import Aura from '@primeuix/themes/aura';
@@ -66,18 +66,13 @@ type PresetKey = keyof typeof PRESETS;
   providedIn: 'root',
 })
 export class LayoutService {
-  private platformId = inject(PLATFORM_ID);
-  private initialized = false;
-
   layoutConfig = signal<LayoutConfig>(this.loadConfig());
   layoutState = signal<LayoutState>(DEFAULT_LAYOUT_STATE);
-
   isDarkTheme = computed(() => this.layoutConfig().darkTheme);
   selectedPrimary = computed(() => this.layoutConfig().primary);
   selectedSurface = computed(() => this.layoutConfig().surface);
   selectedPreset = computed(() => this.layoutConfig().preset);
   menuMode = computed(() => this.layoutConfig().menuMode);
-
   isSidebarActive = computed(() => {
     const state = this.layoutState();
     const config = this.layoutConfig();
@@ -87,9 +82,7 @@ export class LayoutService {
     }
     return state.overlayMenuActive || state.mobileMenuActive;
   });
-
   presetOptions = Object.keys(PRESETS);
-
   surfaces: SurfacePalette[] = [
     {
       name: 'slate',
@@ -228,7 +221,6 @@ export class LayoutService {
       },
     },
   ];
-
   primaryColors = computed<SurfacePalette[]>(() => {
     const presetPalette = PRESETS[this.layoutConfig().preset as PresetKey]?.primitive;
     const colors = [
@@ -260,6 +252,8 @@ export class LayoutService {
 
     return palettes;
   });
+  private platformId = inject(PLATFORM_ID);
+  private initialized = false;
 
   constructor() {
     effect(() => {

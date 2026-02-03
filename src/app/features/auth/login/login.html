@@ -15,54 +15,54 @@
           </p-message>
         }
 
-        <form #loginForm="ngForm" (ngSubmit)="onLogin()" novalidate class="flex flex-col gap-2">
+        <form #loginForm="ngForm" (ngSubmit)="onLogin()" class="flex flex-col gap-2" novalidate>
           <div class="flex flex-col gap-1">
-            <label for="username" class="font-semibold">Username</label>
+            <label class="font-semibold" for="username">Username</label>
             <input
-              pInputText
+              #usernameField="ngModel"
+              (ngModelChange)="username.set($event)"
+              [ngModel]="username()"
+              fluid="true"
               id="username"
               name="username"
-              [ngModel]="username()"
-              (ngModelChange)="username.set($event)"
-              required
-              #usernameField="ngModel"
+              pInputText
               placeholder="Enter your username"
-              fluid="true"
+              required
             />
             @if (usernameField.invalid && (usernameField.touched || loginForm.submitted)) {
-              <p-message severity="error" [size]="inputSize" variant="simple"
-                >Username is required.</p-message
-              >
+              <p-message [size]="inputSize" severity="error" variant="simple"
+                >Username is required.
+              </p-message>
             }
           </div>
 
           <div class="flex flex-col gap-1">
-            <label for="password" class="font-semibold">Password</label>
+            <label class="font-semibold" for="password">Password</label>
             <p-password
+              #passwordField="ngModel"
+              (ngModelChange)="password.set($event)"
+              [feedback]="false"
+              [ngModel]="password()"
+              [toggleMask]="true"
+              fluid="true"
               inputId="password"
               name="password"
-              [ngModel]="password()"
-              (ngModelChange)="password.set($event)"
-              [toggleMask]="true"
-              [feedback]="false"
-              required
-              #passwordField="ngModel"
               placeholder="Enter your password"
-              fluid="true"
+              required
             ></p-password>
             @if (passwordField.invalid && (passwordField.touched || loginForm.submitted)) {
-              <p-message severity="error" [size]="inputSize" variant="simple"
-                >Password is required.</p-message
-              >
+              <p-message [size]="inputSize" severity="error" variant="simple"
+                >Password is required.
+              </p-message>
             }
           </div>
 
           <p-button
-            type="submit"
             [disabled]="!isFormValid() || isLoading()"
-            [loading]="isLoading()"
             [label]="isLoading() ? 'Logging in...' : 'Login'"
+            [loading]="isLoading()"
             styleClass="w-full mt-2"
+            type="submit"
           ></p-button>
         </form>
       </ng-template>

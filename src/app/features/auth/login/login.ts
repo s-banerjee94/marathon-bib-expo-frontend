@@ -1,4 +1,4 @@
-import { Component, inject, signal, computed } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
@@ -16,22 +16,18 @@ import { FORM_INPUT_SIZE } from '../../../shared/constants/form.constants';
   templateUrl: './login.html',
 })
 export class Login {
-  private readonly authService = inject(AuthService);
-  private readonly router = inject(Router);
-
   // Signals for reactive state
   username = signal('');
   password = signal('');
   errorMessage = signal('');
-
   // Computed signal for form validity
   isFormValid = computed(() => this.username().trim() !== '' && this.password().trim() !== '');
-
-  // Access loading state from auth service
-  isLoading = this.authService.isLoading;
-
   // Form input size (controlled centrally via constant)
   readonly inputSize = FORM_INPUT_SIZE;
+  private readonly authService = inject(AuthService);
+  // Access loading state from auth service
+  isLoading = this.authService.isLoading;
+  private readonly router = inject(Router);
 
   onLogin(): void {
     this.errorMessage.set('');

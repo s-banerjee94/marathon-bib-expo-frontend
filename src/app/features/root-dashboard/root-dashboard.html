@@ -4,7 +4,7 @@
     @if (user(); as userData) {
       <div class="user-info">
         <span>Welcome, {{ userData.fullName }} (ROOT)</span>
-        <button class="btn-logout" (click)="logout()">Logout</button>
+        <button (click)="logout()" class="btn-logout">Logout</button>
       </div>
     }
   </header>

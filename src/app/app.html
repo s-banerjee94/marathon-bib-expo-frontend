@@ -1,12 +1,12 @@
 <p-toast />
 
-<div class="layout-wrapper" [ngClass]="layoutClasses()">
+<div [ngClass]="layoutClasses()" class="layout-wrapper">
   <app-navbar></app-navbar>
 
   @if (isAuthenticated()) {
     <app-sidebar></app-sidebar>
     @if (layoutService.layoutState().mobileMenuActive) {
-      <div class="layout-mask" (click)="onMaskClick()"></div>
+      <div (click)="onMaskClick()" class="layout-mask"></div>
     }
   }
 

@@ -1,12 +1,12 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Injectable, inject } from '@angular/core';
+import { inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import {
   CreateOrganizationRequest,
   Organization,
   UpdateOrganizationRequest,
 } from '../models/organization.model';
-import { PageableResponse, PageableParams } from '../models/api.model';
+import { PageableParams, PageableResponse } from '../models/api.model';
 import { BASE_URI } from '../../shared/constants/api.constant';
 
 @Injectable({

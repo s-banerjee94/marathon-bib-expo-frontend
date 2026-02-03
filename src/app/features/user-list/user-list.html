@@ -11,25 +11,25 @@
     <p-iconfield class="flex-1 max-w-md">
       <p-inputicon class="pi pi-search" />
       <input
-        type="text"
-        pInputText
+        (input)="onSearchInput($any($event.target).value)"
         [pSize]="inputSize"
         [value]="searchTerm()"
-        (input)="onSearchInput($any($event.target).value)"
-        placeholder="Search users (min 2 chars)..."
         class="w-full"
+        pInputText
+        placeholder="Search users (min 2 chars)..."
+        type="text"
       />
       @if (searchTerm()) {
-        <p-inputicon class="pi pi-times cursor-pointer" (click)="clearSearch()" />
+        <p-inputicon (click)="clearSearch()" class="pi pi-times cursor-pointer" />
       }
     </p-iconfield>
 
     <div class="flex items-center gap-2">
       <p-button
-        label="Create User"
-        icon="pi pi-plus"
-        [size]="inputSize"
         (click)="onCreate()"
+        [size]="inputSize"
+        icon="pi pi-plus"
+        label="Create User"
       ></p-button>
     </div>
   </div>
@@ -38,35 +38,35 @@
   <div class="mb-4 flex flex-wrap items-center gap-6">
     <div class="flex items-center gap-2">
       <p-checkbox
-        inputId="filterEnabled"
-        [ngModel]="filterEnabled()"
         (ngModelChange)="filterEnabled.set($event); onFilterChange()"
         [binary]="true"
+        [ngModel]="filterEnabled()"
+        inputId="filterEnabled"
       />
-      <label for="filterEnabled" class="cursor-pointer">Show Enabled Only</label>
+      <label class="cursor-pointer" for="filterEnabled">Show Enabled Only</label>
     </div>
 
     <div class="flex items-center gap-2">
       <p-checkbox
-        inputId="filterIncludeDeleted"
-        [ngModel]="filterIncludeDeleted()"
         (ngModelChange)="filterIncludeDeleted.set($event); onFilterChange()"
         [binary]="true"
+        [ngModel]="filterIncludeDeleted()"
+        inputId="filterIncludeDeleted"
       />
-      <label for="filterIncludeDeleted" class="cursor-pointer">Include Deleted</label>
+      <label class="cursor-pointer" for="filterIncludeDeleted">Include Deleted</label>
     </div>
 
     <p-floatlabel variant="on">
       <p-select
-        inputId="sortSelect"
-        [options]="sortOptions"
-        [ngModel]="selectedSort()"
         (ngModelChange)="onSortChange($event)"
-        optionLabel="label"
-        optionValue="value"
+        [ngModel]="selectedSort()"
+        [options]="sortOptions"
         [showClear]="true"
         [size]="inputSize"
         class="w-48"
+        inputId="sortSelect"
+        optionLabel="label"
+        optionValue="value"
       />
       <label for="sortSelect">Sort By</label>
     </p-floatlabel>
@@ -74,30 +74,30 @@
     <div class="flex items-center gap-2">
       <label for="columnSelect">Columns:</label>
       <p-multiselect
-        inputId="columnSelect"
-        [options]="cols()"
-        [(ngModel)]="selectedCols"
         (ngModelChange)="onColumnSelectionChange()"
+        [(ngModel)]="selectedCols"
+        [maxSelectedLabels]="2"
+        [options]="cols()"
+        [size]="inputSize"
+        inputId="columnSelect"
         optionLabel="header"
         placeholder="Select Columns"
-        [maxSelectedLabels]="2"
-        [size]="inputSize"
       />
     </div>
   </div>
 
   <!-- Users Table -->
   <p-table
-    [value]="displayData()"
+    (onLazyLoad)="onPageChange($event)"
+    [first]="currentPage() * pageSize()"
     [lazy]="true"
     [paginator]="true"
-    [rows]="pageSize()"
-    [totalRecords]="totalRecords()"
-    [first]="currentPage() * pageSize()"
-    (onLazyLoad)="onPageChange($event)"
     [rowsPerPageOptions]="[5, 10, 20, 50]"
-    [size]="inputSize"
+    [rows]="pageSize()"
     [scrollable]="true"
+    [size]="inputSize"
+    [totalRecords]="totalRecords()"
+    [value]="displayData()"
     scrollHeight="600px"
   >
     <ng-template pTemplate="header">
@@ -114,7 +114,7 @@
       </tr>
     </ng-template>
 
-    <ng-template pTemplate="body" let-user>
+    <ng-template let-user pTemplate="body">
       <tr>
         @if (isLoading()) {
           @for (col of visibleCols; track col.field) {
@@ -123,63 +123,63 @@
             </td>
           }
           <td class="text-center">
-            <p-skeleton width="5rem" height="2rem" />
+            <p-skeleton height="2rem" width="5rem" />
           </td>
         } @else {
           @for (col of visibleCols; track col.field) {
             <td [class]="getColumnAlignment(col.field)">
               @if (col.field === 'phoneNumber') {
-                <a href="tel:{{ getCellValue(user, col.field) }}" class="hover:underline">
+                <a class="hover:underline" href="tel:{{ getCellValue(user, col.field) }}">
                   {{ getCellValue(user, col.field) | defaultValue }}
                 </a>
               } @else if (col.field === 'email') {
-                <a href="mailto:{{ getCellValue(user, col.field) }}" class="hover:underline">
+                <a class="hover:underline" href="mailto:{{ getCellValue(user, col.field) }}">
                   {{ getCellValue(user, col.field) | defaultValue }}
                 </a>
               } @else if (col.field === 'organizationName' && user.organizationId) {
                 <span
-                  class="cursor-pointer border-b border-dotted border-gray-400"
                   (click)="openOrganizationPopover($event, user.organizationId)"
+                  class="cursor-pointer border-b border-dotted border-gray-400"
                 >
                   {{ getCellValue(user, col.field) | defaultValue }}
                 </span>
               } @else if (col.field === 'enabled') {
                 @if (togglingUserId() === user.id) {
-                  <p-skeleton width="5rem" height="1.5rem" />
+                  <p-skeleton height="1.5rem" width="5rem" />
                 } @else {
                   <p-tag
-                    [value]="user.enabled ? 'Enabled' : 'Disabled'"
-                    [severity]="user.enabled ? 'success' : 'danger'"
+                    (click)="toggleUserEnabled($event, user)"
                     [rounded]="true"
+                    [severity]="user.enabled ? 'success' : 'danger'"
                     [style]="{
                       '--be-tag-font-size': '0.75rem',
                       '--be-tag-padding': '0.25rem 0.5rem',
                     }"
-                    styleClass="cursor-pointer hover:opacity-80 transition-opacity"
+                    [value]="user.enabled ? 'Enabled' : 'Disabled'"
                     pTooltip="Click to toggle status"
+                    styleClass="cursor-pointer hover:opacity-80 transition-opacity"
                     tooltipPosition="top"
-                    (click)="toggleUserEnabled($event, user)"
                   />
                 }
               } @else if (col.field === 'deleted') {
                 <p-tag
-                  [value]="user.deleted ? 'Deleted' : 'Active'"
-                  [severity]="user.deleted ? 'danger' : 'success'"
                   [rounded]="true"
+                  [severity]="user.deleted ? 'danger' : 'success'"
                   [style]="{
                     '--be-tag-font-size': '0.75rem',
                     '--be-tag-padding': '0.25rem 0.5rem',
                   }"
+                  [value]="user.deleted ? 'Deleted' : 'Active'"
                 />
               } @else if (col.field === 'role') {
                 <p-tag
-                  [value]="user.role"
-                  [severity]="getRoleSeverity(user.role)"
                   [rounded]="true"
+                  [severity]="getRoleSeverity(user.role)"
                   [style]="{
                     '--be-tag-font-size': '0.75rem',
                     '--be-tag-padding': '0.25rem 0.5rem',
                   }"
+                  [value]="user.role"
                 />
               } @else if (col.field === 'createdAt' || col.field === 'updatedAt') {
                 {{ getDateValue(user, col.field) | defaultValue | date: 'dd-MM-yyyy' }}
@@ -191,23 +191,23 @@
           <td class="text-center">
             <div class="flex items-center justify-center gap-1">
               <p-button
-                icon="pi pi-pencil"
-                [rounded]="true"
-                [text]="true"
-                severity="info"
-                pTooltip="Edit"
-                tooltipPosition="top"
-                [size]="inputSize"
                 (click)="onEdit(user)"
+                [rounded]="true"
+                [size]="inputSize"
+                [text]="true"
+                icon="pi pi-pencil"
+                pTooltip="Edit"
+                severity="info"
+                tooltipPosition="top"
               ></p-button>
               <p-button
-                icon="pi pi-trash"
                 [rounded]="true"
-                [text]="true"
-                severity="danger"
-                pTooltip="Delete"
-                tooltipPosition="top"
                 [size]="inputSize"
+                [text]="true"
+                icon="pi pi-trash"
+                pTooltip="Delete"
+                severity="danger"
+                tooltipPosition="top"
               ></p-button>
             </div>
           </td>
@@ -231,12 +231,12 @@
   </p-table>
 </div>
 
-<p-popover #orgPopover appendTo="body" (onHide)="currentOrganizationDetails.set(null)">
+<p-popover #orgPopover (onHide)="currentOrganizationDetails.set(null)" appendTo="body">
   @if (loadingOrganizationId() !== null) {
     <div class="px-3 py-2">
-      <p-skeleton width="200px" height="1.5rem" styleClass="mb-2" />
-      <p-skeleton width="150px" height="1rem" styleClass="mb-1" />
-      <p-skeleton width="150px" height="1rem" />
+      <p-skeleton height="1.5rem" styleClass="mb-2" width="200px" />
+      <p-skeleton height="1rem" styleClass="mb-1" width="150px" />
+      <p-skeleton height="1rem" width="150px" />
     </div>
   } @else if (currentOrganizationDetails()) {
     <div class="min-w-50">
@@ -245,13 +245,13 @@
           {{ currentOrganizationDetails()!.organizerName }}
         </h3>
         <p-button
-          icon="pi pi-external-link"
           [rounded]="true"
           [text]="true"
-          size="small"
+          icon="pi pi-external-link"
           pTooltip="Open in new tab"
-          tooltipPosition="top"
+          size="small"
           styleClass="!w-6 !h-6 !p-0 !text-xs"
+          tooltipPosition="top"
         />
       </div>
 
@@ -261,8 +261,8 @@
         <div class="flex items-center gap-2">
           <i class="pi pi-envelope text-gray-500 text-sm w-4"></i>
           <a
-            href="mailto:{{ currentOrganizationDetails()!.email }}"
             class="text-blue-600 hover:underline text-sm"
+            href="mailto:{{ currentOrganizationDetails()!.email }}"
           >
             {{ currentOrganizationDetails()!.email }}
           </a>
@@ -270,8 +270,8 @@
         <div class="flex items-center gap-2">
           <i class="pi pi-phone text-gray-500 text-sm w-4"></i>
           <a
-            href="tel:{{ currentOrganizationDetails()!.phoneNumber }}"
             class="text-blue-600 hover:underline text-sm"
+            href="tel:{{ currentOrganizationDetails()!.phoneNumber }}"
           >
             {{ currentOrganizationDetails()!.phoneNumber }}
           </a>

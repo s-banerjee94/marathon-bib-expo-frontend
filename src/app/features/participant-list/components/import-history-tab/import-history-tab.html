@@ -19,13 +19,13 @@
       <div class="max-w-lg">
         <label class="block text-sm font-medium mb-2"> Select Import * </label>
         <p-select
+          (onChange)="onImportSelect($event.value)"
           [ngModel]="selectedImportId()"
           [options]="importHistory()"
+          [style]="{ width: '100%' }"
           optionLabel="importedAt"
           optionValue="importId"
           placeholder="Select an import..."
-          [style]="{ width: '100%' }"
-          (onChange)="onImportSelect($event.value)"
         >
           <ng-template let-import pTemplate="item">
             <div class="flex justify-between items-center py-2">
@@ -47,10 +47,10 @@
                 </div>
               </div>
               <p-tag
-                [value]="import.status"
-                [severity]="getImportStatusSeverity(import.status)"
-                size="small"
                 [rounded]="true"
+                [severity]="getImportStatusSeverity(import.status)"
+                [value]="import.status"
+                size="small"
               ></p-tag>
             </div>
           </ng-template>
@@ -72,7 +72,7 @@
       @if (selectedImport()?.failureCount && selectedImport()!.failureCount > 0) {
         <div class="mt-6">
           <!-- Errors Table -->
-          <p-table [value]="importErrors()" [scrollable]="true" scrollHeight="400px" size="small">
+          <p-table [scrollable]="true" [value]="importErrors()" scrollHeight="400px" size="small">
             <!-- Table Headers -->
             <ng-template pTemplate="header">
               <tr>
@@ -84,15 +84,15 @@
             </ng-template>
 
             <!-- Table Body -->
-            <ng-template pTemplate="body" let-error>
+            <ng-template let-error pTemplate="body">
               <tr>
                 <td class="font-semibold">{{ error.rowNumber }}</td>
                 <td>
                   <p-tag
+                    [rounded]="true"
                     [value]="error.errorType"
                     severity="danger"
                     size="small"
-                    [rounded]="true"
                   ></p-tag>
                 </td>
                 <td class="font-medium">{{ error.field | defaultValue }}</td>
@@ -105,7 +105,7 @@
             <!-- Empty State -->
             <ng-template pTemplate="emptymessage">
               <tr>
-                <td colspan="4" class="text-center py-12">
+                <td class="text-center py-12" colspan="4">
                   <i class="pi pi-check-circle text-green-500 text-4xl mb-3 block"></i>
                   <p class="text-lg">No errors found</p>
                 </td>
@@ -117,10 +117,10 @@
           <div class="text-center mt-4">
             @if (hasMoreErrors() && !isLoadingErrors()) {
               <p-button
-                label="Load More Errors"
-                icon="pi pi-arrow-down"
                 (onClick)="onLoadMoreErrors()"
                 [outlined]="true"
+                icon="pi pi-arrow-down"
+                label="Load More Errors"
                 severity="warn"
                 size="small"
               ></p-button>

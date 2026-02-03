@@ -1,7 +1,7 @@
-import { Component, inject, signal, OnInit } from '@angular/core';
+import { Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule, Location } from '@angular/common';
 import { FormsModule, NgForm } from '@angular/forms';
-import { Router, ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { InputTextModule } from 'primeng/inputtext';
 import { FloatLabelModule } from 'primeng/floatlabel';
 import { ButtonModule } from 'primeng/button';
@@ -13,17 +13,16 @@ import { MessageService } from 'primeng/api';
 import { DynamicDialogConfig, DynamicDialogRef } from 'primeng/dynamicdialog';
 import {
   CreateUserRequest,
-  User,
-  UserRole,
   ROLE_AVAILABILITY,
   RoleOption,
+  User,
+  UserRole,
 } from '../../core/models/user.model';
-import { Organization } from '../../core/models/organization.model';
 import { UserService } from '../../core/services/user.service';
 import { AuthService } from '../../core/services/auth.service';
 import { ErrorHandlerService } from '../../core/services/error-handler.service';
-import { roleRequiresOrganization, roleRequiresEmailPhone } from './user-form.utils';
-import { shouldShowError, initializeErrorHandler } from '../../shared/utils/form.utils';
+import { roleRequiresEmailPhone, roleRequiresOrganization } from './user-form.utils';
+import { initializeErrorHandler, shouldShowError } from '../../shared/utils/form.utils';
 import { FORM_INPUT_SIZE } from '../../shared/constants/form.constants';
 import { OrganizationSelector } from '../../components/organization-selector/organization-selector';
 
@@ -46,20 +45,10 @@ import { OrganizationSelector } from '../../components/organization-selector/org
   styleUrl: './user-form.css',
 })
 export class UserForm implements OnInit {
-  private userService = inject(UserService);
-  private authService = inject(AuthService);
-  private router = inject(Router);
-  private route = inject(ActivatedRoute);
-  private location = inject(Location);
-  private messageService = inject(MessageService);
-  private errorHandler = inject(ErrorHandlerService);
-
   // Optional injection for dialog mode
   public dialogConfig = inject(DynamicDialogConfig, { optional: true });
   public dialogRef = inject(DynamicDialogRef, { optional: true });
-
   isDialogMode = signal(false);
-
   // Form data as plain object for ngModel binding
   user: CreateUserRequest = {
     username: '',
@@ -70,7 +59,6 @@ export class UserForm implements OnInit {
     role: UserRole.ADMIN,
     organizationId: undefined,
   };
-
   // Component state as signals
   isSubmitting = signal(false);
   isEditMode = signal(false);
@@ -79,9 +67,16 @@ export class UserForm implements OnInit {
   currentUserRole = signal<UserRole | null>(null);
   availableRoles = signal<RoleOption[]>([]);
   selectedRole = signal<UserRole | null>(UserRole.ADMIN);
-
   // Form input size (controlled centrally via constant)
   readonly inputSize = FORM_INPUT_SIZE;
+  shouldShowError = shouldShowError;
+  private userService = inject(UserService);
+  private authService = inject(AuthService);
+  private router = inject(Router);
+  private route = inject(ActivatedRoute);
+  private location = inject(Location);
+  private messageService = inject(MessageService);
+  private errorHandler = inject(ErrorHandlerService);
 
   ngOnInit(): void {
     initializeErrorHandler(this.errorHandler, this.messageService);
@@ -124,51 +119,6 @@ export class UserForm implements OnInit {
     this.onRoleSelected();
   }
 
-  private initializeCurrentUserRole(): void {
-    const role = this.authService.getCurrentRole();
-    this.currentUserRole.set(role);
-  }
-
-  private initializeAvailableRoles(): void {
-    const currentRole = this.currentUserRole();
-    const rolesForCurrentUser = currentRole ? ROLE_AVAILABILITY[currentRole] : [];
-    this.availableRoles.set(rolesForCurrentUser || []);
-  }
-
-  private loadUserData(id: number): void {
-    this.isLoading.set(true);
-
-    this.userService.getUserById(id).subscribe({
-      next: (user: User) => {
-        this.populateFormFromUser(user);
-        this.isLoading.set(false);
-      },
-      error: (error) => {
-        this.isLoading.set(false);
-        this.errorHandler.showError(error, 'Error', {
-          customMessage: 'Failed to load user data. Please try again.',
-        });
-        if (!this.isDialogMode()) {
-          this.router.navigate([this.authService.getDashboardRoute()]);
-        }
-      },
-    });
-  }
-
-  private populateFormFromUser(userData: User): void {
-    this.user = {
-      username: userData.username,
-      password: '', // Password not returned from backend
-      email: userData.email,
-      fullName: userData.fullName,
-      phoneNumber: userData.phoneNumber,
-      role: userData.role,
-      organizationId: userData.organizationId,
-    };
-
-    this.selectedRole.set(userData.role);
-  }
-
   onRoleSelected(): void {
     if (this.selectedRole()) {
       this.user.role = this.selectedRole()!;
@@ -206,8 +156,6 @@ export class UserForm implements OnInit {
   isPhoneRequired(): boolean {
     return roleRequiresEmailPhone(this.selectedRole());
   }
-
-  shouldShowError = shouldShowError;
 
   onSubmit(form: NgForm): void {
     if (form.invalid) {
@@ -286,5 +234,50 @@ export class UserForm implements OnInit {
       return this.isEditMode() ? 'Updating...' : 'Creating...';
     }
     return this.isEditMode() ? 'Update User' : 'Create User';
+  }
+
+  private initializeCurrentUserRole(): void {
+    const role = this.authService.getCurrentRole();
+    this.currentUserRole.set(role);
+  }
+
+  private initializeAvailableRoles(): void {
+    const currentRole = this.currentUserRole();
+    const rolesForCurrentUser = currentRole ? ROLE_AVAILABILITY[currentRole] : [];
+    this.availableRoles.set(rolesForCurrentUser || []);
+  }
+
+  private loadUserData(id: number): void {
+    this.isLoading.set(true);
+
+    this.userService.getUserById(id).subscribe({
+      next: (user: User) => {
+        this.populateFormFromUser(user);
+        this.isLoading.set(false);
+      },
+      error: (error) => {
+        this.isLoading.set(false);
+        this.errorHandler.showError(error, 'Error', {
+          customMessage: 'Failed to load user data. Please try again.',
+        });
+        if (!this.isDialogMode()) {
+          this.router.navigate([this.authService.getDashboardRoute()]);
+        }
+      },
+    });
+  }
+
+  private populateFormFromUser(userData: User): void {
+    this.user = {
+      username: userData.username,
+      password: '', // Password not returned from backend
+      email: userData.email,
+      fullName: userData.fullName,
+      phoneNumber: userData.phoneNumber,
+      role: userData.role,
+      organizationId: userData.organizationId,
+    };
+
+    this.selectedRole.set(userData.role);
   }
 }

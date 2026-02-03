@@ -1,15 +1,15 @@
 @if (item().separator) {
   <li class="menu-separator h-px my-2"></li>
 } @else {
-  <li class="mb-1" [ngClass]="{ 'active-menuitem': isActive() || isExpanded() }">
+  <li [ngClass]="{ 'active-menuitem': isActive() || isExpanded() }" class="mb-1">
     @if (item().routerLink && !hasSubmenu) {
       <!-- Regular menu item with router link -->
       <a
+        (click)="onItemClick($event)"
+        [ngClass]="{ 'active-route': isActive() }"
         [routerLink]="item().routerLink"
         class="menu-link flex items-center py-3 px-4 rounded-lg no-underline cursor-pointer"
-        [ngClass]="{ 'active-route': isActive() }"
         pRipple
-        (click)="onItemClick($event)"
       >
         @if (item().icon) {
           <i [class]="item().icon" class="mr-3 text-lg"></i>
@@ -17,8 +17,8 @@
         <span class="flex-1 text-sm font-medium">{{ item().label }}</span>
         @if (item().badge) {
           <span
-            class="menu-badge ml-auto py-1 px-2 text-xs rounded text-white"
             [ngClass]="item().badgeClass"
+            class="menu-badge ml-auto py-1 px-2 text-xs rounded text-white"
           >
             {{ item().badge }}
           </span>
@@ -27,10 +27,10 @@
     } @else {
       <!-- Parent menu item with submenu -->
       <a
-        class="menu-link flex items-center py-3 px-4 rounded-lg no-underline cursor-pointer"
-        [ngClass]="{ 'active-route': isActive() }"
-        pRipple
         (click)="onItemClick($event)"
+        [ngClass]="{ 'active-route': isActive() }"
+        class="menu-link flex items-center py-3 px-4 rounded-lg no-underline cursor-pointer"
+        pRipple
       >
         @if (item().icon) {
           <i [class]="item().icon" class="mr-3 text-lg"></i>
@@ -38,25 +38,25 @@
         <span class="flex-1 text-sm font-medium">{{ item().label }}</span>
         @if (item().badge) {
           <span
-            class="menu-badge ml-auto py-1 px-2 text-xs rounded text-white"
             [ngClass]="item().badgeClass"
+            class="menu-badge ml-auto py-1 px-2 text-xs rounded text-white"
           >
             {{ item().badge }}
           </span>
         }
         @if (hasSubmenu) {
           <i
-            class="pi pi-fw pi-angle-down transition-transform duration-200"
             [ngClass]="{ 'rotate-180': isExpanded() }"
+            class="pi pi-fw pi-angle-down transition-transform duration-200"
           ></i>
         }
       </a>
     }
 
     @if (hasSubmenu) {
-      <ul class="submenu list-none p-0 m-0 pl-4" [ngClass]="{ 'submenu-visible': isExpanded() }">
+      <ul [ngClass]="{ 'submenu-visible': isExpanded() }" class="submenu list-none p-0 m-0 pl-4">
         @for (child of item().items; track child.label; let i = $index) {
-          <app-menuitem [item]="child" [index]="i" [parentKey]="key"></app-menuitem>
+          <app-menuitem [index]="i" [item]="child" [parentKey]="key"></app-menuitem>
         }
       </ul>
     }

@@ -1,10 +1,10 @@
 <p-dialog
-  header="Participant Details"
   [(visible)]="visible"
-  [modal]="true"
   [draggable]="false"
+  [modal]="true"
   [resizable]="false"
   [style]="{ width: '95vw', maxWidth: '600px', maxHeight: '90vh' }"
+  header="Participant Details"
 >
   @if (participant()) {
     <div class="space-y-2 sm:space-y-3 lg:space-y-4">
@@ -42,10 +42,10 @@
         <div>
           <p class="text-xs sm:text-sm text-gray-600">Gender</p>
           <p-tag
-            [value]="getGenderDisplay(participant()!.gender)"
-            [severity]="getGenderSeverity(participant()!.gender)"
-            size="small"
             [rounded]="true"
+            [severity]="getGenderSeverity(participant()!.gender)"
+            [value]="getGenderDisplay(participant()!.gender)"
+            size="small"
           ></p-tag>
         </div>
         <div>
@@ -83,10 +83,10 @@
         <div class="sm:col-span-2">
           <p class="text-xs sm:text-sm text-gray-600">BIB Collection Status</p>
           @if (participant()!.bibCollectedAt) {
-            <p-tag value="Collected" severity="success" size="small" [rounded]="true"></p-tag>
+            <p-tag [rounded]="true" severity="success" size="small" value="Collected"></p-tag>
             <p class="text-xs sm:text-sm mt-1">{{ participant()!.bibCollectedAt }}</p>
           } @else {
-            <p-tag value="Pending" severity="warn" size="small" [rounded]="true"></p-tag>
+            <p-tag [rounded]="true" severity="warn" size="small" value="Pending"></p-tag>
           }
         </div>
         @if (participant()!.emergencyContactName || participant()!.emergencyContactPhone) {
@@ -132,6 +132,6 @@
   }
 
   <ng-template pTemplate="footer">
-    <p-button label="Close" icon="pi pi-times" (onClick)="close()" severity="secondary"></p-button>
+    <p-button (onClick)="close()" icon="pi pi-times" label="Close" severity="secondary"></p-button>
   </ng-template>
 </p-dialog>

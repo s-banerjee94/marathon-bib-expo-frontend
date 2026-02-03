@@ -22,15 +22,15 @@
               @if (showOrganizationDropdown()) {
                 <div class="flex flex-col gap-1">
                   <app-organization-selector
+                    (organizationIdChange)="event.organizationId = $event || 0"
+                    [required]="true"
+                    [selectedOrganizationId]="event.organizationId"
+                    [size]="inputSize"
                     inputId="organizationId"
                     label="Organization *"
-                    [required]="true"
-                    [size]="inputSize"
-                    [selectedOrganizationId]="event.organizationId"
-                    (organizationIdChange)="event.organizationId = $event || 0"
                   >
                     @if (eventForm.submitted && !event.organizationId) {
-                      <p-message error severity="error" [size]="inputSize" variant="simple">
+                      <p-message [size]="inputSize" error severity="error" variant="simple">
                         Organization is required.
                       </p-message>
                     }
@@ -42,17 +42,17 @@
               <div class="flex flex-col gap-1">
                 <p-floatlabel variant="on">
                   <p-select
+                    [(ngModel)]="event.status"
+                    [checkmark]="true"
+                    [options]="statusOptions"
+                    [size]="inputSize"
+                    fluid="true"
                     id="statusSelect"
                     name="statusSelect"
-                    [(ngModel)]="event.status"
-                    [options]="statusOptions"
                     optionLabel="label"
                     optionValue="value"
                     placeholder="Choose a status..."
-                    [checkmark]="true"
                     required
-                    fluid="true"
-                    [size]="inputSize"
                   ></p-select>
                   <label for="statusSelect">Status *</label>
                 </p-floatlabel>
@@ -64,23 +64,23 @@
               <div class="flex flex-col gap-1 col-span-2">
                 <p-floatlabel variant="on">
                   <input
-                    pInputText
-                    id="eventName"
-                    name="eventName"
-                    [(ngModel)]="event.eventName"
                     #eventName="ngModel"
-                    required
-                    minlength="2"
-                    maxlength="200"
-                    fluid="true"
-                    [pSize]="inputSize"
+                    [(ngModel)]="event.eventName"
                     [invalid]="shouldShowError(eventName, eventForm.submitted)"
+                    [pSize]="inputSize"
+                    fluid="true"
+                    id="eventName"
+                    maxlength="200"
+                    minlength="2"
+                    name="eventName"
+                    pInputText
+                    required
                   />
                   <label for="eventName">Event Name *</label>
                 </p-floatlabel>
 
                 @if (shouldShowError(eventName, eventForm.submitted)) {
-                  <p-message severity="error" [size]="inputSize" variant="simple">
+                  <p-message [size]="inputSize" severity="error" variant="simple">
                     @if (eventName.hasError('required')) {
                       Event name is required.
                     }
@@ -98,13 +98,13 @@
               <div class="flex flex-col gap-1 col-span-2">
                 <p-floatlabel variant="on">
                   <textarea
-                    pTextarea
+                    [(ngModel)]="event.eventDescription"
+                    [pSize]="inputSize"
+                    fluid="true"
                     id="eventDescription"
                     name="eventDescription"
-                    [(ngModel)]="event.eventDescription"
+                    pTextarea
                     rows="3"
-                    fluid="true"
-                    [pSize]="inputSize"
                   ></textarea>
                   <label for="eventDescription">Event Description</label>
                 </p-floatlabel>
@@ -114,26 +114,26 @@
               <div class="flex flex-col gap-1">
                 <p-floatlabel variant="on">
                   <p-datepicker
-                    inputId="eventStartDate"
+                    #eventStartDate="ngModel"
                     [(ngModel)]="event.eventStartDate"
-                    name="eventStartDate"
-                    required
+                    [invalid]="shouldShowError(eventStartDate, eventForm.submitted)"
                     [showTime]="true"
-                    showIcon
-                    iconDisplay="input"
-                    hourFormat="12"
+                    [size]="inputSize"
                     dateFormat="dd-mm-yy"
                     fluid="true"
-                    [size]="inputSize"
+                    hourFormat="12"
+                    iconDisplay="input"
+                    inputId="eventStartDate"
+                    name="eventStartDate"
                     panelStyleClass="compact-datepicker"
-                    #eventStartDate="ngModel"
-                    [invalid]="shouldShowError(eventStartDate, eventForm.submitted)"
+                    required
+                    showIcon
                   ></p-datepicker>
                   <label for="eventStartDate">Start Date & Time *</label>
                 </p-floatlabel>
 
                 @if (shouldShowError(eventStartDate, eventForm.submitted)) {
-                  <p-message severity="error" [size]="inputSize" variant="simple">
+                  <p-message [size]="inputSize" severity="error" variant="simple">
                     Start date is required.
                   </p-message>
                 }
@@ -143,26 +143,26 @@
               <div class="flex flex-col gap-1">
                 <p-floatlabel variant="on">
                   <p-datepicker
-                    inputId="eventEndDate"
+                    #eventEndDate="ngModel"
                     [(ngModel)]="event.eventEndDate"
-                    name="eventEndDate"
-                    required
+                    [invalid]="shouldShowError(eventEndDate, eventForm.submitted)"
                     [showTime]="true"
-                    showIcon
-                    iconDisplay="input"
-                    hourFormat="12"
+                    [size]="inputSize"
                     dateFormat="dd-mm-yy"
                     fluid="true"
-                    [size]="inputSize"
+                    hourFormat="12"
+                    iconDisplay="input"
+                    inputId="eventEndDate"
+                    name="eventEndDate"
                     panelStyleClass="compact-datepicker"
-                    #eventEndDate="ngModel"
-                    [invalid]="shouldShowError(eventEndDate, eventForm.submitted)"
+                    required
+                    showIcon
                   ></p-datepicker>
                   <label for="eventEndDate">End Date & Time *</label>
                 </p-floatlabel>
 
                 @if (shouldShowError(eventEndDate, eventForm.submitted)) {
-                  <p-message severity="error" [size]="inputSize" variant="simple">
+                  <p-message [size]="inputSize" severity="error" variant="simple">
                     End date is required.
                   </p-message>
                 }
@@ -172,23 +172,23 @@
               <div class="flex flex-col gap-1 col-span-2">
                 <p-floatlabel variant="on">
                   <input
-                    pInputText
-                    id="venueName"
-                    name="venueName"
-                    [(ngModel)]="event.venueName"
                     #venueName="ngModel"
-                    required
-                    minlength="2"
-                    maxlength="200"
-                    fluid="true"
-                    [pSize]="inputSize"
+                    [(ngModel)]="event.venueName"
                     [invalid]="shouldShowError(venueName, eventForm.submitted)"
+                    [pSize]="inputSize"
+                    fluid="true"
+                    id="venueName"
+                    maxlength="200"
+                    minlength="2"
+                    name="venueName"
+                    pInputText
+                    required
                   />
                   <label for="venueName">Venue Name *</label>
                 </p-floatlabel>
 
                 @if (shouldShowError(venueName, eventForm.submitted)) {
-                  <p-message severity="error" [size]="inputSize" variant="simple">
+                  <p-message [size]="inputSize" severity="error" variant="simple">
                     @if (venueName.hasError('required')) {
                       Venue name is required.
                     }
@@ -206,13 +206,13 @@
               <div class="flex flex-col gap-1 col-span-2">
                 <p-floatlabel variant="on">
                   <input
-                    pInputText
-                    id="addressLine1"
-                    name="addressLine1"
                     [(ngModel)]="event.addressLine1"
-                    maxlength="200"
-                    fluid="true"
                     [pSize]="inputSize"
+                    fluid="true"
+                    id="addressLine1"
+                    maxlength="200"
+                    name="addressLine1"
+                    pInputText
                   />
                   <label for="addressLine1">Address Line 1</label>
                 </p-floatlabel>
@@ -222,13 +222,13 @@
               <div class="flex flex-col gap-1 col-span-2">
                 <p-floatlabel variant="on">
                   <input
-                    pInputText
-                    id="addressLine2"
-                    name="addressLine2"
                     [(ngModel)]="event.addressLine2"
-                    maxlength="200"
-                    fluid="true"
                     [pSize]="inputSize"
+                    fluid="true"
+                    id="addressLine2"
+                    maxlength="200"
+                    name="addressLine2"
+                    pInputText
                   />
                   <label for="addressLine2">Address Line 2</label>
                 </p-floatlabel>
@@ -238,13 +238,13 @@
               <div class="flex flex-col gap-1">
                 <p-floatlabel variant="on">
                   <input
-                    pInputText
-                    id="city"
-                    name="city"
                     [(ngModel)]="event.city"
-                    maxlength="100"
-                    fluid="true"
                     [pSize]="inputSize"
+                    fluid="true"
+                    id="city"
+                    maxlength="100"
+                    name="city"
+                    pInputText
                   />
                   <label for="city">City</label>
                 </p-floatlabel>
@@ -254,13 +254,13 @@
               <div class="flex flex-col gap-1">
                 <p-floatlabel variant="on">
                   <input
-                    pInputText
-                    id="stateProvince"
-                    name="stateProvince"
                     [(ngModel)]="event.stateProvince"
-                    maxlength="100"
-                    fluid="true"
                     [pSize]="inputSize"
+                    fluid="true"
+                    id="stateProvince"
+                    maxlength="100"
+                    name="stateProvince"
+                    pInputText
                   />
                   <label for="stateProvince">State/Province</label>
                 </p-floatlabel>
@@ -270,13 +270,13 @@
               <div class="flex flex-col gap-1">
                 <p-floatlabel variant="on">
                   <input
-                    pInputText
-                    id="postalCode"
-                    name="postalCode"
                     [(ngModel)]="event.postalCode"
-                    maxlength="20"
-                    fluid="true"
                     [pSize]="inputSize"
+                    fluid="true"
+                    id="postalCode"
+                    maxlength="20"
+                    name="postalCode"
+                    pInputText
                   />
                   <label for="postalCode">Postal Code</label>
                 </p-floatlabel>
@@ -286,13 +286,13 @@
               <div class="flex flex-col gap-1">
                 <p-floatlabel variant="on">
                   <input
-                    pInputText
-                    id="country"
-                    name="country"
                     [(ngModel)]="event.country"
-                    maxlength="100"
-                    fluid="true"
                     [pSize]="inputSize"
+                    fluid="true"
+                    id="country"
+                    maxlength="100"
+                    name="country"
+                    pInputText
                   />
                   <label for="country">Country</label>
                 </p-floatlabel>
@@ -302,10 +302,10 @@
             <!-- Submit Button -->
             <div class="flex justify-end gap-3 pt-4 border-t">
               <button
-                pButton
-                type="submit"
-                severity="primary"
                 [disabled]="isSubmitting() || isLoading() || eventForm.invalid"
+                pButton
+                severity="primary"
+                type="submit"
               >
                 <span pButtonLabel>{{ getSubmitButtonText() }}</span>
               </button>
@@ -329,10 +329,10 @@
     </div>
   } @else {
     <form
-      id="eventFormDialog"
       #eventFormDialog="ngForm"
       (ngSubmit)="onSubmit(eventFormDialog)"
       class="flex flex-col gap-4 mt-2"
+      id="eventFormDialog"
     >
       <!-- ORGANIZATION AND STATUS SELECTION ROW -->
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -340,15 +340,15 @@
         @if (showOrganizationDropdown()) {
           <div class="flex flex-col gap-1">
             <app-organization-selector
+              (organizationIdChange)="event.organizationId = $event || 0"
+              [required]="true"
+              [selectedOrganizationId]="event.organizationId"
+              [size]="inputSize"
               inputId="organizationIdDialog"
               label="Organization *"
-              [required]="true"
-              [size]="inputSize"
-              [selectedOrganizationId]="event.organizationId"
-              (organizationIdChange)="event.organizationId = $event || 0"
             >
               @if (eventFormDialog.submitted && !event.organizationId) {
-                <p-message error severity="error" [size]="inputSize" variant="simple">
+                <p-message [size]="inputSize" error severity="error" variant="simple">
                   Organization is required.
                 </p-message>
               }
@@ -360,17 +360,17 @@
         <div class="flex flex-col gap-1">
           <p-floatlabel variant="on">
             <p-select
+              [(ngModel)]="event.status"
+              [checkmark]="true"
+              [options]="statusOptions"
+              [size]="inputSize"
+              fluid="true"
               id="statusSelectDialog"
               name="statusSelectDialog"
-              [(ngModel)]="event.status"
-              [options]="statusOptions"
               optionLabel="label"
               optionValue="value"
               placeholder="Choose a status..."
-              [checkmark]="true"
               required
-              fluid="true"
-              [size]="inputSize"
             ></p-select>
             <label for="statusSelectDialog">Status *</label>
           </p-floatlabel>
@@ -382,23 +382,23 @@
         <div class="flex flex-col gap-1 col-span-2">
           <p-floatlabel variant="on">
             <input
-              pInputText
-              id="eventNameDialog"
-              name="eventNameDialog"
-              [(ngModel)]="event.eventName"
               #eventNameDialog="ngModel"
-              required
-              minlength="2"
-              maxlength="200"
-              fluid="true"
-              [pSize]="inputSize"
+              [(ngModel)]="event.eventName"
               [invalid]="shouldShowError(eventNameDialog, eventFormDialog.submitted)"
+              [pSize]="inputSize"
+              fluid="true"
+              id="eventNameDialog"
+              maxlength="200"
+              minlength="2"
+              name="eventNameDialog"
+              pInputText
+              required
             />
             <label for="eventNameDialog">Event Name *</label>
           </p-floatlabel>
 
           @if (shouldShowError(eventNameDialog, eventFormDialog.submitted)) {
-            <p-message severity="error" [size]="inputSize" variant="simple">
+            <p-message [size]="inputSize" severity="error" variant="simple">
               @if (eventNameDialog.hasError('required')) {
                 Event name is required.
               }
@@ -416,13 +416,13 @@
         <div class="flex flex-col gap-1 col-span-2">
           <p-floatlabel variant="on">
             <textarea
-              pTextarea
+              [(ngModel)]="event.eventDescription"
+              [pSize]="inputSize"
+              fluid="true"
               id="eventDescriptionDialog"
               name="eventDescriptionDialog"
-              [(ngModel)]="event.eventDescription"
+              pTextarea
               rows="3"
-              fluid="true"
-              [pSize]="inputSize"
             ></textarea>
             <label for="eventDescriptionDialog">Event Description</label>
           </p-floatlabel>
@@ -432,26 +432,26 @@
         <div class="flex flex-col gap-1">
           <p-floatlabel variant="on">
             <p-datepicker
-              inputId="eventStartDateDialog"
+              #eventStartDateDialog="ngModel"
               [(ngModel)]="event.eventStartDate"
-              name="eventStartDateDialog"
-              required
+              [invalid]="shouldShowError(eventStartDateDialog, eventFormDialog.submitted)"
               [showTime]="true"
-              showIcon
-              iconDisplay="input"
-              hourFormat="12"
+              [size]="inputSize"
               dateFormat="dd-mm-yy"
               fluid="true"
-              [size]="inputSize"
+              hourFormat="12"
+              iconDisplay="input"
+              inputId="eventStartDateDialog"
+              name="eventStartDateDialog"
               panelStyleClass="compact-datepicker"
-              #eventStartDateDialog="ngModel"
-              [invalid]="shouldShowError(eventStartDateDialog, eventFormDialog.submitted)"
+              required
+              showIcon
             ></p-datepicker>
             <label for="eventStartDateDialog">Start Date & Time *</label>
           </p-floatlabel>
 
           @if (shouldShowError(eventStartDateDialog, eventFormDialog.submitted)) {
-            <p-message severity="error" [size]="inputSize" variant="simple">
+            <p-message [size]="inputSize" severity="error" variant="simple">
               Start date is required.
             </p-message>
           }
@@ -461,26 +461,26 @@
         <div class="flex flex-col gap-1">
           <p-floatlabel variant="on">
             <p-datepicker
-              inputId="eventEndDateDialog"
+              #eventEndDateDialog="ngModel"
               [(ngModel)]="event.eventEndDate"
-              name="eventEndDateDialog"
-              required
+              [invalid]="shouldShowError(eventEndDateDialog, eventFormDialog.submitted)"
               [showTime]="true"
-              showIcon
-              iconDisplay="input"
-              hourFormat="12"
+              [size]="inputSize"
               dateFormat="dd-mm-yy"
               fluid="true"
-              [size]="inputSize"
+              hourFormat="12"
+              iconDisplay="input"
+              inputId="eventEndDateDialog"
+              name="eventEndDateDialog"
               panelStyleClass="compact-datepicker"
-              #eventEndDateDialog="ngModel"
-              [invalid]="shouldShowError(eventEndDateDialog, eventFormDialog.submitted)"
+              required
+              showIcon
             ></p-datepicker>
             <label for="eventEndDateDialog">End Date & Time *</label>
           </p-floatlabel>
 
           @if (shouldShowError(eventEndDateDialog, eventFormDialog.submitted)) {
-            <p-message severity="error" [size]="inputSize" variant="simple">
+            <p-message [size]="inputSize" severity="error" variant="simple">
               End date is required.
             </p-message>
           }
@@ -490,23 +490,23 @@
         <div class="flex flex-col gap-1 col-span-2">
           <p-floatlabel variant="on">
             <input
-              pInputText
-              id="venueNameDialog"
-              name="venueNameDialog"
-              [(ngModel)]="event.venueName"
               #venueNameDialog="ngModel"
-              required
-              minlength="2"
-              maxlength="200"
-              fluid="true"
-              [pSize]="inputSize"
+              [(ngModel)]="event.venueName"
               [invalid]="shouldShowError(venueNameDialog, eventFormDialog.submitted)"
+              [pSize]="inputSize"
+              fluid="true"
+              id="venueNameDialog"
+              maxlength="200"
+              minlength="2"
+              name="venueNameDialog"
+              pInputText
+              required
             />
             <label for="venueNameDialog">Venue Name *</label>
           </p-floatlabel>
 
           @if (shouldShowError(venueNameDialog, eventFormDialog.submitted)) {
-            <p-message severity="error" [size]="inputSize" variant="simple">
+            <p-message [size]="inputSize" severity="error" variant="simple">
               @if (venueNameDialog.hasError('required')) {
                 Venue name is required.
               }
@@ -524,13 +524,13 @@
         <div class="flex flex-col gap-1 col-span-2">
           <p-floatlabel variant="on">
             <input
-              pInputText
-              id="addressLine1Dialog"
-              name="addressLine1Dialog"
               [(ngModel)]="event.addressLine1"
-              maxlength="200"
-              fluid="true"
               [pSize]="inputSize"
+              fluid="true"
+              id="addressLine1Dialog"
+              maxlength="200"
+              name="addressLine1Dialog"
+              pInputText
             />
             <label for="addressLine1Dialog">Address Line 1</label>
           </p-floatlabel>
@@ -540,13 +540,13 @@
         <div class="flex flex-col gap-1 col-span-2">
           <p-floatlabel variant="on">
             <input
-              pInputText
-              id="addressLine2Dialog"
-              name="addressLine2Dialog"
               [(ngModel)]="event.addressLine2"
-              maxlength="200"
-              fluid="true"
               [pSize]="inputSize"
+              fluid="true"
+              id="addressLine2Dialog"
+              maxlength="200"
+              name="addressLine2Dialog"
+              pInputText
             />
             <label for="addressLine2Dialog">Address Line 2</label>
           </p-floatlabel>
@@ -556,13 +556,13 @@
         <div class="flex flex-col gap-1">
           <p-floatlabel variant="on">
             <input
-              pInputText
-              id="cityDialog"
-              name="cityDialog"
               [(ngModel)]="event.city"
-              maxlength="100"
-              fluid="true"
               [pSize]="inputSize"
+              fluid="true"
+              id="cityDialog"
+              maxlength="100"
+              name="cityDialog"
+              pInputText
             />
             <label for="cityDialog">City</label>
           </p-floatlabel>
@@ -572,13 +572,13 @@
         <div class="flex flex-col gap-1">
           <p-floatlabel variant="on">
             <input
-              pInputText
-              id="stateProvinceDialog"
-              name="stateProvinceDialog"
               [(ngModel)]="event.stateProvince"
-              maxlength="100"
-              fluid="true"
               [pSize]="inputSize"
+              fluid="true"
+              id="stateProvinceDialog"
+              maxlength="100"
+              name="stateProvinceDialog"
+              pInputText
             />
             <label for="stateProvinceDialog">State/Province</label>
           </p-floatlabel>
@@ -588,13 +588,13 @@
         <div class="flex flex-col gap-1">
           <p-floatlabel variant="on">
             <input
-              pInputText
-              id="postalCodeDialog"
-              name="postalCodeDialog"
               [(ngModel)]="event.postalCode"
-              maxlength="20"
-              fluid="true"
               [pSize]="inputSize"
+              fluid="true"
+              id="postalCodeDialog"
+              maxlength="20"
+              name="postalCodeDialog"
+              pInputText
             />
             <label for="postalCodeDialog">Postal Code</label>
           </p-floatlabel>
@@ -604,13 +604,13 @@
         <div class="flex flex-col gap-1">
           <p-floatlabel variant="on">
             <input
-              pInputText
-              id="countryDialog"
-              name="countryDialog"
               [(ngModel)]="event.country"
-              maxlength="100"
-              fluid="true"
               [pSize]="inputSize"
+              fluid="true"
+              id="countryDialog"
+              maxlength="100"
+              name="countryDialog"
+              pInputText
             />
             <label for="countryDialog">Country</label>
           </p-floatlabel>
@@ -620,10 +620,10 @@
       <!-- Submit Button -->
       <div class="flex justify-end gap-3 pt-4 border-t">
         <button
-          pButton
-          type="submit"
-          severity="primary"
           [disabled]="isSubmitting() || isLoading() || eventFormDialog.invalid"
+          pButton
+          severity="primary"
+          type="submit"
         >
           <span pButtonLabel>{{ getSubmitButtonText() }}</span>
         </button>

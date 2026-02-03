@@ -1,13 +1,13 @@
 <p-dialog
-  header="Select Columns to Export"
+  (onShow)="onShow()"
   [(visible)]="visible"
-  [modal]="true"
   [closable]="!isExporting()"
   [closeOnEscape]="!isExporting()"
   [draggable]="false"
+  [modal]="true"
   [resizable]="false"
   [style]="{ width: '95vw', maxWidth: '500px' }"
-  (onShow)="onShow()"
+  header="Select Columns to Export"
 >
   <div class="space-y-4">
     <p>Select which columns you want to include in the exported CSV file.</p>
@@ -16,11 +16,11 @@
       <label class="block text-sm font-medium mb-2"> Columns to Export * </label>
       <p-multiselect
         [(ngModel)]="selectedColumns"
+        [maxSelectedLabels]="3"
         [options]="allColumns()"
+        [style]="{ width: '100%' }"
         optionLabel="header"
         placeholder="Select columns..."
-        [style]="{ width: '100%' }"
-        [maxSelectedLabels]="3"
         selectedItemsLabel="{0} columns selected"
       ></p-multiselect>
       <p class="text-xs mt-2">Selected: {{ selectedColumns().length }} column(s)</p>
@@ -29,18 +29,18 @@
 
   <ng-template pTemplate="footer">
     <p-button
-      label="Cancel"
-      icon="pi pi-times"
       (onClick)="close()"
       [disabled]="isExporting()"
-      severity="secondary"
       [outlined]="true"
+      icon="pi pi-times"
+      label="Cancel"
+      severity="secondary"
     ></p-button>
     <p-button
-      label="Export"
-      [icon]="isExporting() ? 'pi pi-spin pi-spinner' : 'pi pi-download'"
       (onClick)="confirm()"
       [disabled]="isExporting() || selectedColumns().length === 0"
+      [icon]="isExporting() ? 'pi pi-spin pi-spinner' : 'pi pi-download'"
+      label="Export"
       severity="success"
     ></p-button>
   </ng-template>

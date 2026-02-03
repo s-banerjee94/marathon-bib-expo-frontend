@@ -1,4 +1,4 @@
-import { Directive, OnDestroy, OnInit, inject, signal } from '@angular/core';
+import { Directive, inject, OnDestroy, OnInit, signal } from '@angular/core';
 import { DialogService, DynamicDialogRef } from 'primeng/dynamicdialog';
 import { MessageService } from 'primeng/api';
 import { TableLazyLoadEvent } from 'primeng/table';
@@ -20,13 +20,6 @@ import { FORM_INPUT_SIZE } from '../constants/form.constants';
 export abstract class BaseTableComponent<T, F extends TableFilterPreferences>
   implements OnInit, OnDestroy
 {
-  protected dialogService = inject(DialogService);
-  protected messageService = inject(MessageService);
-  protected errorHandler = inject(ErrorHandlerService);
-  protected dialogRef: DynamicDialogRef | null = null;
-  protected searchSubject = new Subject<string>();
-  private preferenceSaveSubject = new Subject<void>();
-
   // Data signals
   entities = signal<T[]>([]);
   isLoading = signal(false);
@@ -34,25 +27,26 @@ export abstract class BaseTableComponent<T, F extends TableFilterPreferences>
   pageSize = signal(5);
   totalRecords = signal(0);
   searchTerm = signal('');
-
   // Filter signals (to be extended by subclasses if needed)
   filterEnabled = signal(true);
   filterSort = signal<string[]>([]);
-
   // Sort signals
   selectedSort = signal<string | null>(null);
-
   // Column signals
   cols = signal<TableColumn[]>([]);
   selectedCols = signal<TableColumn[]>([]);
-
   // Form input size (controlled centrally via constant)
   readonly inputSize = FORM_INPUT_SIZE;
-
+  protected dialogService = inject(DialogService);
+  protected messageService = inject(MessageService);
+  protected errorHandler = inject(ErrorHandlerService);
+  protected dialogRef: DynamicDialogRef | null = null;
+  protected searchSubject = new Subject<string>();
   // Abstract properties - must be implemented by subclasses
   protected abstract columnPreferenceKey: string;
   protected abstract filterPreferenceKey: string;
   protected abstract allColumns: TableColumn[];
+  private preferenceSaveSubject = new Subject<void>();
 
   constructor() {
     // Debounce preference saves to avoid performance issues
@@ -60,21 +54,6 @@ export abstract class BaseTableComponent<T, F extends TableFilterPreferences>
       this.saveColumnPreferences(this.selectedCols());
       this.saveFilterPreferences(this.getCurrentFilterPreferences());
     });
-  }
-
-  protected initializeColumns(): void {
-    // Initialize columns (call this from subclass constructor)
-    this.cols.set(this.allColumns);
-    this.selectedCols.set(this.loadColumnPreferences());
-
-    // Load filter preferences after subclass signals are initialized
-    const filterPrefs = this.loadFilterPreferences();
-    this.applyFilterPreferences(filterPrefs);
-
-    // Set selectedSort from loaded preferences
-    if (filterPrefs.sort && filterPrefs.sort.length > 0) {
-      this.selectedSort.set(filterPrefs.sort[0]);
-    }
   }
 
   get visibleCols(): TableColumn[] {
@@ -101,10 +80,6 @@ export abstract class BaseTableComponent<T, F extends TableFilterPreferences>
     return this.entities();
   }
 
-  protected getRequiredColumns(): TableColumn[] {
-    return this.allColumns.filter((col) => col.required);
-  }
-
   ngOnInit(): void {
     // Set up debounced search with minimum 2 characters
     this.searchSubject.pipe(debounceTime(500), distinctUntilChanged()).subscribe((searchValue) => {
@@ -119,57 +94,6 @@ export abstract class BaseTableComponent<T, F extends TableFilterPreferences>
 
     // Data loading is handled by PrimeNG table's lazy load event (onLazyLoad)
     // No need to call loadData() here to avoid duplicate backend calls
-  }
-
-  protected loadColumnPreferences(): TableColumn[] {
-    try {
-      const savedPrefs = localStorage.getItem(this.columnPreferenceKey);
-      if (savedPrefs) {
-        const savedFields = JSON.parse(savedPrefs) as string[];
-        // Map saved field names back to column objects
-        const savedColumns = savedFields
-          .map((field) => this.allColumns.find((col) => col.field === field))
-          .filter((col): col is TableColumn => col !== undefined);
-
-        // Return saved columns if any were found, otherwise return required columns
-        return savedColumns.length > 0 ? savedColumns : this.getRequiredColumns();
-      }
-    } catch (error) {
-      console.error('Failed to load column preferences:', error);
-    }
-    // Default to required columns
-    return this.getRequiredColumns();
-  }
-
-  protected saveColumnPreferences(columns: TableColumn[]): void {
-    try {
-      // Save only the field names to keep localStorage lean
-      const fieldNames = columns.map((col) => col.field);
-      localStorage.setItem(this.columnPreferenceKey, JSON.stringify(fieldNames));
-    } catch (error) {
-      console.error('Failed to save column preferences:', error);
-    }
-  }
-
-  protected loadFilterPreferences(): F {
-    try {
-      const savedPrefs = localStorage.getItem(this.filterPreferenceKey);
-      if (savedPrefs) {
-        return JSON.parse(savedPrefs) as F;
-      }
-    } catch (error) {
-      console.error('Failed to load filter preferences:', error);
-    }
-    // Default filter preferences
-    return this.getDefaultFilterPreferences();
-  }
-
-  protected saveFilterPreferences(prefs: F): void {
-    try {
-      localStorage.setItem(this.filterPreferenceKey, JSON.stringify(prefs));
-    } catch (error) {
-      console.error('Failed to save filter preferences:', error);
-    }
   }
 
   onPageChange(event: TableLazyLoadEvent): void {
@@ -237,6 +161,84 @@ export abstract class BaseTableComponent<T, F extends TableFilterPreferences>
     return sortField === fieldName;
   }
 
+  ngOnDestroy(): void {
+    if (this.dialogRef) {
+      this.dialogRef.close();
+    }
+    this.searchSubject.complete();
+    this.preferenceSaveSubject.complete();
+  }
+
+  protected initializeColumns(): void {
+    // Initialize columns (call this from subclass constructor)
+    this.cols.set(this.allColumns);
+    this.selectedCols.set(this.loadColumnPreferences());
+
+    // Load filter preferences after subclass signals are initialized
+    const filterPrefs = this.loadFilterPreferences();
+    this.applyFilterPreferences(filterPrefs);
+
+    // Set selectedSort from loaded preferences
+    if (filterPrefs.sort && filterPrefs.sort.length > 0) {
+      this.selectedSort.set(filterPrefs.sort[0]);
+    }
+  }
+
+  protected getRequiredColumns(): TableColumn[] {
+    return this.allColumns.filter((col) => col.required);
+  }
+
+  protected loadColumnPreferences(): TableColumn[] {
+    try {
+      const savedPrefs = localStorage.getItem(this.columnPreferenceKey);
+      if (savedPrefs) {
+        const savedFields = JSON.parse(savedPrefs) as string[];
+        // Map saved field names back to column objects
+        const savedColumns = savedFields
+          .map((field) => this.allColumns.find((col) => col.field === field))
+          .filter((col): col is TableColumn => col !== undefined);
+
+        // Return saved columns if any were found, otherwise return required columns
+        return savedColumns.length > 0 ? savedColumns : this.getRequiredColumns();
+      }
+    } catch (error) {
+      console.error('Failed to load column preferences:', error);
+    }
+    // Default to required columns
+    return this.getRequiredColumns();
+  }
+
+  protected saveColumnPreferences(columns: TableColumn[]): void {
+    try {
+      // Save only the field names to keep localStorage lean
+      const fieldNames = columns.map((col) => col.field);
+      localStorage.setItem(this.columnPreferenceKey, JSON.stringify(fieldNames));
+    } catch (error) {
+      console.error('Failed to save column preferences:', error);
+    }
+  }
+
+  protected loadFilterPreferences(): F {
+    try {
+      const savedPrefs = localStorage.getItem(this.filterPreferenceKey);
+      if (savedPrefs) {
+        return JSON.parse(savedPrefs) as F;
+      }
+    } catch (error) {
+      console.error('Failed to load filter preferences:', error);
+    }
+    // Default filter preferences
+    return this.getDefaultFilterPreferences();
+  }
+
+  protected saveFilterPreferences(prefs: F): void {
+    try {
+      localStorage.setItem(this.filterPreferenceKey, JSON.stringify(prefs));
+    } catch (error) {
+      console.error('Failed to save filter preferences:', error);
+    }
+  }
+
   protected buildPageableParams(): PageableParams {
     const params: PageableParams = {
       page: this.currentPage(),
@@ -286,14 +288,6 @@ export abstract class BaseTableComponent<T, F extends TableFilterPreferences>
     });
 
     return this.dialogRef;
-  }
-
-  ngOnDestroy(): void {
-    if (this.dialogRef) {
-      this.dialogRef.close();
-    }
-    this.searchSubject.complete();
-    this.preferenceSaveSubject.complete();
   }
 
   // Abstract methods - must be implemented by subclasses

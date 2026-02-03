@@ -1,7 +1,7 @@
-import { Component, inject, signal, OnInit, Output, EventEmitter, Input } from '@angular/core';
+import { Component, EventEmitter, inject, Input, OnInit, Output, signal } from '@angular/core';
 import { CommonModule, Location } from '@angular/common';
 import { FormsModule, NgForm } from '@angular/forms';
-import { Router, ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { InputTextModule } from 'primeng/inputtext';
 import { FloatLabelModule } from 'primeng/floatlabel';
 import { ButtonModule } from 'primeng/button';
@@ -14,15 +14,15 @@ import { MessageService } from 'primeng/api';
 import { DynamicDialogConfig, DynamicDialogRef } from 'primeng/dynamicdialog';
 import {
   CreateParticipantRequest,
-  UpdateParticipantRequest,
   Participant,
+  UpdateParticipantRequest,
 } from '../../core/models/participant.model';
 import { ParticipantService } from '../../core/services/participant.service';
 import { AuthService } from '../../core/services/auth.service';
 import { ErrorHandlerService } from '../../core/services/error-handler.service';
 import { OrganizationSelector } from '../../components/organization-selector/organization-selector';
 import { EventSelector } from '../../components/event-selector/event-selector';
-import { shouldShowError, initializeErrorHandler } from '../../shared/utils/form.utils';
+import { initializeErrorHandler, shouldShowError } from '../../shared/utils/form.utils';
 import { FORM_INPUT_SIZE } from '../../shared/constants/form.constants';
 import { GENDER_OPTIONS } from '../../shared/constants/participant-columns.constant';
 import { UserRole } from '../../core/models/user.model';
@@ -48,30 +48,16 @@ import { UserRole } from '../../core/models/user.model';
   styleUrl: './participant-form.css',
 })
 export class ParticipantForm implements OnInit {
-  private participantService = inject(ParticipantService);
-  private authService = inject(AuthService);
-  private router = inject(Router);
-  private route = inject(ActivatedRoute);
-  private location = inject(Location);
-  private messageService = inject(MessageService);
-  private errorHandler = inject(ErrorHandlerService);
-
-  // Optional injection for dialog mode (DynamicDialog)
-  private injectedDialogConfig = inject(DynamicDialogConfig, { optional: true });
   public dialogRef = inject(DynamicDialogRef, { optional: true });
-
   // Input for dialog mode (regular p-dialog) - pass data directly
   @Input() dialogData?: {
     eventId: number;
     bibNumber?: string;
     isEditMode: boolean;
   };
-
   // Event emitter for successful form submission (used when not in DynamicDialog mode)
   @Output() formSubmitSuccess = new EventEmitter<Participant>();
-
   isDialogMode = signal(false);
-
   // Form data as plain object for ngModel binding
   participant = {
     chipNumber: '',
@@ -92,23 +78,29 @@ export class ParticipantForm implements OnInit {
     emergencyContactPhone: '',
     notes: '',
   };
-
   // Component state as signals
   isSubmitting = signal(false);
   isEditMode = signal(false);
   eventId = signal<number | null>(null);
   bibNumber = signal<string | null>(null);
   isLoading = signal(false);
-
   // Organization/Event selection for route mode
   selectedOrganizationId = signal<number | undefined>(undefined);
   selectedEventId = signal<number | undefined>(undefined);
-
   // Gender options
   genderOptions = GENDER_OPTIONS.filter((opt) => opt.value !== ''); // Remove "All Genders" option
-
   // Form input size (controlled centrally via constant)
   readonly inputSize = FORM_INPUT_SIZE;
+  shouldShowError = shouldShowError;
+  private participantService = inject(ParticipantService);
+  private authService = inject(AuthService);
+  private router = inject(Router);
+  private route = inject(ActivatedRoute);
+  private location = inject(Location);
+  private messageService = inject(MessageService);
+  private errorHandler = inject(ErrorHandlerService);
+  // Optional injection for dialog mode (DynamicDialog)
+  private injectedDialogConfig = inject(DynamicDialogConfig, { optional: true });
 
   ngOnInit(): void {
     initializeErrorHandler(this.errorHandler, this.messageService);
@@ -167,48 +159,6 @@ export class ParticipantForm implements OnInit {
     }
   }
 
-  private loadParticipantData(eventId: number, bibNumber: string): void {
-    this.isLoading.set(true);
-
-    this.participantService.getParticipantByBibNumber(eventId, bibNumber).subscribe({
-      next: (participantData: Participant) => {
-        this.populateFormFromParticipant(participantData);
-        this.isLoading.set(false);
-      },
-      error: (error) => {
-        this.isLoading.set(false);
-        this.errorHandler.showError(error, 'Error', {
-          customMessage: 'Failed to load participant data. Please try again.',
-        });
-        if (!this.isDialogMode()) {
-          this.router.navigate([this.authService.getDashboardRoute()]);
-        }
-      },
-    });
-  }
-
-  private populateFormFromParticipant(participantData: Participant): void {
-    this.participant = {
-      chipNumber: participantData.chipNumber || '',
-      bibNumber: participantData.bibNumber || '',
-      fullName: participantData.fullName || '',
-      raceId: participantData.raceId || '',
-      raceName: participantData.raceName || '',
-      categoryId: participantData.categoryId || '',
-      categoryName: participantData.categoryName || '',
-      gender: participantData.gender || '',
-      phoneNumber: participantData.phoneNumber || '',
-      email: participantData.email || '',
-      dateOfBirth: participantData.dateOfBirth || '',
-      age: participantData.age || null,
-      country: participantData.country || '',
-      city: participantData.city || '',
-      emergencyContactName: participantData.emergencyContactName || '',
-      emergencyContactPhone: participantData.emergencyContactPhone || '',
-      notes: participantData.notes || '',
-    };
-  }
-
   onOrganizationChange(organizationId: number | undefined): void {
     this.selectedOrganizationId.set(organizationId);
     this.selectedEventId.set(undefined);
@@ -251,8 +201,6 @@ export class ParticipantForm implements OnInit {
 
     return false;
   }
-
-  shouldShowError = shouldShowError;
 
   // Public method to submit form (can be called from parent)
   public submitForm(): void {
@@ -470,5 +418,47 @@ export class ParticipantForm implements OnInit {
       return this.isEditMode() ? 'Updating...' : 'Creating...';
     }
     return this.isEditMode() ? 'Update Participant' : 'Create Participant';
+  }
+
+  private loadParticipantData(eventId: number, bibNumber: string): void {
+    this.isLoading.set(true);
+
+    this.participantService.getParticipantByBibNumber(eventId, bibNumber).subscribe({
+      next: (participantData: Participant) => {
+        this.populateFormFromParticipant(participantData);
+        this.isLoading.set(false);
+      },
+      error: (error) => {
+        this.isLoading.set(false);
+        this.errorHandler.showError(error, 'Error', {
+          customMessage: 'Failed to load participant data. Please try again.',
+        });
+        if (!this.isDialogMode()) {
+          this.router.navigate([this.authService.getDashboardRoute()]);
+        }
+      },
+    });
+  }
+
+  private populateFormFromParticipant(participantData: Participant): void {
+    this.participant = {
+      chipNumber: participantData.chipNumber || '',
+      bibNumber: participantData.bibNumber || '',
+      fullName: participantData.fullName || '',
+      raceId: participantData.raceId || '',
+      raceName: participantData.raceName || '',
+      categoryId: participantData.categoryId || '',
+      categoryName: participantData.categoryName || '',
+      gender: participantData.gender || '',
+      phoneNumber: participantData.phoneNumber || '',
+      email: participantData.email || '',
+      dateOfBirth: participantData.dateOfBirth || '',
+      age: participantData.age || null,
+      country: participantData.country || '',
+      city: participantData.city || '',
+      emergencyContactName: participantData.emergencyContactName || '',
+      emergencyContactPhone: participantData.emergencyContactPhone || '',
+      notes: participantData.notes || '',
+    };
   }
 }

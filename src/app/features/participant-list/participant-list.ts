@@ -1,4 +1,4 @@
-import { Component, inject, signal, computed, ViewChild, OnDestroy } from '@angular/core';
+import { Component, computed, inject, OnDestroy, signal, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { CardModule } from 'primeng/card';
@@ -9,9 +9,9 @@ import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { ConfirmationService } from 'primeng/api';
 import { DialogService, DynamicDialogRef } from 'primeng/dynamicdialog';
 import {
-  Participant,
-  ImportHistoryItem,
   ImportErrorItem,
+  ImportHistoryItem,
+  Participant,
 } from '../../core/models/participant.model';
 import { ParticipantService } from '../../core/services/participant.service';
 import { ErrorHandlerService } from '../../core/services/error-handler.service';
@@ -27,8 +27,8 @@ import { ImportHistoryTab } from './components/import-history-tab/import-history
 import { ParticipantViewDialog } from './components/participant-view-dialog/participant-view-dialog';
 import { ParticipantExportDialog } from './components/participant-export-dialog/participant-export-dialog';
 import {
-  ParticipantImportDialog,
   ImportResponse,
+  ParticipantImportDialog,
 } from './components/participant-import-dialog/participant-import-dialog';
 
 @Component({
@@ -56,28 +56,17 @@ import {
   providers: [DialogService, ConfirmationService],
 })
 export class ParticipantList implements OnDestroy {
-  private participantService = inject(ParticipantService);
-  private errorHandler = inject(ErrorHandlerService);
-  private confirmationService = inject(ConfirmationService);
-
   @ViewChild(EventSelector) eventSelector?: EventSelector;
   @ViewChild('participantFormComponent') participantFormComponent?: ParticipantForm;
-
-  private dialogRef: DynamicDialogRef | null = null;
-
   // Cascading filter signals
   selectedOrganizationId = signal<number | undefined>(undefined);
   selectedEventId = signal<number | undefined>(undefined);
-
   // Tab state
   activeTab = signal<string>('manage');
-
   // Participant table state
   participants = signal<Participant[]>([]);
   isLoading = signal(false);
   hasMore = signal(true);
-  private lastEvaluatedKey?: string;
-
   // Import dialog state
   showImportDialog = signal(false);
   isUploading = signal(false);
@@ -85,7 +74,6 @@ export class ParticipantList implements OnDestroy {
   importResponse = signal<ImportResponse | null>(null);
   errorDetails = signal<ImportErrorItem[]>([]);
   isLoadingErrors = signal(false);
-
   // Import history state
   importHistory = signal<ImportHistoryItem[]>([]);
   isLoadingHistory = signal(false);
@@ -93,12 +81,9 @@ export class ParticipantList implements OnDestroy {
   importHistoryErrors = signal<ImportErrorItem[]>([]);
   isLoadingImportErrors = signal(false);
   hasMoreImportErrors = signal(true);
-  private lastEvaluatedKeyImportErrors?: string;
-
   // View details dialog state
   showViewDialog = signal(false);
   viewParticipant = signal<Participant | null>(null);
-
   // Create/Edit form dialog state
   showFormDialog = signal(false);
   formDialogHeader = signal('');
@@ -107,11 +92,9 @@ export class ParticipantList implements OnDestroy {
     bibNumber?: string;
     isEditMode: boolean;
   } | null>(null);
-
   // Export dialog state
   showExportDialog = signal(false);
   isExporting = signal(false);
-
   // Column configuration
   allColumns = PARTICIPANT_COLUMNS;
   visibleColumns = signal<string[]>([
@@ -126,11 +109,16 @@ export class ParticipantList implements OnDestroy {
     'city',
     'actions',
   ]);
-
   // Computed: Show table only when organization and event are selected
   canShowTable = computed(
     () => this.selectedOrganizationId() !== undefined && this.selectedEventId() !== undefined,
   );
+  private participantService = inject(ParticipantService);
+  private errorHandler = inject(ErrorHandlerService);
+  private confirmationService = inject(ConfirmationService);
+  private dialogRef: DynamicDialogRef | null = null;
+  private lastEvaluatedKey?: string;
+  private lastEvaluatedKeyImportErrors?: string;
 
   onOrganizationChange(organizationId: number | undefined): void {
     this.selectedOrganizationId.set(organizationId);
@@ -160,39 +148,6 @@ export class ParticipantList implements OnDestroy {
     if (this.hasMore() && !this.isLoading()) {
       this.loadParticipants(true);
     }
-  }
-
-  private loadParticipants(append: boolean = false): void {
-    const eventId = this.selectedEventId();
-    if (!eventId || this.isLoading()) return;
-
-    this.isLoading.set(true);
-
-    this.participantService
-      .getParticipants(eventId, 50, append ? this.lastEvaluatedKey : undefined)
-      .subscribe({
-        next: (response) => {
-          if (append) {
-            this.participants.update((current) => [...current, ...response.participants]);
-          } else {
-            this.participants.set(response.participants);
-          }
-          this.lastEvaluatedKey = response.lastEvaluatedKey;
-          this.hasMore.set(response.hasMore);
-          this.isLoading.set(false);
-        },
-        error: (error) => {
-          this.errorHandler.showError(error, 'Failed to load participants');
-          this.isLoading.set(false);
-        },
-      });
-  }
-
-  private reloadParticipants(): void {
-    this.participants.set([]);
-    this.hasMore.set(true);
-    this.lastEvaluatedKey = undefined;
-    this.loadParticipants();
   }
 
   // View dialog
@@ -365,6 +320,63 @@ export class ParticipantList implements OnDestroy {
     }
   }
 
+  onImportSelect(importId: string | undefined): void {
+    this.selectedImportId.set(importId);
+    this.importHistoryErrors.set([]);
+    this.hasMoreImportErrors.set(true);
+    this.lastEvaluatedKeyImportErrors = undefined;
+
+    if (importId) {
+      const selectedImport = this.importHistory().find((imp) => imp.importId === importId);
+      if (selectedImport && selectedImport.failureCount > 0) {
+        this.loadImportErrors(false);
+      }
+    }
+  }
+
+  loadMoreImportErrors(): void {
+    if (this.hasMoreImportErrors() && !this.isLoadingImportErrors()) {
+      this.loadImportErrors(true);
+    }
+  }
+
+  ngOnDestroy(): void {
+    this.dialogRef?.close();
+  }
+
+  private loadParticipants(append: boolean = false): void {
+    const eventId = this.selectedEventId();
+    if (!eventId || this.isLoading()) return;
+
+    this.isLoading.set(true);
+
+    this.participantService
+      .getParticipants(eventId, 50, append ? this.lastEvaluatedKey : undefined)
+      .subscribe({
+        next: (response) => {
+          if (append) {
+            this.participants.update((current) => [...current, ...response.participants]);
+          } else {
+            this.participants.set(response.participants);
+          }
+          this.lastEvaluatedKey = response.lastEvaluatedKey;
+          this.hasMore.set(response.hasMore);
+          this.isLoading.set(false);
+        },
+        error: (error) => {
+          this.errorHandler.showError(error, 'Failed to load participants');
+          this.isLoading.set(false);
+        },
+      });
+  }
+
+  private reloadParticipants(): void {
+    this.participants.set([]);
+    this.hasMore.set(true);
+    this.lastEvaluatedKey = undefined;
+    this.loadParticipants();
+  }
+
   // Import history
   private loadImportHistory(): void {
     const eventId = this.selectedEventId();
@@ -382,20 +394,6 @@ export class ParticipantList implements OnDestroy {
         this.errorHandler.showError(error, 'Failed to load import history');
       },
     });
-  }
-
-  onImportSelect(importId: string | undefined): void {
-    this.selectedImportId.set(importId);
-    this.importHistoryErrors.set([]);
-    this.hasMoreImportErrors.set(true);
-    this.lastEvaluatedKeyImportErrors = undefined;
-
-    if (importId) {
-      const selectedImport = this.importHistory().find((imp) => imp.importId === importId);
-      if (selectedImport && selectedImport.failureCount > 0) {
-        this.loadImportErrors(false);
-      }
-    }
   }
 
   private loadImportErrors(append: boolean = false): void {
@@ -428,15 +426,5 @@ export class ParticipantList implements OnDestroy {
           this.isLoadingImportErrors.set(false);
         },
       });
-  }
-
-  loadMoreImportErrors(): void {
-    if (this.hasMoreImportErrors() && !this.isLoadingImportErrors()) {
-      this.loadImportErrors(true);
-    }
-  }
-
-  ngOnDestroy(): void {
-    this.dialogRef?.close();
   }
 }

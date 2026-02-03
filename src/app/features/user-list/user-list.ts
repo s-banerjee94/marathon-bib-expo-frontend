@@ -1,12 +1,11 @@
 import { Component, inject, signal, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Popover } from 'primeng/popover';
+import { Popover, PopoverModule } from 'primeng/popover';
 import { FormsModule } from '@angular/forms';
 import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
 import { MultiSelectModule } from 'primeng/multiselect';
 import { TooltipModule } from 'primeng/tooltip';
-import { PopoverModule } from 'primeng/popover';
 import { DividerModule } from 'primeng/divider';
 import { ConfirmPopupModule } from 'primeng/confirmpopup';
 import { SkeletonModule } from 'primeng/skeleton';
@@ -67,70 +66,28 @@ interface UserFilterPreferences extends TableFilterPreferences {
   styleUrl: './user-list.css',
 })
 export class UserList extends BaseTableComponent<User, UserFilterPreferences> {
-  private userService = inject(UserService);
-  private organizationService = inject(OrganizationService);
-  private confirmationService = inject(ConfirmationService);
-
   @ViewChild('orgPopover') orgPopover!: Popover;
-
   // User-specific filter
   filterIncludeDeleted = signal(false);
-
   // Organization popover state
   organizationCache = new Map<number, Organization>();
   loadingOrganizationId = signal<number | null>(null);
   currentOrganizationDetails = signal<Organization | null>(null);
-
   // Toggle enabled state
   togglingUserId = signal<number | null>(null);
-
+  // User-specific sort options
+  readonly sortOptions = USER_SORT_OPTIONS;
   // Base class requirements
   protected override columnPreferenceKey = STORAGE_KEYS.USER_TABLE_COLUMNS;
   protected override filterPreferenceKey = STORAGE_KEYS.USER_TABLE_FILTERS;
   protected override allColumns = USER_COLUMNS;
-
-  // User-specific sort options
-  readonly sortOptions = USER_SORT_OPTIONS;
+  private userService = inject(UserService);
+  private organizationService = inject(OrganizationService);
+  private confirmationService = inject(ConfirmationService);
 
   constructor() {
     super();
     this.initializeColumns();
-  }
-
-  protected override loadData(): void {
-    this.isLoading.set(true);
-
-    const params: PageableParams = {
-      ...this.buildPageableParams(),
-      includeDeleted: this.filterIncludeDeleted(),
-    };
-
-    this.userService.searchUsers(params).subscribe({
-      next: (response) => this.handleLoadSuccess(response),
-      error: (error) => this.handleLoadError(error),
-    });
-  }
-
-  protected override getDefaultFilterPreferences(): UserFilterPreferences {
-    return {
-      enabled: true,
-      includeDeleted: false,
-      sort: [],
-    };
-  }
-
-  protected override getCurrentFilterPreferences(): UserFilterPreferences {
-    return {
-      enabled: this.filterEnabled(),
-      includeDeleted: this.filterIncludeDeleted(),
-      sort: this.filterSort(),
-    };
-  }
-
-  protected override applyFilterPreferences(prefs: UserFilterPreferences): void {
-    this.filterEnabled.set(prefs.enabled);
-    this.filterIncludeDeleted.set(prefs.includeDeleted);
-    this.filterSort.set(prefs.sort);
   }
 
   getRoleSeverity(role: UserRole): 'danger' | 'success' | 'info' | 'warn' | 'secondary' {
@@ -317,5 +274,41 @@ export class UserList extends BaseTableComponent<User, UserFilterPreferences> {
         },
       );
     }
+  }
+
+  protected override loadData(): void {
+    this.isLoading.set(true);
+
+    const params: PageableParams = {
+      ...this.buildPageableParams(),
+      includeDeleted: this.filterIncludeDeleted(),
+    };
+
+    this.userService.searchUsers(params).subscribe({
+      next: (response) => this.handleLoadSuccess(response),
+      error: (error) => this.handleLoadError(error),
+    });
+  }
+
+  protected override getDefaultFilterPreferences(): UserFilterPreferences {
+    return {
+      enabled: true,
+      includeDeleted: false,
+      sort: [],
+    };
+  }
+
+  protected override getCurrentFilterPreferences(): UserFilterPreferences {
+    return {
+      enabled: this.filterEnabled(),
+      includeDeleted: this.filterIncludeDeleted(),
+      sort: this.filterSort(),
+    };
+  }
+
+  protected override applyFilterPreferences(prefs: UserFilterPreferences): void {
+    this.filterEnabled.set(prefs.enabled);
+    this.filterIncludeDeleted.set(prefs.includeDeleted);
+    this.filterSort.set(prefs.sort);
   }
 }

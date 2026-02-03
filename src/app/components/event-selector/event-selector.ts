@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, signal, inject, OnInit } from '@angular/core';
+import { Component, EventEmitter, inject, Input, OnInit, Output, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AutoCompleteModule, AutoCompleteSelectEvent } from 'primeng/autocomplete';
@@ -12,7 +12,6 @@ import { AuthService } from '../../core/services/auth.service';
 import { ErrorHandlerService } from '../../core/services/error-handler.service';
 import { FORM_INPUT_SIZE } from '../../shared/constants/form.constants';
 import { HighlightPipe } from '../../shared/pipes/highlight.pipe';
-import { UserRole } from '../../core/models/user.model';
 
 /**
  * Reusable Event Autocomplete Selector Component
@@ -54,10 +53,6 @@ import { UserRole } from '../../core/models/user.model';
   templateUrl: './event-selector.html',
 })
 export class EventSelector implements OnInit {
-  private eventService = inject(EventService);
-  private authService = inject(AuthService);
-  private errorHandler = inject(ErrorHandlerService);
-
   // Input properties
   @Input() label: string = 'Event';
   @Input() placeholder: string = 'Type to search events...';
@@ -70,77 +65,28 @@ export class EventSelector implements OnInit {
   @Input() inputId: string = 'eventAutocomplete';
   @Input() selectedEventId?: number;
   @Input() organizationId?: number; // Filter events by organization
-
   // Output events
   @Output() eventSelected = new EventEmitter<Event>();
   @Output() eventCleared = new EventEmitter<void>();
   @Output() eventIdChange = new EventEmitter<number | undefined>();
-
   // Component state
   eventSuggestions = signal<Event[]>([]);
   selectedEvent = signal<Event | null>(null);
   isLoadingEvents = signal(false);
   currentSearchTerm = signal<string>('');
-
-  // Internal state
-  private hasLoadedInitialEvents = false;
-
   // Debounce delay for autocomplete
   readonly autocompleteDelay = 300;
+  private eventService = inject(EventService);
+  private authService = inject(AuthService);
+  private errorHandler = inject(ErrorHandlerService);
+  // Internal state
+  private hasLoadedInitialEvents = false;
 
   ngOnInit(): void {
     // Load event if ID is provided
     if (this.selectedEventId) {
       this.loadEventById(this.selectedEventId);
     }
-  }
-
-  /**
-   * Load event by ID for pre-population
-   */
-  private loadEventById(id: number): void {
-    this.eventService.getEventById(id).subscribe({
-      next: (event) => {
-        this.selectedEvent.set(event);
-      },
-      error: (error) => {
-        this.errorHandler.showError(error, 'Failed to load event');
-      },
-    });
-  }
-
-  /**
-   * Load initial 50 events on first dropdown interaction
-   * Backend excludes deleted events automatically
-   * EventService automatically routes to correct endpoint based on user role
-   */
-  private loadInitialEvents(): void {
-    this.isLoadingEvents.set(true);
-
-    const params: any = {
-      page: 0,
-      size: 50,
-      sort: ['eventStartDate,desc'],
-    };
-
-    // Add organization filter if provided
-    if (this.organizationId) {
-      params.organizationId = this.organizationId;
-    }
-
-    this.eventService.searchEvents(params).subscribe({
-      next: (response: PageableResponse<Event>) => {
-        // Filter to only show enabled events
-        const enabledEvents = response.content.filter((event) => event.enabled);
-        this.eventSuggestions.set(enabledEvents);
-        this.isLoadingEvents.set(false);
-        this.hasLoadedInitialEvents = true;
-      },
-      error: (error) => {
-        this.isLoadingEvents.set(false);
-        this.errorHandler.showError(error, 'Failed to load events');
-      },
-    });
   }
 
   /**
@@ -248,5 +194,53 @@ export class EventSelector implements OnInit {
       return words[0].substring(0, 2).toUpperCase();
     }
     return (words[0][0] + words[words.length - 1][0]).toUpperCase();
+  }
+
+  /**
+   * Load event by ID for pre-population
+   */
+  private loadEventById(id: number): void {
+    this.eventService.getEventById(id).subscribe({
+      next: (event) => {
+        this.selectedEvent.set(event);
+      },
+      error: (error) => {
+        this.errorHandler.showError(error, 'Failed to load event');
+      },
+    });
+  }
+
+  /**
+   * Load initial 50 events on first dropdown interaction
+   * Backend excludes deleted events automatically
+   * EventService automatically routes to correct endpoint based on user role
+   */
+  private loadInitialEvents(): void {
+    this.isLoadingEvents.set(true);
+
+    const params: any = {
+      page: 0,
+      size: 50,
+      sort: ['eventStartDate,desc'],
+    };
+
+    // Add organization filter if provided
+    if (this.organizationId) {
+      params.organizationId = this.organizationId;
+    }
+
+    this.eventService.searchEvents(params).subscribe({
+      next: (response: PageableResponse<Event>) => {
+        // Filter to only show enabled events
+        const enabledEvents = response.content.filter((event) => event.enabled);
+        this.eventSuggestions.set(enabledEvents);
+        this.isLoadingEvents.set(false);
+        this.hasLoadedInitialEvents = true;
+      },
+      error: (error) => {
+        this.isLoadingEvents.set(false);
+        this.errorHandler.showError(error, 'Failed to load events');
+      },
+    });
   }
 }

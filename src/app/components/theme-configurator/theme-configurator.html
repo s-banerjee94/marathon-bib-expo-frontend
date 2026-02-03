@@ -4,17 +4,17 @@
     <div class="pt-2 flex gap-2 flex-wrap justify-start">
       @for (primaryColor of layoutService.primaryColors(); track primaryColor.name) {
         <button
-          type="button"
-          [title]="primaryColor.name"
           (click)="updateColors($event, 'primary', primaryColor)"
           [ngClass]="{
             'outline outline-primary': primaryColor.name === layoutService.selectedPrimary(),
           }"
-          class="cursor-pointer w-5 h-5 rounded-full flex shrink-0 items-center justify-center outline-offset-1 shadow"
           [style]="{
             'background-color':
               primaryColor?.name === 'noir' ? 'var(--text-color)' : primaryColor?.palette?.['500'],
           }"
+          [title]="primaryColor.name"
+          class="cursor-pointer w-5 h-5 rounded-full flex shrink-0 items-center justify-center outline-offset-1 shadow"
+          type="button"
         ></button>
       }
     </div>
@@ -24,10 +24,7 @@
     <div class="pt-2 flex gap-2 flex-wrap justify-start">
       @for (surface of layoutService.surfaces; track surface.name) {
         <button
-          type="button"
-          [title]="surface.name"
           (click)="updateColors($event, 'surface', surface)"
-          class="cursor-pointer w-5 h-5 rounded-full flex shrink-0 items-center justify-center p-0 outline-offset-1"
           [ngClass]="{
             'outline outline-primary': layoutService.selectedSurface()
               ? layoutService.selectedSurface() === surface.name
@@ -38,6 +35,9 @@
           [style]="{
             'background-color': surface?.palette?.['500'],
           }"
+          [title]="surface.name"
+          class="cursor-pointer w-5 h-5 rounded-full flex shrink-0 items-center justify-center p-0 outline-offset-1"
+          type="button"
         ></button>
       }
     </div>
@@ -45,10 +45,10 @@
   <div class="flex flex-col gap-2">
     <span class="text-sm font-semibold">Presets</span>
     <p-selectbutton
-      [options]="layoutService.presetOptions"
-      [ngModel]="layoutService.selectedPreset()"
       (ngModelChange)="onPresetChange($event)"
       [allowEmpty]="false"
+      [ngModel]="layoutService.selectedPreset()"
+      [options]="layoutService.presetOptions"
       size="small"
     />
   </div>

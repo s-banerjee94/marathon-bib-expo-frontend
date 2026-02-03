@@ -11,9 +11,8 @@ import { AuthService } from '../../core/services/auth.service';
 })
 export class DistributerDashboard {
   private authService = inject(AuthService);
-  private router = inject(Router);
-
   user = this.authService.currentUser;
+  private router = inject(Router);
 
   logout() {
     this.authService.logout();

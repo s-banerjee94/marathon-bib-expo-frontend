@@ -12,16 +12,15 @@ import { InputTextModule } from 'primeng/inputtext';
 import { CheckboxModule } from 'primeng/checkbox';
 import { SelectModule } from 'primeng/select';
 import { ConfirmPopupModule } from 'primeng/confirmpopup';
-import { ConfirmationService } from 'primeng/api';
+import { ConfirmationService, MenuItem } from 'primeng/api';
 import { DialogService } from 'primeng/dynamicdialog';
 import { TagModule } from 'primeng/tag';
 import { Menu } from 'primeng/menu';
-import { Popover } from 'primeng/popover';
-import { PopoverModule } from 'primeng/popover';
+import { Popover, PopoverModule } from 'primeng/popover';
 import { DividerModule } from 'primeng/divider';
 import { FloatLabelModule } from 'primeng/floatlabel';
 import { Event, EventStatus } from '../../core/models/event.model';
-import { PageableParams, PageableResponse } from '../../core/models/api.model';
+import { PageableParams } from '../../core/models/api.model';
 import { EventService } from '../../core/services/event.service';
 import { AuthService } from '../../core/services/auth.service';
 import { OrganizationService } from '../../core/services/organization.service';
@@ -34,7 +33,6 @@ import { EventForm } from '../event-form/event-form';
 import { DefaultValuePipe } from '../../shared/pipes/default-value.pipe';
 import { BaseTableComponent } from '../../shared/base/base-table.component';
 import { TableFilterPreferences } from '../../shared/models/table-config.model';
-import { MenuItem } from 'primeng/api';
 import { OrganizationSelector } from '../../components/organization-selector/organization-selector';
 
 interface EventFilterPreferences extends TableFilterPreferences {
@@ -72,37 +70,16 @@ interface EventFilterPreferences extends TableFilterPreferences {
   styleUrl: './event-list.css',
 })
 export class EventList extends BaseTableComponent<Event, EventFilterPreferences> {
-  private eventService = inject(EventService);
-  private authService = inject(AuthService);
-  private organizationService = inject(OrganizationService);
-  private confirmationService = inject(ConfirmationService);
-
   @ViewChild('orgPopover') orgPopover!: Popover;
-
   filterStatus = signal<string[]>([]);
   filterOrganizationId = signal<number | undefined>(undefined);
   togglingEventId = signal<number | null>(null);
   changingStatusEventId = signal<number | null>(null);
   statusMenuItems = signal<MenuItem[]>([]);
-  private lastClickTarget: EventTarget | null = null;
-
   // Organization popover state
   organizationCache = new Map<number, Organization>();
   loadingOrganizationId = signal<number | null>(null);
   currentOrganizationDetails = signal<Organization | null>(null);
-
-  readonly isRootOrAdmin = this.authService.hasAnyRole([UserRole.ROOT, UserRole.ADMIN]);
-  readonly canChangeStatus = this.authService.hasAnyRole([
-    UserRole.ROOT,
-    UserRole.ADMIN,
-    UserRole.ORGANIZER_ADMIN,
-    UserRole.ORGANIZER_USER,
-  ]);
-
-  protected override columnPreferenceKey = STORAGE_KEYS.EVENT_TABLE_COLUMNS;
-  protected override filterPreferenceKey = STORAGE_KEYS.EVENT_TABLE_FILTERS;
-  protected override allColumns = EVENT_COLUMNS;
-
   readonly sortOptions = EVENT_SORT_OPTIONS;
   readonly statusOptions = [
     { label: 'Draft', value: EventStatus.DRAFT },
@@ -110,6 +87,21 @@ export class EventList extends BaseTableComponent<Event, EventFilterPreferences>
     { label: 'Cancelled', value: EventStatus.CANCELLED },
     { label: 'Completed', value: EventStatus.COMPLETED },
   ];
+  protected override columnPreferenceKey = STORAGE_KEYS.EVENT_TABLE_COLUMNS;
+  protected override filterPreferenceKey = STORAGE_KEYS.EVENT_TABLE_FILTERS;
+  protected override allColumns = EVENT_COLUMNS;
+  private eventService = inject(EventService);
+  private authService = inject(AuthService);
+  readonly isRootOrAdmin = this.authService.hasAnyRole([UserRole.ROOT, UserRole.ADMIN]);
+  readonly canChangeStatus = this.authService.hasAnyRole([
+    UserRole.ROOT,
+    UserRole.ADMIN,
+    UserRole.ORGANIZER_ADMIN,
+    UserRole.ORGANIZER_USER,
+  ]);
+  private organizationService = inject(OrganizationService);
+  private confirmationService = inject(ConfirmationService);
+  private lastClickTarget: EventTarget | null = null;
 
   constructor() {
     super();
@@ -164,57 +156,6 @@ export class EventList extends BaseTableComponent<Event, EventFilterPreferences>
         this.errorHandler.showError(error, 'Failed to load organization');
       },
     });
-  }
-
-  private filterColumnsBasedOnRole(): void {
-    if (!this.isRootOrAdmin) {
-      const filteredCols = this.cols().filter(
-        (col) => col.field !== 'organizationId' && col.field !== 'enabled',
-      );
-      this.cols.set(filteredCols);
-
-      const filteredSelectedCols = this.selectedCols().filter(
-        (col) => col.field !== 'organizationId' && col.field !== 'enabled',
-      );
-      this.selectedCols.set(filteredSelectedCols);
-    }
-  }
-
-  protected override loadData(): void {
-    this.isLoading.set(true);
-
-    const params: PageableParams = {
-      ...this.buildPageableParams(),
-      status: this.filterStatus().length > 0 ? this.filterStatus()[0] : undefined,
-      organizationId: this.isRootOrAdmin ? this.filterOrganizationId() : undefined,
-    };
-
-    this.eventService.searchEvents(params).subscribe({
-      next: (response) => this.handleLoadSuccess(response),
-      error: (error) => this.handleLoadError(error),
-    });
-  }
-
-  protected override getDefaultFilterPreferences(): EventFilterPreferences {
-    return {
-      status: [],
-      organizationId: undefined,
-      sort: [],
-    };
-  }
-
-  protected override getCurrentFilterPreferences(): EventFilterPreferences {
-    return {
-      status: this.filterStatus(),
-      organizationId: this.filterOrganizationId(),
-      sort: this.filterSort(),
-    };
-  }
-
-  protected override applyFilterPreferences(prefs: EventFilterPreferences): void {
-    this.filterStatus.set(prefs.status || []);
-    this.filterOrganizationId.set(prefs.organizationId);
-    this.filterSort.set(prefs.sort || []);
   }
 
   getEventStatusSeverity(status: string): 'danger' | 'success' | 'info' | 'warn' | 'secondary' {
@@ -436,21 +377,6 @@ export class EventList extends BaseTableComponent<Event, EventFilterPreferences>
     });
   }
 
-  private getStatusLabel(status: EventStatus): string {
-    switch (status) {
-      case EventStatus.DRAFT:
-        return 'Draft';
-      case EventStatus.PUBLISHED:
-        return 'Published';
-      case EventStatus.CANCELLED:
-        return 'Cancelled';
-      case EventStatus.COMPLETED:
-        return 'Completed';
-      default:
-        return status;
-    }
-  }
-
   showStatusMenu(menu: Menu, clickEvent: MouseEvent, event: Event): void {
     if (!this.canChangeStatus) {
       return;
@@ -486,5 +412,71 @@ export class EventList extends BaseTableComponent<Event, EventFilterPreferences>
     ]);
 
     menu.toggle(clickEvent);
+  }
+
+  protected override loadData(): void {
+    this.isLoading.set(true);
+
+    const params: PageableParams = {
+      ...this.buildPageableParams(),
+      status: this.filterStatus().length > 0 ? this.filterStatus()[0] : undefined,
+      organizationId: this.isRootOrAdmin ? this.filterOrganizationId() : undefined,
+    };
+
+    this.eventService.searchEvents(params).subscribe({
+      next: (response) => this.handleLoadSuccess(response),
+      error: (error) => this.handleLoadError(error),
+    });
+  }
+
+  protected override getDefaultFilterPreferences(): EventFilterPreferences {
+    return {
+      status: [],
+      organizationId: undefined,
+      sort: [],
+    };
+  }
+
+  protected override getCurrentFilterPreferences(): EventFilterPreferences {
+    return {
+      status: this.filterStatus(),
+      organizationId: this.filterOrganizationId(),
+      sort: this.filterSort(),
+    };
+  }
+
+  protected override applyFilterPreferences(prefs: EventFilterPreferences): void {
+    this.filterStatus.set(prefs.status || []);
+    this.filterOrganizationId.set(prefs.organizationId);
+    this.filterSort.set(prefs.sort || []);
+  }
+
+  private filterColumnsBasedOnRole(): void {
+    if (!this.isRootOrAdmin) {
+      const filteredCols = this.cols().filter(
+        (col) => col.field !== 'organizationId' && col.field !== 'enabled',
+      );
+      this.cols.set(filteredCols);
+
+      const filteredSelectedCols = this.selectedCols().filter(
+        (col) => col.field !== 'organizationId' && col.field !== 'enabled',
+      );
+      this.selectedCols.set(filteredSelectedCols);
+    }
+  }
+
+  private getStatusLabel(status: EventStatus): string {
+    switch (status) {
+      case EventStatus.DRAFT:
+        return 'Draft';
+      case EventStatus.PUBLISHED:
+        return 'Published';
+      case EventStatus.CANCELLED:
+        return 'Cancelled';
+      case EventStatus.COMPLETED:
+        return 'Completed';
+      default:
+        return status;
+    }
   }
 }

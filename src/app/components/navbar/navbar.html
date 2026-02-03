@@ -3,10 +3,10 @@
     <div class="flex items-center">
       @if (isAuthenticated()) {
         <p-button
-          icon="pi pi-bars"
-          [text]="true"
-          [rounded]="true"
           (onClick)="onMenuToggle($event)"
+          [rounded]="true"
+          [text]="true"
+          icon="pi pi-bars"
           pTooltip="Toggle menu"
         />
       }
@@ -18,20 +18,20 @@
     <div class="flex items-center gap-2 pr-4">
       <!-- Dark Mode Toggle -->
       <p-button
+        (onClick)="layoutService.toggleDarkMode()"
         [icon]="layoutService.isDarkTheme() ? 'pi pi-moon' : 'pi pi-sun'"
+        [pTooltip]="layoutService.isDarkTheme() ? 'Switch to light mode' : 'Switch to dark mode'"
         [rounded]="true"
         [text]="true"
-        (onClick)="layoutService.toggleDarkMode()"
-        [pTooltip]="layoutService.isDarkTheme() ? 'Switch to light mode' : 'Switch to dark mode'"
       />
 
       <!-- Theme Configurator (only for logged in users) -->
       @if (isAuthenticated()) {
         <p-button
-          icon="pi pi-palette"
+          (onClick)="themePopover.toggle($event)"
           [rounded]="true"
           [text]="true"
-          (onClick)="themePopover.toggle($event)"
+          icon="pi pi-palette"
           pTooltip="Theme settings"
         />
         <p-popover #themePopover>
@@ -41,11 +41,11 @@
 
       <!-- User Avatar Menu -->
       <p-avatar
+        (click)="menu.toggle($event)"
         label="U"
         shape="circle"
         size="normal"
         styleClass="cursor-pointer"
-        (click)="menu.toggle($event)"
       ></p-avatar>
       <p-menu #menu [model]="items" popup="true"></p-menu>
     </div>

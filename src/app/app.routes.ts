@@ -1,10 +1,10 @@
 import { Routes } from '@angular/router';
 import {
-  rootGuard,
   adminGuard,
-  rootOrAdminGuard,
-  orgUserGuard,
   distributorGuard,
+  orgUserGuard,
+  rootGuard,
+  rootOrAdminGuard,
   userCreationGuard,
 } from './core/guards/auth.guard';
 

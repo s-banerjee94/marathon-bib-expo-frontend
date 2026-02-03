@@ -27,15 +27,13 @@ import { ThemeConfigurator } from '../theme-configurator/theme-configurator';
   templateUrl: './navbar.html',
 })
 export class Navbar {
-  private authService = inject(AuthService);
   layoutService = inject(LayoutService);
-
-  isAuthenticated = this.authService.isAuthenticated;
-
   items: MenuItem[] = [
     { label: 'Profile', command: () => this.onProfile() },
     { label: 'Log out', command: () => this.onLogout() },
   ];
+  private authService = inject(AuthService);
+  isAuthenticated = this.authService.isAuthenticated;
 
   onMenuToggle(event: Event): void {
     event.stopPropagation();

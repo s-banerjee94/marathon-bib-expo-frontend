@@ -13,13 +13,13 @@
             @if (showOrganizationSelector()) {
               <div class="flex flex-col gap-1">
                 <app-organization-selector
-                  [selectedOrganizationId]="selectedOrganizationId()"
                   (organizationIdChange)="onOrganizationChange($event)"
                   [required]="true"
+                  [selectedOrganizationId]="selectedOrganizationId()"
                   label="Organization *"
                 >
                   @if (!selectedOrganizationId()) {
-                    <p-message severity="error" [size]="inputSize" variant="simple">
+                    <p-message [size]="inputSize" severity="error" variant="simple">
                       Organization is required.
                     </p-message>
                   }
@@ -31,15 +31,15 @@
             @if (showEventSelector()) {
               <div class="flex flex-col gap-1">
                 <app-event-selector
-                  [selectedEventId]="selectedEventId()"
-                  [organizationId]="selectedOrganizationId()"
                   (eventIdChange)="onEventChange($event)"
-                  [required]="true"
                   [disabled]="!selectedOrganizationId()"
+                  [organizationId]="selectedOrganizationId()"
+                  [required]="true"
+                  [selectedEventId]="selectedEventId()"
                   label="Event *"
                 >
                   @if (!selectedEventId()) {
-                    <p-message severity="error" [size]="inputSize" variant="simple">
+                    <p-message [size]="inputSize" severity="error" variant="simple">
                       Event is required.
                     </p-message>
                   }
@@ -68,23 +68,23 @@
               <div class="flex flex-col gap-1">
                 <p-floatlabel variant="on">
                   <input
-                    pInputText
-                    id="chipNumber"
-                    name="chipNumber"
-                    [(ngModel)]="participant.chipNumber"
                     #chipNumber="ngModel"
-                    required
-                    autocomplete="off"
-                    fluid="true"
-                    [pSize]="inputSize"
+                    [(ngModel)]="participant.chipNumber"
                     [disabled]="!selectedEventId()"
                     [invalid]="shouldShowError(chipNumber, participantForm.submitted)"
+                    [pSize]="inputSize"
+                    autocomplete="off"
+                    fluid="true"
+                    id="chipNumber"
+                    name="chipNumber"
+                    pInputText
+                    required
                   />
                   <label for="chipNumber">Chip Number *</label>
                 </p-floatlabel>
 
                 @if (shouldShowError(chipNumber, participantForm.submitted)) {
-                  <p-message severity="error" [size]="inputSize" variant="simple">
+                  <p-message [size]="inputSize" severity="error" variant="simple">
                     Chip number is required.
                   </p-message>
                 }
@@ -94,23 +94,23 @@
               <div class="flex flex-col gap-1">
                 <p-floatlabel variant="on">
                   <input
-                    pInputText
+                    #bibNumber="ngModel"
+                    [(ngModel)]="participant.bibNumber"
+                    [disabled]="!selectedEventId() || isEditMode()"
+                    [invalid]="shouldShowError(bibNumber, participantForm.submitted)"
+                    [pSize]="inputSize"
+                    autocomplete="off"
+                    fluid="true"
                     id="bibNumber"
                     name="bibNumber"
-                    [(ngModel)]="participant.bibNumber"
-                    #bibNumber="ngModel"
+                    pInputText
                     required
-                    autocomplete="off"
-                    [disabled]="!selectedEventId() || isEditMode()"
-                    fluid="true"
-                    [pSize]="inputSize"
-                    [invalid]="shouldShowError(bibNumber, participantForm.submitted)"
                   />
                   <label for="bibNumber">BIB Number *</label>
                 </p-floatlabel>
 
                 @if (shouldShowError(bibNumber, participantForm.submitted)) {
-                  <p-message severity="error" [size]="inputSize" variant="simple">
+                  <p-message [size]="inputSize" severity="error" variant="simple">
                     BIB number is required.
                   </p-message>
                 }
@@ -120,23 +120,23 @@
               <div class="flex flex-col gap-1 md:col-span-2">
                 <p-floatlabel variant="on">
                   <input
-                    pInputText
-                    id="fullName"
-                    name="fullName"
-                    [(ngModel)]="participant.fullName"
                     #fullName="ngModel"
-                    required
-                    autocomplete="off"
-                    fluid="true"
-                    [pSize]="inputSize"
+                    [(ngModel)]="participant.fullName"
                     [disabled]="!selectedEventId()"
                     [invalid]="shouldShowError(fullName, participantForm.submitted)"
+                    [pSize]="inputSize"
+                    autocomplete="off"
+                    fluid="true"
+                    id="fullName"
+                    name="fullName"
+                    pInputText
+                    required
                   />
                   <label for="fullName">Full Name *</label>
                 </p-floatlabel>
 
                 @if (shouldShowError(fullName, participantForm.submitted)) {
-                  <p-message severity="error" [size]="inputSize" variant="simple">
+                  <p-message [size]="inputSize" severity="error" variant="simple">
                     Full name is required.
                   </p-message>
                 }
@@ -146,22 +146,22 @@
               <div class="flex flex-col gap-1">
                 <p-floatlabel variant="on">
                   <input
-                    pInputText
-                    id="raceId"
-                    name="raceId"
-                    [(ngModel)]="participant.raceId"
                     #raceId="ngModel"
-                    required
+                    [(ngModel)]="participant.raceId"
+                    [invalid]="shouldShowError(raceId, participantForm.submitted)"
+                    [pSize]="inputSize"
                     autocomplete="off"
                     fluid="true"
-                    [pSize]="inputSize"
-                    [invalid]="shouldShowError(raceId, participantForm.submitted)"
+                    id="raceId"
+                    name="raceId"
+                    pInputText
+                    required
                   />
                   <label for="raceId">Race ID *</label>
                 </p-floatlabel>
 
                 @if (shouldShowError(raceId, participantForm.submitted)) {
-                  <p-message severity="error" [size]="inputSize" variant="simple">
+                  <p-message [size]="inputSize" severity="error" variant="simple">
                     Race ID is required.
                   </p-message>
                 }
@@ -171,22 +171,22 @@
               <div class="flex flex-col gap-1">
                 <p-floatlabel variant="on">
                   <input
-                    pInputText
-                    id="raceName"
-                    name="raceName"
-                    [(ngModel)]="participant.raceName"
                     #raceName="ngModel"
-                    required
+                    [(ngModel)]="participant.raceName"
+                    [invalid]="shouldShowError(raceName, participantForm.submitted)"
+                    [pSize]="inputSize"
                     autocomplete="off"
                     fluid="true"
-                    [pSize]="inputSize"
-                    [invalid]="shouldShowError(raceName, participantForm.submitted)"
+                    id="raceName"
+                    name="raceName"
+                    pInputText
+                    required
                   />
                   <label for="raceName">Race Name *</label>
                 </p-floatlabel>
 
                 @if (shouldShowError(raceName, participantForm.submitted)) {
-                  <p-message severity="error" [size]="inputSize" variant="simple">
+                  <p-message [size]="inputSize" severity="error" variant="simple">
                     Race name is required.
                   </p-message>
                 }
@@ -196,22 +196,22 @@
               <div class="flex flex-col gap-1">
                 <p-floatlabel variant="on">
                   <input
-                    pInputText
-                    id="categoryId"
-                    name="categoryId"
-                    [(ngModel)]="participant.categoryId"
                     #categoryId="ngModel"
-                    required
+                    [(ngModel)]="participant.categoryId"
+                    [invalid]="shouldShowError(categoryId, participantForm.submitted)"
+                    [pSize]="inputSize"
                     autocomplete="off"
                     fluid="true"
-                    [pSize]="inputSize"
-                    [invalid]="shouldShowError(categoryId, participantForm.submitted)"
+                    id="categoryId"
+                    name="categoryId"
+                    pInputText
+                    required
                   />
                   <label for="categoryId">Category ID *</label>
                 </p-floatlabel>
 
                 @if (shouldShowError(categoryId, participantForm.submitted)) {
-                  <p-message severity="error" [size]="inputSize" variant="simple">
+                  <p-message [size]="inputSize" severity="error" variant="simple">
                     Category ID is required.
                   </p-message>
                 }
@@ -221,22 +221,22 @@
               <div class="flex flex-col gap-1">
                 <p-floatlabel variant="on">
                   <input
-                    pInputText
-                    id="categoryName"
-                    name="categoryName"
-                    [(ngModel)]="participant.categoryName"
                     #categoryName="ngModel"
-                    required
+                    [(ngModel)]="participant.categoryName"
+                    [invalid]="shouldShowError(categoryName, participantForm.submitted)"
+                    [pSize]="inputSize"
                     autocomplete="off"
                     fluid="true"
-                    [pSize]="inputSize"
-                    [invalid]="shouldShowError(categoryName, participantForm.submitted)"
+                    id="categoryName"
+                    name="categoryName"
+                    pInputText
+                    required
                   />
                   <label for="categoryName">Category Name *</label>
                 </p-floatlabel>
 
                 @if (shouldShowError(categoryName, participantForm.submitted)) {
-                  <p-message severity="error" [size]="inputSize" variant="simple">
+                  <p-message [size]="inputSize" severity="error" variant="simple">
                     Category name is required.
                   </p-message>
                 }
@@ -246,20 +246,20 @@
               <div class="flex flex-col gap-1">
                 <p-floatlabel variant="on">
                   <p-select
+                    #gender="ngModel"
+                    [(ngModel)]="participant.gender"
+                    [invalid]="shouldShowError(gender, participantForm.submitted)"
+                    [options]="genderOptions"
+                    fluid="true"
                     inputId="gender"
                     name="gender"
-                    [(ngModel)]="participant.gender"
-                    #gender="ngModel"
-                    [options]="genderOptions"
                     required
-                    fluid="true"
-                    [invalid]="shouldShowError(gender, participantForm.submitted)"
                   ></p-select>
                   <label for="gender">Gender *</label>
                 </p-floatlabel>
 
                 @if (shouldShowError(gender, participantForm.submitted)) {
-                  <p-message severity="error" [size]="inputSize" variant="simple">
+                  <p-message [size]="inputSize" severity="error" variant="simple">
                     Gender is required.
                   </p-message>
                 }
@@ -269,15 +269,15 @@
               <div class="flex flex-col gap-1">
                 <p-floatlabel variant="on">
                   <input
-                    pInputText
-                    id="phoneNumber"
-                    name="phoneNumber"
-                    type="tel"
-                    [(ngModel)]="participant.phoneNumber"
                     #phoneNumber="ngModel"
+                    [(ngModel)]="participant.phoneNumber"
+                    [pSize]="inputSize"
                     autocomplete="tel"
                     fluid="true"
-                    [pSize]="inputSize"
+                    id="phoneNumber"
+                    name="phoneNumber"
+                    pInputText
+                    type="tel"
                   />
                   <label for="phoneNumber">Phone Number</label>
                 </p-floatlabel>
@@ -287,23 +287,23 @@
               <div class="flex flex-col gap-1">
                 <p-floatlabel variant="on">
                   <input
-                    pInputText
+                    #email="ngModel"
+                    [(ngModel)]="participant.email"
+                    [invalid]="shouldShowError(email, participantForm.submitted)"
+                    [pSize]="inputSize"
+                    autocomplete="email"
+                    email
+                    fluid="true"
                     id="email"
                     name="email"
+                    pInputText
                     type="email"
-                    [(ngModel)]="participant.email"
-                    #email="ngModel"
-                    email
-                    autocomplete="email"
-                    fluid="true"
-                    [pSize]="inputSize"
-                    [invalid]="shouldShowError(email, participantForm.submitted)"
                   />
                   <label for="email">Email</label>
                 </p-floatlabel>
 
                 @if (shouldShowError(email, participantForm.submitted)) {
-                  <p-message severity="error" [size]="inputSize" variant="simple">
+                  <p-message [size]="inputSize" severity="error" variant="simple">
                     @if (email.hasError('email')) {
                       Please enter a valid email.
                     }
@@ -315,15 +315,15 @@
               <div class="flex flex-col gap-1">
                 <p-floatlabel variant="on">
                   <input
-                    pInputText
-                    id="dateOfBirth"
-                    name="dateOfBirth"
-                    [(ngModel)]="participant.dateOfBirth"
                     #dateOfBirth="ngModel"
-                    placeholder="dd-mm-yyyy"
+                    [(ngModel)]="participant.dateOfBirth"
+                    [pSize]="inputSize"
                     autocomplete="off"
                     fluid="true"
-                    [pSize]="inputSize"
+                    id="dateOfBirth"
+                    name="dateOfBirth"
+                    pInputText
+                    placeholder="dd-mm-yyyy"
                   />
                   <label for="dateOfBirth">Date of Birth (dd-mm-yyyy)</label>
                 </p-floatlabel>
@@ -333,11 +333,11 @@
               <div class="flex flex-col gap-1">
                 <p-floatlabel variant="on">
                   <p-inputNumber
+                    #age="ngModel"
+                    [(ngModel)]="participant.age"
+                    fluid="true"
                     inputId="age"
                     name="age"
-                    [(ngModel)]="participant.age"
-                    #age="ngModel"
-                    fluid="true"
                   ></p-inputNumber>
                   <label for="age">Age</label>
                 </p-floatlabel>
@@ -347,14 +347,14 @@
               <div class="flex flex-col gap-1">
                 <p-floatlabel variant="on">
                   <input
-                    pInputText
-                    id="city"
-                    name="city"
-                    [(ngModel)]="participant.city"
                     #city="ngModel"
+                    [(ngModel)]="participant.city"
+                    [pSize]="inputSize"
                     autocomplete="off"
                     fluid="true"
-                    [pSize]="inputSize"
+                    id="city"
+                    name="city"
+                    pInputText
                   />
                   <label for="city">City</label>
                 </p-floatlabel>
@@ -364,14 +364,14 @@
               <div class="flex flex-col gap-1">
                 <p-floatlabel variant="on">
                   <input
-                    pInputText
-                    id="country"
-                    name="country"
-                    [(ngModel)]="participant.country"
                     #country="ngModel"
+                    [(ngModel)]="participant.country"
+                    [pSize]="inputSize"
                     autocomplete="off"
                     fluid="true"
-                    [pSize]="inputSize"
+                    id="country"
+                    name="country"
+                    pInputText
                   />
                   <label for="country">Country</label>
                 </p-floatlabel>
@@ -381,14 +381,14 @@
               <div class="flex flex-col gap-1">
                 <p-floatlabel variant="on">
                   <input
-                    pInputText
-                    id="emergencyContactName"
-                    name="emergencyContactName"
-                    [(ngModel)]="participant.emergencyContactName"
                     #emergencyContactName="ngModel"
+                    [(ngModel)]="participant.emergencyContactName"
+                    [pSize]="inputSize"
                     autocomplete="off"
                     fluid="true"
-                    [pSize]="inputSize"
+                    id="emergencyContactName"
+                    name="emergencyContactName"
+                    pInputText
                   />
                   <label for="emergencyContactName">Emergency Contact Name</label>
                 </p-floatlabel>
@@ -398,15 +398,15 @@
               <div class="flex flex-col gap-1">
                 <p-floatlabel variant="on">
                   <input
-                    pInputText
-                    id="emergencyContactPhone"
-                    name="emergencyContactPhone"
-                    type="tel"
-                    [(ngModel)]="participant.emergencyContactPhone"
                     #emergencyContactPhone="ngModel"
+                    [(ngModel)]="participant.emergencyContactPhone"
+                    [pSize]="inputSize"
                     autocomplete="off"
                     fluid="true"
-                    [pSize]="inputSize"
+                    id="emergencyContactPhone"
+                    name="emergencyContactPhone"
+                    pInputText
+                    type="tel"
                   />
                   <label for="emergencyContactPhone">Emergency Contact Phone</label>
                 </p-floatlabel>
@@ -416,14 +416,14 @@
               <div class="flex flex-col gap-1 md:col-span-2">
                 <p-floatlabel variant="on">
                   <textarea
-                    pInputText
-                    id="notes"
-                    name="notes"
-                    [(ngModel)]="participant.notes"
                     #notes="ngModel"
-                    rows="3"
+                    [(ngModel)]="participant.notes"
                     autocomplete="off"
                     fluid="true"
+                    id="notes"
+                    name="notes"
+                    pInputText
+                    rows="3"
                   ></textarea>
                   <label for="notes">Notes</label>
                 </p-floatlabel>
@@ -433,20 +433,20 @@
             <!-- Form Actions -->
             <div class="flex justify-end gap-3 pt-4 border-t">
               <button
-                pButton
-                type="button"
-                label="Cancel"
-                icon="pi pi-times"
                 (click)="onCancel()"
                 [disabled]="isSubmitting()"
-                severity="secondary"
                 [outlined]="true"
+                icon="pi pi-times"
+                label="Cancel"
+                pButton
+                severity="secondary"
+                type="button"
               ></button>
               <button
-                pButton
-                type="submit"
                 [disabled]="isSubmitting() || participantForm.invalid"
+                pButton
                 severity="primary"
+                type="submit"
               >
                 <span pButtonLabel>{{ getSubmitButtonText() }}</span>
               </button>
@@ -469,31 +469,31 @@
     </div>
   } @else {
     <form
-      id="participantFormDialog"
       #participantFormDialog="ngForm"
       (ngSubmit)="onSubmit(participantFormDialog)"
       class="flex flex-col gap-4 mt-2"
+      id="participantFormDialog"
     >
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <!-- Chip Number -->
         <div class="flex flex-col gap-1">
           <p-floatlabel variant="on">
             <input
-              pInputText
-              id="chipNumberDialog"
-              name="chipNumber"
-              [(ngModel)]="participant.chipNumber"
               #chipNumberDialog="ngModel"
-              required
+              [(ngModel)]="participant.chipNumber"
+              [invalid]="shouldShowError(chipNumberDialog, participantFormDialog.submitted)"
               autocomplete="off"
               fluid="true"
-              [invalid]="shouldShowError(chipNumberDialog, participantFormDialog.submitted)"
+              id="chipNumberDialog"
+              name="chipNumber"
+              pInputText
+              required
             />
             <label for="chipNumberDialog">Chip Number *</label>
           </p-floatlabel>
 
           @if (shouldShowError(chipNumberDialog, participantFormDialog.submitted)) {
-            <p-message severity="error" [size]="inputSize" variant="simple">
+            <p-message [size]="inputSize" severity="error" variant="simple">
               Chip number is required.
             </p-message>
           }
@@ -503,22 +503,22 @@
         <div class="flex flex-col gap-1">
           <p-floatlabel variant="on">
             <input
-              pInputText
+              #bibNumberDialog="ngModel"
+              [(ngModel)]="participant.bibNumber"
+              [disabled]="isEditMode()"
+              [invalid]="shouldShowError(bibNumberDialog, participantFormDialog.submitted)"
+              autocomplete="off"
+              fluid="true"
               id="bibNumberDialog"
               name="bibNumber"
-              [(ngModel)]="participant.bibNumber"
-              #bibNumberDialog="ngModel"
+              pInputText
               required
-              autocomplete="off"
-              [disabled]="isEditMode()"
-              fluid="true"
-              [invalid]="shouldShowError(bibNumberDialog, participantFormDialog.submitted)"
             />
             <label for="bibNumberDialog">BIB Number *</label>
           </p-floatlabel>
 
           @if (shouldShowError(bibNumberDialog, participantFormDialog.submitted)) {
-            <p-message severity="error" [size]="inputSize" variant="simple">
+            <p-message [size]="inputSize" severity="error" variant="simple">
               BIB number is required.
             </p-message>
           }
@@ -528,21 +528,21 @@
         <div class="flex flex-col gap-1 md:col-span-2">
           <p-floatlabel variant="on">
             <input
-              pInputText
-              id="fullNameDialog"
-              name="fullName"
-              [(ngModel)]="participant.fullName"
               #fullNameDialog="ngModel"
-              required
+              [(ngModel)]="participant.fullName"
+              [invalid]="shouldShowError(fullNameDialog, participantFormDialog.submitted)"
               autocomplete="off"
               fluid="true"
-              [invalid]="shouldShowError(fullNameDialog, participantFormDialog.submitted)"
+              id="fullNameDialog"
+              name="fullName"
+              pInputText
+              required
             />
             <label for="fullNameDialog">Full Name *</label>
           </p-floatlabel>
 
           @if (shouldShowError(fullNameDialog, participantFormDialog.submitted)) {
-            <p-message severity="error" [size]="inputSize" variant="simple">
+            <p-message [size]="inputSize" severity="error" variant="simple">
               Full name is required.
             </p-message>
           }
@@ -552,21 +552,21 @@
         <div class="flex flex-col gap-1">
           <p-floatlabel variant="on">
             <input
-              pInputText
-              id="raceIdDialog"
-              name="raceId"
-              [(ngModel)]="participant.raceId"
               #raceIdDialog="ngModel"
-              required
+              [(ngModel)]="participant.raceId"
+              [invalid]="shouldShowError(raceIdDialog, participantFormDialog.submitted)"
               autocomplete="off"
               fluid="true"
-              [invalid]="shouldShowError(raceIdDialog, participantFormDialog.submitted)"
+              id="raceIdDialog"
+              name="raceId"
+              pInputText
+              required
             />
             <label for="raceIdDialog">Race ID *</label>
           </p-floatlabel>
 
           @if (shouldShowError(raceIdDialog, participantFormDialog.submitted)) {
-            <p-message severity="error" [size]="inputSize" variant="simple">
+            <p-message [size]="inputSize" severity="error" variant="simple">
               Race ID is required.
             </p-message>
           }
@@ -576,21 +576,21 @@
         <div class="flex flex-col gap-1">
           <p-floatlabel variant="on">
             <input
-              pInputText
-              id="raceNameDialog"
-              name="raceName"
-              [(ngModel)]="participant.raceName"
               #raceNameDialog="ngModel"
-              required
+              [(ngModel)]="participant.raceName"
+              [invalid]="shouldShowError(raceNameDialog, participantFormDialog.submitted)"
               autocomplete="off"
               fluid="true"
-              [invalid]="shouldShowError(raceNameDialog, participantFormDialog.submitted)"
+              id="raceNameDialog"
+              name="raceName"
+              pInputText
+              required
             />
             <label for="raceNameDialog">Race Name *</label>
           </p-floatlabel>
 
           @if (shouldShowError(raceNameDialog, participantFormDialog.submitted)) {
-            <p-message severity="error" [size]="inputSize" variant="simple">
+            <p-message [size]="inputSize" severity="error" variant="simple">
               Race name is required.
             </p-message>
           }
@@ -600,21 +600,21 @@
         <div class="flex flex-col gap-1">
           <p-floatlabel variant="on">
             <input
-              pInputText
-              id="categoryIdDialog"
-              name="categoryId"
-              [(ngModel)]="participant.categoryId"
               #categoryIdDialog="ngModel"
-              required
+              [(ngModel)]="participant.categoryId"
+              [invalid]="shouldShowError(categoryIdDialog, participantFormDialog.submitted)"
               autocomplete="off"
               fluid="true"
-              [invalid]="shouldShowError(categoryIdDialog, participantFormDialog.submitted)"
+              id="categoryIdDialog"
+              name="categoryId"
+              pInputText
+              required
             />
             <label for="categoryIdDialog">Category ID *</label>
           </p-floatlabel>
 
           @if (shouldShowError(categoryIdDialog, participantFormDialog.submitted)) {
-            <p-message severity="error" [size]="inputSize" variant="simple">
+            <p-message [size]="inputSize" severity="error" variant="simple">
               Category ID is required.
             </p-message>
           }
@@ -624,21 +624,21 @@
         <div class="flex flex-col gap-1">
           <p-floatlabel variant="on">
             <input
-              pInputText
-              id="categoryNameDialog"
-              name="categoryName"
-              [(ngModel)]="participant.categoryName"
               #categoryNameDialog="ngModel"
-              required
+              [(ngModel)]="participant.categoryName"
+              [invalid]="shouldShowError(categoryNameDialog, participantFormDialog.submitted)"
               autocomplete="off"
               fluid="true"
-              [invalid]="shouldShowError(categoryNameDialog, participantFormDialog.submitted)"
+              id="categoryNameDialog"
+              name="categoryName"
+              pInputText
+              required
             />
             <label for="categoryNameDialog">Category Name *</label>
           </p-floatlabel>
 
           @if (shouldShowError(categoryNameDialog, participantFormDialog.submitted)) {
-            <p-message severity="error" [size]="inputSize" variant="simple">
+            <p-message [size]="inputSize" severity="error" variant="simple">
               Category name is required.
             </p-message>
           }
@@ -648,20 +648,20 @@
         <div class="flex flex-col gap-1">
           <p-floatlabel variant="on">
             <p-select
+              #genderDialog="ngModel"
+              [(ngModel)]="participant.gender"
+              [invalid]="shouldShowError(genderDialog, participantFormDialog.submitted)"
+              [options]="genderOptions"
+              fluid="true"
               inputId="genderDialog"
               name="gender"
-              [(ngModel)]="participant.gender"
-              #genderDialog="ngModel"
-              [options]="genderOptions"
               required
-              fluid="true"
-              [invalid]="shouldShowError(genderDialog, participantFormDialog.submitted)"
             ></p-select>
             <label for="genderDialog">Gender *</label>
           </p-floatlabel>
 
           @if (shouldShowError(genderDialog, participantFormDialog.submitted)) {
-            <p-message severity="error" [size]="inputSize" variant="simple">
+            <p-message [size]="inputSize" severity="error" variant="simple">
               Gender is required.
             </p-message>
           }
@@ -671,14 +671,14 @@
         <div class="flex flex-col gap-1">
           <p-floatlabel variant="on">
             <input
-              pInputText
-              id="phoneNumberDialog"
-              name="phoneNumber"
-              type="tel"
-              [(ngModel)]="participant.phoneNumber"
               #phoneNumberDialog="ngModel"
+              [(ngModel)]="participant.phoneNumber"
               autocomplete="tel"
               fluid="true"
+              id="phoneNumberDialog"
+              name="phoneNumber"
+              pInputText
+              type="tel"
             />
             <label for="phoneNumberDialog">Phone Number</label>
           </p-floatlabel>
@@ -688,22 +688,22 @@
         <div class="flex flex-col gap-1">
           <p-floatlabel variant="on">
             <input
-              pInputText
+              #emailDialog="ngModel"
+              [(ngModel)]="participant.email"
+              [invalid]="shouldShowError(emailDialog, participantFormDialog.submitted)"
+              autocomplete="email"
+              email
+              fluid="true"
               id="emailDialog"
               name="email"
+              pInputText
               type="email"
-              [(ngModel)]="participant.email"
-              #emailDialog="ngModel"
-              email
-              autocomplete="email"
-              fluid="true"
-              [invalid]="shouldShowError(emailDialog, participantFormDialog.submitted)"
             />
             <label for="emailDialog">Email</label>
           </p-floatlabel>
 
           @if (shouldShowError(emailDialog, participantFormDialog.submitted)) {
-            <p-message severity="error" [size]="inputSize" variant="simple">
+            <p-message [size]="inputSize" severity="error" variant="simple">
               @if (emailDialog.hasError('email')) {
                 Please enter a valid email.
               }
@@ -715,14 +715,14 @@
         <div class="flex flex-col gap-1">
           <p-floatlabel variant="on">
             <input
-              pInputText
-              id="dateOfBirthDialog"
-              name="dateOfBirth"
-              [(ngModel)]="participant.dateOfBirth"
               #dateOfBirthDialog="ngModel"
-              placeholder="dd-mm-yyyy"
+              [(ngModel)]="participant.dateOfBirth"
               autocomplete="off"
               fluid="true"
+              id="dateOfBirthDialog"
+              name="dateOfBirth"
+              pInputText
+              placeholder="dd-mm-yyyy"
             />
             <label for="dateOfBirthDialog">Date of Birth (dd-mm-yyyy)</label>
           </p-floatlabel>
@@ -732,11 +732,11 @@
         <div class="flex flex-col gap-1">
           <p-floatlabel variant="on">
             <p-inputNumber
+              #ageDialog="ngModel"
+              [(ngModel)]="participant.age"
+              fluid="true"
               inputId="ageDialog"
               name="age"
-              [(ngModel)]="participant.age"
-              #ageDialog="ngModel"
-              fluid="true"
             ></p-inputNumber>
             <label for="ageDialog">Age</label>
           </p-floatlabel>
@@ -746,13 +746,13 @@
         <div class="flex flex-col gap-1">
           <p-floatlabel variant="on">
             <input
-              pInputText
-              id="cityDialog"
-              name="city"
-              [(ngModel)]="participant.city"
               #cityDialog="ngModel"
+              [(ngModel)]="participant.city"
               autocomplete="off"
               fluid="true"
+              id="cityDialog"
+              name="city"
+              pInputText
             />
             <label for="cityDialog">City</label>
           </p-floatlabel>
@@ -762,13 +762,13 @@
         <div class="flex flex-col gap-1">
           <p-floatlabel variant="on">
             <input
-              pInputText
-              id="countryDialog"
-              name="country"
-              [(ngModel)]="participant.country"
               #countryDialog="ngModel"
+              [(ngModel)]="participant.country"
               autocomplete="off"
               fluid="true"
+              id="countryDialog"
+              name="country"
+              pInputText
             />
             <label for="countryDialog">Country</label>
           </p-floatlabel>
@@ -778,13 +778,13 @@
         <div class="flex flex-col gap-1">
           <p-floatlabel variant="on">
             <input
-              pInputText
-              id="emergencyContactNameDialog"
-              name="emergencyContactName"
-              [(ngModel)]="participant.emergencyContactName"
               #emergencyContactNameDialog="ngModel"
+              [(ngModel)]="participant.emergencyContactName"
               autocomplete="off"
               fluid="true"
+              id="emergencyContactNameDialog"
+              name="emergencyContactName"
+              pInputText
             />
             <label for="emergencyContactNameDialog">Emergency Contact Name</label>
           </p-floatlabel>
@@ -794,14 +794,14 @@
         <div class="flex flex-col gap-1">
           <p-floatlabel variant="on">
             <input
-              pInputText
-              id="emergencyContactPhoneDialog"
-              name="emergencyContactPhone"
-              type="tel"
-              [(ngModel)]="participant.emergencyContactPhone"
               #emergencyContactPhoneDialog="ngModel"
+              [(ngModel)]="participant.emergencyContactPhone"
               autocomplete="off"
               fluid="true"
+              id="emergencyContactPhoneDialog"
+              name="emergencyContactPhone"
+              pInputText
+              type="tel"
             />
             <label for="emergencyContactPhoneDialog">Emergency Contact Phone</label>
           </p-floatlabel>
@@ -811,14 +811,14 @@
         <div class="flex flex-col gap-1 md:col-span-2">
           <p-floatlabel variant="on">
             <textarea
-              pInputText
-              id="notesDialog"
-              name="notes"
-              [(ngModel)]="participant.notes"
               #notesDialog="ngModel"
-              rows="3"
+              [(ngModel)]="participant.notes"
               autocomplete="off"
               fluid="true"
+              id="notesDialog"
+              name="notes"
+              pInputText
+              rows="3"
             ></textarea>
             <label for="notesDialog">Notes</label>
           </p-floatlabel>

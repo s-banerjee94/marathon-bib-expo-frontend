@@ -1,7 +1,7 @@
-import { Injectable, inject } from '@angular/core';
+import { inject, Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { Event, CreateEventRequest, UpdateEventRequest } from '../models/event.model';
+import { CreateEventRequest, Event, UpdateEventRequest } from '../models/event.model';
 import { PageableParams, PageableResponse } from '../models/api.model';
 import { AuthService } from './auth.service';
 import { UserRole } from '../models/user.model';

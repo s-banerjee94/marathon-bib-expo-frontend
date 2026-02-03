@@ -2,8 +2,8 @@ import { CommonModule } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
-  HostBinding,
   effect,
+  HostBinding,
   inject,
   input,
   signal,
@@ -23,20 +23,13 @@ import { LayoutService } from '../../core/services/layout.service';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class MenuitemComponent {
-  private router = inject(Router);
   layoutService = inject(LayoutService);
-
   item = input.required<AppMenuItem>();
   index = input<number>(0);
   parentKey = input<string>('');
-
   isActive = signal(false);
   isExpanded = signal(false);
-
-  @HostBinding('class.layout-menuitem-root')
-  get isRoot() {
-    return !this.parentKey();
-  }
+  private router = inject(Router);
 
   constructor() {
     // Subscribe to navigation events for future route changes
@@ -56,6 +49,11 @@ export class MenuitemComponent {
     });
   }
 
+  @HostBinding('class.layout-menuitem-root')
+  get isRoot() {
+    return !this.parentKey();
+  }
+
   get key(): string {
     return this.parentKey() ? `${this.parentKey()}-${this.index()}` : String(this.index());
   }
@@ -66,6 +64,19 @@ export class MenuitemComponent {
 
   updateActiveState(url: string): void {
     this.updateActiveStateForItem(this.item(), url);
+  }
+
+  toggleSubmenu(event: Event): void {
+    event.preventDefault();
+    this.isExpanded.update((v) => !v);
+  }
+
+  onItemClick(event: Event): void {
+    if (this.hasSubmenu) {
+      this.toggleSubmenu(event);
+    } else if (this.layoutService.isMobile()) {
+      this.layoutService.hideMenu();
+    }
   }
 
   private updateActiveStateForItem(item: AppMenuItem, url: string): void {
@@ -83,19 +94,6 @@ export class MenuitemComponent {
       if (hasActiveChild) {
         this.isExpanded.set(true);
       }
-    }
-  }
-
-  toggleSubmenu(event: Event): void {
-    event.preventDefault();
-    this.isExpanded.update((v) => !v);
-  }
-
-  onItemClick(event: Event): void {
-    if (this.hasSubmenu) {
-      this.toggleSubmenu(event);
-    } else if (this.layoutService.isMobile()) {
-      this.layoutService.hideMenu();
     }
   }
 }

@@ -1,25 +1,25 @@
 @if (showFloatLabel) {
   <p-floatlabel variant="on">
     <p-autocomplete
+      (completeMethod)="onOrganizationSearch($event)"
+      (onClear)="onOrganizationClear()"
+      (onSelect)="onOrganizationSelect($event)"
+      [(ngModel)]="selectedOrganization"
+      [delay]="autocompleteDelay"
+      [disabled]="disabled"
+      [dropdown]="true"
+      [fluid]="fluid"
+      [forceSelection]="true"
       [inputId]="inputId"
       [name]="inputId"
-      [(ngModel)]="selectedOrganization"
-      [suggestions]="organizationSuggestions()"
-      (completeMethod)="onOrganizationSearch($event)"
-      (onSelect)="onOrganizationSelect($event)"
-      (onClear)="onOrganizationClear()"
-      optionLabel="organizerName"
-      [dropdown]="true"
-      [showClear]="true"
       [placeholder]="placeholder"
-      emptyMessage="No organizations found. Try a different search term."
-      [delay]="autocompleteDelay"
-      [forceSelection]="true"
-      [fluid]="fluid"
       [required]="required"
+      [showClear]="true"
       [size]="size"
-      [disabled]="disabled"
       [styleClass]="styleClass"
+      [suggestions]="organizationSuggestions()"
+      emptyMessage="No organizations found. Try a different search term."
+      optionLabel="organizerName"
       scrollHeight="300px"
     >
       <ng-template let-org pTemplate="item">
@@ -28,20 +28,20 @@
           <div class="flex flex-col flex-1 min-w-0">
             <div class="flex items-center justify-between gap-2">
               <span
-                class="font-semibold truncate"
                 [innerHTML]="org.organizerName | highlight: currentSearchTerm()"
+                class="font-semibold truncate"
               ></span>
               <p-tag
-                [value]="org.enabled ? 'Active' : 'Inactive'"
                 [severity]="org.enabled ? 'success' : 'danger'"
+                [value]="org.enabled ? 'Active' : 'Inactive'"
                 styleClass="text-xs shrink-0"
               />
             </div>
-            <span class="text-sm" [innerHTML]="org.email | highlight: currentSearchTerm()"></span>
+            <span [innerHTML]="org.email | highlight: currentSearchTerm()" class="text-sm"></span>
             @if (org.phoneNumber) {
               <span
-                class="text-xs"
                 [innerHTML]="org.phoneNumber | highlight: currentSearchTerm()"
+                class="text-xs"
               ></span>
             }
           </div>
@@ -52,25 +52,25 @@
   </p-floatlabel>
 } @else {
   <p-autocomplete
+    (completeMethod)="onOrganizationSearch($event)"
+    (onClear)="onOrganizationClear()"
+    (onSelect)="onOrganizationSelect($event)"
+    [(ngModel)]="selectedOrganization"
+    [delay]="autocompleteDelay"
+    [disabled]="disabled"
+    [dropdown]="true"
+    [fluid]="fluid"
+    [forceSelection]="true"
     [inputId]="inputId"
     [name]="inputId"
-    [(ngModel)]="selectedOrganization"
-    [suggestions]="organizationSuggestions()"
-    (completeMethod)="onOrganizationSearch($event)"
-    (onSelect)="onOrganizationSelect($event)"
-    (onClear)="onOrganizationClear()"
-    optionLabel="organizerName"
-    [dropdown]="true"
-    [showClear]="true"
     [placeholder]="placeholder"
-    emptyMessage="No organizations found. Try a different search term."
-    [delay]="autocompleteDelay"
-    [forceSelection]="true"
-    [fluid]="fluid"
     [required]="required"
+    [showClear]="true"
     [size]="size"
-    [disabled]="disabled"
     [styleClass]="styleClass"
+    [suggestions]="organizationSuggestions()"
+    emptyMessage="No organizations found. Try a different search term."
+    optionLabel="organizerName"
     scrollHeight="300px"
   >
     <ng-template let-org pTemplate="item">
@@ -79,20 +79,20 @@
         <div class="flex flex-col flex-1 min-w-0">
           <div class="flex items-center justify-between gap-2">
             <span
-              class="font-semibold truncate"
               [innerHTML]="org.organizerName | highlight: currentSearchTerm()"
+              class="font-semibold truncate"
             ></span>
             <p-tag
-              [value]="org.enabled ? 'Active' : 'Inactive'"
               [severity]="org.enabled ? 'success' : 'danger'"
+              [value]="org.enabled ? 'Active' : 'Inactive'"
               styleClass="text-xs shrink-0"
             />
           </div>
-          <span class="text-sm" [innerHTML]="org.email | highlight: currentSearchTerm()"></span>
+          <span [innerHTML]="org.email | highlight: currentSearchTerm()" class="text-sm"></span>
           @if (org.phoneNumber) {
             <span
-              class="text-xs"
               [innerHTML]="org.phoneNumber | highlight: currentSearchTerm()"
+              class="text-xs"
             ></span>
           }
         </div>

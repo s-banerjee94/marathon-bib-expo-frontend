@@ -22,23 +22,23 @@
               <div class="flex flex-col gap-1">
                 <p-floatlabel variant="on">
                   <input
-                    pInputText
-                    id="organizerName"
-                    name="organizerName"
-                    [(ngModel)]="organization.organizerName"
                     #organizerName="ngModel"
+                    [(ngModel)]="organization.organizerName"
                     [invalid]="
                       organizerName.invalid && (organizerName.touched || orgForm.submitted)
                     "
-                    required
+                    [pSize]="inputSize"
                     autocomplete="organization"
                     fluid="true"
-                    [pSize]="inputSize"
+                    id="organizerName"
+                    name="organizerName"
+                    pInputText
+                    required
                   />
                   <label for="organizerName">Organization Name *</label>
                 </p-floatlabel>
                 @if (organizerName.invalid && (organizerName.touched || orgForm.submitted)) {
-                  <p-message severity="error" [size]="inputSize" variant="simple">
+                  <p-message [size]="inputSize" severity="error" variant="simple">
                     Organization name is required.
                   </p-message>
                 }
@@ -48,23 +48,23 @@
               <div class="flex flex-col gap-1">
                 <p-floatlabel variant="on">
                   <input
-                    pInputText
-                    type="email"
+                    #email="ngModel"
+                    [(ngModel)]="organization.email"
+                    [invalid]="email.invalid && (email.touched || orgForm.submitted)"
+                    [pSize]="inputSize"
+                    autocomplete="email"
+                    email
+                    fluid="true"
                     id="email"
                     name="email"
-                    [(ngModel)]="organization.email"
-                    #email="ngModel"
-                    [invalid]="email.invalid && (email.touched || orgForm.submitted)"
+                    pInputText
                     required
-                    email
-                    autocomplete="email"
-                    fluid="true"
-                    [pSize]="inputSize"
+                    type="email"
                   />
                   <label for="email">Email *</label>
                 </p-floatlabel>
                 @if (email.invalid && (email.touched || orgForm.submitted)) {
-                  <p-message severity="error" [size]="inputSize" variant="simple">
+                  <p-message [size]="inputSize" severity="error" variant="simple">
                     @if (email.hasError('required')) {
                       Email is required.
                     }
@@ -79,14 +79,14 @@
               <div class="flex flex-col gap-1">
                 <p-floatlabel variant="on">
                   <input
-                    pInputText
-                    type="tel"
-                    id="phoneNumber"
-                    name="phoneNumber"
                     [(ngModel)]="organization.phoneNumber"
+                    [pSize]="inputSize"
                     autocomplete="tel"
                     fluid="true"
-                    [pSize]="inputSize"
+                    id="phoneNumber"
+                    name="phoneNumber"
+                    pInputText
+                    type="tel"
                   />
                   <label for="phoneNumber">Phone Number</label>
                 </p-floatlabel>
@@ -96,14 +96,14 @@
               <div class="flex flex-col gap-1">
                 <p-floatlabel variant="on">
                   <input
-                    pInputText
-                    type="url"
-                    id="website"
-                    name="website"
                     [(ngModel)]="organization.website"
+                    [pSize]="inputSize"
                     autocomplete="url"
                     fluid="true"
-                    [pSize]="inputSize"
+                    id="website"
+                    name="website"
+                    pInputText
+                    type="url"
                   />
                   <label for="website">Website</label>
                 </p-floatlabel>
@@ -118,13 +118,13 @@
                 <div class="flex flex-col gap-1 md:col-span-2">
                   <p-floatlabel variant="on">
                     <input
-                      pInputText
-                      id="addressLine1"
-                      name="addressLine1"
                       [(ngModel)]="organization.addressLine1"
+                      [pSize]="inputSize"
                       autocomplete="street-address"
                       fluid="true"
-                      [pSize]="inputSize"
+                      id="addressLine1"
+                      name="addressLine1"
+                      pInputText
                     />
                     <label for="addressLine1">Address Line 1</label>
                   </p-floatlabel>
@@ -134,13 +134,13 @@
                 <div class="flex flex-col gap-1 md:col-span-2">
                   <p-floatlabel variant="on">
                     <input
-                      pInputText
-                      id="addressLine2"
-                      name="addressLine2"
                       [(ngModel)]="organization.addressLine2"
+                      [pSize]="inputSize"
                       autocomplete="street-address"
                       fluid="true"
-                      [pSize]="inputSize"
+                      id="addressLine2"
+                      name="addressLine2"
+                      pInputText
                     />
                     <label for="addressLine2">Address Line 2</label>
                   </p-floatlabel>
@@ -150,13 +150,13 @@
                 <div class="flex flex-col gap-1">
                   <p-floatlabel variant="on">
                     <input
-                      pInputText
-                      id="city"
-                      name="city"
                       [(ngModel)]="organization.city"
+                      [pSize]="inputSize"
                       autocomplete="address-level2"
                       fluid="true"
-                      [pSize]="inputSize"
+                      id="city"
+                      name="city"
+                      pInputText
                     />
                     <label for="city">City</label>
                   </p-floatlabel>
@@ -166,13 +166,13 @@
                 <div class="flex flex-col gap-1">
                   <p-floatlabel variant="on">
                     <input
-                      pInputText
-                      id="stateProvince"
-                      name="stateProvince"
                       [(ngModel)]="organization.stateProvince"
+                      [pSize]="inputSize"
                       autocomplete="address-level1"
                       fluid="true"
-                      [pSize]="inputSize"
+                      id="stateProvince"
+                      name="stateProvince"
+                      pInputText
                     />
                     <label for="stateProvince">State/Province</label>
                   </p-floatlabel>
@@ -182,13 +182,13 @@
                 <div class="flex flex-col gap-1">
                   <p-floatlabel variant="on">
                     <input
-                      pInputText
-                      id="postalCode"
-                      name="postalCode"
                       [(ngModel)]="organization.postalCode"
+                      [pSize]="inputSize"
                       autocomplete="postal-code"
                       fluid="true"
-                      [pSize]="inputSize"
+                      id="postalCode"
+                      name="postalCode"
+                      pInputText
                     />
                     <label for="postalCode">Postal Code</label>
                   </p-floatlabel>
@@ -198,13 +198,13 @@
                 <div class="flex flex-col gap-1">
                   <p-floatlabel variant="on">
                     <input
-                      pInputText
-                      id="country"
-                      name="country"
                       [(ngModel)]="organization.country"
+                      [pSize]="inputSize"
                       autocomplete="country-name"
                       fluid="true"
-                      [pSize]="inputSize"
+                      id="country"
+                      name="country"
+                      pInputText
                     />
                     <label for="country">Country</label>
                   </p-floatlabel>
@@ -220,13 +220,13 @@
                 <div class="flex flex-col gap-1">
                   <p-floatlabel variant="on">
                     <input
-                      pInputText
-                      id="taxId"
-                      name="taxId"
                       [(ngModel)]="organization.taxId"
+                      [pSize]="inputSize"
                       autocomplete="off"
                       fluid="true"
-                      [pSize]="inputSize"
+                      id="taxId"
+                      name="taxId"
+                      pInputText
                     />
                     <label for="taxId">Tax ID</label>
                   </p-floatlabel>
@@ -236,13 +236,13 @@
                 <div class="flex flex-col gap-1">
                   <p-floatlabel variant="on">
                     <input
-                      pInputText
-                      id="registrationNumber"
-                      name="registrationNumber"
                       [(ngModel)]="organization.registrationNumber"
+                      [pSize]="inputSize"
                       autocomplete="off"
                       fluid="true"
-                      [pSize]="inputSize"
+                      id="registrationNumber"
+                      name="registrationNumber"
+                      pInputText
                     />
                     <label for="registrationNumber">Registration Number</label>
                   </p-floatlabel>
@@ -258,16 +258,16 @@
                 <div class="flex flex-col gap-1">
                   <p-floatlabel variant="on">
                     <p-select
+                      [(ngModel)]="organization.subscriptionTier"
+                      [checkmark]="true"
+                      [options]="subscriptionTiers"
+                      [size]="inputSize"
+                      fluid="true"
                       id="subscriptionTier"
                       name="subscriptionTier"
-                      [(ngModel)]="organization.subscriptionTier"
-                      [options]="subscriptionTiers"
                       optionLabel="label"
                       optionValue="value"
                       placeholder="Select a tier"
-                      [checkmark]="true"
-                      fluid="true"
-                      [size]="inputSize"
                     ></p-select>
                     <label for="subscriptionTier">Subscription Tier</label>
                   </p-floatlabel>
@@ -277,24 +277,24 @@
                 <div class="flex flex-col gap-1">
                   <p-floatlabel variant="on">
                     <input
-                      pInputText
-                      type="email"
-                      id="billingEmail"
-                      name="billingEmail"
-                      [(ngModel)]="organization.billingEmail"
                       #billingEmail="ngModel"
+                      [(ngModel)]="organization.billingEmail"
                       [invalid]="
                         billingEmail.invalid && (billingEmail.touched || orgForm.submitted)
                       "
-                      email
-                      autocomplete="email"
-                      fluid="true"
                       [pSize]="inputSize"
+                      autocomplete="email"
+                      email
+                      fluid="true"
+                      id="billingEmail"
+                      name="billingEmail"
+                      pInputText
+                      type="email"
                     />
                     <label for="billingEmail">Billing Email</label>
                   </p-floatlabel>
                   @if (billingEmail.invalid && (billingEmail.touched || orgForm.submitted)) {
-                    <p-message severity="error" [size]="inputSize" variant="simple">
+                    <p-message [size]="inputSize" severity="error" variant="simple">
                       Please enter a valid email.
                     </p-message>
                   }
@@ -304,13 +304,13 @@
                 <div class="flex flex-col gap-1">
                   <p-floatlabel variant="on">
                     <p-inputnumber
-                      inputId="maxOrganizerUsers"
-                      name="maxOrganizerUsers"
                       [(ngModel)]="organization.maxOrganizerUsers"
                       [min]="0"
                       [showButtons]="true"
-                      fluid="true"
                       [size]="inputSize"
+                      fluid="true"
+                      inputId="maxOrganizerUsers"
+                      name="maxOrganizerUsers"
                     ></p-inputnumber>
                     <label for="maxOrganizerUsers">Max Organizer Users (0 = unlimited)</label>
                   </p-floatlabel>
@@ -320,13 +320,13 @@
                 <div class="flex flex-col gap-1">
                   <p-floatlabel variant="on">
                     <p-inputnumber
-                      inputId="maxDistributors"
-                      name="maxDistributors"
                       [(ngModel)]="organization.maxDistributors"
                       [min]="0"
                       [showButtons]="true"
-                      fluid="true"
                       [size]="inputSize"
+                      fluid="true"
+                      inputId="maxDistributors"
+                      name="maxDistributors"
                     ></p-inputnumber>
                     <label for="maxDistributors">Max Distributors (0 = unlimited)</label>
                   </p-floatlabel>
@@ -337,10 +337,10 @@
             <!-- Submit Button -->
             <div class="flex justify-end gap-3 pt-4 border-t">
               <button
-                pButton
-                type="submit"
-                severity="primary"
                 [disabled]="isSubmitting() || isLoading() || orgForm.invalid"
+                pButton
+                severity="primary"
+                type="submit"
               >
                 <span pButtonLabel>{{ getSubmitButtonText() }}</span>
               </button>
@@ -364,10 +364,10 @@
     </div>
   } @else {
     <form
-      id="orgFormDialog"
       #orgFormDialog="ngForm"
       (ngSubmit)="onSubmit(orgFormDialog)"
       class="flex flex-col gap-4 mt-2"
+      id="orgFormDialog"
     >
       <!-- Basic Information -->
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -375,26 +375,26 @@
         <div class="flex flex-col gap-1">
           <p-floatlabel variant="on">
             <input
-              pInputText
-              id="organizerNameDialog"
-              name="organizerNameDialog"
-              [(ngModel)]="organization.organizerName"
               #organizerNameDialog="ngModel"
+              [(ngModel)]="organization.organizerName"
               [invalid]="
                 organizerNameDialog.invalid &&
                 (organizerNameDialog.touched || orgFormDialog.submitted)
               "
-              required
+              [pSize]="inputSize"
               autocomplete="organization"
               fluid="true"
-              [pSize]="inputSize"
+              id="organizerNameDialog"
+              name="organizerNameDialog"
+              pInputText
+              required
             />
             <label for="organizerNameDialog">Organization Name *</label>
           </p-floatlabel>
           @if (
             organizerNameDialog.invalid && (organizerNameDialog.touched || orgFormDialog.submitted)
           ) {
-            <p-message severity="error" [size]="inputSize" variant="simple">
+            <p-message [size]="inputSize" severity="error" variant="simple">
               Organization name is required.
             </p-message>
           }
@@ -404,23 +404,23 @@
         <div class="flex flex-col gap-1">
           <p-floatlabel variant="on">
             <input
-              pInputText
-              type="email"
+              #emailDialog="ngModel"
+              [(ngModel)]="organization.email"
+              [invalid]="emailDialog.invalid && (emailDialog.touched || orgFormDialog.submitted)"
+              [pSize]="inputSize"
+              autocomplete="email"
+              email
+              fluid="true"
               id="emailDialog"
               name="emailDialog"
-              [(ngModel)]="organization.email"
-              #emailDialog="ngModel"
-              [invalid]="emailDialog.invalid && (emailDialog.touched || orgFormDialog.submitted)"
+              pInputText
               required
-              email
-              autocomplete="email"
-              fluid="true"
-              [pSize]="inputSize"
+              type="email"
             />
             <label for="emailDialog">Email *</label>
           </p-floatlabel>
           @if (emailDialog.invalid && (emailDialog.touched || orgFormDialog.submitted)) {
-            <p-message severity="error" [size]="inputSize" variant="simple">
+            <p-message [size]="inputSize" severity="error" variant="simple">
               @if (emailDialog.hasError('required')) {
                 Email is required.
               }
@@ -435,14 +435,14 @@
         <div class="flex flex-col gap-1">
           <p-floatlabel variant="on">
             <input
-              pInputText
-              type="tel"
-              id="phoneNumberDialog"
-              name="phoneNumberDialog"
               [(ngModel)]="organization.phoneNumber"
+              [pSize]="inputSize"
               autocomplete="tel"
               fluid="true"
-              [pSize]="inputSize"
+              id="phoneNumberDialog"
+              name="phoneNumberDialog"
+              pInputText
+              type="tel"
             />
             <label for="phoneNumberDialog">Phone Number</label>
           </p-floatlabel>
@@ -452,14 +452,14 @@
         <div class="flex flex-col gap-1">
           <p-floatlabel variant="on">
             <input
-              pInputText
-              type="url"
-              id="websiteDialog"
-              name="websiteDialog"
               [(ngModel)]="organization.website"
+              [pSize]="inputSize"
               autocomplete="url"
               fluid="true"
-              [pSize]="inputSize"
+              id="websiteDialog"
+              name="websiteDialog"
+              pInputText
+              type="url"
             />
             <label for="websiteDialog">Website</label>
           </p-floatlabel>
@@ -474,13 +474,13 @@
           <div class="flex flex-col gap-1 md:col-span-2">
             <p-floatlabel variant="on">
               <input
-                pInputText
-                id="addressLine1Dialog"
-                name="addressLine1Dialog"
                 [(ngModel)]="organization.addressLine1"
+                [pSize]="inputSize"
                 autocomplete="street-address"
                 fluid="true"
-                [pSize]="inputSize"
+                id="addressLine1Dialog"
+                name="addressLine1Dialog"
+                pInputText
               />
               <label for="addressLine1Dialog">Address Line 1</label>
             </p-floatlabel>
@@ -490,13 +490,13 @@
           <div class="flex flex-col gap-1 md:col-span-2">
             <p-floatlabel variant="on">
               <input
-                pInputText
-                id="addressLine2Dialog"
-                name="addressLine2Dialog"
                 [(ngModel)]="organization.addressLine2"
+                [pSize]="inputSize"
                 autocomplete="street-address"
                 fluid="true"
-                [pSize]="inputSize"
+                id="addressLine2Dialog"
+                name="addressLine2Dialog"
+                pInputText
               />
               <label for="addressLine2Dialog">Address Line 2</label>
             </p-floatlabel>
@@ -506,13 +506,13 @@
           <div class="flex flex-col gap-1">
             <p-floatlabel variant="on">
               <input
-                pInputText
-                id="cityDialog"
-                name="cityDialog"
                 [(ngModel)]="organization.city"
+                [pSize]="inputSize"
                 autocomplete="address-level2"
                 fluid="true"
-                [pSize]="inputSize"
+                id="cityDialog"
+                name="cityDialog"
+                pInputText
               />
               <label for="cityDialog">City</label>
             </p-floatlabel>
@@ -522,13 +522,13 @@
           <div class="flex flex-col gap-1">
             <p-floatlabel variant="on">
               <input
-                pInputText
-                id="stateProvinceDialog"
-                name="stateProvinceDialog"
                 [(ngModel)]="organization.stateProvince"
+                [pSize]="inputSize"
                 autocomplete="address-level1"
                 fluid="true"
-                [pSize]="inputSize"
+                id="stateProvinceDialog"
+                name="stateProvinceDialog"
+                pInputText
               />
               <label for="stateProvinceDialog">State/Province</label>
             </p-floatlabel>
@@ -538,13 +538,13 @@
           <div class="flex flex-col gap-1">
             <p-floatlabel variant="on">
               <input
-                pInputText
-                id="postalCodeDialog"
-                name="postalCodeDialog"
                 [(ngModel)]="organization.postalCode"
+                [pSize]="inputSize"
                 autocomplete="postal-code"
                 fluid="true"
-                [pSize]="inputSize"
+                id="postalCodeDialog"
+                name="postalCodeDialog"
+                pInputText
               />
               <label for="postalCodeDialog">Postal Code</label>
             </p-floatlabel>
@@ -554,13 +554,13 @@
           <div class="flex flex-col gap-1">
             <p-floatlabel variant="on">
               <input
-                pInputText
-                id="countryDialog"
-                name="countryDialog"
                 [(ngModel)]="organization.country"
+                [pSize]="inputSize"
                 autocomplete="country-name"
                 fluid="true"
-                [pSize]="inputSize"
+                id="countryDialog"
+                name="countryDialog"
+                pInputText
               />
               <label for="countryDialog">Country</label>
             </p-floatlabel>
@@ -576,13 +576,13 @@
           <div class="flex flex-col gap-1">
             <p-floatlabel variant="on">
               <input
-                pInputText
-                id="taxIdDialog"
-                name="taxIdDialog"
                 [(ngModel)]="organization.taxId"
+                [pSize]="inputSize"
                 autocomplete="off"
                 fluid="true"
-                [pSize]="inputSize"
+                id="taxIdDialog"
+                name="taxIdDialog"
+                pInputText
               />
               <label for="taxIdDialog">Tax ID</label>
             </p-floatlabel>
@@ -592,13 +592,13 @@
           <div class="flex flex-col gap-1">
             <p-floatlabel variant="on">
               <input
-                pInputText
-                id="registrationNumberDialog"
-                name="registrationNumberDialog"
                 [(ngModel)]="organization.registrationNumber"
+                [pSize]="inputSize"
                 autocomplete="off"
                 fluid="true"
-                [pSize]="inputSize"
+                id="registrationNumberDialog"
+                name="registrationNumberDialog"
+                pInputText
               />
               <label for="registrationNumberDialog">Registration Number</label>
             </p-floatlabel>
@@ -614,16 +614,16 @@
           <div class="flex flex-col gap-1">
             <p-floatlabel variant="on">
               <p-select
+                [(ngModel)]="organization.subscriptionTier"
+                [checkmark]="true"
+                [options]="subscriptionTiers"
+                [size]="inputSize"
+                fluid="true"
                 id="subscriptionTierDialog"
                 name="subscriptionTierDialog"
-                [(ngModel)]="organization.subscriptionTier"
-                [options]="subscriptionTiers"
                 optionLabel="label"
                 optionValue="value"
                 placeholder="Select a tier"
-                [checkmark]="true"
-                fluid="true"
-                [size]="inputSize"
               ></p-select>
               <label for="subscriptionTierDialog">Subscription Tier</label>
             </p-floatlabel>
@@ -633,27 +633,27 @@
           <div class="flex flex-col gap-1">
             <p-floatlabel variant="on">
               <input
-                pInputText
-                type="email"
-                id="billingEmailDialog"
-                name="billingEmailDialog"
-                [(ngModel)]="organization.billingEmail"
                 #billingEmailDialog="ngModel"
+                [(ngModel)]="organization.billingEmail"
                 [invalid]="
                   billingEmailDialog.invalid &&
                   (billingEmailDialog.touched || orgFormDialog.submitted)
                 "
-                email
-                autocomplete="email"
-                fluid="true"
                 [pSize]="inputSize"
+                autocomplete="email"
+                email
+                fluid="true"
+                id="billingEmailDialog"
+                name="billingEmailDialog"
+                pInputText
+                type="email"
               />
               <label for="billingEmailDialog">Billing Email</label>
             </p-floatlabel>
             @if (
               billingEmailDialog.invalid && (billingEmailDialog.touched || orgFormDialog.submitted)
             ) {
-              <p-message severity="error" [size]="inputSize" variant="simple">
+              <p-message [size]="inputSize" severity="error" variant="simple">
                 Please enter a valid email.
               </p-message>
             }
@@ -663,13 +663,13 @@
           <div class="flex flex-col gap-1">
             <p-floatlabel variant="on">
               <p-inputnumber
-                inputId="maxOrganizerUsersDialog"
-                name="maxOrganizerUsersDialog"
                 [(ngModel)]="organization.maxOrganizerUsers"
                 [min]="0"
                 [showButtons]="true"
-                fluid="true"
                 [size]="inputSize"
+                fluid="true"
+                inputId="maxOrganizerUsersDialog"
+                name="maxOrganizerUsersDialog"
               ></p-inputnumber>
               <label for="maxOrganizerUsersDialog">Max Organizer Users (0 = unlimited)</label>
             </p-floatlabel>
@@ -679,13 +679,13 @@
           <div class="flex flex-col gap-1">
             <p-floatlabel variant="on">
               <p-inputnumber
-                inputId="maxDistributorsDialog"
-                name="maxDistributorsDialog"
                 [(ngModel)]="organization.maxDistributors"
                 [min]="0"
                 [showButtons]="true"
-                fluid="true"
                 [size]="inputSize"
+                fluid="true"
+                inputId="maxDistributorsDialog"
+                name="maxDistributorsDialog"
               ></p-inputnumber>
               <label for="maxDistributorsDialog">Max Distributors (0 = unlimited)</label>
             </p-floatlabel>
@@ -696,10 +696,10 @@
       <!-- Submit Button -->
       <div class="flex justify-end gap-3 pt-4 border-t">
         <button
-          pButton
-          type="submit"
-          severity="primary"
           [disabled]="isSubmitting() || isLoading() || orgFormDialog.invalid"
+          pButton
+          severity="primary"
+          type="submit"
         >
           <span pButtonLabel>{{ getSubmitButtonText() }}</span>
         </button>

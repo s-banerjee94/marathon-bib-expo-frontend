@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, signal, inject, OnInit } from '@angular/core';
+import { Component, EventEmitter, inject, Input, OnInit, Output, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AutoCompleteModule, AutoCompleteSelectEvent } from 'primeng/autocomplete';
@@ -48,9 +48,6 @@ import { HighlightPipe } from '../../shared/pipes/highlight.pipe';
   templateUrl: './organization-selector.html',
 })
 export class OrganizationSelector implements OnInit {
-  private organizationService = inject(OrganizationService);
-  private errorHandler = inject(ErrorHandlerService);
-
   // Input properties
   @Input() label: string = 'Organization';
   @Input() placeholder: string = 'Type to search organizations...';
@@ -62,68 +59,27 @@ export class OrganizationSelector implements OnInit {
   @Input() styleClass: string = '';
   @Input() inputId: string = 'organizationAutocomplete';
   @Input() selectedOrganizationId?: number;
-
   // Output events
   @Output() organizationSelected = new EventEmitter<Organization>();
   @Output() organizationCleared = new EventEmitter<void>();
   @Output() organizationIdChange = new EventEmitter<number | undefined>();
-
   // Component state
   organizationSuggestions = signal<Organization[]>([]);
   selectedOrganization = signal<Organization | null>(null);
   isLoadingOrganizations = signal(false);
   currentSearchTerm = signal<string>('');
-
-  // Internal state
-  private hasLoadedInitialOrganizations = false;
-
   // Debounce delay for autocomplete
   readonly autocompleteDelay = 300;
+  private organizationService = inject(OrganizationService);
+  private errorHandler = inject(ErrorHandlerService);
+  // Internal state
+  private hasLoadedInitialOrganizations = false;
 
   ngOnInit(): void {
     // Load organization if ID is provided
     if (this.selectedOrganizationId) {
       this.loadOrganizationById(this.selectedOrganizationId);
     }
-  }
-
-  /**
-   * Load organization by ID for pre-population
-   */
-  private loadOrganizationById(id: number): void {
-    this.organizationService.getOrganizationById(id).subscribe({
-      next: (org) => {
-        this.selectedOrganization.set(org);
-      },
-      error: (error) => {
-        this.errorHandler.showError(error, 'Failed to load organization');
-      },
-    });
-  }
-
-  /**
-   * Load initial 50 organizations on first dropdown interaction
-   */
-  private loadInitialOrganizations(): void {
-    this.isLoadingOrganizations.set(true);
-    const params = {
-      page: 0,
-      size: 50,
-      enabled: true,
-      sort: ['updatedAt,desc', 'createdAt,desc'],
-    };
-
-    this.organizationService.searchOrganizations(params).subscribe({
-      next: (response: PageableResponse<Organization>) => {
-        this.organizationSuggestions.set(response.content);
-        this.isLoadingOrganizations.set(false);
-        this.hasLoadedInitialOrganizations = true;
-      },
-      error: (error) => {
-        this.isLoadingOrganizations.set(false);
-        this.errorHandler.showError(error, 'Failed to load organizations');
-      },
-    });
   }
 
   /**
@@ -193,5 +149,44 @@ export class OrganizationSelector implements OnInit {
       return words[0].substring(0, 2).toUpperCase();
     }
     return (words[0][0] + words[words.length - 1][0]).toUpperCase();
+  }
+
+  /**
+   * Load organization by ID for pre-population
+   */
+  private loadOrganizationById(id: number): void {
+    this.organizationService.getOrganizationById(id).subscribe({
+      next: (org) => {
+        this.selectedOrganization.set(org);
+      },
+      error: (error) => {
+        this.errorHandler.showError(error, 'Failed to load organization');
+      },
+    });
+  }
+
+  /**
+   * Load initial 50 organizations on first dropdown interaction
+   */
+  private loadInitialOrganizations(): void {
+    this.isLoadingOrganizations.set(true);
+    const params = {
+      page: 0,
+      size: 50,
+      enabled: true,
+      sort: ['updatedAt,desc', 'createdAt,desc'],
+    };
+
+    this.organizationService.searchOrganizations(params).subscribe({
+      next: (response: PageableResponse<Organization>) => {
+        this.organizationSuggestions.set(response.content);
+        this.isLoadingOrganizations.set(false);
+        this.hasLoadedInitialOrganizations = true;
+      },
+      error: (error) => {
+        this.isLoadingOrganizations.set(false);
+        this.errorHandler.showError(error, 'Failed to load organizations');
+      },
+    });
   }
 }

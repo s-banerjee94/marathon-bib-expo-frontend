@@ -1,7 +1,7 @@
-import { Component, inject, signal, OnInit } from '@angular/core';
+import { Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule, Location } from '@angular/common';
 import { FormsModule, NgForm } from '@angular/forms';
-import { Router, ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { InputTextModule } from 'primeng/inputtext';
 import { FloatLabelModule } from 'primeng/floatlabel';
 import { ButtonModule } from 'primeng/button';
@@ -14,8 +14,8 @@ import { MessageService } from 'primeng/api';
 import { DynamicDialogConfig, DynamicDialogRef } from 'primeng/dynamicdialog';
 import {
   CreateOrganizationRequest,
-  SubscriptionTier,
   Organization,
+  SubscriptionTier,
 } from '../../core/models/organization.model';
 import { OrganizationService } from '../../core/services/organization.service';
 import { AuthService } from '../../core/services/auth.service';
@@ -43,20 +43,10 @@ import { SUBSCRIPTION_TIER_OPTIONS } from '../../shared/constants/subscription.c
   styleUrl: './organization-form.css',
 })
 export class OrganizationForm implements OnInit {
-  private organizationService = inject(OrganizationService);
-  private authService = inject(AuthService);
-  private router = inject(Router);
-  private route = inject(ActivatedRoute);
-  private location = inject(Location);
-  private messageService = inject(MessageService);
-  private errorHandler = inject(ErrorHandlerService);
-
   // Optional injection for dialog mode
   public dialogConfig = inject(DynamicDialogConfig, { optional: true });
   public dialogRef = inject(DynamicDialogRef, { optional: true });
-
   isDialogMode = signal(false);
-
   // Form data as plain object for ngModel binding
   organization: CreateOrganizationRequest = {
     organizerName: '',
@@ -76,17 +66,21 @@ export class OrganizationForm implements OnInit {
     subscriptionTier: SubscriptionTier.FREE,
     billingEmail: '',
   };
-
   // Component state as signals
   isSubmitting = signal(false);
   isEditMode = signal(false);
   organizationId = signal<number | null>(null);
   isLoading = signal(false);
-
   // Form input size (controlled centrally via constant)
   readonly inputSize = FORM_INPUT_SIZE;
-
   readonly subscriptionTiers = SUBSCRIPTION_TIER_OPTIONS;
+  private organizationService = inject(OrganizationService);
+  private authService = inject(AuthService);
+  private router = inject(Router);
+  private route = inject(ActivatedRoute);
+  private location = inject(Location);
+  private messageService = inject(MessageService);
+  private errorHandler = inject(ErrorHandlerService);
 
   ngOnInit(): void {
     initializeErrorHandler(this.errorHandler, this.messageService);
@@ -122,45 +116,6 @@ export class OrganizationForm implements OnInit {
         this.organizationId.set(null);
       }
     }
-  }
-
-  private loadOrganizationData(id: number): void {
-    this.isLoading.set(true);
-
-    this.organizationService.getOrganizationById(id).subscribe({
-      next: (org: Organization) => {
-        this.populateFormFromOrganization(org);
-        this.isLoading.set(false);
-      },
-      error: (error) => {
-        this.isLoading.set(false);
-        this.errorHandler.showError(error, 'Error', {
-          customMessage: 'Failed to load organization data. Please try again.',
-        });
-        this.router.navigate([this.authService.getDashboardRoute()]);
-      },
-    });
-  }
-
-  private populateFormFromOrganization(org: Organization): void {
-    this.organization = {
-      organizerName: org.organizerName,
-      email: org.email,
-      phoneNumber: org.phoneNumber,
-      website: org.website,
-      addressLine1: org.addressLine1,
-      addressLine2: org.addressLine2,
-      city: org.city,
-      stateProvince: org.stateProvince,
-      postalCode: org.postalCode,
-      country: org.country,
-      taxId: org.taxId,
-      registrationNumber: org.registrationNumber,
-      maxOrganizerUsers: org.maxOrganizerUsers,
-      maxDistributors: org.maxDistributors,
-      subscriptionTier: org.subscriptionTier as SubscriptionTier | undefined,
-      billingEmail: org.billingEmail,
-    };
   }
 
   onSubmit(form: NgForm): void {
@@ -259,5 +214,44 @@ export class OrganizationForm implements OnInit {
       return this.isEditMode() ? 'Updating...' : 'Creating...';
     }
     return this.isEditMode() ? 'Update Organization' : 'Create Organization';
+  }
+
+  private loadOrganizationData(id: number): void {
+    this.isLoading.set(true);
+
+    this.organizationService.getOrganizationById(id).subscribe({
+      next: (org: Organization) => {
+        this.populateFormFromOrganization(org);
+        this.isLoading.set(false);
+      },
+      error: (error) => {
+        this.isLoading.set(false);
+        this.errorHandler.showError(error, 'Error', {
+          customMessage: 'Failed to load organization data. Please try again.',
+        });
+        this.router.navigate([this.authService.getDashboardRoute()]);
+      },
+    });
+  }
+
+  private populateFormFromOrganization(org: Organization): void {
+    this.organization = {
+      organizerName: org.organizerName,
+      email: org.email,
+      phoneNumber: org.phoneNumber,
+      website: org.website,
+      addressLine1: org.addressLine1,
+      addressLine2: org.addressLine2,
+      city: org.city,
+      stateProvince: org.stateProvince,
+      postalCode: org.postalCode,
+      country: org.country,
+      taxId: org.taxId,
+      registrationNumber: org.registrationNumber,
+      maxOrganizerUsers: org.maxOrganizerUsers,
+      maxDistributors: org.maxDistributors,
+      subscriptionTier: org.subscriptionTier as SubscriptionTier | undefined,
+      billingEmail: org.billingEmail,
+    };
   }
 }

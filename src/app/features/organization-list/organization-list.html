@@ -11,25 +11,25 @@
     <p-iconfield class="flex-1 max-w-md">
       <p-inputicon class="pi pi-search" />
       <input
-        type="text"
-        pInputText
+        (input)="onSearchInput($any($event.target).value)"
         [pSize]="inputSize"
         [value]="searchTerm()"
-        (input)="onSearchInput($any($event.target).value)"
-        placeholder="Search organizations (min 2 chars)..."
         class="w-full"
+        pInputText
+        placeholder="Search organizations (min 2 chars)..."
+        type="text"
       />
       @if (searchTerm()) {
-        <p-inputicon class="pi pi-times cursor-pointer" (click)="clearSearch()" />
+        <p-inputicon (click)="clearSearch()" class="pi pi-times cursor-pointer" />
       }
     </p-iconfield>
 
     <div class="flex items-center gap-2">
       <p-button
-        label="New Organization"
-        icon="pi pi-plus"
-        [size]="inputSize"
         (click)="onCreate()"
+        [size]="inputSize"
+        icon="pi pi-plus"
+        label="New Organization"
       ></p-button>
     </div>
   </div>
@@ -38,35 +38,35 @@
   <div class="mb-4 flex flex-wrap items-center gap-6">
     <div class="flex items-center gap-2">
       <p-checkbox
-        inputId="filterEnabled"
-        [ngModel]="filterEnabled()"
         (ngModelChange)="filterEnabled.set($event); onFilterChange()"
         [binary]="true"
+        [ngModel]="filterEnabled()"
+        inputId="filterEnabled"
       />
-      <label for="filterEnabled" class="cursor-pointer">Show Enabled Only</label>
+      <label class="cursor-pointer" for="filterEnabled">Show Enabled Only</label>
     </div>
 
     <div class="flex items-center gap-2">
       <p-checkbox
-        inputId="filterDeleted"
-        [ngModel]="filterDeleted()"
         (ngModelChange)="filterDeleted.set($event); onFilterChange()"
         [binary]="true"
+        [ngModel]="filterDeleted()"
+        inputId="filterDeleted"
       />
-      <label for="filterDeleted" class="cursor-pointer">Show Deleted</label>
+      <label class="cursor-pointer" for="filterDeleted">Show Deleted</label>
     </div>
 
     <p-floatlabel variant="on">
       <p-select
-        inputId="sortSelect"
-        [options]="sortOptions"
-        [ngModel]="selectedSort()"
         (ngModelChange)="onSortChange($event)"
-        optionLabel="label"
-        optionValue="value"
+        [ngModel]="selectedSort()"
+        [options]="sortOptions"
         [showClear]="true"
         [size]="inputSize"
         class="w-48"
+        inputId="sortSelect"
+        optionLabel="label"
+        optionValue="value"
       />
       <label for="sortSelect">Sort By</label>
     </p-floatlabel>
@@ -74,29 +74,29 @@
     <div class="flex items-center gap-2">
       <label for="columnSelect">Columns:</label>
       <p-multiselect
-        inputId="columnSelect"
-        [options]="cols()"
-        [(ngModel)]="selectedCols"
         (ngModelChange)="onColumnSelectionChange()"
+        [(ngModel)]="selectedCols"
+        [maxSelectedLabels]="2"
+        [options]="cols()"
+        [size]="inputSize"
+        inputId="columnSelect"
         optionLabel="header"
         placeholder="Select Columns"
-        [maxSelectedLabels]="2"
-        [size]="inputSize"
       />
     </div>
   </div>
 
   <p-table
-    [value]="displayData()"
-    [rows]="pageSize()"
-    [totalRecords]="totalRecords()"
+    (onLazyLoad)="onPageChange($event)"
+    [first]="currentPage() * pageSize()"
     [lazy]="true"
     [paginator]="true"
-    [first]="currentPage() * pageSize()"
     [rowsPerPageOptions]="[5, 10, 50, 100]"
-    (onLazyLoad)="onPageChange($event)"
-    [size]="inputSize"
+    [rows]="pageSize()"
     [scrollable]="true"
+    [size]="inputSize"
+    [totalRecords]="totalRecords()"
+    [value]="displayData()"
     scrollHeight="600px"
   >
     <ng-template pTemplate="header">
@@ -112,7 +112,7 @@
         <th class="text-center">Action</th>
       </tr>
     </ng-template>
-    <ng-template pTemplate="body" let-org>
+    <ng-template let-org pTemplate="body">
       <tr>
         @if (isLoading()) {
           @for (col of visibleCols; track col.field) {
@@ -121,26 +121,26 @@
             </td>
           }
           <td class="text-center">
-            <p-skeleton width="5rem" height="2rem" />
+            <p-skeleton height="2rem" width="5rem" />
           </td>
         } @else {
           @for (col of visibleCols; track col.field) {
             <td [class]="getColumnAlignment(col.field)">
               @if (col.field === 'phoneNumber') {
-                <a href="tel:{{ getCellValue(org, col.field) }}" class="hover:underline">
+                <a class="hover:underline" href="tel:{{ getCellValue(org, col.field) }}">
                   {{ getCellValue(org, col.field) | defaultValue }}
                 </a>
               } @else if (col.field === 'email' || col.field === 'billingEmail') {
-                <a href="mailto:{{ getCellValue(org, col.field) }}" class="hover:underline">
+                <a class="hover:underline" href="mailto:{{ getCellValue(org, col.field) }}">
                   {{ getCellValue(org, col.field) | defaultValue }}
                 </a>
               } @else if (col.field === 'website') {
                 @if (getCellValue(org, col.field)) {
                   <a
-                    href="{{ getCellValue(org, col.field) }}"
-                    target="_blank"
-                    rel="noopener noreferrer"
                     class="hover:underline"
+                    href="{{ getCellValue(org, col.field) }}"
+                    rel="noopener noreferrer"
+                    target="_blank"
                   >
                     {{ getCellValue(org, col.field) }}
                   </a>
@@ -150,13 +150,13 @@
               } @else if (col.field === 'subscriptionTier') {
                 @if (getCellValue(org, col.field)) {
                   <p-tag
-                    [value]="$any(getCellValue(org, col.field))"
-                    [severity]="getSubscriptionTierSeverity($any(getCellValue(org, col.field)))"
                     [rounded]="true"
+                    [severity]="getSubscriptionTierSeverity($any(getCellValue(org, col.field)))"
                     [style]="{
                       '--be-tag-font-size': '0.75rem',
                       '--be-tag-padding': '0.25rem 0.5rem',
                     }"
+                    [value]="$any(getCellValue(org, col.field))"
                   />
                 } @else {
                   {{ getCellValue(org, col.field) | defaultValue }}
@@ -164,36 +164,36 @@
               } @else if (col.field === 'subscriptionStatus') {
                 @if (getCellValue(org, col.field)) {
                   <p-tag
-                    [value]="$any(getCellValue(org, col.field))"
-                    [severity]="getSubscriptionStatusSeverity($any(getCellValue(org, col.field)))"
                     [rounded]="true"
+                    [severity]="getSubscriptionStatusSeverity($any(getCellValue(org, col.field)))"
                     [style]="{
                       '--be-tag-font-size': '0.75rem',
                       '--be-tag-padding': '0.25rem 0.5rem',
                     }"
+                    [value]="$any(getCellValue(org, col.field))"
                   />
                 } @else {
                   {{ getCellValue(org, col.field) | defaultValue }}
                 }
               } @else if (col.field === 'enabled') {
                 <p-tag
-                  [value]="org.enabled ? 'Enabled' : 'Disabled'"
-                  [severity]="org.enabled ? 'success' : 'danger'"
                   [rounded]="true"
+                  [severity]="org.enabled ? 'success' : 'danger'"
                   [style]="{
                     '--be-tag-font-size': '0.75rem',
                     '--be-tag-padding': '0.25rem 0.5rem',
                   }"
+                  [value]="org.enabled ? 'Enabled' : 'Disabled'"
                 />
               } @else if (col.field === 'deleted') {
                 <p-tag
-                  [value]="org.deleted ? 'Deleted' : 'Active'"
-                  [severity]="org.deleted ? 'danger' : 'success'"
                   [rounded]="true"
+                  [severity]="org.deleted ? 'danger' : 'success'"
                   [style]="{
                     '--be-tag-font-size': '0.75rem',
                     '--be-tag-padding': '0.25rem 0.5rem',
                   }"
+                  [value]="org.deleted ? 'Deleted' : 'Active'"
                 />
               } @else if (
                 col.field === 'createdAt' ||
@@ -210,23 +210,23 @@
           <td class="text-center">
             <div class="flex items-center justify-center gap-1">
               <p-button
-                icon="pi pi-pencil"
-                [rounded]="true"
-                [text]="true"
-                severity="info"
-                pTooltip="Edit"
-                tooltipPosition="top"
-                [size]="inputSize"
                 (click)="onEdit(org)"
+                [rounded]="true"
+                [size]="inputSize"
+                [text]="true"
+                icon="pi pi-pencil"
+                pTooltip="Edit"
+                severity="info"
+                tooltipPosition="top"
               ></p-button>
               <p-button
-                icon="pi pi-trash"
                 [rounded]="true"
-                [text]="true"
-                severity="danger"
-                pTooltip="Delete"
-                tooltipPosition="top"
                 [size]="inputSize"
+                [text]="true"
+                icon="pi pi-trash"
+                pTooltip="Delete"
+                severity="danger"
+                tooltipPosition="top"
               ></p-button>
             </div>
           </td>

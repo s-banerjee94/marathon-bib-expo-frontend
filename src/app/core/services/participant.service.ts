@@ -1,16 +1,15 @@
-import { Injectable, inject } from '@angular/core';
+import { inject, Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import {
+  CreateParticipantRequest,
+  ImportDetails,
+  ImportParticipantsResponse,
   Participant,
   ParticipantListResponse,
   ParticipantSearchParams,
-  ImportParticipantsResponse,
   ParticipantStatistics,
-  CreateParticipantRequest,
   UpdateParticipantRequest,
-  ImportDetails,
-  ImportHistoryItem,
 } from '../models/participant.model';
 import { BASE_URI } from '../../shared/constants/api.constant';
 
