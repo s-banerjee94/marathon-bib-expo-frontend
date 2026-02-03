@@ -4,6 +4,7 @@ import { Observable, throwError } from 'rxjs';
 import { catchError, tap, finalize, switchMap } from 'rxjs/operators';
 import { User, UserRole, AuthResponse, LoginRequest } from '../models/user.model';
 import { STORAGE_KEYS } from '../../shared/constants/storage-keys.constant';
+import { BASE_URI } from '../../shared/constants/api.constant';
 
 /**
  * Authentication Service
@@ -28,7 +29,7 @@ export class AuthService {
   private readonly tokenKey = STORAGE_KEYS.AUTH_TOKEN;
   private readonly userKey = STORAGE_KEYS.USER;
   private readonly http = inject(HttpClient);
-  private readonly authUrl = '/api/auth/login';
+  private readonly authUrl = `${BASE_URI}/auth/login`;
 
   constructor() {
     this.restoreSessionFromStorage();
@@ -143,7 +144,7 @@ export class AuthService {
    * This is called after successful login to get full user data
    */
   private fetchCurrentUser(): Observable<User> {
-    return this.http.get<User>('/api/users/me');
+    return this.http.get<User>(`${BASE_URI}/users/me`);
   }
 
   /**

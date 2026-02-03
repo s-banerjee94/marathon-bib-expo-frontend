@@ -7,13 +7,14 @@ import {
   UpdateOrganizationRequest,
 } from '../models/organization.model';
 import { PageableResponse, PageableParams } from '../models/api.model';
+import { BASE_URI } from '../../shared/constants/api.constant';
 
 @Injectable({
   providedIn: 'root',
 })
 export class OrganizationService {
   private http = inject(HttpClient);
-  private apiUrl = '/api/organizations';
+  private apiUrl = `${BASE_URI}/organizations`;
 
   createOrganization(request: CreateOrganizationRequest): Observable<Organization> {
     return this.http.post<Organization>(this.apiUrl, request);

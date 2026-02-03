@@ -3,13 +3,14 @@ import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { CreateUserRequest, User } from '../models/user.model';
 import { PageableResponse, PageableParams } from '../models/api.model';
+import { BASE_URI } from '../../shared/constants/api.constant';
 
 @Injectable({
   providedIn: 'root',
 })
 export class UserService {
   private http = inject(HttpClient);
-  private apiUrl = '/api/users';
+  private apiUrl = `${BASE_URI}/users`;
 
   createUser(request: CreateUserRequest): Observable<User> {
     return this.http.post<User>(this.apiUrl, request);

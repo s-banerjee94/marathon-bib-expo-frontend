@@ -24,13 +24,13 @@ body.blocked-scroll {
 .layout-topbar {
   @apply fixed! top-0 left-0 right-0 z-[999] rounded-none!;
   height: var(--topbar-height);
-  background-color: var(--p-surface-0) !important;
-  border-bottom: 1px solid var(--p-surface-200) !important;
+  background-color: var(--be-surface-0) !important;
+  border-bottom: 1px solid var(--be-surface-200) !important;
 }
 
 .app-dark .layout-topbar {
-  background-color: var(--p-surface-900) !important;
-  border-bottom-color: var(--p-surface-700) !important;
+  background-color: var(--be-surface-900) !important;
+  border-bottom-color: var(--be-surface-700) !important;
 }
 
 /* ============================================================================
@@ -51,13 +51,13 @@ body.blocked-scroll {
   transition:
     transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
     box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  background-color: var(--p-surface-0);
-  border-right: 1px solid var(--p-surface-200);
+  background-color: var(--be-surface-0);
+  border-right: 1px solid var(--be-surface-200);
 }
 
 .app-dark .layout-sidebar {
-  background-color: var(--p-surface-900);
-  border-right-color: var(--p-surface-700);
+  background-color: var(--be-surface-900);
+  border-right-color: var(--be-surface-700);
 }
 
 /* State-based transforms */
@@ -100,44 +100,44 @@ body.blocked-scroll {
    Menu Link Styles (Theme-dependent colors)
    ============================================================================ */
 .menu-link {
-  color: var(--p-text-color);
+  color: var(--be-text-color);
   @apply transition-colors duration-150;
 }
 
 .menu-link:hover {
-  background-color: var(--p-surface-100);
+  background-color: var(--be-surface-100);
 }
 
 .app-dark .menu-link:hover {
-  background-color: var(--p-surface-800);
+  background-color: var(--be-surface-800);
 }
 
 .menu-link.active-route {
-  background-color: var(--p-primary-50);
-  color: var(--p-primary-500);
+  background-color: var(--be-primary-50);
+  color: var(--be-primary-500);
 }
 
 .app-dark .menu-link.active-route {
-  background-color: color-mix(in srgb, var(--p-primary-500), transparent 85%);
-  color: var(--p-primary-400);
+  background-color: color-mix(in srgb, var(--be-primary-500), transparent 85%);
+  color: var(--be-primary-400);
 }
 
 /* ============================================================================
    Menu Badge (Theme-dependent)
    ============================================================================ */
 .menu-badge {
-  background-color: var(--p-primary-500);
+  background-color: var(--be-primary-500);
 }
 
 /* ============================================================================
    Menu Separator (Theme-dependent)
    ============================================================================ */
 .menu-separator {
-  background-color: var(--p-surface-200);
+  background-color: var(--be-surface-200);
 }
 
 .app-dark .menu-separator {
-  background-color: var(--p-surface-700);
+  background-color: var(--be-surface-700);
 }
 
 /* ============================================================================
@@ -163,10 +163,10 @@ body.blocked-scroll {
 
 @keyframes fadeIn {
   from {
-    @apply opacity-0;
+    opacity: 0;
   }
   to {
-    @apply opacity-100;
+    opacity: 1;
   }
 }
 

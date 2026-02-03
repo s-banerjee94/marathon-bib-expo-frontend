@@ -5,6 +5,7 @@ import { Event, CreateEventRequest, UpdateEventRequest } from '../models/event.m
 import { PageableParams, PageableResponse } from '../models/api.model';
 import { AuthService } from './auth.service';
 import { UserRole } from '../models/user.model';
+import { BASE_URI } from '../../shared/constants/api.constant';
 
 /**
  * Event Service
@@ -17,7 +18,7 @@ import { UserRole } from '../models/user.model';
 export class EventService {
   private http = inject(HttpClient);
   private authService = inject(AuthService);
-  private baseUrl = '/api/events';
+  private baseUrl = `${BASE_URI}/events`;
 
   /**
    * Search events with pagination, filtering, and sorting

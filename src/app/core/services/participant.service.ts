@@ -12,13 +12,14 @@ import {
   ImportDetails,
   ImportHistoryItem,
 } from '../models/participant.model';
+import { BASE_URI } from '../../shared/constants/api.constant';
 
 @Injectable({
   providedIn: 'root',
 })
 export class ParticipantService {
   private http = inject(HttpClient);
-  private apiUrl = '/api/events';
+  private apiUrl = `${BASE_URI}/events`;
 
   /**
    * Search participants using DynamoDB scan with filters
