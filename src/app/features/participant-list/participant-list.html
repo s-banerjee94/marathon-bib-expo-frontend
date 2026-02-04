@@ -3,21 +3,27 @@
   <div class="mb-6">
     <h1 class="text-3xl font-bold">Participant Management</h1>
     <p class="mt-2">
-      View and manage event participants. Select an organization and event to get started.
+      @if (isOrganizerUser()) {
+        View and manage event participants. Select an event to get started.
+      } @else {
+        View and manage event participants. Select an organization and event to get started.
+      }
     </p>
   </div>
 
   <!-- Filter Section -->
   <p-card class="mb-6">
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 p-2 md:p-4">
-      <!-- Organization Selector -->
-      <app-organization-selector
-        (organizationIdChange)="onOrganizationChange($event)"
-        [required]="true"
-        [selectedOrganizationId]="selectedOrganizationId()"
-        label="Organization"
-        placeholder="Type to search organizations..."
-      ></app-organization-selector>
+      <!-- Organization Selector (only for ROOT/ADMIN) -->
+      @if (!isOrganizerUser()) {
+        <app-organization-selector
+          (organizationIdChange)="onOrganizationChange($event)"
+          [required]="true"
+          [selectedOrganizationId]="selectedOrganizationId()"
+          label="Organization"
+          placeholder="Type to search organizations..."
+        ></app-organization-selector>
+      }
 
       <!-- Event Selector -->
       <app-event-selector
@@ -28,6 +34,7 @@
         [selectedEventId]="selectedEventId()"
         label="Event"
         placeholder="Type to search events..."
+        [class]="isOrganizerUser() ? 'md:col-span-2' : ''"
       ></app-event-selector>
     </div>
   </p-card>
@@ -38,7 +45,13 @@
       <div class="p-8">
         <i class="pi pi-users text-6xl mb-4 block"></i>
         <h3 class="text-xl font-semibold mb-2">No Event Selected</h3>
-        <p>Please select an organization and event to manage participants.</p>
+        <p>
+          @if (isOrganizerUser()) {
+            Please select an event to manage participants.
+          } @else {
+            Please select an organization and event to manage participants.
+          }
+        </p>
       </div>
     </p-card>
   }

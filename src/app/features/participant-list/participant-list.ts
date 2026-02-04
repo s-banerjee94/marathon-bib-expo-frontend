@@ -1,4 +1,4 @@
-import { Component, computed, inject, OnDestroy, signal, ViewChild } from '@angular/core';
+import { Component, computed, inject, OnDestroy, OnInit, signal, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { CardModule } from 'primeng/card';
@@ -14,6 +14,8 @@ import {
   Participant,
 } from '../../core/models/participant.model';
 import { ParticipantService } from '../../core/services/participant.service';
+import { AuthService } from '../../core/services/auth.service';
+import { UserRole } from '../../core/models/user.model';
 import { ErrorHandlerService } from '../../core/services/error-handler.service';
 import { OrganizationSelector } from '../../components/organization-selector/organization-selector';
 import { EventSelector } from '../../components/event-selector/event-selector';
@@ -55,12 +57,14 @@ import {
   ],
   providers: [DialogService, ConfirmationService],
 })
-export class ParticipantList implements OnDestroy {
+export class ParticipantList implements OnInit, OnDestroy {
   @ViewChild(EventSelector) eventSelector?: EventSelector;
   @ViewChild('participantFormComponent') participantFormComponent?: ParticipantForm;
   // Cascading filter signals
   selectedOrganizationId = signal<number | undefined>(undefined);
   selectedEventId = signal<number | undefined>(undefined);
+  // User role signals
+  isOrganizerUser = signal(false);
   // Tab state
   activeTab = signal<string>('manage');
   // Participant table state
@@ -114,11 +118,29 @@ export class ParticipantList implements OnDestroy {
     () => this.selectedOrganizationId() !== undefined && this.selectedEventId() !== undefined,
   );
   private participantService = inject(ParticipantService);
+  private authService = inject(AuthService);
   private errorHandler = inject(ErrorHandlerService);
   private confirmationService = inject(ConfirmationService);
   private dialogRef: DynamicDialogRef | null = null;
   private lastEvaluatedKey?: string;
   private lastEvaluatedKeyImportErrors?: string;
+
+  ngOnInit(): void {
+    // Check if user is ORGANIZER_ADMIN or ORGANIZER_USER
+    const isOrgUser = this.authService.hasAnyRole([
+      UserRole.ORGANIZER_ADMIN,
+      UserRole.ORGANIZER_USER,
+    ]);
+    this.isOrganizerUser.set(isOrgUser);
+
+    // If organizer user, automatically set organization ID from current user
+    if (isOrgUser) {
+      const currentUser = this.authService.currentUser();
+      if (currentUser?.organizationId) {
+        this.selectedOrganizationId.set(currentUser.organizationId);
+      }
+    }
+  }
 
   onOrganizationChange(organizationId: number | undefined): void {
     this.selectedOrganizationId.set(organizationId);
