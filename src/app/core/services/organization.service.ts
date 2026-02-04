@@ -63,4 +63,8 @@ export class OrganizationService {
   updateOrganization(id: number, request: UpdateOrganizationRequest): Observable<Organization> {
     return this.http.patch<Organization>(`${this.apiUrl}/${id}`, request);
   }
+
+  getCurrentUserOrganization(): Observable<Organization> {
+    return this.http.get<Organization>(`${this.apiUrl}/organization`);
+  }
 }

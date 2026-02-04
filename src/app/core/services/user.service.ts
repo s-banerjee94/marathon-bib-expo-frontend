@@ -67,4 +67,38 @@ export class UserService {
   toggleEnabled(id: number): Observable<User> {
     return this.http.patch<User>(`${this.apiUrl}/${id}/toggle-enabled`, {});
   }
+
+  getOrganizationUsers(params?: {
+    role?: string;
+    enabled?: boolean;
+    search?: string;
+    sortBy?: string;
+    sortDirection?: string;
+  }): Observable<User[]> {
+    let httpParams = new HttpParams();
+
+    if (params?.role) {
+      httpParams = httpParams.set('role', params.role);
+    }
+
+    if (params?.enabled !== undefined) {
+      httpParams = httpParams.set('enabled', params.enabled.toString());
+    }
+
+    if (params?.search) {
+      httpParams = httpParams.set('search', params.search.trim());
+    }
+
+    if (params?.sortBy) {
+      httpParams = httpParams.set('sortBy', params.sortBy);
+    }
+
+    if (params?.sortDirection) {
+      httpParams = httpParams.set('sortDirection', params.sortDirection);
+    }
+
+    return this.http.get<User[]>(`${this.apiUrl}/organization`, {
+      params: httpParams,
+    });
+  }
 }

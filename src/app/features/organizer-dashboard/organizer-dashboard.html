@@ -1,39 +1,219 @@
-<div class="dashboard-container">
-  <header class="dashboard-header">
-    <h1>Organizer Admin Dashboard</h1>
-    @if (user(); as userData) {
-      <div class="user-info">
-        <span>Welcome, {{ userData.fullName }} (ORG ADMIN)</span>
-        <button (click)="logout()" class="btn-logout">Logout</button>
-      </div>
-    }
-  </header>
+<div class="min-h-screen">
+  <!-- Header -->
+  <div class="p-4 shadow-md">
+    <div class="max-w-7xl mx-auto">
+      <h1 class="text-3xl font-bold">
+        @if (isOrgAdmin()) {
+          Organizer Admin Dashboard
+        } @else {
+          Organizer Dashboard
+        }
+        @if (organization(); as org) {
+          <span class="text-2xl"> - {{ org.organizerName }}</span>
+        }
+      </h1>
+    </div>
+  </div>
 
-  <main class="dashboard-content">
-    <section class="dashboard-section">
-      <h2>Organization Management</h2>
-      <div class="card-grid">
-        <div class="card">
-          <h3>Create Org Users</h3>
-          <p>Create organization users</p>
-          <button>Go to Users</button>
-        </div>
-        <div class="card">
-          <h3>Create Distributors</h3>
-          <p>Create bib distributors</p>
-          <button>Go to Distributors</button>
-        </div>
-        <div class="card">
-          <h3>Manage Users</h3>
-          <p>Manage organization users</p>
-          <button>Manage</button>
-        </div>
-        <div class="card">
-          <h3>Organization Analytics</h3>
-          <p>View organization statistics</p>
-          <button>View Analytics</button>
-        </div>
+  <!-- Main Content -->
+  <div class="max-w-7xl mx-auto p-4">
+    <!-- Organization Overview Section -->
+    <div class="mb-4">
+      <h2 class="text-2xl font-semibold mb-2">Organization Overview</h2>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <!-- Organization Info Card -->
+        <p-card header="Organization Details">
+          @if (isLoadingOrg()) {
+            <p-skeleton height="2rem" styleClass="mb-2"></p-skeleton>
+            <p-skeleton height="2rem" styleClass="mb-2"></p-skeleton>
+            <p-skeleton height="2rem"></p-skeleton>
+          } @else if (organization(); as org) {
+            <div class="space-y-2">
+              <p class="text-xl font-bold">{{ org.organizerName }}</p>
+              <p class="text-sm">
+                <strong>Subscription:</strong> {{ org.subscriptionTier || '--' }}
+              </p>
+              <p class="text-sm"><strong>Status:</strong> {{ org.subscriptionStatus || '--' }}</p>
+              <p class="text-sm"><strong>Email:</strong> {{ org.email }}</p>
+              <p class="text-sm"><strong>Phone:</strong> {{ org.phoneNumber || '--' }}</p>
+              @if (org.website) {
+                <p class="text-sm"><strong>Website:</strong> {{ org.website }}</p>
+              }
+            </div>
+          } @else {
+            <p-message severity="error" text="Failed to load organization details"></p-message>
+          }
+        </p-card>
+
+        <!-- User Capacity Card -->
+        <p-card header="Organization Users">
+          @if (isLoadingUsers() || isLoadingOrg()) {
+            <p-skeleton height="2rem" styleClass="mb-2"></p-skeleton>
+            <p-skeleton height="2rem"></p-skeleton>
+          } @else {
+            <div class="space-y-2">
+              <div class="flex justify-between items-center">
+                <span class="text-sm">Current Users:</span>
+                <span class="text-xl font-bold">
+                  {{ totalOrgUsers() }} / {{ organization()?.maxOrganizerUsers || 0 }}
+                </span>
+              </div>
+              <p-progressBar
+                [value]="userCapacityPercentage()"
+                [showValue]="false"
+                [style]="{ height: '12px' }"
+              ></p-progressBar>
+              <p class="text-center text-sm">{{ userCapacityPercentage() }}% capacity used</p>
+            </div>
+          }
+        </p-card>
+
+        <!-- Distributor Capacity Card -->
+        <p-card header="Distributors">
+          @if (isLoadingUsers() || isLoadingOrg()) {
+            <p-skeleton height="2rem" styleClass="mb-2"></p-skeleton>
+            <p-skeleton height="2rem"></p-skeleton>
+          } @else {
+            <div class="space-y-2">
+              <div class="flex justify-between items-center">
+                <span class="text-sm">Active Distributors:</span>
+                <span class="text-xl font-bold">
+                  {{ totalDistributors() }} / {{ organization()?.maxDistributors || 0 }}
+                </span>
+              </div>
+              <p-progressBar
+                [value]="distributorCapacityPercentage()"
+                [showValue]="false"
+                [style]="{ height: '12px' }"
+              ></p-progressBar>
+              <p class="text-center text-sm">
+                {{ distributorCapacityPercentage() }}% capacity used
+              </p>
+            </div>
+          }
+        </p-card>
       </div>
-    </section>
-  </main>
+    </div>
+
+    <!-- Events & Participants Section -->
+    <div class="mb-4">
+      <h2 class="text-2xl font-semibold mb-2">Events & Participants</h2>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <!-- Events Statistics Card -->
+        <p-card header="Event Statistics">
+          @if (isLoadingEvents()) {
+            <p-skeleton height="2rem" styleClass="mb-2"></p-skeleton>
+            <p-skeleton height="2rem" styleClass="mb-2"></p-skeleton>
+            <p-skeleton height="2rem"></p-skeleton>
+          } @else {
+            <div class="space-y-2">
+              <div class="flex justify-between items-center">
+                <span class="text-sm">Total Events:</span>
+                <span class="text-2xl font-bold">{{ totalEvents() }}</span>
+              </div>
+              <div class="flex justify-between items-center">
+                <span class="text-sm">Active Events:</span>
+                <span class="text-2xl font-bold">{{ activeEvents() }}</span>
+              </div>
+              <div class="flex justify-between items-center">
+                <span class="text-sm">Upcoming Events:</span>
+                <span class="text-2xl font-bold">{{ upcomingEvents() }}</span>
+              </div>
+            </div>
+            @if (totalEvents() === 0) {
+              <p-message
+                severity="info"
+                text="No events yet - Create your first event!"
+                styleClass="mt-4"
+              ></p-message>
+            }
+          }
+        </p-card>
+
+        <!-- Participants Statistics Card -->
+        <p-card header="Participant Statistics">
+          <div class="text-center py-8">
+            <p class="text-lg font-semibold mb-2">Coming soon</p>
+            <p class="text-sm">
+              Participant statistics will be available once backend aggregation is implemented.
+            </p>
+          </div>
+        </p-card>
+      </div>
+    </div>
+
+    <!-- Quick Actions Section -->
+    <div class="mb-4">
+      <h2 class="text-2xl font-semibold mb-2">Quick Actions</h2>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <!-- Create Event -->
+        <p-card header="Create Event" styleClass="h-full">
+          <p class="text-sm mb-4">Create a new marathon or running event</p>
+          <ng-template pTemplate="footer">
+            <div class="p-2">
+              <p-button
+                label="Create Event"
+                (onClick)="goToCreateEvent()"
+                styleClass="w-full"
+              ></p-button>
+            </div>
+          </ng-template>
+        </p-card>
+
+        <!-- Manage Events -->
+        <p-card header="Manage Events" styleClass="h-full">
+          <p class="text-sm mb-4">View and manage all your events</p>
+          <ng-template pTemplate="footer">
+            <div class="p-2">
+              <p-button label="View Events" (onClick)="goToEvents()" styleClass="w-full"></p-button>
+            </div>
+          </ng-template>
+        </p-card>
+
+        <!-- Manage Users (Admin only) -->
+        @if (isOrgAdmin()) {
+          <p-card header="Manage Users" styleClass="h-full">
+            <p class="text-sm mb-4">Manage organization users and permissions</p>
+            <ng-template pTemplate="footer">
+              <div class="p-2">
+                <p-button
+                  label="Manage Users"
+                  (onClick)="goToUsers()"
+                  styleClass="w-full"
+                ></p-button>
+              </div>
+            </ng-template>
+          </p-card>
+        }
+
+        <!-- Create Distributor -->
+        <p-card header="Create Distributor" styleClass="h-full">
+          <p class="text-sm mb-4">Add a new bib distributor</p>
+          <ng-template pTemplate="footer">
+            <div class="p-2">
+              <p-button
+                label="Create Distributor"
+                (onClick)="goToCreateDistributor()"
+                styleClass="w-full"
+              ></p-button>
+            </div>
+          </ng-template>
+        </p-card>
+
+        <!-- View Participants -->
+        <p-card header="View Participants" styleClass="h-full">
+          <p class="text-sm mb-4">View event participants and collections</p>
+          <ng-template pTemplate="footer">
+            <div class="p-2">
+              <p-button
+                label="View Participants"
+                (onClick)="goToParticipants()"
+                styleClass="w-full"
+              ></p-button>
+            </div>
+          </ng-template>
+        </p-card>
+      </div>
+    </div>
+  </div>
 </div>
