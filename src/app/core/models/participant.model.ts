@@ -53,6 +53,16 @@ export interface ParticipantSearchParams {
   lastEvaluatedKey?: string;
 }
 
+export type LookupSearchType = 'NAME' | 'EMAIL' | 'PHONE' | 'BIB' | 'RACE' | 'CATEGORY';
+
+export interface ParticipantLookupParams {
+  eventId: number;
+  searchType: LookupSearchType;
+  searchValue: string;
+  limit: number;
+  lastEvaluatedKey?: string;
+}
+
 export interface ImportParticipantsResponse {
   importId: string;
   status: string;

@@ -1,14 +1,92 @@
+<!-- Search Section -->
+<div class="mb-4">
+  <div class="grid grid-cols-1 md:grid-cols-12 gap-4">
+    <!-- Search Type Dropdown -->
+    <div class="md:col-span-3">
+      <p-floatlabel variant="on">
+        <p-select
+          [(ngModel)]="selectedSearchType"
+          [options]="lookupSearchTypes"
+          [size]="inputSize"
+          fluid="true"
+          id="searchType"
+          optionLabel="label"
+          optionValue="value"
+        />
+        <label for="searchType">Search By</label>
+      </p-floatlabel>
+    </div>
+
+    <!-- Search Input -->
+    <div class="md:col-span-7">
+      <p-floatlabel variant="on">
+        <p-iconfield iconPosition="left">
+          <p-inputicon class="pi pi-search" />
+          <input
+            [(ngModel)]="searchValue"
+            (keyup.enter)="performSearch()"
+            [placeholder]="searchPlaceholder()"
+            [pSize]="inputSize"
+            fluid="true"
+            id="searchValue"
+            pInputText
+            type="text"
+          />
+        </p-iconfield>
+        <label for="searchValue">Search Value</label>
+      </p-floatlabel>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="md:col-span-2 flex items-end gap-2">
+      <p-button
+        (onClick)="performSearch()"
+        [disabled]="!searchValue() || searchValue().trim().length < 2"
+        [size]="buttonSize"
+        icon="pi pi-search"
+        label="Search"
+        severity="primary"
+      />
+      @if (isSearchMode()) {
+        <p-button
+          (onClick)="clearSearch()"
+          [outlined]="true"
+          [size]="buttonSize"
+          icon="pi pi-times"
+          label="Clear"
+          severity="secondary"
+        />
+      }
+    </div>
+  </div>
+
+  <!-- Search Mode Indicator -->
+  @if (isSearchMode()) {
+    <div class="mt-3">
+      <p-message severity="info" variant="simple">
+        Showing results for
+        <strong>{{ selectedSearchType() }}</strong>
+        :
+        <strong>{{ searchValue() }}</strong>
+      </p-message>
+    </div>
+  }
+</div>
+
 <!-- Action Buttons -->
-<div class="mb-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-  <div class="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
+<div class="mb-4 flex flex-col gap-4">
+  <!-- Top Row: Action Buttons -->
+  <div class="flex flex-col sm:flex-row gap-2 w-full">
     <p-button
       (onClick)="onImport()"
+      [size]="buttonSize"
       icon="pi pi-upload"
       label="Import Participants"
       severity="primary"
     ></p-button>
     <p-button
       (onClick)="onCreate()"
+      [size]="buttonSize"
       icon="pi pi-plus"
       label="Add Participant"
       severity="success"
@@ -16,18 +94,66 @@
     <p-button
       (onClick)="onExport()"
       [outlined]="true"
+      [size]="buttonSize"
       icon="pi pi-download"
       label="Export CSV"
     ></p-button>
+
+    <!-- Bulk Delete Button (shown when items are selected) -->
+    @if (hasSelection()) {
+      <p-button
+        (onClick)="onBulkDelete()"
+        [size]="buttonSize"
+        icon="pi pi-trash"
+        label="Delete Selected ({{ selectedParticipants.length }})"
+        severity="danger"
+      ></p-button>
+    }
   </div>
-  <div class="text-sm text-gray-600">
-    Total: <strong>{{ participants().length }}</strong> participant(s)
+
+  <!-- Bottom Row: Column Selector and Stats -->
+  <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+    <div class="flex items-center gap-2">
+      <label for="columnSelect" class="text-sm font-medium">Columns:</label>
+      <p-multiselect
+        (onChange)="onColumnSelectionChange()"
+        [(ngModel)]="selectedCols"
+        [maxSelectedLabels]="3"
+        [options]="availableColumns()"
+        [size]="inputSize"
+        dataKey="field"
+        inputId="columnSelect"
+        optionDisabled="disabled"
+        optionLabel="header"
+        placeholder="Select Columns"
+      />
+    </div>
+
+    <div class="text-sm text-gray-600">
+      @if (totalCount() > 0) {
+        Total: <strong>{{ totalCount() }}</strong> participant(s)
+        @if (participants().length < totalCount()) {
+          <span class="ml-2"
+            >| Loaded: <strong>{{ participants().length }}</strong></span
+          >
+        }
+      } @else {
+        Loaded: <strong>{{ participants().length }}</strong> participant(s)
+      }
+      @if (hasSelection()) {
+        <span class="ml-2"
+          >| Selected: <strong>{{ selectedParticipants.length }}</strong></span
+        >
+      }
+    </div>
   </div>
 </div>
 
 <!-- Participant Table -->
 <div>
   <p-table
+    [(selection)]="selectedParticipants"
+    [dataKey]="'bibNumber'"
     [scrollable]="true"
     [value]="isInitialLoading() ? skeletonRows : participants()"
     scrollHeight="500px"
@@ -36,9 +162,17 @@
     <!-- Table Headers -->
     <ng-template pTemplate="header">
       <tr>
+        <!-- Frozen Left: Checkbox -->
+        <th pFrozenColumn style="width: 60px">
+          <p-tableHeaderCheckbox />
+        </th>
+
+        <!-- Frozen Left: BIB Number -->
         @if (isColumnVisible('bibNumber')) {
-          <th style="min-width: 120px">BIB Number</th>
+          <th pFrozenColumn style="width: 250px">BIB Number</th>
         }
+
+        <!-- Scrollable Columns -->
         @if (isColumnVisible('chipNumber')) {
           <th style="min-width: 120px">Chip Number</th>
         }
@@ -75,9 +209,9 @@
         @if (isColumnVisible('bibCollectedAt')) {
           <th style="min-width: 120px">BIB Collected</th>
         }
-        @if (isColumnVisible('actions')) {
-          <th style="min-width: 200px">Actions</th>
-        }
+
+        <!-- Frozen Right: Actions (Always Visible) -->
+        <th pFrozenColumn alignFrozen="right" style="width: 200px">Actions</th>
       </tr>
     </ng-template>
 
@@ -85,17 +219,98 @@
     <ng-template let-participant pTemplate="body">
       <tr>
         @if (isInitialLoading()) {
-          @for (col of visibleColumns(); track col) {
+          <!-- Frozen Left: Checkbox Skeleton -->
+          <td pFrozenColumn>
+            <p-skeleton />
+          </td>
+
+          <!-- Frozen Left: BIB Number Skeleton -->
+          @if (isColumnVisible('bibNumber')) {
+            <td pFrozenColumn>
+              <p-skeleton />
+            </td>
+          }
+
+          <!-- Scrollable Columns Skeletons -->
+          @if (isColumnVisible('chipNumber')) {
             <td>
               <p-skeleton />
             </td>
           }
+          @if (isColumnVisible('fullName')) {
+            <td>
+              <p-skeleton />
+            </td>
+          }
+          @if (isColumnVisible('raceName')) {
+            <td>
+              <p-skeleton />
+            </td>
+          }
+          @if (isColumnVisible('categoryName')) {
+            <td>
+              <p-skeleton />
+            </td>
+          }
+          @if (isColumnVisible('gender')) {
+            <td>
+              <p-skeleton />
+            </td>
+          }
+          @if (isColumnVisible('email')) {
+            <td>
+              <p-skeleton />
+            </td>
+          }
+          @if (isColumnVisible('phoneNumber')) {
+            <td>
+              <p-skeleton />
+            </td>
+          }
+          @if (isColumnVisible('age')) {
+            <td>
+              <p-skeleton />
+            </td>
+          }
+          @if (isColumnVisible('dateOfBirth')) {
+            <td>
+              <p-skeleton />
+            </td>
+          }
+          @if (isColumnVisible('city')) {
+            <td>
+              <p-skeleton />
+            </td>
+          }
+          @if (isColumnVisible('country')) {
+            <td>
+              <p-skeleton />
+            </td>
+          }
+          @if (isColumnVisible('bibCollectedAt')) {
+            <td>
+              <p-skeleton />
+            </td>
+          }
+
+          <!-- Frozen Right: Actions Skeleton (Always Visible) -->
+          <td pFrozenColumn alignFrozen="right">
+            <p-skeleton />
+          </td>
         } @else {
+          <!-- Frozen Left: Checkbox -->
+          <td pFrozenColumn>
+            <p-tableCheckbox [value]="participant" />
+          </td>
+
+          <!-- Frozen Left: BIB Number -->
           @if (isColumnVisible('bibNumber')) {
-            <td class="font-bold">
+            <td pFrozenColumn class="font-bold">
               {{ participant.bibNumber | defaultValue }}
             </td>
           }
+
+          <!-- Scrollable Columns -->
           @if (isColumnVisible('chipNumber')) {
             <td>
               {{ participant.chipNumber | defaultValue }}
@@ -165,42 +380,42 @@
               }
             </td>
           }
-          @if (isColumnVisible('actions')) {
-            <td>
-              <div class="flex gap-2">
-                <p-button
-                  (onClick)="onView(participant)"
-                  [rounded]="true"
-                  [text]="true"
-                  icon="pi pi-eye"
-                  pTooltip="View Details"
-                  severity="info"
-                  size="small"
-                  tooltipPosition="top"
-                ></p-button>
-                <p-button
-                  (onClick)="onEdit(participant)"
-                  [rounded]="true"
-                  [text]="true"
-                  icon="pi pi-pencil"
-                  pTooltip="Edit"
-                  severity="warn"
-                  size="small"
-                  tooltipPosition="top"
-                ></p-button>
-                <p-button
-                  (onClick)="onDelete(participant)"
-                  [rounded]="true"
-                  [text]="true"
-                  icon="pi pi-trash"
-                  pTooltip="Delete"
-                  severity="danger"
-                  size="small"
-                  tooltipPosition="top"
-                ></p-button>
-              </div>
-            </td>
-          }
+
+          <!-- Frozen Right: Actions (Always Visible) -->
+          <td pFrozenColumn alignFrozen="right">
+            <div class="flex gap-2">
+              <p-button
+                (onClick)="onView(participant)"
+                [rounded]="true"
+                [size]="buttonSize"
+                [text]="true"
+                icon="pi pi-eye"
+                pTooltip="View Details"
+                severity="info"
+                tooltipPosition="top"
+              ></p-button>
+              <p-button
+                (onClick)="onEdit(participant)"
+                [rounded]="true"
+                [size]="buttonSize"
+                [text]="true"
+                icon="pi pi-pencil"
+                pTooltip="Edit"
+                severity="warn"
+                tooltipPosition="top"
+              ></p-button>
+              <p-button
+                (onClick)="onDelete(participant)"
+                [rounded]="true"
+                [size]="buttonSize"
+                [text]="true"
+                icon="pi pi-trash"
+                pTooltip="Delete"
+                severity="danger"
+                tooltipPosition="top"
+              ></p-button>
+            </div>
+          </td>
         }
       </tr>
     </ng-template>
@@ -208,7 +423,7 @@
     <!-- Empty State -->
     <ng-template pTemplate="emptymessage">
       <tr>
-        <td [attr.colspan]="visibleColumns().length" class="text-center py-12">
+        <td [attr.colspan]="visibleCols().length + 2" class="text-center py-12">
           @if (!isLoading()) {
             <i class="pi pi-inbox text-4xl mb-3 block"></i>
             <p class="text-lg">No participants found</p>
@@ -225,6 +440,7 @@
       <p-button
         (onClick)="onLoadMore()"
         [outlined]="true"
+        [size]="buttonSize"
         icon="pi pi-arrow-down"
         label="Load More"
       ></p-button>
@@ -241,7 +457,16 @@
     <!-- End Message -->
     @if (!hasMore() && participants().length > 0) {
       <p class="text-sm text-gray-600">
-        All participants loaded ({{ participants().length }} total)
+        @if (isSearchMode()) {
+          Showing {{ participants().length }} participant(s)
+          @if (totalCount() > 0) {
+            <span class="text-xs">(filtered from {{ totalCount() }} total)</span>
+          }
+        } @else if (totalCount() > 0) {
+          All {{ totalCount() }} participants loaded
+        } @else {
+          All {{ participants().length }} participants loaded
+        }
       </p>
     }
   </div>

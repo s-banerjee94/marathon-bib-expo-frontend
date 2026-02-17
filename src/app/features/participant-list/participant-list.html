@@ -69,17 +69,23 @@
           <!-- Tab 1: Imported Participants -->
           <p-tabpanel value="manage">
             <app-participant-table-tab
+              (bulkDeleteParticipants)="bulkDeleteParticipants($event)"
               (createClick)="openCreateDialog()"
               (deleteParticipant)="deleteParticipant($event)"
               (editParticipant)="openEditDialog($event)"
               (exportClick)="openExportDialog()"
               (importClick)="openImportDialog()"
               (loadMore)="loadMore()"
+              (searchCleared)="clearSearch()"
+              (searchRequested)="performLookup($event)"
               (viewParticipant)="openViewDialog($event)"
+              [allColumns]="allColumns"
               [hasMore]="hasMore()"
               [isLoading]="isLoading()"
+              [isSearchMode]="isSearchMode()"
               [participants]="participants()"
-              [visibleColumns]="visibleColumns()"
+              [storageKey]="'marathon_participant_table_columns'"
+              [totalCount]="totalCount()"
             />
           </p-tabpanel>
 

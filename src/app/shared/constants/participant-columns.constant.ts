@@ -35,3 +35,16 @@ export const GENDER_OPTIONS = [
   { label: 'Female', value: 'F' },
   { label: 'Other', value: 'O' },
 ];
+
+// Bulk delete limit
+export const BULK_DELETE_MAX_LIMIT = 25; // Maximum participants that can be deleted at once
+
+// Lookup search type options
+export const LOOKUP_SEARCH_TYPES = [
+  { label: 'Name', value: 'NAME', placeholder: 'Search by name (e.g., JO)' },
+  { label: 'Email', value: 'EMAIL', placeholder: 'Search by email (e.g., john)' },
+  { label: 'Phone', value: 'PHONE', placeholder: 'Search by phone (e.g., +91)' },
+  { label: 'BIB Number', value: 'BIB', placeholder: 'Search by BIB number' },
+  { label: 'Race', value: 'RACE', placeholder: 'Search by race name' },
+  { label: 'Category', value: 'CATEGORY', placeholder: 'Search by category name' },
+];

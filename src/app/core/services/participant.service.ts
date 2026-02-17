@@ -7,6 +7,7 @@ import {
   ImportParticipantsResponse,
   Participant,
   ParticipantListResponse,
+  ParticipantLookupParams,
   ParticipantSearchParams,
   ParticipantStatistics,
   UpdateParticipantRequest,
@@ -65,6 +66,27 @@ export class ParticipantService {
 
     return this.http.get<ParticipantListResponse>(
       `${this.apiUrl}/${params.eventId}/participants/search`,
+      { params: httpParams },
+    );
+  }
+
+  /**
+   * Lookup participants using DynamoDB LSI (Local Secondary Indexes)
+   * RECOMMENDED: More efficient than search - uses Query instead of Scan
+   * Uses /api/events/{eventId}/participants/lookup endpoint
+   */
+  lookupParticipants(params: ParticipantLookupParams): Observable<ParticipantListResponse> {
+    let httpParams = new HttpParams()
+      .set('searchType', params.searchType)
+      .set('searchValue', params.searchValue)
+      .set('limit', params.limit.toString());
+
+    if (params.lastEvaluatedKey) {
+      httpParams = httpParams.set('lastEvaluatedKey', params.lastEvaluatedKey);
+    }
+
+    return this.http.get<ParticipantListResponse>(
+      `${this.apiUrl}/${params.eventId}/participants/lookup`,
       { params: httpParams },
     );
   }
@@ -218,5 +240,24 @@ export class ParticipantService {
     return this.http.get<any>(`${this.apiUrl}/${eventId}/participants/imports/${importId}/errors`, {
       params: httpParams,
     });
+  }
+
+  /**
+   * Delete multiple participants in a single batch operation
+   * Uses /api/events/{eventId}/participants/bulk endpoint
+   * @param eventId Event ID
+   * @param bibNumbers Array of BIB numbers to delete (min: 1, max: 25)
+   * @returns Observable of delete response with counts
+   */
+  bulkDeleteParticipants(
+    eventId: number,
+    bibNumbers: string[],
+  ): Observable<{ deletedCount: number; failedCount: number; message: string }> {
+    return this.http.delete<{ deletedCount: number; failedCount: number; message: string }>(
+      `${this.apiUrl}/${eventId}/participants/bulk`,
+      {
+        body: { bibNumbers },
+      },
+    );
   }
 }

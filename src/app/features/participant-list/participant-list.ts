@@ -20,7 +20,11 @@ import { ErrorHandlerService } from '../../core/services/error-handler.service';
 import { OrganizationSelector } from '../../components/organization-selector/organization-selector';
 import { EventSelector } from '../../components/event-selector/event-selector';
 import { ParticipantForm } from '../participant-form/participant-form';
-import { PARTICIPANT_COLUMNS } from '../../shared/constants/participant-columns.constant';
+import {
+  PARTICIPANT_COLUMNS,
+  BULK_DELETE_MAX_LIMIT,
+} from '../../shared/constants/participant-columns.constant';
+import { LookupSearchType } from '../../core/models/participant.model';
 import { TableColumn } from '../../shared/models/table-config.model';
 
 // Child components
@@ -60,6 +64,7 @@ import {
 export class ParticipantList implements OnInit, OnDestroy {
   @ViewChild(EventSelector) eventSelector?: EventSelector;
   @ViewChild('participantFormComponent') participantFormComponent?: ParticipantForm;
+  @ViewChild(ParticipantTableTab) participantTableTab?: ParticipantTableTab;
   // Cascading filter signals
   selectedOrganizationId = signal<number | undefined>(undefined);
   selectedEventId = signal<number | undefined>(undefined);
@@ -69,6 +74,7 @@ export class ParticipantList implements OnInit, OnDestroy {
   activeTab = signal<string>('manage');
   // Participant table state
   participants = signal<Participant[]>([]);
+  totalCount = signal<number>(0);
   isLoading = signal(false);
   hasMore = signal(true);
   // Import dialog state
@@ -99,20 +105,12 @@ export class ParticipantList implements OnInit, OnDestroy {
   // Export dialog state
   showExportDialog = signal(false);
   isExporting = signal(false);
+  // Lookup state (for pagination)
+  selectedSearchType = signal<LookupSearchType>('NAME');
+  searchValue = signal<string>('');
+  isSearchMode = signal<boolean>(false);
   // Column configuration
   allColumns = PARTICIPANT_COLUMNS;
-  visibleColumns = signal<string[]>([
-    'bibNumber',
-    'chipNumber',
-    'fullName',
-    'raceName',
-    'categoryName',
-    'gender',
-    'email',
-    'phoneNumber',
-    'city',
-    'actions',
-  ]);
   // Computed: Show table only when organization and event are selected
   canShowTable = computed(
     () => this.selectedOrganizationId() !== undefined && this.selectedEventId() !== undefined,
@@ -156,20 +154,115 @@ export class ParticipantList implements OnInit, OnDestroy {
   onEventChange(eventId: number | undefined): void {
     this.selectedEventId.set(eventId);
     this.participants.set([]);
+    this.totalCount.set(0);
     this.hasMore.set(true);
     this.lastEvaluatedKey = undefined;
     this.resetImport();
+    this.resetSearch();
 
     if (eventId) {
       this.loadParticipants();
       this.loadImportHistory();
+      this.loadTotalCount();
     }
+  }
+
+  resetSearch(): void {
+    this.searchValue.set('');
+    this.isSearchMode.set(false);
+    this.selectedSearchType.set('NAME');
+  }
+
+  onSearchTypeChange(searchType: LookupSearchType): void {
+    this.selectedSearchType.set(searchType);
+  }
+
+  performLookup(searchParams: { searchType: LookupSearchType; searchValue: string }): void {
+    const eventId = this.selectedEventId();
+
+    if (!eventId || !searchParams.searchValue || searchParams.searchValue.length < 2) {
+      return;
+    }
+
+    // Store search params for pagination
+    this.selectedSearchType.set(searchParams.searchType);
+    this.searchValue.set(searchParams.searchValue);
+    this.isSearchMode.set(true);
+    this.participants.set([]);
+    this.hasMore.set(true);
+    this.lastEvaluatedKey = undefined;
+    this.isLoading.set(true);
+
+    this.participantService
+      .lookupParticipants({
+        eventId,
+        searchType: searchParams.searchType,
+        searchValue: searchParams.searchValue,
+        limit: 50,
+      })
+      .subscribe({
+        next: (response) => {
+          this.participants.set(response.participants);
+          this.lastEvaluatedKey = response.lastEvaluatedKey;
+          this.hasMore.set(response.hasMore);
+          this.isLoading.set(false);
+        },
+        error: (error) => {
+          this.errorHandler.showError(error, 'Failed to lookup participants');
+          this.isLoading.set(false);
+        },
+      });
+  }
+
+  clearSearch(): void {
+    this.resetSearch();
+    this.participants.set([]);
+    this.hasMore.set(true);
+    this.lastEvaluatedKey = undefined;
+    this.loadParticipants();
   }
 
   loadMore(): void {
     if (this.hasMore() && !this.isLoading()) {
-      this.loadParticipants(true);
+      if (this.isSearchMode()) {
+        this.loadMoreLookupResults();
+      } else {
+        this.loadParticipants(true);
+      }
     }
+  }
+
+  private loadMoreLookupResults(): void {
+    const eventId = this.selectedEventId();
+    const searchValue = this.searchValue().trim();
+    const searchType = this.selectedSearchType();
+
+    if (!eventId || !searchValue || !this.lastEvaluatedKey) {
+      return;
+    }
+
+    this.isLoading.set(true);
+
+    this.participantService
+      .lookupParticipants({
+        eventId,
+        searchType,
+        searchValue,
+        limit: 50,
+        lastEvaluatedKey: this.lastEvaluatedKey,
+      })
+      .subscribe({
+        next: (response) => {
+          this.participants.update((current) => [...current, ...response.participants]);
+          this.lastEvaluatedKey = response.lastEvaluatedKey;
+          this.hasMore.set(response.hasMore);
+          this.isLoading.set(false);
+        },
+        error: (error) => {
+          this.errorHandler.showError(error, 'Failed to load more participants');
+          this.isLoading.set(false);
+        },
+      });
   }
 
   // View dialog
@@ -214,6 +307,12 @@ export class ParticipantList implements OnInit, OnDestroy {
 
     this.errorHandler.showSuccess(message, 'Success');
     this.closeFormDialog();
+
+    if (!isEditMode) {
+      // Increment total count only for create, not for edit
+      this.totalCount.update((count) => count + 1);
+    }
+
     this.reloadParticipants();
   }
 
@@ -230,10 +329,58 @@ export class ParticipantList implements OnInit, OnDestroy {
         this.participantService.deleteParticipant(eventId, participant.bibNumber).subscribe({
           next: () => {
             this.errorHandler.showSuccess('Participant deleted successfully', 'Success');
-            this.reloadParticipants();
+            // Remove from local state instead of reloading from API
+            this.removeParticipantFromList(participant.bibNumber);
+            this.totalCount.update((count) => Math.max(0, count - 1));
+            this.participantTableTab?.clearSelection();
           },
           error: (error) => {
             this.errorHandler.showError(error, 'Failed to delete participant');
+          },
+        });
+      },
+    });
+  }
+
+  bulkDeleteParticipants(participants: Participant[]): void {
+    const count = participants.length;
+
+    if (count === 0) return;
+
+    if (count > BULK_DELETE_MAX_LIMIT) {
+      this.errorHandler.showError(
+        { message: `Maximum ${BULK_DELETE_MAX_LIMIT} participants can be deleted at once` },
+        'Too Many Participants',
+      );
+      return;
+    }
+
+    this.confirmationService.confirm({
+      message: `Are you sure you want to delete ${count} participant(s)? This action cannot be undone.`,
+      header: 'Confirm Bulk Delete',
+      icon: 'pi pi-exclamation-triangle',
+      acceptButtonStyleClass: 'p-button-danger',
+      accept: () => {
+        const eventId = this.selectedEventId();
+        if (!eventId) return;
+
+        const bibNumbers = participants.map((p) => p.bibNumber);
+
+        this.participantService.bulkDeleteParticipants(eventId, bibNumbers).subscribe({
+          next: (response) => {
+            const message =
+              response.failedCount > 0
+                ? `${response.deletedCount} participant(s) deleted, ${response.failedCount} failed`
+                : `${response.deletedCount} participant(s) deleted successfully`;
+
+            this.errorHandler.showSuccess(message, 'Success');
+            // Remove deleted participants from local state instead of reloading from API
+            this.removeParticipantsFromList(bibNumbers);
+            this.totalCount.update((count) => Math.max(0, count - response.deletedCount));
+            this.participantTableTab?.clearSelection();
+          },
+          error: (error) => {
+            this.errorHandler.showError(error, 'Failed to delete participants');
           },
         });
       },
@@ -309,26 +456,6 @@ export class ParticipantList implements OnInit, OnDestroy {
     });
   }
 
-  viewImportErrors(): void {
-    const eventId = this.selectedEventId();
-    const importId = this.currentImportId();
-    if (!eventId || !importId) return;
-
-    this.isLoadingErrors.set(true);
-    this.errorDetails.set([]);
-
-    this.participantService.getImportErrors(eventId, importId).subscribe({
-      next: (response) => {
-        this.isLoadingErrors.set(false);
-        this.errorDetails.set(response.errors || []);
-      },
-      error: (error) => {
-        this.isLoadingErrors.set(false);
-        this.errorHandler.showError(error, 'Failed to load error details');
-      },
-    });
-  }
-
   resetImport(): void {
     this.importResponse.set(null);
     this.currentImportId.set(undefined);
@@ -396,7 +523,23 @@ export class ParticipantList implements OnInit, OnDestroy {
     this.participants.set([]);
     this.hasMore.set(true);
     this.lastEvaluatedKey = undefined;
+    this.participantTableTab?.clearSelection();
     this.loadParticipants();
+    this.loadTotalCount();
+  }
+
+  private loadTotalCount(): void {
+    const eventId = this.selectedEventId();
+    if (!eventId) return;
+
+    this.participantService.getParticipantCount(eventId).subscribe({
+      next: (response) => {
+        this.totalCount.set(response.count);
+      },
+      error: (error) => {
+        this.errorHandler.showError(error, 'Failed to load participant count');
+      },
+    });
   }
 
   // Import history
@@ -448,5 +591,15 @@ export class ParticipantList implements OnInit, OnDestroy {
           this.isLoadingImportErrors.set(false);
         },
       });
+  }
+
+  // Helper methods to remove participants from local state (avoids unnecessary API calls)
+  private removeParticipantFromList(bibNumber: string): void {
+    this.participants.update((current) => current.filter((p) => p.bibNumber !== bibNumber));
+  }
+
+  private removeParticipantsFromList(bibNumbers: string[]): void {
+    const bibNumberSet = new Set(bibNumbers);
+    this.participants.update((current) => current.filter((p) => !bibNumberSet.has(p.bibNumber)));
   }
 }
