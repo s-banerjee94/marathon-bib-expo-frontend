@@ -1,0 +1,66 @@
+<form [formGroup]="raceForm" (ngSubmit)="onSubmit()" class="flex flex-col gap-4 mt-2">
+  <!-- Race Name -->
+  <div class="flex flex-col gap-1">
+    <p-floatlabel variant="on">
+      <input
+        pInputText
+        id="raceName"
+        formControlName="raceName"
+        [pSize]="inputSize"
+        fluid="true"
+        placeholder="e.g., 5K Run, 10K Marathon"
+      />
+      <label for="raceName">Race Name *</label>
+    </p-floatlabel>
+
+    @if (raceForm.get('raceName')?.invalid && raceForm.get('raceName')?.touched) {
+      <p-message [size]="inputSize" severity="error" variant="simple">
+        @if (raceForm.get('raceName')?.hasError('required')) {
+          Race name is required.
+        }
+        @if (raceForm.get('raceName')?.hasError('maxlength')) {
+          Race name must not exceed 100 characters.
+        }
+      </p-message>
+    }
+  </div>
+
+  <!-- Race Description -->
+  <div class="flex flex-col gap-1">
+    <p-floatlabel variant="on">
+      <textarea
+        pTextarea
+        id="raceDescription"
+        formControlName="raceDescription"
+        rows="4"
+        fluid="true"
+        placeholder="Optional race description"
+      ></textarea>
+      <label for="raceDescription">Description</label>
+    </p-floatlabel>
+
+    @if (raceForm.get('raceDescription')?.invalid && raceForm.get('raceDescription')?.touched) {
+      <p-message [size]="inputSize" severity="error" variant="simple">
+        Description must not exceed 500 characters.
+      </p-message>
+    }
+  </div>
+
+  <!-- Actions -->
+  <div class="flex justify-end gap-3 pt-4 border-t">
+    <button
+      pButton
+      type="button"
+      label="Cancel"
+      severity="secondary"
+      [outlined]="true"
+      (click)="onCancel()"
+    ></button>
+    <button
+      pButton
+      type="submit"
+      [label]="isEditMode() ? 'Update Race' : 'Create Race'"
+      [disabled]="raceForm.invalid"
+    ></button>
+  </div>
+</form>

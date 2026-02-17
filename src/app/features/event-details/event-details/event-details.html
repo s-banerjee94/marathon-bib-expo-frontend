@@ -1,0 +1,130 @@
+<div class="p-4 max-w-7xl mx-auto">
+  <!-- Confirmation Popup and Status Menu -->
+  <p-confirmpopup />
+  <p-menu #statusMenu [model]="statusMenuItems()" [popup]="true" appendTo="body" />
+
+  <!-- Header -->
+  <div class="mb-4">
+    <p-button
+      icon="pi pi-arrow-left"
+      label="Back to Events"
+      severity="secondary"
+      [text]="true"
+      (onClick)="onBack()"
+    />
+  </div>
+
+  <!-- Event Header Card -->
+  @if (isLoading()) {
+    <p-card class="mb-4">
+      <p-skeleton width="30%" height="2rem" styleClass="mb-3" />
+      <p-skeleton width="100%" height="1rem" styleClass="mb-2" />
+      <p-skeleton width="100%" height="1rem" styleClass="mb-2" />
+      <p-skeleton width="80%" height="1rem" />
+    </p-card>
+  } @else if (event()) {
+    <p-card class="mb-4">
+      <div class="flex justify-between items-start mb-3">
+        <div>
+          <h1 class="text-3xl font-bold mb-2">{{ event()!.eventName }}</h1>
+          <p-tag [value]="event()!.status" [severity]="getStatusSeverity(event()!.status)" />
+        </div>
+        <div class="flex gap-2">
+          <!-- Edit Event Button -->
+          <p-button
+            icon="pi pi-pencil"
+            label="Edit Event"
+            severity="secondary"
+            (onClick)="onEditEvent()"
+          />
+
+          <!-- Change Status Button -->
+          <p-button
+            icon="pi pi-sync"
+            label="Change Status"
+            severity="secondary"
+            [outlined]="true"
+            [loading]="changingStatus()"
+            (onClick)="showStatusMenu(statusMenu, $event)"
+          />
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+        <div>
+          <p class="text-sm text-gray-600 mb-1">Event Dates</p>
+          <p class="font-medium">
+            {{ event()!.eventStartDate | formatDateTime: 'date' }} -
+            {{ event()!.eventEndDate | formatDateTime: 'date' }}
+          </p>
+        </div>
+
+        @if (event()!.venueName) {
+          <div>
+            <p class="text-sm text-gray-600 mb-1">Venue</p>
+            <p class="font-medium">{{ event()!.venueName }}</p>
+            @if (event()!.city || event()!.country) {
+              <p class="text-sm text-gray-600">
+                {{ event()!.city }}{{ event()!.city && event()!.country ? ', ' : ''
+                }}{{ event()!.country }}
+              </p>
+            }
+          </div>
+        }
+
+        @if (event()!.eventDescription) {
+          <div class="md:col-span-2">
+            <p class="text-sm text-gray-600 mb-1">Description</p>
+            <p class="text-gray-800">{{ event()!.eventDescription }}</p>
+          </div>
+        }
+      </div>
+    </p-card>
+  }
+
+  <!-- Tabs -->
+  @if (!isLoading() && event()) {
+    <p-tabs value="races">
+      <p-tablist>
+        <p-tab value="races">
+          <i class="pi pi-flag mr-2"></i>
+          Races
+        </p-tab>
+        <p-tab value="categories">
+          <i class="pi pi-tags mr-2"></i>
+          Categories
+        </p-tab>
+        <p-tab value="sms-templates">
+          <i class="pi pi-envelope mr-2"></i>
+          SMS Templates
+        </p-tab>
+        <p-tab value="participants">
+          <i class="pi pi-users mr-2"></i>
+          Participants
+        </p-tab>
+      </p-tablist>
+
+      <p-tabpanels>
+        <p-tabpanel value="races">
+          <app-race-section [eventId]="eventId()" (selectedRace)="onRaceSelected($event)" />
+        </p-tabpanel>
+
+        <p-tabpanel value="categories">
+          <app-category-section
+            [eventId]="eventId()"
+            [races]="races()"
+            [selectedRaceFromParent]="selectedRace()"
+          />
+        </p-tabpanel>
+
+        <p-tabpanel value="sms-templates">
+          <app-sms-template-section [eventId]="eventId()" />
+        </p-tabpanel>
+
+        <p-tabpanel value="participants">
+          <p class="text-gray-600">Participant management coming soon...</p>
+        </p-tabpanel>
+      </p-tabpanels>
+    </p-tabs>
+  }
+</div>

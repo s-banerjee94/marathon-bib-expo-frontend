@@ -82,6 +82,12 @@ export const routes: Routes = [
     canActivate: [userCreationGuard], // ROOT, ADMIN, ORGANIZER_ADMIN, ORGANIZER_USER
   },
   {
+    path: 'events/:id/details',
+    loadComponent: () =>
+      import('./features/event-details/event-details/event-details').then((m) => m.EventDetails),
+    canActivate: [userCreationGuard], // ROOT, ADMIN, ORGANIZER_ADMIN, ORGANIZER_USER
+  },
+  {
     path: 'participants',
     loadComponent: () =>
       import('./features/participant-list/participant-list').then((m) => m.ParticipantList),

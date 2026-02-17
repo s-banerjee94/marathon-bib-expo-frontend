@@ -1,6 +1,7 @@
 import { Component, inject, signal, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
 import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
 import { MultiSelectModule } from 'primeng/multiselect';
@@ -34,6 +35,7 @@ import { DefaultValuePipe } from '../../shared/pipes/default-value.pipe';
 import { BaseTableComponent } from '../../shared/base/base-table.component';
 import { TableFilterPreferences } from '../../shared/models/table-config.model';
 import { OrganizationSelector } from '../../components/organization-selector/organization-selector';
+import { getEventStatusSeverity, getEventStatusLabel } from '../../shared/utils/event-status.utils';
 
 interface EventFilterPreferences extends TableFilterPreferences {
   status: string[];
@@ -101,6 +103,7 @@ export class EventList extends BaseTableComponent<Event, EventFilterPreferences>
   ]);
   private organizationService = inject(OrganizationService);
   private confirmationService = inject(ConfirmationService);
+  private router = inject(Router);
   private lastClickTarget: EventTarget | null = null;
 
   constructor() {
@@ -158,20 +161,7 @@ export class EventList extends BaseTableComponent<Event, EventFilterPreferences>
     });
   }
 
-  getEventStatusSeverity(status: string): 'danger' | 'success' | 'info' | 'warn' | 'secondary' {
-    switch (status?.toUpperCase()) {
-      case EventStatus.PUBLISHED:
-        return 'success';
-      case EventStatus.COMPLETED:
-        return 'secondary';
-      case EventStatus.CANCELLED:
-        return 'danger';
-      case EventStatus.DRAFT:
-        return 'warn';
-      default:
-        return 'secondary';
-    }
-  }
+  getEventStatusSeverity = getEventStatusSeverity;
 
   formatDateRange(startDate: Date | undefined, endDate: Date | undefined): string {
     if (!startDate || !endDate) {
@@ -264,6 +254,10 @@ export class EventList extends BaseTableComponent<Event, EventFilterPreferences>
         },
       );
     }
+  }
+
+  onView(event: Event): void {
+    this.router.navigate(['/events', event.id, 'details']);
   }
 
   onDelete(event: Event, confirmEvent: MouseEvent): void {
@@ -465,18 +459,5 @@ export class EventList extends BaseTableComponent<Event, EventFilterPreferences>
     }
   }
 
-  private getStatusLabel(status: EventStatus): string {
-    switch (status) {
-      case EventStatus.DRAFT:
-        return 'Draft';
-      case EventStatus.PUBLISHED:
-        return 'Published';
-      case EventStatus.CANCELLED:
-        return 'Cancelled';
-      case EventStatus.COMPLETED:
-        return 'Completed';
-      default:
-        return status;
-    }
-  }
+  private getStatusLabel = getEventStatusLabel;
 }

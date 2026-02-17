@@ -1,0 +1,72 @@
+<form [formGroup]="categoryForm" (ngSubmit)="onSubmit()" class="flex flex-col gap-4 mt-2">
+  <!-- Category Name -->
+  <div class="flex flex-col gap-1">
+    <p-floatlabel variant="on">
+      <input
+        pInputText
+        id="categoryName"
+        formControlName="categoryName"
+        [pSize]="inputSize"
+        fluid="true"
+        placeholder="e.g., Men 18-34, Women Elite"
+      />
+      <label for="categoryName">Category Name *</label>
+    </p-floatlabel>
+
+    @if (categoryForm.get('categoryName')?.invalid && categoryForm.get('categoryName')?.touched) {
+      <p-message [size]="inputSize" severity="error" variant="simple">
+        @if (categoryForm.get('categoryName')?.hasError('required')) {
+          Category name is required.
+        }
+        @if (categoryForm.get('categoryName')?.hasError('minlength')) {
+          Category name must be at least 2 characters.
+        }
+        @if (categoryForm.get('categoryName')?.hasError('maxlength')) {
+          Category name must not exceed 200 characters.
+        }
+      </p-message>
+    }
+  </div>
+
+  <!-- Description -->
+  <div class="flex flex-col gap-1">
+    <p-floatlabel variant="on">
+      <textarea
+        pTextarea
+        id="description"
+        formControlName="description"
+        [pSize]="inputSize"
+        fluid="true"
+        rows="3"
+        placeholder="e.g., Male participants aged 18 to 34 years"
+      ></textarea>
+      <label for="description">Description</label>
+    </p-floatlabel>
+
+    @if (categoryForm.get('description')?.invalid && categoryForm.get('description')?.touched) {
+      <p-message [size]="inputSize" severity="error" variant="simple">
+        @if (categoryForm.get('description')?.hasError('maxlength')) {
+          Description must not exceed 1000 characters.
+        }
+      </p-message>
+    }
+  </div>
+
+  <!-- Actions -->
+  <div class="flex justify-end gap-3 pt-4 border-t">
+    <button
+      pButton
+      type="button"
+      label="Cancel"
+      severity="secondary"
+      [outlined]="true"
+      (click)="onCancel()"
+    ></button>
+    <button
+      pButton
+      type="submit"
+      [label]="isEditMode() ? 'Update Category' : 'Create Category'"
+      [disabled]="categoryForm.invalid"
+    ></button>
+  </div>
+</form>

@@ -1,0 +1,144 @@
+<div class="space-y-4">
+  <!-- Header -->
+  <div class="flex justify-between items-center">
+    <h2 class="text-xl font-semibold">Categories</h2>
+    <div class="flex gap-2 items-center">
+      <p-select
+        [options]="races()"
+        [(ngModel)]="selectedRace"
+        (onChange)="onRaceChange($event.value)"
+        optionLabel="raceName"
+        placeholder="Select a race"
+        [showClear]="false"
+        [size]="inputSize"
+        styleClass="w-64"
+      />
+      <!-- Column Selection -->
+      <div class="flex items-center gap-2">
+        <label for="categoryColumnSelect" class="text-sm">Columns:</label>
+        <p-multiselect
+          (ngModelChange)="onColumnSelectionChange()"
+          [(ngModel)]="selectedCols"
+          [maxSelectedLabels]="2"
+          [options]="cols()"
+          [size]="inputSize"
+          inputId="categoryColumnSelect"
+          optionLabel="header"
+          placeholder="Select Columns"
+        />
+      </div>
+      <p-button
+        label="Create Category"
+        icon="pi pi-plus"
+        (onClick)="onCreate()"
+        [disabled]="!canLoadCategories() || isLoading()"
+      />
+    </div>
+  </div>
+
+  <!-- No Race Selected Message -->
+  @if (!canLoadCategories()) {
+    <div class="text-center py-12 text-gray-500">
+      <i class="pi pi-info-circle text-4xl mb-4"></i>
+      <p class="text-lg">Please select a race to view and manage categories</p>
+    </div>
+  }
+
+  <!-- Table -->
+  @if (canLoadCategories()) {
+    <p-table
+      [value]="categories()"
+      [loading]="isLoading()"
+      dataKey="id"
+      [tableStyle]="{ 'min-width': '50rem' }"
+    >
+      <ng-template pTemplate="header">
+        <tr>
+          @for (col of selectedCols(); track col.field) {
+            <th>{{ col.header }}</th>
+          }
+          <th style="width: 120px">Actions</th>
+        </tr>
+      </ng-template>
+
+      <ng-template pTemplate="body" let-category>
+        <tr>
+          @for (col of selectedCols(); track col.field) {
+            <td>
+              @switch (col.field) {
+                @case ('id') {
+                  {{ category.id }}
+                }
+                @case ('categoryName') {
+                  {{ category.categoryName }}
+                }
+                @case ('raceId') {
+                  {{ category.raceId }}
+                }
+                @case ('eventId') {
+                  {{ category.eventId }}
+                }
+                @case ('createdAt') {
+                  {{ category.createdAt | date: 'dd-MM-yyyy HH:mm' }}
+                }
+                @case ('updatedAt') {
+                  {{ category.updatedAt | date: 'dd-MM-yyyy HH:mm' }}
+                }
+                @case ('createdBy') {
+                  {{ category.createdBy }}
+                }
+                @case ('lastModifiedBy') {
+                  {{ category.lastModifiedBy }}
+                }
+              }
+            </td>
+          }
+          <td>
+            <div class="flex gap-1">
+              <p-button
+                icon="pi pi-pencil"
+                [text]="true"
+                [rounded]="true"
+                severity="info"
+                size="small"
+                (onClick)="onEdit(category)"
+                pTooltip="Edit"
+              />
+              <p-button
+                icon="pi pi-trash"
+                [text]="true"
+                [rounded]="true"
+                severity="danger"
+                size="small"
+                (onClick)="onDelete(category, $event)"
+                pTooltip="Delete"
+              />
+            </div>
+          </td>
+        </tr>
+      </ng-template>
+
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td [attr.colspan]="selectedCols().length + 1" class="text-center py-8 text-gray-500">
+            No categories found for this race. Click "Create Category" to add one.
+          </td>
+        </tr>
+      </ng-template>
+
+      <ng-template pTemplate="loadingbody">
+        <tr>
+          <td [attr.colspan]="selectedCols().length + 1">
+            <div class="flex flex-col gap-2 py-4">
+              <p-skeleton height="3rem" />
+              <p-skeleton height="3rem" />
+              <p-skeleton height="3rem" />
+            </div>
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+  }
+</div>
+
+<p-confirmpopup />

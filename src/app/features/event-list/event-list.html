@@ -262,6 +262,17 @@
           <!-- Action Column -->
           <td class="text-center">
             <div class="flex items-center justify-center gap-1">
+              <!-- View button -->
+              <p-button
+                (click)="onView(event)"
+                [rounded]="true"
+                [size]="inputSize"
+                [text]="true"
+                icon="pi pi-eye"
+                pTooltip="View Details"
+                severity="secondary"
+                tooltipPosition="top"
+              ></p-button>
               <!-- Edit button -->
               <p-button
                 (click)="onEdit(event)"

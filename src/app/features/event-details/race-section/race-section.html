@@ -1,0 +1,130 @@
+<div class="space-y-4">
+  <!-- Header -->
+  <div class="flex justify-between items-center">
+    <h2 class="text-xl font-semibold">Races</h2>
+    <div class="flex items-center gap-4">
+      <!-- Column Selection -->
+      <div class="flex items-center gap-2">
+        <label for="raceColumnSelect" class="text-sm">Columns:</label>
+        <p-multiselect
+          (ngModelChange)="onColumnSelectionChange()"
+          [(ngModel)]="selectedCols"
+          [maxSelectedLabels]="2"
+          [options]="cols()"
+          [size]="inputSize"
+          inputId="raceColumnSelect"
+          optionLabel="header"
+          placeholder="Select Columns"
+        />
+      </div>
+      <p-button
+        label="Create Race"
+        icon="pi pi-plus"
+        (onClick)="onCreate()"
+        [disabled]="isLoading()"
+      />
+    </div>
+  </div>
+
+  <!-- Table -->
+  <p-table
+    [value]="races()"
+    [loading]="isLoading()"
+    dataKey="id"
+    selectionMode="single"
+    [(selection)]="internalSelectedRace"
+    (onRowSelect)="onRowSelect($event)"
+    [tableStyle]="{ 'min-width': '50rem' }"
+    styleClass="p-datatable-sm"
+  >
+    <ng-template pTemplate="header">
+      <tr>
+        @for (col of selectedCols(); track col.field) {
+          <th>{{ col.header }}</th>
+        }
+        <th style="width: 120px">Actions</th>
+      </tr>
+    </ng-template>
+
+    <ng-template pTemplate="body" let-race>
+      <tr [pSelectableRow]="race">
+        @for (col of selectedCols(); track col.field) {
+          <td>
+            @switch (col.field) {
+              @case ('id') {
+                {{ race.id }}
+              }
+              @case ('raceName') {
+                {{ race.raceName }}
+              }
+              @case ('raceDescription') {
+                <div class="max-w-xs truncate" [title]="race.raceDescription">
+                  {{ race.raceDescription | defaultValue }}
+                </div>
+              }
+              @case ('categoryCount') {
+                <div class="text-center">{{ race.categoryCount }}</div>
+              }
+              @case ('createdAt') {
+                {{ race.createdAt | date: 'dd-MM-yyyy HH:mm' }}
+              }
+              @case ('updatedAt') {
+                {{ race.updatedAt | date: 'dd-MM-yyyy HH:mm' }}
+              }
+              @case ('createdBy') {
+                {{ race.createdBy }}
+              }
+              @case ('lastModifiedBy') {
+                {{ race.lastModifiedBy }}
+              }
+            }
+          </td>
+        }
+        <td>
+          <div class="flex gap-1">
+            <p-button
+              icon="pi pi-pencil"
+              [text]="true"
+              [rounded]="true"
+              severity="info"
+              size="small"
+              (onClick)="onEdit(race)"
+              pTooltip="Edit"
+            />
+            <p-button
+              icon="pi pi-trash"
+              [text]="true"
+              [rounded]="true"
+              severity="danger"
+              size="small"
+              (onClick)="onDelete(race, $event)"
+              pTooltip="Delete"
+            />
+          </div>
+        </td>
+      </tr>
+    </ng-template>
+
+    <ng-template pTemplate="emptymessage">
+      <tr>
+        <td [attr.colspan]="selectedCols().length + 1" class="text-center py-8 text-gray-500">
+          No races found. Click "Create Race" to add one.
+        </td>
+      </tr>
+    </ng-template>
+
+    <ng-template pTemplate="loadingbody">
+      <tr>
+        <td [attr.colspan]="selectedCols().length + 1">
+          <div class="flex flex-col gap-2 py-4">
+            <p-skeleton height="3rem" />
+            <p-skeleton height="3rem" />
+            <p-skeleton height="3rem" />
+          </div>
+        </td>
+      </tr>
+    </ng-template>
+  </p-table>
+</div>
+
+<p-confirmpopup />

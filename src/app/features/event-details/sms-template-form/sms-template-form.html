@@ -1,0 +1,125 @@
+<form [formGroup]="smsTemplateForm" (ngSubmit)="onSubmit()" class="flex flex-col gap-4 mt-2">
+  <!-- SMS Template ID (DLT ID) -->
+  <div class="flex flex-col gap-1">
+    <p-floatlabel variant="on">
+      <input
+        pInputText
+        id="smsTemplateId"
+        formControlName="smsTemplateId"
+        [pSize]="inputSize"
+        fluid="true"
+        placeholder="e.g., 11071612345678901234"
+      />
+      <label for="smsTemplateId">DLT Template ID *</label>
+    </p-floatlabel>
+
+    @if (
+      smsTemplateForm.get('smsTemplateId')?.invalid && smsTemplateForm.get('smsTemplateId')?.touched
+    ) {
+      <p-message [size]="inputSize" severity="error" variant="simple">
+        @if (smsTemplateForm.get('smsTemplateId')?.hasError('required')) {
+          DLT Template ID is required.
+        }
+        @if (smsTemplateForm.get('smsTemplateId')?.hasError('minlength')) {
+          DLT Template ID must be at least 20 characters.
+        }
+        @if (smsTemplateForm.get('smsTemplateId')?.hasError('maxlength')) {
+          DLT Template ID must not exceed 200 characters.
+        }
+        @if (smsTemplateForm.get('smsTemplateId')?.hasError('pattern')) {
+          DLT Template ID must contain only numbers.
+        }
+      </p-message>
+    }
+  </div>
+
+  <!-- SMS Template Text -->
+  <div class="flex flex-col gap-1">
+    <p-floatlabel variant="on">
+      <textarea
+        pTextarea
+        id="template"
+        formControlName="template"
+        rows="4"
+        fluid="true"
+        placeholder="e.g., Hi {participantName}, your bib #{bibNumber} is ready!"
+      ></textarea>
+      <label for="template">Template Text *</label>
+    </p-floatlabel>
+
+    @if (smsTemplateForm.get('template')?.invalid && smsTemplateForm.get('template')?.touched) {
+      <p-message [size]="inputSize" severity="error" variant="simple">
+        @if (smsTemplateForm.get('template')?.hasError('required')) {
+          Template text is required.
+        }
+        @if (smsTemplateForm.get('template')?.hasError('minlength')) {
+          Template text must be at least 2 characters.
+        }
+        @if (smsTemplateForm.get('template')?.hasError('maxlength')) {
+          Template text must not exceed 1000 characters.
+        }
+      </p-message>
+    }
+    <small class="text-gray-500">
+      Use placeholders like &#123;participantName&#125;, &#123;bibNumber&#125;,
+      &#123;venueName&#125;, &#123;eventName&#125;
+    </small>
+  </div>
+
+  <!-- Note -->
+  <div class="flex flex-col gap-1">
+    <p-floatlabel variant="on">
+      <textarea
+        pTextarea
+        id="note"
+        formControlName="note"
+        rows="2"
+        fluid="true"
+        placeholder="Optional note or description"
+      ></textarea>
+      <label for="note">Note</label>
+    </p-floatlabel>
+
+    @if (smsTemplateForm.get('note')?.invalid && smsTemplateForm.get('note')?.touched) {
+      <p-message [size]="inputSize" severity="error" variant="simple">
+        Note must not exceed 500 characters.
+      </p-message>
+    }
+  </div>
+
+  <!-- Scheduled Date Time -->
+  <div class="flex flex-col gap-1">
+    <p-floatlabel variant="on">
+      <p-datepicker
+        inputId="scheduledDateTime"
+        formControlName="scheduledDateTime"
+        [showTime]="true"
+        [showIcon]="true"
+        [showButtonBar]="true"
+        dateFormat="M dd, yy"
+        fluid="true"
+        placeholder="Select date and time"
+      />
+      <label for="scheduledDateTime">Scheduled Date & Time</label>
+    </p-floatlabel>
+    <small class="text-gray-500">Optional: Schedule when this SMS should be sent</small>
+  </div>
+
+  <!-- Actions -->
+  <div class="flex justify-end gap-3 pt-4 border-t">
+    <button
+      pButton
+      type="button"
+      label="Cancel"
+      severity="secondary"
+      [outlined]="true"
+      (click)="onCancel()"
+    ></button>
+    <button
+      pButton
+      type="submit"
+      [label]="isEditMode() ? 'Update Template' : 'Create Template'"
+      [disabled]="smsTemplateForm.invalid"
+    ></button>
+  </div>
+</form>

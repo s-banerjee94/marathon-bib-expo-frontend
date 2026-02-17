@@ -45,17 +45,21 @@ export interface Event {
 export interface CreateEventRequest {
   eventName: string;
   eventDescription?: string;
+  logoUrl?: string;
   eventStartDate: Date;
   eventEndDate: Date;
-  venueName?: string;
+  venueName: string;
   addressLine1?: string;
   addressLine2?: string;
   city?: string;
   stateProvince?: string;
   postalCode?: string;
   country?: string;
+  latitude?: number;
+  longitude?: number;
   status?: EventStatus;
   organizationId: number;
+  eventGoodies?: string;
 }
 
 /**
@@ -64,6 +68,7 @@ export interface CreateEventRequest {
 export interface UpdateEventRequest {
   eventName?: string;
   eventDescription?: string;
+  logoUrl?: string;
   eventStartDate?: Date;
   eventEndDate?: Date;
   venueName?: string;
@@ -73,5 +78,27 @@ export interface UpdateEventRequest {
   stateProvince?: string;
   postalCode?: string;
   country?: string;
+  latitude?: number;
+  longitude?: number;
   status?: EventStatus;
+  eventGoodies?: string;
+}
+
+/**
+ * Race Summary (for Event Summary Response)
+ */
+export interface RaceSummary {
+  id: number;
+  raceName: string;
+  categoryCount: number;
+}
+
+/**
+ * Event Summary Response with races and categories
+ */
+export interface EventSummaryResponse {
+  event: Event;
+  races: RaceSummary[];
+  totalRaces: number;
+  totalCategories: number;
 }

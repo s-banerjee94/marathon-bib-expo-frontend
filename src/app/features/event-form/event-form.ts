@@ -137,10 +137,11 @@ export class EventForm implements OnInit {
   }
 
   /**
-   * Show organization dropdown only for ROOT/ADMIN
+   * Show organization dropdown only for ROOT/ADMIN and only in create mode
+   * In edit mode, organization cannot be changed
    */
   showOrganizationDropdown(): boolean {
-    return this.isRootOrAdmin;
+    return this.isRootOrAdmin && !this.isEditMode();
   }
 
   /**
@@ -225,7 +226,7 @@ export class EventForm implements OnInit {
       eventDescription: event.eventDescription,
       eventStartDate: new Date(event.eventStartDate),
       eventEndDate: new Date(event.eventEndDate),
-      venueName: event.venueName,
+      venueName: event.venueName || '',
       addressLine1: event.addressLine1,
       addressLine2: event.addressLine2,
       city: event.city,
