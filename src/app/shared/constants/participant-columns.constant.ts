@@ -14,6 +14,7 @@ export const PARTICIPANT_COLUMNS: TableColumn[] = [
   { field: 'city', header: 'City' },
   { field: 'country', header: 'Country' },
   { field: 'bibCollectedAt', header: 'BIB Collected' },
+  { field: 'goodies', header: 'Goodies' },
   { field: 'emergencyContactName', header: 'Emergency Contact' },
   { field: 'emergencyContactPhone', header: 'Emergency Phone' },
 ];

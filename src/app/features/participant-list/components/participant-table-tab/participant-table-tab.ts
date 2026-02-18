@@ -7,12 +7,14 @@ import { ButtonModule } from 'primeng/button';
 import { TooltipModule } from 'primeng/tooltip';
 import { SkeletonModule } from 'primeng/skeleton';
 import { SelectModule } from 'primeng/select';
-import { MultiSelectModule } from 'primeng/multiselect';
+import { MultiSelectModule, MultiSelectChangeEvent } from 'primeng/multiselect';
 import { InputTextModule } from 'primeng/inputtext';
 import { IconFieldModule } from 'primeng/iconfield';
 import { InputIconModule } from 'primeng/inputicon';
 import { FloatLabelModule } from 'primeng/floatlabel';
 import { MessageModule } from 'primeng/message';
+import { PopoverModule } from 'primeng/popover';
+import { DividerModule } from 'primeng/divider';
 import { Participant, LookupSearchType } from '../../../../core/models/participant.model';
 import { DefaultValuePipe } from '../../../../shared/pipes/default-value.pipe';
 import { getGenderDisplay, getGenderSeverity } from '../../../../shared/utils/participant.utils';
@@ -39,6 +41,8 @@ import { TableColumn } from '../../../../shared/models/table-config.model';
     InputIconModule,
     FloatLabelModule,
     MessageModule,
+    PopoverModule,
+    DividerModule,
     DefaultValuePipe,
   ],
 })
@@ -76,8 +80,8 @@ export class ParticipantTableTab {
   selectedSearchType = signal<LookupSearchType>('BIB');
   searchValue = signal<string>('');
 
-  // Column selection state - using regular variable for PrimeNG two-way binding
-  selectedCols: TableColumn[] = [];
+  // Column selection state - using signal for reactive updates
+  selectedCols = signal<TableColumn[]>([]);
 
   // Computed: get current search placeholder
   searchPlaceholder = computed(() => {
@@ -88,7 +92,7 @@ export class ParticipantTableTab {
 
   // Computed: visible columns including required columns
   visibleCols = computed(() => {
-    const selected = this.selectedCols;
+    const selected = this.selectedCols();
     const all = this.allColumns();
     const required = all.filter((col) => col.required);
     const selectedFields = new Set(selected.map((col) => col.field));
@@ -128,7 +132,7 @@ export class ParticipantTableTab {
       const cols = this.allColumns();
       const key = this.storageKey();
 
-      if (cols.length > 0 && this.selectedCols.length === 0) {
+      if (cols.length > 0 && this.selectedCols().length === 0) {
         // Try to load from localStorage if key is provided
         if (key) {
           try {
@@ -140,7 +144,7 @@ export class ParticipantTableTab {
                 (col) => savedFields.includes(col.field) || col.required,
               );
               if (savedCols.length > 0) {
-                this.selectedCols = savedCols;
+                this.selectedCols.set(savedCols);
                 return;
               }
             }
@@ -150,7 +154,7 @@ export class ParticipantTableTab {
         }
 
         // Default: select all columns
-        this.selectedCols = [...cols];
+        this.selectedCols.set([...cols]);
       }
     });
   }
@@ -164,23 +168,29 @@ export class ParticipantTableTab {
     return this.visibleCols().some((col) => col.field === field);
   }
 
-  onColumnSelectionChange(): void {
+  onColumnSelectionChange(event: MultiSelectChangeEvent): void {
+    const newSelection = event.value as TableColumn[];
+
     // Ensure required columns are always included
     const required = this.allColumns().filter((col) => col.required);
-    const selectedFields = new Set(this.selectedCols.map((col) => col.field));
+    const selectedFields = new Set(newSelection.map((col) => col.field));
 
     // Add required columns if not already selected
+    const updatedSelection = [...newSelection];
     for (const req of required) {
       if (!selectedFields.has(req.field)) {
-        this.selectedCols.push(req);
+        updatedSelection.push(req);
       }
     }
+
+    // Update the signal
+    this.selectedCols.set(updatedSelection);
 
     // Auto-save to localStorage if key is provided
     const key = this.storageKey();
     if (key) {
       try {
-        const fields = this.selectedCols.map((col) => col.field);
+        const fields = updatedSelection.map((col) => col.field);
         localStorage.setItem(key, JSON.stringify(fields));
       } catch (e) {
         console.warn('Failed to save column preferences to localStorage', e);
@@ -240,5 +250,27 @@ export class ParticipantTableTab {
     this.searchValue.set('');
     this.selectedSearchType.set('BIB');
     this.searchCleared.emit();
+  }
+
+  // Goodies helper methods
+  getGoodiesCount(goodies: any): number {
+    if (!goodies || typeof goodies !== 'object') return 0;
+    return Object.keys(goodies).length;
+  }
+
+  getGoodiesEntries(goodies: any): Array<{ key: string; value: string }> {
+    if (!goodies || typeof goodies !== 'object') return [];
+    return Object.entries(goodies).map(([key, value]) => ({
+      key: key,
+      value: String(value),
+    }));
+  }
+
+  formatGoodiesKey(key: string): string {
+    // Convert "T-Shirt size" or "cap-size" to "T-Shirt Size" or "Cap Size"
+    return key
+      .split(/[-_\s]+/)
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(' ');
   }
 }
