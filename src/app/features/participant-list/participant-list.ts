@@ -24,6 +24,7 @@ import {
   PARTICIPANT_COLUMNS,
   BULK_DELETE_MAX_LIMIT,
 } from '../../shared/constants/participant-columns.constant';
+import { PAGINATION_LIMIT } from '../../shared/constants/form.constants';
 import { LookupSearchType } from '../../core/models/participant.model';
 import { TableColumn } from '../../shared/models/table-config.model';
 
@@ -198,7 +199,7 @@ export class ParticipantList implements OnInit, OnDestroy {
         eventId,
         searchType: searchParams.searchType,
         searchValue: searchParams.searchValue,
-        limit: 50,
+        limit: PAGINATION_LIMIT,
       })
       .subscribe({
         next: (response) => {
@@ -248,7 +249,7 @@ export class ParticipantList implements OnInit, OnDestroy {
         eventId,
         searchType,
         searchValue,
-        limit: 50,
+        limit: PAGINATION_LIMIT,
         lastEvaluatedKey: this.lastEvaluatedKey,
       })
       .subscribe({
@@ -500,7 +501,7 @@ export class ParticipantList implements OnInit, OnDestroy {
     this.isLoading.set(true);
 
     this.participantService
-      .getParticipants(eventId, 50, append ? this.lastEvaluatedKey : undefined)
+      .getParticipants(eventId, PAGINATION_LIMIT, append ? this.lastEvaluatedKey : undefined)
       .subscribe({
         next: (response) => {
           if (append) {

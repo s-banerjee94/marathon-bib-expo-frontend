@@ -1,0 +1,162 @@
+<div class="py-4">
+  <!-- Error State -->
+  @if (error() && !loading()) {
+    <p-message severity="error" variant="simple" class="mb-4">
+      {{ error() }}
+    </p-message>
+  }
+
+  <p-table
+    [dataKey]="'bibNumber'"
+    [scrollable]="true"
+    [value]="isInitialLoading() ? skeletonRows : participants()"
+    scrollHeight="460px"
+    size="small"
+  >
+    <!-- Caption: title left, count + refresh right -->
+    <ng-template #caption>
+      <div class="flex items-center justify-between">
+        <h3 class="text-lg font-semibold m-0">Participants with Pending Goodies</h3>
+        <div class="flex items-center gap-3">
+          @if (loaded()) {
+            <span class="text-sm text-color-secondary">{{ loadedCount() }} participant(s)</span>
+          }
+          <p-button
+            label="Refresh"
+            icon="pi pi-refresh"
+            severity="secondary"
+            [outlined]="true"
+            [size]="buttonSize"
+            [loading]="refreshing()"
+            (onClick)="reload()"
+          />
+        </div>
+      </div>
+    </ng-template>
+
+    <!-- Header -->
+    <ng-template pTemplate="header">
+      <tr>
+        <th pFrozenColumn style="width: 60px" class="text-center">#</th>
+        <th pFrozenColumn style="min-width: 130px">BIB</th>
+        <th style="min-width: 200px">Full Name</th>
+        <th style="min-width: 140px">Phone</th>
+        <th style="min-width: 150px">Race</th>
+        <th style="min-width: 150px">Category</th>
+        <th style="min-width: 180px">BIB Collected At</th>
+        <th style="min-width: 220px">Pending Items</th>
+        <th pFrozenColumn alignFrozen="right" style="width: 100px">Actions</th>
+      </tr>
+    </ng-template>
+
+    <!-- Body -->
+    <ng-template let-participant let-rowIndex="rowIndex" pTemplate="body">
+      <tr>
+        @if (isInitialLoading()) {
+          <td pFrozenColumn><p-skeleton /></td>
+          <td pFrozenColumn><p-skeleton /></td>
+          <td><p-skeleton /></td>
+          <td><p-skeleton /></td>
+          <td><p-skeleton /></td>
+          <td><p-skeleton /></td>
+          <td><p-skeleton /></td>
+          <td><p-skeleton /></td>
+          <td pFrozenColumn alignFrozen="right"><p-skeleton /></td>
+        } @else {
+          <!-- S.No (frozen left) -->
+          <td pFrozenColumn class="text-center text-color-secondary">
+            {{ rowIndex + 1 }}
+          </td>
+
+          <!-- BIB (frozen left) -->
+          <td pFrozenColumn class="font-bold">
+            {{ participant.bibNumber | defaultValue }}
+          </td>
+
+          <!-- Full Name -->
+          <td>{{ participant.fullName | defaultValue }}</td>
+
+          <!-- Phone -->
+          <td>{{ participant.phoneNumber | defaultValue }}</td>
+
+          <!-- Race -->
+          <td>{{ participant.raceName | defaultValue }}</td>
+
+          <!-- Category -->
+          <td>{{ participant.categoryName | defaultValue }}</td>
+
+          <!-- BIB Collected At -->
+          <td class="text-sm">{{ participant.bibCollectedAt | defaultValue }}</td>
+
+          <!-- Pending Items -->
+          <td>
+            @if (participant.pendingItems && participant.pendingItems.length > 0) {
+              <div class="flex flex-wrap gap-1">
+                @for (item of participant.pendingItems; track item) {
+                  <p-tag
+                    [value]="formatGoodiesKey(item)"
+                    severity="warn"
+                    [rounded]="true"
+                    size="small"
+                  />
+                }
+              </div>
+            } @else {
+              <span class="text-color-secondary">--</span>
+            }
+          </td>
+
+          <!-- Actions (frozen right) -->
+          <td pFrozenColumn alignFrozen="right">
+            <div class="flex gap-1">
+              <p-button
+                (onClick)="distributeGoodies.emit(participant)"
+                [rounded]="true"
+                [text]="true"
+                [size]="buttonSize"
+                icon="pi pi-gift"
+                pTooltip="Distribute Goodies"
+                severity="info"
+                tooltipPosition="top"
+              />
+            </div>
+          </td>
+        }
+      </tr>
+    </ng-template>
+
+    <!-- Empty State -->
+    <ng-template pTemplate="emptymessage">
+      <tr>
+        <td colspan="9" class="text-center py-10">
+          @if (!loading()) {
+            <i class="pi pi-gift text-4xl mb-3 block text-color-secondary"></i>
+            <p class="text-color-secondary">No participants with pending goodies.</p>
+          }
+        </td>
+      </tr>
+    </ng-template>
+  </p-table>
+
+  <!-- Load More / Status -->
+  <div class="text-center mt-4">
+    @if (hasMore() && !loading()) {
+      <p-button
+        (onClick)="loadMore()"
+        [outlined]="true"
+        [size]="buttonSize"
+        icon="pi pi-arrow-down"
+        label="Load More"
+      />
+    }
+    @if (isLoadingMore()) {
+      <div>
+        <i class="pi pi-spin pi-spinner text-2xl"></i>
+        <p class="mt-2 text-color-secondary">Loading more...</p>
+      </div>
+    }
+    @if (!hasMore() && loaded() && participants().length > 0) {
+      <p class="text-sm text-color-secondary">All {{ loadedCount() }} result(s) loaded</p>
+    }
+  </div>
+</div>

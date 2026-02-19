@@ -80,6 +80,7 @@
               (searchRequested)="performLookup($event)"
               (viewParticipant)="openViewDialog($event)"
               [allColumns]="allColumns"
+              [eventId]="selectedEventId()"
               [hasMore]="hasMore()"
               [isLoading]="isLoading()"
               [isSearchMode]="isSearchMode()"

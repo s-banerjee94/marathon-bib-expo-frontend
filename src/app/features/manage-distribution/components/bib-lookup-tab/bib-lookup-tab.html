@@ -1,0 +1,298 @@
+<div class="py-4">
+  <!-- Search Section -->
+  <div class="grid grid-cols-1 md:grid-cols-12 gap-4 mb-4">
+    <!-- Search Type -->
+    <div class="md:col-span-3">
+      <p-floatlabel variant="on">
+        <p-select
+          [(ngModel)]="selectedSearchType"
+          (onChange)="onSearchTypeChange()"
+          [options]="lookupSearchTypes"
+          [size]="inputSize"
+          fluid="true"
+          id="distSearchType"
+          optionLabel="label"
+          optionValue="value"
+        />
+        <label for="distSearchType">Search By</label>
+      </p-floatlabel>
+    </div>
+
+    <!-- Search Input (text) or Dropdown (race/category) -->
+    <div class="md:col-span-7">
+      @if (!isDropdownSearch()) {
+        <p-floatlabel variant="on">
+          <p-iconfield iconPosition="left">
+            <p-inputicon class="pi pi-search" />
+            <input
+              [(ngModel)]="searchValue"
+              (keyup.enter)="performSearch()"
+              [placeholder]="searchPlaceholder()"
+              [pSize]="inputSize"
+              fluid="true"
+              id="distSearchValue"
+              pInputText
+              type="text"
+            />
+          </p-iconfield>
+          <label for="distSearchValue">Search Value</label>
+        </p-floatlabel>
+      } @else {
+        <p-floatlabel variant="on">
+          <p-select
+            [(ngModel)]="dropdownSelectedItem"
+            [loading]="isRacesLoading()"
+            [options]="selectedSearchType() === 'RACE' ? races() : categories()"
+            [optionLabel]="selectedSearchType() === 'RACE' ? 'raceName' : 'categoryName'"
+            [optionValue]="selectedSearchType() === 'RACE' ? 'raceName' : 'categoryName'"
+            [size]="inputSize"
+            fluid="true"
+            id="distSearchDropdown"
+            placeholder="Select..."
+          />
+          <label for="distSearchDropdown">
+            {{ selectedSearchType() === 'RACE' ? 'Select Race' : 'Select Category' }}
+          </label>
+        </p-floatlabel>
+      }
+    </div>
+
+    <!-- Buttons -->
+    <div class="md:col-span-2 flex items-end gap-2">
+      <p-button
+        (onClick)="performSearch()"
+        [disabled]="
+          isDropdownSearch()
+            ? !dropdownSelectedItem()
+            : !searchValue() || searchValue().trim().length < 2
+        "
+        [loading]="isInitialLoading()"
+        [size]="buttonSize"
+        icon="pi pi-search"
+        label="Search"
+        severity="primary"
+      />
+      @if (isSearched()) {
+        <p-button
+          (onClick)="clearSearch()"
+          [outlined]="true"
+          [size]="buttonSize"
+          icon="pi pi-times"
+          severity="secondary"
+        />
+      }
+    </div>
+  </div>
+
+  <!-- Error State -->
+  @if (error() && !loading()) {
+    <p-message severity="error" variant="simple" class="mb-4">
+      {{ error() }}
+    </p-message>
+  }
+
+  <!-- Table (shown after first search) -->
+  @if (isSearched()) {
+    <p-table
+      [dataKey]="'bibNumber'"
+      [scrollable]="true"
+      [value]="isInitialLoading() ? skeletonRows : results()"
+      scrollHeight="460px"
+      size="small"
+    >
+      <!-- Header -->
+      <ng-template pTemplate="header">
+        <tr>
+          <!-- Frozen Left: BIB -->
+          <th pFrozenColumn style="min-width: 130px">BIB</th>
+          <!-- Fixed scrollable columns -->
+          <th style="min-width: 120px">Chip</th>
+          <th style="min-width: 200px">Full Name</th>
+          <th style="min-width: 140px">Phone</th>
+          <th style="min-width: 150px">Race</th>
+          <th style="min-width: 150px">Category</th>
+          <th style="min-width: 130px">BIB Status</th>
+          <th style="min-width: 140px">Goodies</th>
+          <!-- Frozen Right: Actions -->
+          <th pFrozenColumn alignFrozen="right" style="width: 170px">Actions</th>
+        </tr>
+      </ng-template>
+
+      <!-- Body -->
+      <ng-template let-participant pTemplate="body">
+        <tr>
+          @if (isInitialLoading()) {
+            <td pFrozenColumn><p-skeleton /></td>
+            <td><p-skeleton /></td>
+            <td><p-skeleton /></td>
+            <td><p-skeleton /></td>
+            <td><p-skeleton /></td>
+            <td><p-skeleton /></td>
+            <td><p-skeleton /></td>
+            <td><p-skeleton /></td>
+            <td pFrozenColumn alignFrozen="right"><p-skeleton /></td>
+          } @else {
+            <!-- BIB (frozen) -->
+            <td pFrozenColumn class="font-bold">
+              {{ participant.bibNumber | defaultValue }}
+            </td>
+
+            <!-- Chip -->
+            <td>{{ participant.chipNumber | defaultValue }}</td>
+
+            <!-- Full Name -->
+            <td>{{ participant.fullName | defaultValue }}</td>
+
+            <!-- Phone -->
+            <td>{{ participant.phoneNumber | defaultValue }}</td>
+
+            <!-- Race -->
+            <td>{{ participant.raceName | defaultValue }}</td>
+
+            <!-- Category -->
+            <td>{{ participant.categoryName | defaultValue }}</td>
+
+            <!-- BIB Status -->
+            <td>
+              @if (getBibStatus(participant)) {
+                <p-tag [rounded]="true" severity="success" size="small" value="Collected" />
+              } @else {
+                <p-tag [rounded]="true" severity="warn" size="small" value="Pending" />
+              }
+            </td>
+
+            <!-- Goodies Status -->
+            <td>
+              @if (getGoodiesCount(participant.goodies) > 0) {
+                <p-button
+                  (onClick)="goodiesPopover.toggle($event)"
+                  [rounded]="true"
+                  [text]="true"
+                  [size]="buttonSize"
+                  [severity]="getGoodiesDistributionSeverity(participant)"
+                  icon="pi pi-gift"
+                  [label]="
+                    getDistributedCount(participant) + '/' + getGoodiesCount(participant.goodies)
+                  "
+                  pTooltip="View goodies status"
+                  tooltipPosition="top"
+                />
+                <p-popover #goodiesPopover>
+                  <div class="p-3" style="min-width: 15rem">
+                    <h4 class="font-semibold mb-2 flex items-center gap-2">
+                      <i class="pi pi-gift"></i> Goodies
+                    </h4>
+                    @for (entry of getGoodiesDistributionEntries(participant); track entry.key) {
+                      <div class="flex justify-between items-center py-1">
+                        <span class="text-sm font-medium">
+                          {{ formatGoodiesKey(entry.key) }}
+                          @if (entry.value) {
+                            <span class="text-color-secondary">({{ entry.value }})</span>
+                          }
+                        </span>
+                        @if (entry.distributed) {
+                          <p-tag value="Done" [rounded]="true" severity="success" size="small" />
+                        } @else {
+                          <p-tag value="Pending" [rounded]="true" severity="warn" size="small" />
+                        }
+                      </div>
+                    }
+                  </div>
+                </p-popover>
+              } @else {
+                <span class="text-color-secondary">--</span>
+              }
+            </td>
+
+            <!-- Actions (frozen right) -->
+            <td pFrozenColumn alignFrozen="right">
+              <div class="flex gap-1">
+                @if (!getBibStatus(participant)) {
+                  <p-button
+                    (onClick)="collectBib.emit(participant)"
+                    [rounded]="true"
+                    [text]="true"
+                    [size]="buttonSize"
+                    icon="pi pi-id-card"
+                    pTooltip="Collect BIB"
+                    severity="success"
+                    tooltipPosition="top"
+                  />
+                }
+                @if (getBibStatus(participant) && hasPendingGoodies(participant)) {
+                  <p-button
+                    (onClick)="distributeGoodies.emit(participant)"
+                    [rounded]="true"
+                    [text]="true"
+                    [size]="buttonSize"
+                    icon="pi pi-gift"
+                    pTooltip="Distribute Goodies"
+                    severity="info"
+                    tooltipPosition="top"
+                  />
+                }
+                @if (getBibStatus(participant) && canUndoBib) {
+                  <p-button
+                    (onClick)="undoBib.emit(participant)"
+                    [rounded]="true"
+                    [text]="true"
+                    [size]="buttonSize"
+                    icon="pi pi-undo"
+                    pTooltip="Undo BIB"
+                    severity="danger"
+                    tooltipPosition="top"
+                  />
+                }
+              </div>
+            </td>
+          }
+        </tr>
+      </ng-template>
+
+      <!-- Empty State -->
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td colspan="9" class="text-center py-10">
+            @if (!loading()) {
+              <i class="pi pi-inbox text-4xl mb-3 block text-color-secondary"></i>
+              <p class="text-color-secondary">No participants found for this search.</p>
+            }
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+
+    <!-- Load More / Status -->
+    <div class="text-center mt-4">
+      @if (hasMore() && !loading()) {
+        <p-button
+          (onClick)="loadMore()"
+          [outlined]="true"
+          [size]="buttonSize"
+          icon="pi pi-arrow-down"
+          label="Load More"
+        />
+      }
+      @if (isLoadingMore()) {
+        <div>
+          <i class="pi pi-spin pi-spinner text-2xl"></i>
+          <p class="mt-2 text-color-secondary">Loading more...</p>
+        </div>
+      }
+      @if (!hasMore() && results().length > 0) {
+        <p class="text-sm text-color-secondary">All {{ results().length }} result(s) loaded</p>
+      }
+    </div>
+  }
+
+  <!-- Initial empty hint -->
+  @if (!isSearched() && !loading()) {
+    <div class="text-center py-16 text-color-secondary">
+      <i class="pi pi-search text-5xl mb-4 block"></i>
+      <p class="text-lg font-medium mb-1">Search for participants</p>
+      <p class="text-sm">
+        Search by BIB number, name, phone, race, or category to manage distribution.
+      </p>
+    </div>
+  }
+</div>

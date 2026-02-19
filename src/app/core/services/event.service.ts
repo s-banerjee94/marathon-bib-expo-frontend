@@ -2,9 +2,11 @@ import { inject, Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import {
+  Category,
   CreateEventRequest,
   Event,
   EventSummaryResponse,
+  Race,
   UpdateEventRequest,
 } from '../models/event.model';
 import { PageableParams, PageableResponse } from '../models/api.model';
@@ -54,6 +56,14 @@ export class EventService {
 
   getEventSummary(id: number): Observable<EventSummaryResponse> {
     return this.http.get<EventSummaryResponse>(`${this.baseUrl}/${id}/summary`);
+  }
+
+  getRaces(eventId: number): Observable<Race[]> {
+    return this.http.get<Race[]>(`${this.baseUrl}/${eventId}/races`);
+  }
+
+  getCategoriesByRace(eventId: number, raceId: number): Observable<Category[]> {
+    return this.http.get<Category[]>(`${this.baseUrl}/${eventId}/races/${raceId}/categories`);
   }
 
   toggleEnabled(id: number): Observable<Event> {

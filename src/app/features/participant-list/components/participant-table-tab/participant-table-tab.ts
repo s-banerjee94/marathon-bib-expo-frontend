@@ -1,9 +1,10 @@
-import { Component, computed, effect, input, output, signal } from '@angular/core';
+import { Component, computed, effect, inject, input, output, signal } from '@angular/core';
+import { forkJoin } from 'rxjs';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
-import { ButtonModule } from 'primeng/button';
+import { ButtonModule, ButtonSeverity } from 'primeng/button';
 import { TooltipModule } from 'primeng/tooltip';
 import { SkeletonModule } from 'primeng/skeleton';
 import { SelectModule } from 'primeng/select';
@@ -16,6 +17,8 @@ import { MessageModule } from 'primeng/message';
 import { PopoverModule } from 'primeng/popover';
 import { DividerModule } from 'primeng/divider';
 import { Participant, LookupSearchType } from '../../../../core/models/participant.model';
+import { Race, Category } from '../../../../core/models/event.model';
+import { EventService } from '../../../../core/services/event.service';
 import { DefaultValuePipe } from '../../../../shared/pipes/default-value.pipe';
 import { getGenderDisplay, getGenderSeverity } from '../../../../shared/utils/participant.utils';
 import { BUTTON_SIZE, FORM_INPUT_SIZE } from '../../../../shared/constants/form.constants';
@@ -47,6 +50,8 @@ import { TableColumn } from '../../../../shared/models/table-config.model';
   ],
 })
 export class ParticipantTableTab {
+  private eventService = inject(EventService);
+
   // Inputs
   participants = input.required<Participant[]>();
   totalCount = input<number>(0);
@@ -55,6 +60,7 @@ export class ParticipantTableTab {
   allColumns = input<TableColumn[]>([]);
   isSearchMode = input<boolean>(false);
   storageKey = input<string>(''); // localStorage key for column preferences
+  eventId = input<number | undefined>(undefined);
 
   // Outputs
   loadMore = output<void>();
@@ -79,6 +85,17 @@ export class ParticipantTableTab {
   lookupSearchTypes = LOOKUP_SEARCH_TYPES;
   selectedSearchType = signal<LookupSearchType>('BIB');
   searchValue = signal<string>('');
+  dropdownSelectedItem = signal<string>('');
+
+  // Race / Category dropdown data
+  races = signal<Race[]>([]);
+  categories = signal<Category[]>([]);
+  isRacesLoading = signal(false);
+
+  // Computed: true when current search type uses a dropdown instead of text input
+  isDropdownSearch = computed(
+    () => this.selectedSearchType() === 'RACE' || this.selectedSearchType() === 'CATEGORY',
+  );
 
   // Column selection state - using signal for reactive updates
   selectedCols = signal<TableColumn[]>([]);
@@ -127,6 +144,17 @@ export class ParticipantTableTab {
   isLoadingMore = computed(() => this.isLoading() && this.participants().length > 0);
 
   constructor() {
+    // Load races/categories when eventId changes
+    effect(() => {
+      const eventId = this.eventId();
+      if (eventId) {
+        this.loadEventData(eventId);
+      } else {
+        this.races.set([]);
+        this.categories.set([]);
+      }
+    });
+
     // Auto-initialize columns from localStorage or defaults
     effect(() => {
       const cols = this.allColumns();
@@ -236,20 +264,46 @@ export class ParticipantTableTab {
     this.createClick.emit();
   }
 
+  onSearchTypeChange(): void {
+    this.searchValue.set('');
+    this.dropdownSelectedItem.set('');
+  }
+
   performSearch(): void {
-    const searchValue = this.searchValue().trim();
-    if (searchValue.length >= 2) {
-      this.searchRequested.emit({
-        searchType: this.selectedSearchType(),
-        searchValue,
-      });
-    }
+    const isDropdown = this.isDropdownSearch();
+    const value = isDropdown ? this.dropdownSelectedItem() : this.searchValue().trim();
+    if (!value || value.length < 2) return;
+    this.searchRequested.emit({
+      searchType: this.selectedSearchType(),
+      searchValue: value,
+    });
   }
 
   clearSearch(): void {
     this.searchValue.set('');
+    this.dropdownSelectedItem.set('');
     this.selectedSearchType.set('BIB');
     this.searchCleared.emit();
+  }
+
+  private loadEventData(eventId: number): void {
+    this.isRacesLoading.set(true);
+    this.eventService.getRaces(eventId).subscribe({
+      next: (races) => {
+        this.races.set(races);
+        this.isRacesLoading.set(false);
+        if (races.length > 0) {
+          const catObs = races.map((r) => this.eventService.getCategoriesByRace(eventId, r.id));
+          forkJoin(catObs).subscribe({
+            next: (results) => this.categories.set(results.flat()),
+            error: () => {},
+          });
+        }
+      },
+      error: () => {
+        this.isRacesLoading.set(false);
+      },
+    });
   }
 
   // Goodies helper methods
@@ -272,5 +326,31 @@ export class ParticipantTableTab {
       .split(/[-_\s]+/)
       .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
       .join(' ');
+  }
+
+  getDistributedCount(participant: Participant): number {
+    const distribution = participant.goodiesDistribution;
+    if (!distribution || typeof distribution !== 'object') return 0;
+    return Object.keys(distribution).length;
+  }
+
+  getGoodiesDistributionSeverity(participant: Participant): ButtonSeverity {
+    const total = this.getGoodiesCount(participant.goodies);
+    const distributed = this.getDistributedCount(participant);
+    if (distributed === 0) return 'warn';
+    if (distributed >= total) return 'success';
+    return 'info';
+  }
+
+  getGoodiesDistributionEntries(
+    participant: Participant,
+  ): Array<{ key: string; distributed: boolean }> {
+    const goodies = participant.goodies;
+    const distribution = participant.goodiesDistribution;
+    if (!goodies || typeof goodies !== 'object') return [];
+    return Object.keys(goodies).map((key) => ({
+      key,
+      distributed: !!(distribution && distribution[key]),
+    }));
   }
 }

@@ -85,6 +85,27 @@ export interface UpdateEventRequest {
 }
 
 /**
+ * Race model matching backend RaceResponse
+ */
+export interface Race {
+  id: number;
+  raceName: string;
+  raceDescription?: string;
+  eventId: number;
+  categoryCount: number;
+}
+
+/**
+ * Category model matching backend CategoryResponse
+ */
+export interface Category {
+  id: number;
+  categoryName: string;
+  raceId: number;
+  eventId: number;
+}
+
+/**
  * Race Summary (for Event Summary Response)
  */
 export interface RaceSummary {

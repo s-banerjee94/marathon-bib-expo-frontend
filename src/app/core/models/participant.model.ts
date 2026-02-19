@@ -16,11 +16,17 @@ export interface Participant {
   categoryName: string;
   goodies?: { [key: string]: string };
   bibCollectedAt?: string;
+  bibCollectedByName?: string;
+  bibCollectedByPhone?: string;
+  bibDistributedBy?: string;
+  goodiesDistribution?: { [key: string]: string };
   emergencyContactName?: string;
   emergencyContactPhone?: string;
   notes?: string;
   createdAt?: string;
+  createdBy?: string;
   updatedAt?: string;
+  updatedBy?: string;
 }
 
 export interface ParticipantListResponse {

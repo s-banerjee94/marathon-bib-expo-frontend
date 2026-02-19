@@ -1,6 +1,7 @@
 import { Routes } from '@angular/router';
 import {
   adminGuard,
+  authGuard,
   distributorGuard,
   orgUserGuard,
   rootGuard,
@@ -104,6 +105,14 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./features/participant-form/participant-form').then((m) => m.ParticipantForm),
     canActivate: [userCreationGuard], // ORGANIZER_ADMIN, ORGANIZER_USER, ADMIN, ROOT
+  },
+  {
+    path: 'distribution',
+    loadComponent: () =>
+      import('./features/manage-distribution/manage-distribution').then(
+        (m) => m.ManageDistribution,
+      ),
+    canActivate: [authGuard],
   },
   {
     path: 'distributer-dashboard',

@@ -17,6 +17,7 @@ export class FormatDateTimePipe implements PipeTransform {
     if (!value) return '--';
 
     const date = new Date(value);
+    if (isNaN(date.getTime())) return '--';
 
     if (mode === 'date') {
       return date.toLocaleDateString('en-US', {

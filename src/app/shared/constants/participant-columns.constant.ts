@@ -14,9 +14,14 @@ export const PARTICIPANT_COLUMNS: TableColumn[] = [
   { field: 'city', header: 'City' },
   { field: 'country', header: 'Country' },
   { field: 'bibCollectedAt', header: 'BIB Collected' },
+  { field: 'bibCollectedByName', header: 'Collected By' },
+  { field: 'bibCollectedByPhone', header: 'Collector Phone' },
   { field: 'goodies', header: 'Goodies' },
+  { field: 'goodiesDistribution', header: 'Goodies Status' },
   { field: 'emergencyContactName', header: 'Emergency Contact' },
   { field: 'emergencyContactPhone', header: 'Emergency Phone' },
+  { field: 'notes', header: 'Notes' },
+  { field: 'createdAt', header: 'Created At' },
 ];
 
 export const PARTICIPANT_SORT_OPTIONS = [

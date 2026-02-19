@@ -1,0 +1,292 @@
+<p-toast />
+<p-confirmdialog />
+
+<div class="p-4">
+  <!-- Header -->
+  <div class="mb-6">
+    <h1 class="text-3xl font-bold">Distribution Management</h1>
+    <p class="mt-2 text-color-secondary">
+      @if (isRestrictedUser()) {
+        Select an event to manage distribution.
+      } @else {
+        Select an organization and event to manage distribution.
+      }
+    </p>
+  </div>
+
+  <!-- Filter Section -->
+  <p-card class="mb-6">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 p-2 md:p-4">
+      @if (!isRestrictedUser()) {
+        <app-organization-selector
+          (organizationIdChange)="onOrganizationChange($event)"
+          [required]="true"
+          [selectedOrganizationId]="selectedOrganizationId()"
+          label="Organization"
+          placeholder="Type to search organizations..."
+        />
+      }
+      <app-event-selector
+        (eventIdChange)="onEventChange($event)"
+        [disabled]="!selectedOrganizationId()"
+        [organizationId]="selectedOrganizationId()"
+        [required]="true"
+        [selectedEventId]="selectedEventId()"
+        label="Event"
+        placeholder="Type to search events..."
+        [class]="isRestrictedUser() ? 'md:col-span-2' : ''"
+      />
+    </div>
+  </p-card>
+
+  <!-- Empty State -->
+  @if (!selectedEventId()) {
+    <p-card>
+      <div class="p-8 text-center">
+        <i class="pi pi-inbox text-6xl mb-4 block text-color-secondary"></i>
+        <h3 class="text-xl font-semibold mb-2">No Event Selected</h3>
+        <p class="text-color-secondary">
+          @if (isRestrictedUser()) {
+            Please select an event to manage distribution.
+          } @else {
+            Please select an organization and event to manage distribution.
+          }
+        </p>
+      </div>
+    </p-card>
+  }
+
+  <!-- Distribution Tabs -->
+  @if (selectedEventId()) {
+    <p-tabs [value]="activeTab()" (valueChange)="onTabChange($event)">
+      <p-tablist>
+        <p-tab value="lookup" class="flex items-center gap-2">
+          <i class="pi pi-search"></i> <span>BIB Lookup</span>
+        </p-tab>
+        <p-tab value="pending-bibs" class="flex items-center gap-2">
+          <i class="pi pi-id-card"></i> <span>Pending BIBs</span>
+        </p-tab>
+        <p-tab value="pending-goodies" class="flex items-center gap-2">
+          <i class="pi pi-gift"></i> <span>Pending Goodies</span>
+        </p-tab>
+        @if (canViewLogs()) {
+          <p-tab value="logs" class="flex items-center gap-2">
+            <i class="pi pi-list"></i> <span>Activity Logs</span>
+          </p-tab>
+        }
+      </p-tablist>
+
+      <p-tabpanels>
+        <p-tabpanel value="lookup">
+          <app-bib-lookup-tab
+            [eventId]="selectedEventId()"
+            [canUndoBib]="canUndoBib()"
+            (collectBib)="openCollectBibDialog($event)"
+            (distributeGoodies)="openDistributeGoodiesDialog($event)"
+            (undoBib)="confirmUndoBib($event)"
+          />
+        </p-tabpanel>
+
+        <p-tabpanel value="pending-bibs">
+          <app-pending-bibs-tab
+            [eventId]="selectedEventId()"
+            (collectBib)="openCollectBibDialog($event)"
+          />
+        </p-tabpanel>
+
+        <p-tabpanel value="pending-goodies">
+          <app-pending-goodies-tab
+            [eventId]="selectedEventId()"
+            (distributeGoodies)="openDistributeGoodiesDialog($event)"
+          />
+        </p-tabpanel>
+
+        @if (canViewLogs()) {
+          <p-tabpanel value="logs">
+            <app-activity-logs-tab
+              [eventId]="selectedEventId()"
+              [organizationId]="selectedOrganizationId()"
+            />
+          </p-tabpanel>
+        }
+      </p-tabpanels>
+    </p-tabs>
+  }
+</div>
+
+<!-- Collect BIB Dialog -->
+<p-dialog
+  header="Collect BIB"
+  [visible]="collectBibVisible()"
+  (visibleChange)="collectBibVisible.set($event)"
+  [modal]="true"
+  [style]="{ width: '480px' }"
+  [draggable]="false"
+>
+  @if (collectBibTarget()) {
+    <div [formGroup]="collectBibForm">
+      <div class="border rounded-lg p-3 mb-4">
+        <div class="flex items-center gap-3">
+          <div class="bib-badge bib-badge--sm surface-ground border rounded-lg">
+            <span class="font-bold">{{ collectBibTarget()!.bibNumber }}</span>
+          </div>
+          <div>
+            <p class="font-semibold m-0">{{ collectBibTarget()!.fullName }}</p>
+            <p class="text-sm text-color-secondary m-0">
+              {{ collectBibTarget()!.raceName }} · {{ collectBibTarget()!.categoryName }}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div class="field mb-4">
+        <label for="collectorName" class="block text-sm font-medium mb-1">
+          Collector Name <span class="text-color-secondary">(optional)</span>
+        </label>
+        <input
+          id="collectorName"
+          pInputText
+          type="text"
+          formControlName="collectorName"
+          placeholder="Defaults to participant's name"
+          class="w-full"
+        />
+      </div>
+
+      <div class="field mb-4">
+        <label for="collectorPhone" class="block text-sm font-medium mb-1">
+          Collector Phone <span class="text-color-secondary">(optional)</span>
+        </label>
+        <input
+          id="collectorPhone"
+          pInputText
+          type="text"
+          formControlName="collectorPhone"
+          placeholder="Defaults to participant's phone"
+          class="w-full"
+        />
+      </div>
+
+      @if (collectBibTarget()!.goodies && getAllGoodiesKeys(collectBibTarget()!).length > 0) {
+        <div class="field mb-2">
+          <label class="block text-sm font-medium mb-2">
+            Distribute Goodies Now <span class="text-color-secondary">(optional)</span>
+          </label>
+          <div class="flex flex-col gap-2">
+            @for (item of getAllGoodiesKeys(collectBibTarget()!); track item) {
+              <label class="flex items-center gap-2 cursor-pointer px-2 py-1 rounded">
+                <input
+                  type="checkbox"
+                  [checked]="isGoodiesSelectedForCollect(item)"
+                  (change)="toggleGoodiesForCollect(item)"
+                  class="w-4 h-4 cursor-pointer"
+                />
+                <span class="text-sm">
+                  {{ item }}
+                  @if (collectBibTarget()!.goodies![item]) {
+                    <span class="text-color-secondary"
+                      >({{ collectBibTarget()!.goodies![item] }})</span
+                    >
+                  }
+                </span>
+              </label>
+            }
+          </div>
+        </div>
+      }
+    </div>
+  }
+
+  <ng-template #footer>
+    <div class="flex justify-end gap-2">
+      <p-button
+        label="Cancel"
+        severity="secondary"
+        [outlined]="true"
+        (onClick)="collectBibVisible.set(false)"
+        [disabled]="collectBibLoading()"
+      />
+      <p-button
+        label="Collect BIB"
+        icon="pi pi-check"
+        severity="success"
+        [loading]="collectBibLoading()"
+        (onClick)="submitCollectBib()"
+      />
+    </div>
+  </ng-template>
+</p-dialog>
+
+<!-- Distribute Goodies Dialog -->
+<p-dialog
+  header="Distribute Goodies"
+  [visible]="distributeGoodiesVisible()"
+  (visibleChange)="distributeGoodiesVisible.set($event)"
+  [modal]="true"
+  [style]="{ width: '420px' }"
+  [draggable]="false"
+>
+  @if (distributeGoodiesTarget()) {
+    <div>
+      <div class="border rounded-lg p-3 mb-4">
+        <div class="flex items-center gap-3">
+          <div class="bib-badge bib-badge--sm surface-ground border rounded-lg">
+            <span class="font-bold">{{ distributeGoodiesTarget()!.bibNumber }}</span>
+          </div>
+          <div>
+            <p class="font-semibold m-0">{{ distributeGoodiesTarget()!.fullName }}</p>
+            <p class="text-sm text-color-secondary m-0">
+              {{ distributeGoodiesTarget()!.raceName }}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      @if (getPendingItemsForDialog().length > 0) {
+        <label class="block text-sm font-medium mb-2">Select items to distribute:</label>
+        <div class="flex flex-col gap-2">
+          @for (item of getPendingItemsForDialog(); track item) {
+            <label class="flex items-center gap-2 cursor-pointer px-2 py-1 rounded">
+              <input
+                type="checkbox"
+                [checked]="isGoodiesSelectedForDistribute(item)"
+                (change)="toggleGoodiesForDistribute(item)"
+                class="w-4 h-4 cursor-pointer"
+              />
+              <span class="text-sm">
+                {{ item }}
+                @if (distributeGoodiesTarget()!.goodies?.[item]) {
+                  <span class="text-color-secondary"
+                    >({{ distributeGoodiesTarget()!.goodies![item] }})</span
+                  >
+                }
+              </span>
+            </label>
+          }
+        </div>
+      } @else {
+        <p class="text-color-secondary text-center py-4">No pending goodies items.</p>
+      }
+    </div>
+  }
+
+  <ng-template #footer>
+    <div class="flex justify-end gap-2">
+      <p-button
+        label="Cancel"
+        severity="secondary"
+        [outlined]="true"
+        (onClick)="distributeGoodiesVisible.set(false)"
+        [disabled]="distributeGoodiesLoading()"
+      />
+      <p-button
+        label="Distribute"
+        icon="pi pi-gift"
+        severity="info"
+        [loading]="distributeGoodiesLoading()"
+        [disabled]="selectedGoodiesForDistribute.length === 0"
+        (onClick)="submitDistributeGoodies()"
+      />
+    </div>
+  </ng-template>
+</p-dialog>

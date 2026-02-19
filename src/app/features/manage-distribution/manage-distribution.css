@@ -1,0 +1,23 @@
+.bib-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 56px;
+  height: 56px;
+  padding: 0 8px;
+  border-radius: 8px;
+  font-size: 1rem;
+}
+
+.bib-badge--sm {
+  min-width: 44px;
+  height: 44px;
+  font-size: 0.875rem;
+}
+
+.info-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+}
