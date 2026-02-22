@@ -1,40 +1,186 @@
-<div class="dashboard-container">
-  <header class="dashboard-header">
-    <h1>Admin Dashboard</h1>
-    @if (user(); as userData) {
-      <div class="user-info">
-        <span>Welcome, {{ userData.fullName }} (ADMIN)</span>
-        <button (click)="logout()" class="btn-logout">Logout</button>
-      </div>
-    }
-  </header>
+<div class="min-h-screen">
+  <!-- ── Header ── -->
+  <div class="px-6 py-4 shadow-sm">
+    <div class="max-w-7xl mx-auto">
+      <h1 class="text-2xl font-bold tracking-tight">Admin Dashboard</h1>
+      <p class="text-sm mt-0.5">
+        Welcome back,
+        <span class="font-semibold">{{ user()?.fullName || user()?.username }}</span>
+      </p>
+    </div>
+  </div>
 
-  <main class="dashboard-content">
-    <section class="dashboard-section">
-      <h2>Admin Controls</h2>
-      <div class="card-grid">
-        <div class="card">
-          <h3>Manage Organizations</h3>
-          <p>View and manage marathon organizers</p>
-          <div class="button-group">
-            <button (click)="goToOrganizationList()">View Organizations</button>
-            <button (click)="goToCreateOrganization()">Create Organization</button>
-          </div>
-        </div>
-        <div class="card">
-          <h3>Manage Users</h3>
-          <p>View and manage system users</p>
-          <div class="button-group">
-            <button (click)="goToUserList()">View Users</button>
-            <button (click)="goToCreateUser()">Create User</button>
-          </div>
-        </div>
-        <div class="card">
-          <h3>Organization Analytics</h3>
-          <p>View organizer statistics and reports</p>
-          <button>View Analytics</button>
-        </div>
+  <div class="max-w-7xl mx-auto px-6 py-6 space-y-6">
+    <!-- ── Stats Row ── -->
+    <section>
+      <h2 class="text-lg font-semibold mb-3">Overview</h2>
+      <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+        <!-- Total Users -->
+        <p-card class="text-center">
+          @if (isLoadingStats()) {
+            <p-skeleton height="2rem" class="mb-2"></p-skeleton>
+            <p-skeleton height="1rem" width="60%" class="mx-auto"></p-skeleton>
+          } @else {
+            <div class="py-2">
+              <i class="pi pi-users text-3xl mb-2 block"></i>
+              <p class="text-3xl font-bold">{{ totalUsers() }}</p>
+              <p class="text-xs font-medium mt-1 uppercase tracking-wide">Total Users</p>
+            </div>
+          }
+        </p-card>
+
+        <!-- Total Organizations -->
+        <p-card class="text-center">
+          @if (isLoadingStats()) {
+            <p-skeleton height="2rem" class="mb-2"></p-skeleton>
+            <p-skeleton height="1rem" width="60%" class="mx-auto"></p-skeleton>
+          } @else {
+            <div class="py-2">
+              <i class="pi pi-building text-3xl mb-2 block"></i>
+              <p class="text-3xl font-bold">{{ totalOrganizations() }}</p>
+              <p class="text-xs font-medium mt-1 uppercase tracking-wide">Organizations</p>
+            </div>
+          }
+        </p-card>
+
+        <!-- Total Events -->
+        <p-card class="text-center">
+          @if (isLoadingStats()) {
+            <p-skeleton height="2rem" class="mb-2"></p-skeleton>
+            <p-skeleton height="1rem" width="60%" class="mx-auto"></p-skeleton>
+          } @else {
+            <div class="py-2">
+              <i class="pi pi-calendar text-3xl mb-2 block"></i>
+              <p class="text-3xl font-bold">{{ totalEvents() }}</p>
+              <p class="text-xs font-medium mt-1 uppercase tracking-wide">Total Events</p>
+            </div>
+          }
+        </p-card>
+
+        <!-- Active Events -->
+        <p-card class="text-center">
+          @if (isLoadingStats()) {
+            <p-skeleton height="2rem" class="mb-2"></p-skeleton>
+            <p-skeleton height="1rem" width="60%" class="mx-auto"></p-skeleton>
+          } @else {
+            <div class="py-2">
+              <i class="pi pi-play-circle text-3xl mb-2 block"></i>
+              <p class="text-3xl font-bold">{{ activeEvents() }}</p>
+              <p class="text-xs font-medium mt-1 uppercase tracking-wide">Active Events</p>
+            </div>
+          }
+        </p-card>
+
+        <!-- Org Admins -->
+        <p-card class="text-center">
+          @if (isLoadingStats()) {
+            <p-skeleton height="2rem" class="mb-2"></p-skeleton>
+            <p-skeleton height="1rem" width="60%" class="mx-auto"></p-skeleton>
+          } @else {
+            <div class="py-2">
+              <i class="pi pi-shield text-3xl mb-2 block"></i>
+              <p class="text-3xl font-bold">{{ orgAdmins() }}</p>
+              <p class="text-xs font-medium mt-1 uppercase tracking-wide">Org Admins</p>
+            </div>
+          }
+        </p-card>
+
+        <!-- Disabled Users -->
+        <p-card class="text-center">
+          @if (isLoadingStats()) {
+            <p-skeleton height="2rem" class="mb-2"></p-skeleton>
+            <p-skeleton height="1rem" width="60%" class="mx-auto"></p-skeleton>
+          } @else {
+            <div class="py-2">
+              <i class="pi pi-ban text-3xl mb-2 block"></i>
+              <p class="text-3xl font-bold">{{ disabledUsers() }}</p>
+              <p class="text-xs font-medium mt-1 uppercase tracking-wide">Disabled Users</p>
+            </div>
+          }
+        </p-card>
       </div>
     </section>
-  </main>
+
+    <!-- ── Chart + Quick Actions ── -->
+    <section class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <!-- Role Distribution Chart -->
+      <p-card header="User Role Distribution">
+        @if (isLoadingRoleChart()) {
+          <div class="flex justify-center items-center" style="height: 240px">
+            <p-skeleton shape="circle" size="200px"></p-skeleton>
+          </div>
+        } @else if (roleChartData()) {
+          <p-chart
+            type="doughnut"
+            [data]="roleChartData()!"
+            [options]="roleChartOptions"
+            class="w-full"
+          ></p-chart>
+        }
+      </p-card>
+
+      <!-- Quick Actions -->
+      <p-card header="Quick Actions">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <p-button
+            label="Create Organization"
+            icon="pi pi-plus-circle"
+            class="w-full"
+            [outlined]="true"
+            (onClick)="goToCreateOrganization()"
+          ></p-button>
+
+          <p-button
+            label="Create Org Admin"
+            icon="pi pi-user-plus"
+            class="w-full"
+            [outlined]="true"
+            (onClick)="goToCreateOrgAdmin()"
+          ></p-button>
+
+          <p-button
+            label="Manage Users"
+            icon="pi pi-users"
+            class="w-full"
+            [outlined]="true"
+            (onClick)="goToUsers()"
+          ></p-button>
+
+          <p-button
+            label="Manage Organizations"
+            icon="pi pi-building"
+            class="w-full"
+            [outlined]="true"
+            (onClick)="goToOrganizations()"
+          ></p-button>
+
+          <p-button
+            label="View All Events"
+            icon="pi pi-calendar"
+            class="w-full"
+            [outlined]="true"
+            (onClick)="goToEvents()"
+          ></p-button>
+        </div>
+      </p-card>
+    </section>
+
+    <!-- ── Recent Events ── -->
+    <section>
+      <app-recent-events
+        [events]="recentEvents()"
+        [isLoading]="isLoadingRecentEvents()"
+        (viewAll)="goToEvents()"
+      ></app-recent-events>
+    </section>
+
+    <!-- ── Recent Organizations ── -->
+    <section>
+      <app-recent-organizations
+        [organizations]="recentOrganizations()"
+        [isLoading]="isLoadingRecentOrgs()"
+        (viewAll)="goToOrganizations()"
+      ></app-recent-organizations>
+    </section>
+  </div>
 </div>
