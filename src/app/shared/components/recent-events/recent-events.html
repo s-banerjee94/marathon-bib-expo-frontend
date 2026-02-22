@@ -1,0 +1,47 @@
+<div class="flex items-center justify-between mb-3">
+  <h2 class="text-lg font-semibold">Recent Events</h2>
+  <p-button
+    label="View All"
+    icon="pi pi-arrow-right"
+    iconPos="right"
+    severity="secondary"
+    [text]="true"
+    (onClick)="viewAll.emit()"
+  ></p-button>
+</div>
+
+<p-card>
+  @if (isLoading()) {
+    <div class="space-y-3">
+      @for (i of [1, 2, 3, 4, 5]; track i) {
+        <p-skeleton height="2.5rem"></p-skeleton>
+      }
+    </div>
+  } @else {
+    <p-table [value]="events()" [tableStyle]="{ 'min-width': '50rem' }">
+      <ng-template pTemplate="header">
+        <tr>
+          <th>Event Name</th>
+          <th>Venue</th>
+          <th>Start Date</th>
+          <th>Status</th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-event>
+        <tr>
+          <td class="font-medium">{{ event.eventName }}</td>
+          <td>{{ event.venueName || '--' }}</td>
+          <td>{{ event.eventStartDate | date: 'dd-MM-yyyy hh:mm a' }}</td>
+          <td>
+            <p-tag [value]="event.status" [severity]="getStatusSeverity(event.status)"></p-tag>
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td colspan="4" class="text-center py-6">No events found.</td>
+        </tr>
+      </ng-template>
+    </p-table>
+  }
+</p-card>

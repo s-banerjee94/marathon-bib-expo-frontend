@@ -1,0 +1,70 @@
+<div class="flex items-center justify-between mb-3">
+  <h2 class="text-lg font-semibold">Recent Organizations</h2>
+  <p-button
+    label="View All"
+    icon="pi pi-arrow-right"
+    iconPos="right"
+    severity="secondary"
+    [text]="true"
+    (onClick)="viewAll.emit()"
+  ></p-button>
+</div>
+
+<p-card>
+  @if (isLoading()) {
+    <div class="space-y-3">
+      @for (i of [1, 2, 3, 4, 5]; track i) {
+        <p-skeleton height="2.5rem"></p-skeleton>
+      }
+    </div>
+  } @else {
+    <p-table [value]="organizations()" [tableStyle]="{ 'min-width': '50rem' }">
+      <ng-template pTemplate="header">
+        <tr>
+          <th>Name</th>
+          <th>Phone</th>
+          <th>Email</th>
+          <th>Subscription</th>
+          <th>Status</th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-org>
+        <tr>
+          <td class="font-medium">{{ org.organizerName }}</td>
+          <td>
+            @if (org.phoneNumber) {
+              <a class="hover:underline" href="tel:{{ org.phoneNumber }}">{{ org.phoneNumber }}</a>
+            } @else {
+              <span>--</span>
+            }
+          </td>
+          <td>
+            @if (org.email) {
+              <a class="hover:underline" href="mailto:{{ org.email }}">{{ org.email }}</a>
+            } @else {
+              <span>--</span>
+            }
+          </td>
+          <td>
+            @if (org.subscriptionTier) {
+              <p-tag [value]="org.subscriptionTier" severity="info"></p-tag>
+            } @else {
+              <span>--</span>
+            }
+          </td>
+          <td>
+            <p-tag
+              [value]="org.enabled ? 'Active' : 'Disabled'"
+              [severity]="org.enabled ? 'success' : 'danger'"
+            ></p-tag>
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td colspan="5" class="text-center py-6">No organizations found.</td>
+        </tr>
+      </ng-template>
+    </p-table>
+  }
+</p-card>
