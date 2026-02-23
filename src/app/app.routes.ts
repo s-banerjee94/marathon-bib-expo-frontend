@@ -3,7 +3,9 @@ import {
   adminGuard,
   authGuard,
   distributorGuard,
+  orgAdminGuard,
   orgUserGuard,
+  orgUserOnlyGuard,
   rootGuard,
   rootOrAdminGuard,
   userCreationGuard,
@@ -65,7 +67,19 @@ export const routes: Routes = [
       import('./features/organizer-dashboard/organizer-dashboard').then(
         (m) => m.OrganizerDashboard,
       ),
-    canActivate: [orgUserGuard], // Both ORGANIZER_ADMIN and ORGANIZER_USER can access
+    canActivate: [orgUserGuard],
+  },
+  {
+    path: 'org-admin-dashboard',
+    loadComponent: () =>
+      import('./features/org-admin-dashboard/org-admin-dashboard').then((m) => m.OrgAdminDashboard),
+    canActivate: [orgAdminGuard],
+  },
+  {
+    path: 'org-user-dashboard',
+    loadComponent: () =>
+      import('./features/org-user-dashboard/org-user-dashboard').then((m) => m.OrgUserDashboard),
+    canActivate: [orgUserOnlyGuard],
   },
   {
     path: 'events',

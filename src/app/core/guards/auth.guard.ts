@@ -125,6 +125,27 @@ export const orgUserGuard: CanActivateFn = (_route, _state) => {
 };
 
 /**
+ * Org User Only Guard: Only ORGANIZER_USER can access
+ * Used for: /org-user-dashboard
+ */
+export const orgUserOnlyGuard: CanActivateFn = (_route, _state) => {
+  const authService = inject(AuthService);
+  const router = inject(Router);
+
+  if (!authService.isAuthenticated()) {
+    router.navigate(['/login']);
+    return false;
+  }
+
+  if (authService.hasRole(UserRole.ORGANIZER_USER)) {
+    return true;
+  }
+
+  router.navigate(['/unauthorized']);
+  return false;
+};
+
+/**
  * Distributor Guard: Only DISTRIBUTOR users can access
  * Used for: /distributer-dashboard
  */

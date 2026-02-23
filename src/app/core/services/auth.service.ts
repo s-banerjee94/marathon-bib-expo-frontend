@@ -116,9 +116,9 @@ export class AuthService {
       case UserRole.ADMIN:
         return '/admin-dashboard';
       case UserRole.ORGANIZER_ADMIN:
-        return '/organizer-dashboard';
+        return '/org-admin-dashboard';
       case UserRole.ORGANIZER_USER:
-        return '/organizer-dashboard';
+        return '/org-user-dashboard';
       case UserRole.DISTRIBUTOR:
         return '/distributer-dashboard';
       default:

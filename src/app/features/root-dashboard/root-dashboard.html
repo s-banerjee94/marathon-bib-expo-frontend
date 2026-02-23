@@ -13,7 +13,27 @@
   <div class="max-w-7xl mx-auto px-6 py-6 space-y-6">
     <!-- ── Stats Row ── -->
     <section>
-      <h2 class="text-lg font-semibold mb-3">System Overview</h2>
+      <div class="flex items-center justify-between mb-3">
+        <h2 class="text-lg font-semibold">System Overview</h2>
+        <div class="flex items-center gap-3">
+          @if (statsRefreshedAt()) {
+            <span class="text-xs hidden sm:block">
+              Updated {{ statsRefreshedAt() | date: 'medium' }}
+            </span>
+          }
+          <p-button
+            icon="pi pi-refresh"
+            [outlined]="true"
+            size="small"
+            [loading]="isRefreshingStats()"
+            [disabled]="isLoadingStats()"
+            (onClick)="refreshStats()"
+            pTooltip="Force-refresh statistics snapshot"
+            tooltipPosition="left"
+          ></p-button>
+        </div>
+      </div>
+
       <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
         <!-- Total Users -->
         <p-card class="text-center">
@@ -25,6 +45,20 @@
               <i class="pi pi-users text-3xl mb-2 block"></i>
               <p class="text-3xl font-bold">{{ totalUsers() }}</p>
               <p class="text-xs font-medium mt-1 uppercase tracking-wide">Total Users</p>
+            </div>
+          }
+        </p-card>
+
+        <!-- Active Users -->
+        <p-card class="text-center">
+          @if (isLoadingStats()) {
+            <p-skeleton height="2rem" class="mb-2"></p-skeleton>
+            <p-skeleton height="1rem" width="60%" class="mx-auto"></p-skeleton>
+          } @else {
+            <div class="py-2">
+              <i class="pi pi-check-circle text-3xl mb-2 block"></i>
+              <p class="text-3xl font-bold">{{ activeUsers() }}</p>
+              <p class="text-xs font-medium mt-1 uppercase tracking-wide">Active Users</p>
             </div>
           }
         </p-card>
@@ -53,20 +87,6 @@
               <i class="pi pi-calendar text-3xl mb-2 block"></i>
               <p class="text-3xl font-bold">{{ totalEvents() }}</p>
               <p class="text-xs font-medium mt-1 uppercase tracking-wide">Total Events</p>
-            </div>
-          }
-        </p-card>
-
-        <!-- Active Events -->
-        <p-card class="text-center">
-          @if (isLoadingStats()) {
-            <p-skeleton height="2rem" class="mb-2"></p-skeleton>
-            <p-skeleton height="1rem" width="60%" class="mx-auto"></p-skeleton>
-          } @else {
-            <div class="py-2">
-              <i class="pi pi-play-circle text-3xl mb-2 block"></i>
-              <p class="text-3xl font-bold">{{ activeEvents() }}</p>
-              <p class="text-xs font-medium mt-1 uppercase tracking-wide">Active Events</p>
             </div>
           }
         </p-card>
@@ -101,11 +121,11 @@
       </div>
     </section>
 
-    <!-- ── Chart + Quick Actions ── -->
+    <!-- ── Charts Row 1: Role + Event Status ── -->
     <section class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-      <!-- Role Distribution Chart -->
+      <!-- User Role Distribution -->
       <p-card header="User Role Distribution">
-        @if (isLoadingRoleChart()) {
+        @if (isLoadingStats()) {
           <div class="flex justify-center items-center" style="height: 240px">
             <p-skeleton shape="circle" size="200px"></p-skeleton>
           </div>
@@ -113,13 +133,90 @@
           <p-chart
             type="doughnut"
             [data]="roleChartData()!"
-            [options]="roleChartOptions"
+            [options]="chartOptions"
+            style="height: 240px"
             class="w-full"
           ></p-chart>
+        } @else {
+          <div class="flex flex-col items-center justify-center py-12 gap-2">
+            <i class="pi pi-chart-pie text-4xl opacity-30"></i>
+            <p class="text-sm">No role data available</p>
+          </div>
         }
       </p-card>
 
-      <!-- Quick Actions -->
+      <!-- Event Status Distribution -->
+      <p-card header="Event Status Distribution">
+        @if (isLoadingStats()) {
+          <div class="flex justify-center items-center" style="height: 240px">
+            <p-skeleton shape="circle" size="200px"></p-skeleton>
+          </div>
+        } @else if (eventStatusChartData()) {
+          <p-chart
+            type="doughnut"
+            [data]="eventStatusChartData()!"
+            [options]="chartOptions"
+            style="height: 240px"
+            class="w-full"
+          ></p-chart>
+        } @else {
+          <div class="flex flex-col items-center justify-center py-12 gap-2">
+            <i class="pi pi-calendar text-4xl opacity-30"></i>
+            <p class="text-sm">No event data available</p>
+          </div>
+        }
+      </p-card>
+    </section>
+
+    <!-- ── Charts Row 2: Org by Tier + Org by Status ── -->
+    <section class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <!-- Org by Subscription Tier -->
+      <p-card header="Organizations by Subscription Tier">
+        @if (isLoadingStats()) {
+          <div class="flex justify-center items-center" style="height: 240px">
+            <p-skeleton shape="circle" size="200px"></p-skeleton>
+          </div>
+        } @else if (orgTierChartData() && orgTierChartData()!.labels.length > 0) {
+          <p-chart
+            type="doughnut"
+            [data]="orgTierChartData()!"
+            [options]="chartOptions"
+            style="height: 240px"
+            class="w-full"
+          ></p-chart>
+        } @else {
+          <div class="flex flex-col items-center justify-center py-12 gap-2">
+            <i class="pi pi-building text-4xl opacity-30"></i>
+            <p class="text-sm">No subscription tier data</p>
+          </div>
+        }
+      </p-card>
+
+      <!-- Org by Subscription Status -->
+      <p-card header="Organizations by Subscription Status">
+        @if (isLoadingStats()) {
+          <div class="flex justify-center items-center" style="height: 240px">
+            <p-skeleton shape="circle" size="200px"></p-skeleton>
+          </div>
+        } @else if (orgStatusChartData() && orgStatusChartData()!.labels.length > 0) {
+          <p-chart
+            type="doughnut"
+            [data]="orgStatusChartData()!"
+            [options]="chartOptions"
+            style="height: 240px"
+            class="w-full"
+          ></p-chart>
+        } @else {
+          <div class="flex flex-col items-center justify-center py-12 gap-2">
+            <i class="pi pi-building text-4xl opacity-30"></i>
+            <p class="text-sm">No subscription status data</p>
+          </div>
+        }
+      </p-card>
+    </section>
+
+    <!-- ── Quick Actions ── -->
+    <section>
       <p-card header="Quick Actions">
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <p-button

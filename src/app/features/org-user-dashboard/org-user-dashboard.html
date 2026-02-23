@@ -1,0 +1,441 @@
+<div class="min-h-screen">
+  <!-- ── Header ── -->
+  <div class="px-6 py-5 shadow-sm">
+    <div
+      class="max-w-7xl mx-auto flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2"
+    >
+      <div>
+        <h1 class="text-2xl font-bold tracking-tight">Organizer Dashboard</h1>
+        <p class="text-sm mt-0.5">
+          Welcome back,
+          <span class="font-semibold">{{ user()?.fullName || user()?.username }}</span>
+          @if (organization(); as org) {
+            &nbsp;&mdash;&nbsp;
+            <span class="font-medium">{{ org.organizerName }}</span>
+          }
+        </p>
+      </div>
+      @if (!isLoadingOrg() && organization(); as org) {
+        @if (org.subscriptionTier) {
+          <p-tag
+            [value]="org.subscriptionTier"
+            severity="info"
+            [rounded]="true"
+            styleClass="text-xs uppercase tracking-widest"
+          ></p-tag>
+        }
+      }
+    </div>
+  </div>
+
+  <div class="max-w-7xl mx-auto px-6 py-6 space-y-6">
+    <!-- ── Event Stat Cards ── -->
+    <section aria-label="Event overview">
+      <h2 class="text-base font-semibold uppercase tracking-wide mb-3">Event Overview</h2>
+      <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+        <p-card styleClass="text-center">
+          @if (isLoadingStats()) {
+            <p-skeleton height="2rem" styleClass="mb-2"></p-skeleton>
+            <p-skeleton height="0.75rem" width="60%" styleClass="mx-auto"></p-skeleton>
+          } @else {
+            <div class="py-1">
+              <i class="pi pi-calendar text-3xl mb-2 block" aria-hidden="true"></i>
+              <p class="text-3xl font-bold">{{ totalEvents() }}</p>
+              <p class="text-xs font-medium mt-1 uppercase tracking-wide">Total</p>
+            </div>
+          }
+        </p-card>
+
+        <p-card styleClass="text-center">
+          @if (isLoadingStats()) {
+            <p-skeleton height="2rem" styleClass="mb-2"></p-skeleton>
+            <p-skeleton height="0.75rem" width="60%" styleClass="mx-auto"></p-skeleton>
+          } @else {
+            <div class="py-1">
+              <i class="pi pi-play-circle text-3xl mb-2 block" aria-hidden="true"></i>
+              <p class="text-3xl font-bold">{{ activeEvents() }}</p>
+              <p class="text-xs font-medium mt-1 uppercase tracking-wide">Published</p>
+            </div>
+          }
+        </p-card>
+
+        <p-card styleClass="text-center">
+          @if (isLoadingStats()) {
+            <p-skeleton height="2rem" styleClass="mb-2"></p-skeleton>
+            <p-skeleton height="0.75rem" width="60%" styleClass="mx-auto"></p-skeleton>
+          } @else {
+            <div class="py-1">
+              <i class="pi pi-clock text-3xl mb-2 block" aria-hidden="true"></i>
+              <p class="text-3xl font-bold">{{ upcomingEvents() }}</p>
+              <p class="text-xs font-medium mt-1 uppercase tracking-wide">Upcoming</p>
+            </div>
+          }
+        </p-card>
+
+        <p-card styleClass="text-center">
+          @if (isLoadingStats()) {
+            <p-skeleton height="2rem" styleClass="mb-2"></p-skeleton>
+            <p-skeleton height="0.75rem" width="60%" styleClass="mx-auto"></p-skeleton>
+          } @else {
+            <div class="py-1">
+              <i class="pi pi-pencil text-3xl mb-2 block" aria-hidden="true"></i>
+              <p class="text-3xl font-bold">{{ draftEvents() }}</p>
+              <p class="text-xs font-medium mt-1 uppercase tracking-wide">Draft</p>
+            </div>
+          }
+        </p-card>
+
+        <p-card styleClass="text-center">
+          @if (isLoadingStats()) {
+            <p-skeleton height="2rem" styleClass="mb-2"></p-skeleton>
+            <p-skeleton height="0.75rem" width="60%" styleClass="mx-auto"></p-skeleton>
+          } @else {
+            <div class="py-1">
+              <i class="pi pi-check-circle text-3xl mb-2 block" aria-hidden="true"></i>
+              <p class="text-3xl font-bold">{{ completedEvents() }}</p>
+              <p class="text-xs font-medium mt-1 uppercase tracking-wide">Completed</p>
+            </div>
+          }
+        </p-card>
+
+        <p-card styleClass="text-center">
+          @if (isLoadingStats()) {
+            <p-skeleton height="2rem" styleClass="mb-2"></p-skeleton>
+            <p-skeleton height="0.75rem" width="60%" styleClass="mx-auto"></p-skeleton>
+          } @else {
+            <div class="py-1">
+              <i class="pi pi-times-circle text-3xl mb-2 block" aria-hidden="true"></i>
+              <p class="text-3xl font-bold">{{ cancelledEvents() }}</p>
+              <p class="text-xs font-medium mt-1 uppercase tracking-wide">Cancelled</p>
+            </div>
+          }
+        </p-card>
+      </div>
+    </section>
+
+    <!-- ── Charts: Event Status + Team Role ── -->
+    <section class="grid grid-cols-1 lg:grid-cols-2 gap-4" aria-label="Statistics charts">
+      <!-- Event Status Distribution -->
+      <p-card header="Event Status Distribution">
+        @if (isLoadingStats()) {
+          <div class="flex justify-center items-center" style="height: 260px">
+            <p-skeleton shape="circle" size="200px"></p-skeleton>
+          </div>
+        } @else if (eventStatusChart()) {
+          <p-chart
+            type="doughnut"
+            [data]="eventStatusChart()!"
+            [options]="chartOptions"
+            style="height: 260px"
+            class="w-full"
+            aria-label="Doughnut chart showing event status distribution"
+          ></p-chart>
+        } @else {
+          <div class="flex flex-col items-center justify-center py-16 gap-2">
+            <i class="pi pi-calendar text-4xl opacity-30" aria-hidden="true"></i>
+            <p class="text-sm">No event data available</p>
+          </div>
+        }
+      </p-card>
+
+      <!-- Team Role Distribution -->
+      <p-card header="Team Role Distribution">
+        @if (isLoadingStats()) {
+          <div class="flex justify-center items-center" style="height: 260px">
+            <p-skeleton shape="circle" size="200px"></p-skeleton>
+          </div>
+        } @else if (userRoleChart()) {
+          <p-chart
+            type="doughnut"
+            [data]="userRoleChart()!"
+            [options]="chartOptions"
+            style="height: 260px"
+            class="w-full"
+            aria-label="Doughnut chart showing team role distribution"
+          ></p-chart>
+        } @else {
+          <div class="flex flex-col items-center justify-center py-16 gap-2">
+            <i class="pi pi-users text-4xl opacity-30" aria-hidden="true"></i>
+            <p class="text-sm">No team data available</p>
+          </div>
+        }
+      </p-card>
+    </section>
+
+    <!-- ── Organization Details + Capacity ── -->
+    <section class="grid grid-cols-1 lg:grid-cols-2 gap-4" aria-label="Organization details">
+      <!-- Organization Details -->
+      <p-card>
+        <ng-template pTemplate="header">
+          <div class="flex items-center justify-between px-4 pt-4">
+            <span class="font-semibold text-base">Organization Details</span>
+            @if (!isLoadingOrg() && organization(); as org) {
+              <p-tag
+                [value]="org.enabled ? 'Active' : 'Inactive'"
+                [severity]="org.enabled ? 'success' : 'danger'"
+                [rounded]="true"
+                styleClass="text-xs"
+              ></p-tag>
+            }
+          </div>
+        </ng-template>
+
+        @if (isLoadingOrg()) {
+          <div class="space-y-3">
+            @for (i of [1, 2, 3, 4, 5, 6]; track i) {
+              <p-skeleton height="1.25rem" [width]="i % 2 === 0 ? '70%' : '100%'"></p-skeleton>
+            }
+          </div>
+        } @else if (organization(); as org) {
+          <div class="space-y-4 text-sm">
+            <!-- Name & Contact -->
+            <div class="grid grid-cols-[auto_1fr] gap-x-3 gap-y-2 items-center">
+              <i class="pi pi-building opacity-60" aria-hidden="true"></i>
+              <span class="font-medium">{{ org.organizerName }}</span>
+
+              <i class="pi pi-envelope opacity-60" aria-hidden="true"></i>
+              <a [href]="'mailto:' + org.email" class="hover:underline">{{ org.email }}</a>
+
+              @if (org.phoneNumber) {
+                <i class="pi pi-phone opacity-60" aria-hidden="true"></i>
+                <span>{{ org.phoneNumber }}</span>
+              }
+
+              @if (org.website) {
+                <i class="pi pi-globe opacity-60" aria-hidden="true"></i>
+                <a
+                  [href]="org.website"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="hover:underline truncate"
+                >
+                  {{ org.website }}
+                </a>
+              }
+
+              @if (org.billingEmail) {
+                <i class="pi pi-credit-card opacity-60" aria-hidden="true"></i>
+                <span>{{ org.billingEmail }}</span>
+              }
+            </div>
+
+            <p-divider styleClass="my-0"></p-divider>
+
+            <!-- Address -->
+            @if (org.addressLine1 || org.city || org.country) {
+              <div>
+                <p class="font-semibold mb-1.5 flex items-center gap-2">
+                  <i class="pi pi-map-marker opacity-60" aria-hidden="true"></i> Address
+                </p>
+                <div class="pl-5 space-y-0.5 opacity-80">
+                  @if (org.addressLine1) {
+                    <p>{{ org.addressLine1 }}</p>
+                  }
+                  @if (org.addressLine2) {
+                    <p>{{ org.addressLine2 }}</p>
+                  }
+                  @if (org.city || org.stateProvince || org.postalCode) {
+                    <p>{{ cityLine(org) }}</p>
+                  }
+                  @if (org.country) {
+                    <p>{{ org.country }}</p>
+                  }
+                </div>
+              </div>
+              <p-divider styleClass="my-0"></p-divider>
+            }
+
+            <!-- Subscription -->
+            <div>
+              <p class="font-semibold mb-2 flex items-center gap-2">
+                <i class="pi pi-star opacity-60" aria-hidden="true"></i> Subscription
+              </p>
+              <div class="pl-5 grid grid-cols-2 gap-x-4 gap-y-1.5">
+                @if (org.subscriptionTier) {
+                  <span class="opacity-60">Tier</span>
+                  <span class="font-medium">{{ org.subscriptionTier }}</span>
+                }
+                @if (org.subscriptionStatus) {
+                  <span class="opacity-60">Status</span>
+                  <span class="font-medium">{{ org.subscriptionStatus }}</span>
+                }
+                @if (org.subscriptionStartDate) {
+                  <span class="opacity-60">Start</span>
+                  <span>{{ org.subscriptionStartDate | date: 'mediumDate' }}</span>
+                }
+                @if (org.subscriptionEndDate) {
+                  <span class="opacity-60">Expires</span>
+                  <span>{{ org.subscriptionEndDate | date: 'mediumDate' }}</span>
+                }
+              </div>
+            </div>
+
+            <!-- Legal IDs -->
+            @if (org.taxId || org.registrationNumber) {
+              <p-divider styleClass="my-0"></p-divider>
+              <div>
+                <p class="font-semibold mb-2 flex items-center gap-2">
+                  <i class="pi pi-id-card opacity-60" aria-hidden="true"></i> Legal
+                </p>
+                <div class="pl-5 grid grid-cols-2 gap-x-4 gap-y-1.5">
+                  @if (org.taxId) {
+                    <span class="opacity-60">Tax ID</span>
+                    <span>{{ org.taxId }}</span>
+                  }
+                  @if (org.registrationNumber) {
+                    <span class="opacity-60">Reg. No.</span>
+                    <span>{{ org.registrationNumber }}</span>
+                  }
+                </div>
+              </div>
+            }
+          </div>
+        }
+      </p-card>
+
+      <!-- Team Capacity & Statistics -->
+      <div class="flex flex-col gap-4">
+        <!-- Team Counts -->
+        <p-card>
+          <ng-template pTemplate="header">
+            <div class="flex items-center justify-between px-4 pt-4">
+              <span class="font-semibold text-base">Team Statistics</span>
+              @if (statsRefreshedAt()) {
+                <span class="text-xs opacity-60">
+                  Updated {{ statsRefreshedAt() | date: 'shortTime' }}
+                </span>
+              }
+            </div>
+          </ng-template>
+
+          @if (isLoadingStats()) {
+            <div class="grid grid-cols-3 gap-3">
+              <p-skeleton height="4rem"></p-skeleton>
+              <p-skeleton height="4rem"></p-skeleton>
+              <p-skeleton height="4rem"></p-skeleton>
+            </div>
+          } @else {
+            <div class="grid grid-cols-3 gap-3 text-center">
+              <div class="py-2">
+                <p class="text-2xl font-bold">{{ totalOrgUsers() }}</p>
+                <p class="text-xs font-medium mt-1 uppercase tracking-wide opacity-70">Members</p>
+              </div>
+              <div class="py-2">
+                <p class="text-2xl font-bold">{{ activeOrgUsers() }}</p>
+                <p class="text-xs font-medium mt-1 uppercase tracking-wide opacity-70">Active</p>
+              </div>
+              <div class="py-2">
+                <p class="text-2xl font-bold">{{ totalDistributors() }}</p>
+                <p class="text-xs font-medium mt-1 uppercase tracking-wide opacity-70">
+                  Distributors
+                </p>
+              </div>
+            </div>
+          }
+        </p-card>
+
+        <!-- Capacity Bars -->
+        <p-card header="Capacity">
+          @if (isLoadingStats() || isLoadingOrg()) {
+            <div class="space-y-4">
+              <p-skeleton height="1rem" styleClass="mb-2"></p-skeleton>
+              <p-skeleton height="0.5rem"></p-skeleton>
+              <p-skeleton height="1rem" styleClass="mb-2 mt-4"></p-skeleton>
+              <p-skeleton height="0.5rem"></p-skeleton>
+            </div>
+          } @else {
+            <div class="space-y-5">
+              <!-- Team Members capacity -->
+              <div>
+                <div class="flex justify-between items-center mb-2">
+                  <span class="text-sm font-medium flex items-center gap-2">
+                    <i class="pi pi-users text-sm" aria-hidden="true"></i> Team Members
+                  </span>
+                  <span class="text-sm font-bold">
+                    {{ totalOrgUsers() }} / {{ organization()?.maxOrganizerUsers ?? '—' }}
+                  </span>
+                </div>
+                <p-progressBar
+                  [value]="userCapacityPercent()"
+                  [showValue]="false"
+                  [style]="{ height: '8px' }"
+                  [attr.aria-label]="
+                    'Team members: ' +
+                    totalOrgUsers() +
+                    ' of ' +
+                    (organization()?.maxOrganizerUsers ?? 0)
+                  "
+                ></p-progressBar>
+                <p class="text-xs mt-1 opacity-60">{{ userCapacityPercent() }}% used</p>
+              </div>
+
+              <p-divider styleClass="my-0"></p-divider>
+
+              <!-- Distributors capacity -->
+              <div>
+                <div class="flex justify-between items-center mb-2">
+                  <span class="text-sm font-medium flex items-center gap-2">
+                    <i class="pi pi-id-card text-sm" aria-hidden="true"></i> Distributors
+                  </span>
+                  <span class="text-sm font-bold">
+                    {{ totalDistributors() }} / {{ organization()?.maxDistributors ?? '—' }}
+                  </span>
+                </div>
+                <p-progressBar
+                  [value]="distributorCapacityPercent()"
+                  [showValue]="false"
+                  [style]="{ height: '8px' }"
+                  [attr.aria-label]="
+                    'Distributors: ' +
+                    totalDistributors() +
+                    ' of ' +
+                    (organization()?.maxDistributors ?? 0)
+                  "
+                ></p-progressBar>
+                <p class="text-xs mt-1 opacity-60">{{ distributorCapacityPercent() }}% used</p>
+              </div>
+            </div>
+          }
+        </p-card>
+      </div>
+    </section>
+
+    <!-- ── Quick Actions ── -->
+    <section aria-label="Quick actions">
+      <p-card header="Quick Actions">
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <p-button
+            label="Create Event"
+            icon="pi pi-plus-circle"
+            [outlined]="true"
+            styleClass="w-full"
+            (onClick)="goToCreateEvent()"
+          ></p-button>
+          <p-button
+            label="View All Events"
+            icon="pi pi-calendar"
+            [outlined]="true"
+            styleClass="w-full"
+            (onClick)="goToEvents()"
+          ></p-button>
+          <p-button
+            label="Participants"
+            icon="pi pi-list"
+            [outlined]="true"
+            styleClass="w-full"
+            (onClick)="goToParticipants()"
+          ></p-button>
+        </div>
+      </p-card>
+    </section>
+
+    <!-- ── Recent Events ── -->
+    <section aria-label="Recent events">
+      <app-recent-events
+        [events]="recentEvents()"
+        [isLoading]="isLoadingRecentEvents()"
+        (viewAll)="goToEvents()"
+      ></app-recent-events>
+    </section>
+  </div>
+</div>
