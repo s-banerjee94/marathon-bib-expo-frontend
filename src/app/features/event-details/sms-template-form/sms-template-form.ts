@@ -47,6 +47,7 @@ export class SmsTemplateForm implements OnInit {
     const template = this.smsTemplate();
 
     this.smsTemplateForm = this.fb.group({
+      name: [template?.name || '', [Validators.required, Validators.maxLength(100)]],
       smsTemplateId: [
         template?.smsTemplateId || '',
         [

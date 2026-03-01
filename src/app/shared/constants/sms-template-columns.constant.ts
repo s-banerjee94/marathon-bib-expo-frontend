@@ -5,6 +5,7 @@ import { TableColumn } from '../models/table-config.model';
  */
 export const SMS_TEMPLATE_COLUMNS: TableColumn[] = [
   { field: 'id', header: 'ID' },
+  { field: 'name', header: 'Name' },
   { field: 'smsTemplateId', header: 'DLT Template ID' },
   { field: 'template', header: 'Template' },
   { field: 'note', header: 'Note' },
@@ -21,11 +22,22 @@ export const SMS_TEMPLATE_COLUMNS: TableColumn[] = [
  * Default visible SMS template columns
  */
 export const DEFAULT_SMS_TEMPLATE_COLUMNS = [
+  'id',
+  'name',
   'smsTemplateId',
   'template',
-  'enabled',
+  'note',
   'scheduledDateTime',
-  'createdAt',
+  'enabled',
+];
+
+/**
+ * Status filter options for SMS template table
+ */
+export const SMS_TEMPLATE_STATUS_OPTIONS = [
+  { label: 'All', value: null },
+  { label: 'Active', value: true },
+  { label: 'Inactive', value: false },
 ];
 
 /**

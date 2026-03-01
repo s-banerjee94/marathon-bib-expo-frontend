@@ -1,0 +1,78 @@
+@if (template(); as t) {
+  <div class="flex flex-col gap-4">
+    <!-- Status & ID -->
+    <div class="flex items-center justify-between">
+      <div class="flex flex-col gap-1">
+        <span class="text-xs font-medium uppercase tracking-wide">ID</span>
+        <span class="font-mono">{{ t.id }}</span>
+      </div>
+      <p-tag
+        [value]="t.enabled ? 'Active' : 'Inactive'"
+        [severity]="t.enabled ? 'success' : 'danger'"
+        [rounded]="true"
+      />
+    </div>
+
+    <p-divider styleClass="my-0" />
+
+    <!-- DLT Template ID -->
+    <div class="flex flex-col gap-1">
+      <span class="text-xs font-medium uppercase tracking-wide">DLT Template ID</span>
+      <span class="font-mono">{{ t.smsTemplateId }}</span>
+    </div>
+
+    <!-- Template Text -->
+    <div class="flex flex-col gap-2">
+      <span class="text-xs font-medium uppercase tracking-wide">Template Text</span>
+      <div class="rounded border p-3 font-mono text-sm leading-relaxed whitespace-pre-wrap">
+        {{ t.template }}
+      </div>
+    </div>
+
+    <!-- Note -->
+    @if (t.note) {
+      <div class="flex flex-col gap-1">
+        <span class="text-xs font-medium uppercase tracking-wide">Note</span>
+        <span class="text-sm">{{ t.note }}</span>
+      </div>
+    }
+
+    <!-- Scheduled Date/Time -->
+    <div class="flex flex-col gap-1">
+      <span class="text-xs font-medium uppercase tracking-wide">Scheduled Date & Time</span>
+      <span class="text-sm">{{ t.scheduledDateTime | formatDateTime | defaultValue }}</span>
+    </div>
+
+    <p-divider styleClass="my-0" />
+
+    <!-- Audit Info -->
+    <div class="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
+      <div class="flex flex-col gap-1">
+        <span class="text-xs font-medium uppercase tracking-wide">Event</span>
+        <span>{{ t.eventName | defaultValue }}</span>
+      </div>
+      <div></div>
+      <div class="flex flex-col gap-1">
+        <span class="text-xs font-medium uppercase tracking-wide">Created At</span>
+        <span>{{ t.createdAt | formatDateTime | defaultValue }}</span>
+      </div>
+      <div class="flex flex-col gap-1">
+        <span class="text-xs font-medium uppercase tracking-wide">Updated At</span>
+        <span>{{ t.updatedAt | formatDateTime | defaultValue }}</span>
+      </div>
+      <div class="flex flex-col gap-1">
+        <span class="text-xs font-medium uppercase tracking-wide">Created By</span>
+        <span>{{ t.createdBy | defaultValue }}</span>
+      </div>
+      <div class="flex flex-col gap-1">
+        <span class="text-xs font-medium uppercase tracking-wide">Last Modified By</span>
+        <span>{{ t.lastModifiedBy | defaultValue }}</span>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="flex justify-end border-t pt-3">
+      <p-button label="Close" severity="secondary" [outlined]="true" (onClick)="onClose()" />
+    </div>
+  </div>
+}

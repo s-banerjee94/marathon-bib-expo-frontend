@@ -20,7 +20,7 @@ import { CreateCategoryRequest, UpdateCategoryRequest } from '../../../core/mode
 import { TableColumn } from '../../../shared/models/table-config.model';
 import { CATEGORY_COLUMNS } from '../../../shared/constants/category-columns.constant';
 import { STORAGE_KEYS } from '../../../shared/constants/storage-keys.constant';
-import { FORM_INPUT_SIZE } from '../../../shared/constants/form.constants';
+import { BUTTON_SIZE, FORM_INPUT_SIZE } from '../../../shared/constants/form.constants';
 import {
   initializeColumnPreferences,
   saveColumnPreferences,
@@ -64,6 +64,7 @@ export class CategorySection {
   cols = signal<TableColumn[]>([]);
   selectedCols = signal<TableColumn[]>([]);
   readonly inputSize = FORM_INPUT_SIZE;
+  readonly buttonSize = BUTTON_SIZE;
 
   private dialogRef: DynamicDialogRef | null = null;
 

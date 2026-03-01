@@ -20,7 +20,7 @@ import { TableRowSelectEvent } from 'primeng/table';
 import { TableColumn } from '../../../shared/models/table-config.model';
 import { RACE_COLUMNS } from '../../../shared/constants/race-columns.constant';
 import { STORAGE_KEYS } from '../../../shared/constants/storage-keys.constant';
-import { FORM_INPUT_SIZE } from '../../../shared/constants/form.constants';
+import { BUTTON_SIZE, FORM_INPUT_SIZE } from '../../../shared/constants/form.constants';
 import {
   initializeColumnPreferences,
   saveColumnPreferences,
@@ -64,6 +64,7 @@ export class RaceSection implements OnInit {
   cols = signal<TableColumn[]>([]);
   selectedCols = signal<TableColumn[]>([]);
   readonly inputSize = FORM_INPUT_SIZE;
+  readonly buttonSize = BUTTON_SIZE;
 
   private dialogRef: DynamicDialogRef | null = null;
 

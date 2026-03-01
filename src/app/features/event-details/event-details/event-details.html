@@ -35,6 +35,7 @@
             icon="pi pi-pencil"
             label="Edit Event"
             severity="secondary"
+            [size]="buttonSize"
             (onClick)="onEditEvent()"
           />
 
@@ -44,6 +45,7 @@
             label="Change Status"
             severity="secondary"
             [outlined]="true"
+            [size]="buttonSize"
             [loading]="changingStatus()"
             (onClick)="showStatusMenu(statusMenu, $event)"
           />

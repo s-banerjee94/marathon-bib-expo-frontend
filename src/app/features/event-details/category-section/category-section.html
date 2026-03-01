@@ -30,6 +30,7 @@
       <p-button
         label="Create Category"
         icon="pi pi-plus"
+        [size]="buttonSize"
         (onClick)="onCreate()"
         [disabled]="!canLoadCategories() || isLoading()"
       />
@@ -51,6 +52,7 @@
       [loading]="isLoading()"
       dataKey="id"
       [tableStyle]="{ 'min-width': '50rem' }"
+      [size]="inputSize"
     >
       <ng-template pTemplate="header">
         <tr>

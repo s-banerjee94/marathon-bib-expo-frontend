@@ -24,6 +24,7 @@ import {
   getEventStatusSeverity,
 } from '../../../shared/utils/event-status.utils';
 import { EventForm } from '../../event-form/event-form';
+import { BUTTON_SIZE } from '../../../shared/constants/form.constants';
 
 @Component({
   selector: 'app-event-details',
@@ -67,6 +68,7 @@ export class EventDetails implements OnInit {
   EventStatus = EventStatus;
   getStatusSeverity = getEventStatusSeverity;
   getStatusLabel = getEventStatusLabel;
+  readonly buttonSize = BUTTON_SIZE;
 
   ngOnInit(): void {
     const id = this.route.snapshot.paramMap.get('id');

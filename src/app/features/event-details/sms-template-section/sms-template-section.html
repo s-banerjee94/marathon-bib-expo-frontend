@@ -20,19 +20,79 @@
       <p-button
         label="Create SMS Template"
         icon="pi pi-plus"
+        [size]="buttonSize"
         (onClick)="onCreate()"
         [disabled]="isLoading()"
       />
     </div>
   </div>
 
+  <!-- Filters -->
+  <div class="flex flex-wrap items-center gap-3">
+    <!-- Search -->
+    <p-iconfield>
+      <p-inputicon class="pi pi-search" />
+      <input
+        pInputText
+        [pSize]="inputSize"
+        placeholder="Search templates..."
+        [ngModel]="searchTerm()"
+        (ngModelChange)="onSearchInput($event)"
+      />
+    </p-iconfield>
+
+    <!-- Status Filter -->
+    <p-select
+      [options]="statusOptions"
+      [(ngModel)]="filterEnabled"
+      (ngModelChange)="onFilterChange()"
+      optionLabel="label"
+      optionValue="value"
+      placeholder="Status"
+      [size]="inputSize"
+      [style]="{ 'min-width': '9rem' }"
+    />
+
+    <!-- From Date -->
+    <p-datepicker
+      [(ngModel)]="filterFromDate"
+      (ngModelChange)="onFilterChange()"
+      placeholder="From Date"
+      [showButtonBar]="true"
+      dateFormat="M dd, yy"
+      [size]="inputSize"
+    />
+
+    <!-- To Date -->
+    <p-datepicker
+      [(ngModel)]="filterToDate"
+      (ngModelChange)="onFilterChange()"
+      placeholder="To Date"
+      [showButtonBar]="true"
+      dateFormat="M dd, yy"
+      [size]="inputSize"
+    />
+
+    <!-- Clear Filters -->
+    @if (hasActiveFilters()) {
+      <p-button
+        icon="pi pi-filter-slash"
+        label="Clear"
+        severity="secondary"
+        [text]="true"
+        [size]="buttonSize"
+        (onClick)="onClearFilters()"
+        pTooltip="Clear all filters"
+      />
+    }
+  </div>
+
   <!-- Table -->
   <p-table
-    [value]="smsTemplates()"
-    [loading]="isLoading()"
+    [value]="displayData()"
     dataKey="id"
     [tableStyle]="{ 'min-width': '50rem' }"
-    styleClass="p-datatable-sm"
+    [size]="inputSize"
   >
     <ng-template pTemplate="header">
       <tr>
@@ -45,85 +105,109 @@
 
     <ng-template pTemplate="body" let-template>
       <tr>
-        @for (col of selectedCols(); track col.field) {
+        @if (isLoading()) {
+          @for (col of selectedCols(); track col.field) {
+            <td><p-skeleton /></td>
+          }
+          <td><p-skeleton height="2rem" width="6rem" /></td>
+        } @else {
+          @for (col of selectedCols(); track col.field) {
+            <td>
+              @switch (col.field) {
+                @case ('id') {
+                  {{ template.id }}
+                }
+                @case ('name') {
+                  {{ template.name | defaultValue }}
+                }
+                @case ('smsTemplateId') {
+                  {{ template.smsTemplateId }}
+                }
+                @case ('template') {
+                  <div class="max-w-md truncate" [title]="template.template">
+                    {{ truncateText(template.template, 40) }}
+                  </div>
+                }
+                @case ('note') {
+                  <div class="max-w-xs truncate" [title]="template.note">
+                    {{ template.note | defaultValue }}
+                  </div>
+                }
+                @case ('scheduledDateTime') {
+                  {{ template.scheduledDateTime | formatDateTime }}
+                }
+                @case ('enabled') {
+                  <div class="text-center">
+                    @if (togglingTemplateId() === template.id) {
+                      <p-skeleton height="1.5rem" width="5rem" />
+                    } @else {
+                      <p-tag
+                        (click)="onToggleStatus($event, template)"
+                        [value]="template.enabled ? 'Active' : 'Inactive'"
+                        [severity]="template.enabled ? 'success' : 'danger'"
+                        [rounded]="true"
+                        [pt]="{
+                          root: { class: 'cursor-pointer hover:opacity-80 transition-opacity' },
+                        }"
+                        pTooltip="Click to toggle status"
+                        tooltipPosition="top"
+                      />
+                    }
+                  </div>
+                }
+                @case ('eventName') {
+                  {{ template.eventName | defaultValue }}
+                }
+                @case ('createdAt') {
+                  {{ template.createdAt | formatDateTime }}
+                }
+                @case ('updatedAt') {
+                  {{ template.updatedAt | formatDateTime }}
+                }
+                @case ('createdBy') {
+                  {{ template.createdBy | defaultValue }}
+                }
+                @case ('lastModifiedBy') {
+                  {{ template.lastModifiedBy | defaultValue }}
+                }
+              }
+            </td>
+          }
           <td>
-            @switch (col.field) {
-              @case ('id') {
-                {{ template.id }}
-              }
-              @case ('smsTemplateId') {
-                {{ template.smsTemplateId }}
-              }
-              @case ('template') {
-                <div class="max-w-md truncate" [title]="template.template">
-                  {{ truncateText(template.template, 60) }}
-                </div>
-              }
-              @case ('note') {
-                <div class="max-w-xs truncate" [title]="template.note">
-                  {{ template.note | defaultValue }}
-                </div>
-              }
-              @case ('scheduledDateTime') {
-                {{ template.scheduledDateTime | formatDateTime }}
-              }
-              @case ('enabled') {
-                <div class="text-center">
-                  <p-tag
-                    [value]="template.enabled ? 'Active' : 'Inactive'"
-                    [severity]="template.enabled ? 'success' : 'danger'"
-                  />
-                </div>
-              }
-              @case ('eventName') {
-                {{ template.eventName | defaultValue }}
-              }
-              @case ('createdAt') {
-                {{ template.createdAt | formatDateTime }}
-              }
-              @case ('updatedAt') {
-                {{ template.updatedAt | formatDateTime }}
-              }
-              @case ('createdBy') {
-                {{ template.createdBy | defaultValue }}
-              }
-              @case ('lastModifiedBy') {
-                {{ template.lastModifiedBy | defaultValue }}
-              }
-            }
+            <div class="flex gap-1">
+              <p-button
+                icon="pi pi-eye"
+                [text]="true"
+                [rounded]="true"
+                severity="secondary"
+                size="small"
+                (onClick)="onViewTemplate(template)"
+                pTooltip="View Details"
+                tooltipPosition="top"
+              />
+              <p-button
+                icon="pi pi-pencil"
+                [text]="true"
+                [rounded]="true"
+                severity="info"
+                size="small"
+                (onClick)="onEdit(template)"
+                pTooltip="Edit"
+                tooltipPosition="top"
+              />
+              <p-button
+                icon="pi pi-trash"
+                [text]="true"
+                [rounded]="true"
+                severity="danger"
+                size="small"
+                (onClick)="onDelete(template, $event)"
+                pTooltip="Delete"
+                tooltipPosition="top"
+              />
+            </div>
           </td>
         }
-        <td>
-          <div class="flex gap-1">
-            <p-button
-              icon="pi pi-pencil"
-              [text]="true"
-              [rounded]="true"
-              severity="info"
-              size="small"
-              (onClick)="onEdit(template)"
-              pTooltip="Edit"
-            />
-            <p-button
-              [icon]="template.enabled ? 'pi pi-eye-slash' : 'pi pi-eye'"
-              [text]="true"
-              [rounded]="true"
-              [severity]="template.enabled ? 'warn' : 'success'"
-              size="small"
-              (onClick)="onToggleStatus(template)"
-              [pTooltip]="template.enabled ? 'Disable' : 'Enable'"
-            />
-            <p-button
-              icon="pi pi-trash"
-              [text]="true"
-              [rounded]="true"
-              severity="danger"
-              size="small"
-              (onClick)="onDelete(template, $event)"
-              pTooltip="Delete"
-            />
-          </div>
-        </td>
       </tr>
     </ng-template>
 
@@ -131,18 +215,6 @@
       <tr>
         <td [attr.colspan]="selectedCols().length + 1" class="text-center py-8 text-gray-500">
           No SMS templates found. Click "Create SMS Template" to add one.
-        </td>
-      </tr>
-    </ng-template>
-
-    <ng-template pTemplate="loadingbody">
-      <tr>
-        <td [attr.colspan]="selectedCols().length + 1">
-          <div class="flex flex-col gap-2 py-4">
-            <p-skeleton height="3rem" />
-            <p-skeleton height="3rem" />
-            <p-skeleton height="3rem" />
-          </div>
         </td>
       </tr>
     </ng-template>

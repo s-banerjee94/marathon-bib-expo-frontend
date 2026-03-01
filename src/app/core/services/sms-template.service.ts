@@ -18,12 +18,26 @@ export class SmsTemplateService {
 
   getSmsTemplatesByEvent(
     eventId: number,
-    params: PageableParams & { enabledOnly?: boolean },
+    params: PageableParams & {
+      search?: string;
+      enabled?: boolean;
+      fromDate?: string;
+      toDate?: string;
+    },
   ): Observable<PageableResponse<SmsTemplate>> {
     let httpParams = buildHttpParams(params);
 
-    if (params.enabledOnly !== undefined) {
-      httpParams = httpParams.set('enabledOnly', params.enabledOnly.toString());
+    if (params.search !== undefined) {
+      httpParams = httpParams.set('search', params.search);
+    }
+    if (params.enabled !== undefined) {
+      httpParams = httpParams.set('enabled', params.enabled.toString());
+    }
+    if (params.fromDate !== undefined) {
+      httpParams = httpParams.set('fromDate', params.fromDate);
+    }
+    if (params.toDate !== undefined) {
+      httpParams = httpParams.set('toDate', params.toDate);
     }
 
     return this.http.get<PageableResponse<SmsTemplate>>(

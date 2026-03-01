@@ -20,6 +20,7 @@
       <p-button
         label="Create Race"
         icon="pi pi-plus"
+        [size]="buttonSize"
         (onClick)="onCreate()"
         [disabled]="isLoading()"
       />
@@ -35,7 +36,7 @@
     [(selection)]="internalSelectedRace"
     (onRowSelect)="onRowSelect($event)"
     [tableStyle]="{ 'min-width': '50rem' }"
-    styleClass="p-datatable-sm"
+    [size]="inputSize"
   >
     <ng-template pTemplate="header">
       <tr>
