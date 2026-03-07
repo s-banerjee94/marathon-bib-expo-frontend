@@ -48,9 +48,6 @@ body.blocked-scroll {
   top: var(--topbar-height);
   width: var(--sidebar-width);
   height: calc(100vh - var(--topbar-height));
-  transition:
-    transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
-    box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   background-color: var(--be-surface-0);
   border-right: 1px solid var(--be-surface-200);
 }
@@ -60,19 +57,7 @@ body.blocked-scroll {
   border-right-color: var(--be-surface-700);
 }
 
-/* State-based transforms */
-.layout-static .layout-sidebar {
-  @apply translate-x-0;
-}
-
-.layout-static-inactive .layout-sidebar,
-.layout-overlay .layout-sidebar {
-  @apply -translate-x-full;
-}
-
-.layout-overlay-active .layout-sidebar {
-  @apply translate-x-0;
-}
+/* Sidebar transforms are handled by Angular animations (@sidebarSlide) */
 
 /* ============================================================================
    Main Content Styles
@@ -176,11 +161,11 @@ body.blocked-scroll {
 @media (max-width: 991px) {
   .layout-sidebar {
     width: var(--sidebar-width-mobile);
-    @apply max-w-[85vw] -translate-x-full border-r-0;
+    @apply max-w-[85vw] border-r-0;
   }
 
   .layout-mobile-active .layout-sidebar {
-    @apply translate-x-0 shadow-xl;
+    @apply shadow-xl;
   }
 
   .layout-main {
