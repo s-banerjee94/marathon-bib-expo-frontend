@@ -15,6 +15,7 @@ import {
   CreateUserRequest,
   ROLE_AVAILABILITY,
   RoleOption,
+  UpdateUserRequest,
   User,
   UserRole,
 } from '../../core/models/user.model';
@@ -135,6 +136,8 @@ export class UserForm implements OnInit {
   }
 
   showOrganizationDropdown(): boolean {
+    if (this.isEditMode()) return false;
+
     const currentRole = this.currentUserRole();
 
     // Only show dropdown if current user is ROOT/ADMIN AND selected role needs organization
@@ -175,13 +178,37 @@ export class UserForm implements OnInit {
     this.isSubmitting.set(true);
 
     if (this.isEditMode() && this.userId()) {
-      // Edit mode - Note: Backend needs updateUser endpoint
-      // For now, show error that edit is not implemented
-      this.isSubmitting.set(false);
-      this.messageService.add({
-        severity: 'error',
-        summary: 'Not Implemented',
-        detail: 'User editing is not yet implemented in the backend API.',
+      // Build update request — only send fields the backend accepts (PATCH /api/users/{id})
+      const updateRequest: UpdateUserRequest = {
+        email: this.user.email || undefined,
+        fullName: this.user.fullName || undefined,
+        phoneNumber: this.user.phoneNumber || undefined,
+      };
+      // Only include password if the user typed one
+      if (this.user.password) {
+        updateRequest.password = this.user.password;
+      }
+
+      this.userService.updateUser(this.userId()!, updateRequest).subscribe({
+        next: (updatedUser: User) => {
+          this.isSubmitting.set(false);
+
+          if (this.isDialogMode() && this.dialogRef) {
+            const successMessage = this.dialogConfig?.data?.successMessage;
+            this.dialogRef!.close({ user: updatedUser, message: successMessage });
+          } else {
+            this.messageService.add({
+              severity: 'success',
+              summary: 'Success',
+              detail: 'User updated successfully',
+            });
+            setTimeout(() => this.location.back(), 1500);
+          }
+        },
+        error: (error) => {
+          this.isSubmitting.set(false);
+          this.errorHandler.showError(error, 'Error');
+        },
       });
     } else {
       // Create mode

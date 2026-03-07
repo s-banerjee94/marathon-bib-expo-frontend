@@ -18,26 +18,28 @@
           </div>
         } @else {
           <form #userForm="ngForm" (ngSubmit)="onSubmit(userForm)" class="flex flex-col gap-4">
-            <!-- ROLE SELECTION -->
-            <div class="flex flex-col gap-1">
-              <p-floatlabel variant="on">
-                <p-select
-                  (onChange)="onRoleSelected()"
-                  [(ngModel)]="selectedRole"
-                  [checkmark]="true"
-                  [options]="availableRoles() || []"
-                  [size]="inputSize"
-                  fluid="true"
-                  id="roleSelect"
-                  name="roleSelect"
-                  optionLabel="label"
-                  optionValue="value"
-                  placeholder="Choose a role..."
-                  required
-                ></p-select>
-                <label for="roleSelect">Role *</label>
-              </p-floatlabel>
-            </div>
+            <!-- ROLE SELECTION — create mode only -->
+            @if (!isEditMode()) {
+              <div class="flex flex-col gap-1">
+                <p-floatlabel variant="on">
+                  <p-select
+                    (onChange)="onRoleSelected()"
+                    [(ngModel)]="selectedRole"
+                    [checkmark]="true"
+                    [options]="availableRoles() || []"
+                    [size]="inputSize"
+                    fluid="true"
+                    id="roleSelect"
+                    name="roleSelect"
+                    optionLabel="label"
+                    optionValue="value"
+                    placeholder="Choose a role..."
+                    required
+                  ></p-select>
+                  <label for="roleSelect">Role *</label>
+                </p-floatlabel>
+              </div>
+            }
 
             <!-- ORGANIZATION SELECTION -->
             @if (showOrganizationDropdown()) {
@@ -68,6 +70,7 @@
                     [(ngModel)]="user.username"
                     [invalid]="shouldShowError(username, userForm.submitted)"
                     [pSize]="inputSize"
+                    [readonly]="isEditMode()"
                     autocomplete="username"
                     fluid="true"
                     id="username"
@@ -78,7 +81,7 @@
                     pattern="^[a-zA-Z0-9_-]+$"
                     required
                   />
-                  <label for="username">Username *</label>
+                  <label for="username">Username{{ isEditMode() ? '' : ' *' }}</label>
                 </p-floatlabel>
 
                 @if (shouldShowError(username, userForm.submitted)) {
@@ -107,6 +110,7 @@
                     [(ngModel)]="user.password"
                     [invalid]="shouldShowError(password, userForm.submitted)"
                     [pSize]="inputSize"
+                    [required]="!isEditMode()"
                     autocomplete="new-password"
                     fluid="true"
                     id="password"
@@ -114,10 +118,11 @@
                     minlength="8"
                     name="password"
                     pInputText
-                    required
                     type="password"
                   />
-                  <label for="password">Password *</label>
+                  <label for="password"
+                    >Password{{ isEditMode() ? ' (leave empty to keep current)' : ' *' }}</label
+                  >
                 </p-floatlabel>
 
                 @if (shouldShowError(password, userForm.submitted)) {
@@ -261,26 +266,28 @@
       class="flex flex-col gap-4 mt-2"
       id="userFormDialog"
     >
-      <!-- ROLE SELECTION -->
-      <div class="flex flex-col gap-1">
-        <p-floatlabel variant="on">
-          <p-select
-            (onChange)="onRoleSelected()"
-            [(ngModel)]="selectedRole"
-            [checkmark]="true"
-            [options]="availableRoles() || []"
-            [size]="inputSize"
-            fluid="true"
-            id="roleSelectDialog"
-            name="roleSelectDialog"
-            optionLabel="label"
-            optionValue="value"
-            placeholder="Choose a role..."
-            required
-          ></p-select>
-          <label for="roleSelectDialog">Role *</label>
-        </p-floatlabel>
-      </div>
+      <!-- ROLE SELECTION — create mode only -->
+      @if (!isEditMode()) {
+        <div class="flex flex-col gap-1">
+          <p-floatlabel variant="on">
+            <p-select
+              (onChange)="onRoleSelected()"
+              [(ngModel)]="selectedRole"
+              [checkmark]="true"
+              [options]="availableRoles() || []"
+              [size]="inputSize"
+              fluid="true"
+              id="roleSelectDialog"
+              name="roleSelectDialog"
+              optionLabel="label"
+              optionValue="value"
+              placeholder="Choose a role..."
+              required
+            ></p-select>
+            <label for="roleSelectDialog">Role *</label>
+          </p-floatlabel>
+        </div>
+      }
 
       <!-- ORGANIZATION SELECTION -->
       @if (showOrganizationDropdown()) {
@@ -311,6 +318,7 @@
               [(ngModel)]="user.username"
               [invalid]="shouldShowError(usernameDialog, userFormDialog.submitted)"
               [pSize]="inputSize"
+              [readonly]="isEditMode()"
               autocomplete="username"
               fluid="true"
               id="usernameDialog"
@@ -321,7 +329,7 @@
               pattern="^[a-zA-Z0-9_-]+$"
               required
             />
-            <label for="usernameDialog">Username *</label>
+            <label for="usernameDialog">Username{{ isEditMode() ? '' : ' *' }}</label>
           </p-floatlabel>
 
           @if (shouldShowError(usernameDialog, userFormDialog.submitted)) {
@@ -350,6 +358,7 @@
               [(ngModel)]="user.password"
               [invalid]="shouldShowError(passwordDialog, userFormDialog.submitted)"
               [pSize]="inputSize"
+              [required]="!isEditMode()"
               autocomplete="new-password"
               fluid="true"
               id="passwordDialog"
@@ -357,10 +366,11 @@
               minlength="8"
               name="passwordDialog"
               pInputText
-              required
               type="password"
             />
-            <label for="passwordDialog">Password *</label>
+            <label for="passwordDialog"
+              >Password{{ isEditMode() ? ' (leave empty to keep current)' : ' *' }}</label
+            >
           </p-floatlabel>
 
           @if (shouldShowError(passwordDialog, userFormDialog.submitted)) {

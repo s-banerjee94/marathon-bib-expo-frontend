@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { Category, CreateCategoryRequest, UpdateCategoryRequest } from '../models/category.model';
 import { BASE_URI } from '../../shared/constants/api.constant';
@@ -11,11 +11,10 @@ export class CategoryService {
   private http = inject(HttpClient);
 
   getCategoriesByRaceId(eventId: number, raceId: number, gender?: string): Observable<Category[]> {
-    let url = `${BASE_URI}/events/${eventId}/races/${raceId}/categories`;
-    if (gender) {
-      url += `?gender=${gender}`;
-    }
-    return this.http.get<Category[]>(url);
+    const params = gender ? new HttpParams().set('gender', gender) : undefined;
+    return this.http.get<Category[]>(`${BASE_URI}/events/${eventId}/races/${raceId}/categories`, {
+      params,
+    });
   }
 
   getCategoryById(eventId: number, raceId: number, categoryId: number): Observable<Category> {

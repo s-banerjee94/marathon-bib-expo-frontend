@@ -1,7 +1,7 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
-import { CreateUserRequest, User } from '../models/user.model';
+import { CreateUserRequest, UpdateUserRequest, User } from '../models/user.model';
 import { PageableParams, PageableResponse } from '../models/api.model';
 import { BASE_URI } from '../../shared/constants/api.constant';
 
@@ -56,12 +56,12 @@ export class UserService {
     return this.http.get<PageableResponse<User>>(this.apiUrl, { params: httpParams });
   }
 
-  getAllUsers(): Observable<User[]> {
-    return this.http.get<User[]>(this.apiUrl);
-  }
-
   getUserById(id: number): Observable<User> {
     return this.http.get<User>(`${this.apiUrl}/${id}`);
+  }
+
+  updateUser(id: number, request: UpdateUserRequest): Observable<User> {
+    return this.http.patch<User>(`${this.apiUrl}/${id}`, request);
   }
 
   toggleEnabled(id: number): Observable<User> {

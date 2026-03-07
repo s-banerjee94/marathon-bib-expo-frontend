@@ -42,6 +42,17 @@ export interface CreateUserRequest {
 }
 
 /**
+ * Update User Request DTO — only profile fields (password, email, fullName, phoneNumber)
+ * Role, username, and organization cannot be changed via this endpoint.
+ */
+export interface UpdateUserRequest {
+  password?: string;
+  email?: string;
+  fullName?: string;
+  phoneNumber?: string;
+}
+
+/**
  * Login Request
  */
 export interface LoginRequest {
