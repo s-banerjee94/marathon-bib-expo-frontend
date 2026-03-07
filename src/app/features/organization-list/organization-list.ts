@@ -71,7 +71,9 @@ export class OrganizationList extends BaseTableComponent<
   protected override columnPreferenceKey = STORAGE_KEYS.ORG_TABLE_COLUMNS;
   protected override filterPreferenceKey = STORAGE_KEYS.ORG_TABLE_FILTERS;
   protected override allColumns = ORGANIZATION_COLUMNS;
+  togglingOrgId = signal<number | null>(null);
   private organizationService = inject(OrganizationService);
+  private confirmationService = inject(ConfirmationService);
 
   constructor() {
     super();
@@ -122,6 +124,47 @@ export class OrganizationList extends BaseTableComponent<
     }
     // Left alignment for all other columns (default)
     return '';
+  }
+
+  toggleOrgStatus(event: Event, org: Organization): void {
+    const action = org.enabled ? 'disable' : 'enable';
+    const warning = org.enabled ? ' This will also disable all users of this organization.' : '';
+
+    this.confirmationService.confirm({
+      target: event.currentTarget as EventTarget,
+      message: `Do you want to ${action} "${org.organizerName}"?${warning}`,
+      icon: 'pi pi-exclamation-triangle',
+      acceptButtonProps: {
+        label: org.enabled ? 'Disable' : 'Enable',
+        severity: org.enabled ? 'warn' : 'success',
+      },
+      rejectButtonProps: {
+        label: 'Cancel',
+        severity: 'secondary',
+        outlined: true,
+      },
+      accept: () => {
+        this.togglingOrgId.set(org.id);
+
+        this.organizationService.toggleStatus(org.id, !org.enabled).subscribe({
+          next: (updatedOrg) => {
+            this.entities.set(
+              this.entities().map((o) => (o.id === updatedOrg.id ? updatedOrg : o)),
+            );
+            this.togglingOrgId.set(null);
+            this.messageService.add({
+              severity: 'success',
+              summary: 'Updated',
+              detail: `Organization ${updatedOrg.enabled ? 'enabled' : 'disabled'} successfully`,
+            });
+          },
+          error: (error) => {
+            this.togglingOrgId.set(null);
+            this.errorHandler.showError(error, 'Failed to update organization status');
+          },
+        });
+      },
+    });
   }
 
   onCreate(): void {
@@ -202,10 +245,10 @@ export class OrganizationList extends BaseTableComponent<
   protected override loadData(): void {
     this.isLoading.set(true);
 
-    const params: PageableParams = {
-      ...this.buildPageableParams(),
-      deleted: this.filterDeleted(),
-    };
+    const params = this.buildPageableParams();
+    if (this.filterDeleted()) {
+      params.deleted = true;
+    }
 
     this.organizationService.searchOrganizations(params).subscribe({
       next: (response) => this.handleLoadSuccess(response),

@@ -243,8 +243,11 @@ export abstract class BaseTableComponent<T, F extends TableFilterPreferences>
     const params: PageableParams = {
       page: this.currentPage(),
       size: this.pageSize(),
-      enabled: this.filterEnabled(),
     };
+
+    if (this.filterEnabled()) {
+      params.enabled = true;
+    }
 
     // Add search term if at least 2 characters
     const searchValue = this.searchTerm().trim();

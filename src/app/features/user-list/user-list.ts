@@ -279,10 +279,10 @@ export class UserList extends BaseTableComponent<User, UserFilterPreferences> {
   protected override loadData(): void {
     this.isLoading.set(true);
 
-    const params: PageableParams = {
-      ...this.buildPageableParams(),
-      includeDeleted: this.filterIncludeDeleted(),
-    };
+    const params = this.buildPageableParams();
+    if (this.filterIncludeDeleted()) {
+      params.includeDeleted = true;
+    }
 
     this.userService.searchUsers(params).subscribe({
       next: (response) => this.handleLoadSuccess(response),
