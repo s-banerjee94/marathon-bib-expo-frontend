@@ -208,7 +208,7 @@
             </td>
           }
           <td class="text-center">
-            <div class="flex items-center justify-center gap-1">
+            <div class="flex items-center gap-1">
               <p-button
                 (click)="onEdit(org)"
                 [rounded]="true"
@@ -217,6 +217,18 @@
                 icon="pi pi-pencil"
                 pTooltip="Edit"
                 severity="info"
+                tooltipPosition="top"
+              ></p-button>
+              <p-button
+                (click)="toggleOrgStatus($event, org)"
+                [disabled]="togglingOrgId() === org.id"
+                [icon]="org.enabled ? 'pi pi-ban' : 'pi pi-check-circle'"
+                [loading]="togglingOrgId() === org.id"
+                [pTooltip]="org.enabled ? 'Disable' : 'Enable'"
+                [rounded]="true"
+                [severity]="org.enabled ? 'warn' : 'success'"
+                [size]="inputSize"
+                [text]="true"
                 tooltipPosition="top"
               ></p-button>
               <p-button

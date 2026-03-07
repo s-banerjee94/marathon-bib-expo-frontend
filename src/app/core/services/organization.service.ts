@@ -67,4 +67,8 @@ export class OrganizationService {
   getCurrentUserOrganization(): Observable<Organization> {
     return this.http.get<Organization>(`${this.apiUrl}/organization`);
   }
+
+  toggleStatus(id: number, enabled: boolean): Observable<Organization> {
+    return this.http.patch<Organization>(`${this.apiUrl}/${id}/status`, enabled);
+  }
 }
