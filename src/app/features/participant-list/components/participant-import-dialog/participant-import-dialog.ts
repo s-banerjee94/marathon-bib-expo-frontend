@@ -1,28 +1,29 @@
-import { Component, input, model, output, signal } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  input,
+  model,
+  output,
+  signal,
+} from '@angular/core';
 import { DialogModule } from 'primeng/dialog';
 import { ButtonModule } from 'primeng/button';
 import { FileUploadModule } from 'primeng/fileupload';
 import { MessageModule } from 'primeng/message';
-
-export interface ImportResponse {
-  success: boolean;
-  message: string;
-  totalRows?: number;
-  successCount?: number;
-  failureCount?: number;
-}
+import { BatchJobStatusResponse } from '../../../../core/models/participant.model';
 
 @Component({
   selector: 'app-participant-import-dialog',
-  standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './participant-import-dialog.html',
-  imports: [CommonModule, DialogModule, ButtonModule, FileUploadModule, MessageModule],
+  imports: [DialogModule, ButtonModule, FileUploadModule, MessageModule],
 })
 export class ParticipantImportDialog {
   visible = model<boolean>(false);
+  eventId = input<number | undefined>(undefined);
   isUploading = input<boolean>(false);
-  importResponse = input<ImportResponse | null>(null);
+  jobStatus = input<BatchJobStatusResponse | null>(null);
 
   importRequested = output<File>();
   resetClicked = output<void>();
@@ -30,8 +31,20 @@ export class ParticipantImportDialog {
 
   selectedFile = signal<File | null>(null);
 
+  isProcessing = computed(() => {
+    const s = this.jobStatus()?.status;
+    return s === 'STARTING' || s === 'STARTED';
+  });
+
+  isCompleted = computed(() => this.jobStatus()?.status === 'COMPLETED');
+
+  isFailed = computed(() => {
+    const s = this.jobStatus()?.status;
+    return s === 'FAILED' || s === 'STOPPED';
+  });
+
   onFileSelect(event: { files: File[] }): void {
-    if (event.files && event.files.length > 0) {
+    if (event.files?.length > 0) {
       this.selectedFile.set(event.files[0]);
     }
   }
@@ -43,10 +56,6 @@ export class ParticipantImportDialog {
     }
   }
 
-  clearFile(): void {
-    this.selectedFile.set(null);
-  }
-
   reset(): void {
     this.selectedFile.set(null);
     this.resetClicked.emit();
@@ -54,8 +63,13 @@ export class ParticipantImportDialog {
 
   close(): void {
     if (!this.isUploading()) {
-      this.selectedFile.set(null);
       this.visible.set(false);
+    }
+  }
+
+  onDialogHide(): void {
+    if (!this.isUploading()) {
+      this.selectedFile.set(null);
       this.closed.emit();
     }
   }

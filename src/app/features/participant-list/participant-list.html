@@ -62,7 +62,7 @@
       <p-tabs [(value)]="activeTab">
         <p-tablist>
           <p-tab value="manage">Imported Participants</p-tab>
-          <p-tab value="history">Import History</p-tab>
+          <p-tab value="history">Import Errors</p-tab>
         </p-tablist>
 
         <p-tabpanels>
@@ -90,17 +90,13 @@
             />
           </p-tabpanel>
 
-          <!-- Tab 2: Import History -->
+          <!-- Tab 2: Latest Import Errors -->
           <p-tabpanel value="history">
             <app-import-history-tab
-              (importSelect)="onImportSelect($event)"
-              (loadMoreErrors)="loadMoreImportErrors()"
-              [hasMoreErrors]="hasMoreImportErrors()"
-              [importErrors]="importHistoryErrors()"
-              [importHistory]="importHistory()"
-              [isLoadingErrors]="isLoadingImportErrors()"
-              [isLoadingHistory]="isLoadingHistory()"
-              [selectedImportId]="selectedImportId()"
+              (loadMore)="loadMoreImportErrors()"
+              [errors]="importErrors()"
+              [hasMore]="hasMoreImportErrors()"
+              [isLoading]="isLoadingImportErrors()"
             />
           </p-tabpanel>
         </p-tabpanels>
@@ -126,11 +122,12 @@
 <!-- Import Dialog -->
 <app-participant-import-dialog
   (closed)="onImportDialogClosed()"
-  (importRequested)="handleImport($event)"
+  (importRequested)="handleBatchImport($event)"
   (resetClicked)="resetImport()"
   [(visible)]="showImportDialog"
-  [importResponse]="importResponse()"
+  [eventId]="selectedEventId()"
   [isUploading]="isUploading()"
+  [jobStatus]="batchJobStatus()"
 />
 
 <!-- Create/Edit Participant Form Dialog -->

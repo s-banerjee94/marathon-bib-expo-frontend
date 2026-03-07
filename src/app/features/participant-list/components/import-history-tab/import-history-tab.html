@@ -1,173 +1,69 @@
 <div class="p-4">
   <!-- Loading State -->
-  @if (isLoadingHistory()) {
+  @if (isLoading() && errors().length === 0) {
     <div class="text-center py-12">
-      <i class="pi pi-spin pi-spinner text-6xl text-blue-500"></i>
-      <p class="mt-4 font-medium text-lg">Loading import history...</p>
+      <i class="pi pi-spin pi-spinner text-6xl"></i>
+      <p class="mt-4 font-medium text-lg">Loading import errors...</p>
     </div>
   }
 
-  <!-- Import History Selector and Table -->
-  @if (!isLoadingHistory() && importHistory().length > 0) {
-    <!-- Header and Selector -->
-    <div class="mb-6">
-      <h3 class="text-lg font-semibold mb-2"><i class="pi pi-history mr-2"></i>Import History</h3>
-      <p class="text-sm text-gray-600 mb-4">
-        Select an import to view its error details (showing latest 5 imports).
-      </p>
+  <!-- Errors Table & Empty State -->
+  @if (!isLoading() || errors().length > 0) {
+    <!-- Errors Table -->
+    @if (errors().length > 0) {
+      <p-table [scrollable]="true" [value]="errors()" scrollHeight="420px" size="small">
+        <ng-template pTemplate="header">
+          <tr>
+            <th style="min-width: 90px">Row #</th>
+            <th style="min-width: 160px">Error Type</th>
+            <th style="min-width: 140px">Field</th>
+            <th style="min-width: 320px">Message</th>
+          </tr>
+        </ng-template>
 
-      <div class="max-w-lg">
-        <label class="block text-sm font-medium mb-2"> Select Import * </label>
-        <p-select
-          (onChange)="onImportSelect($event.value)"
-          [ngModel]="selectedImportId()"
-          [options]="importHistory()"
-          [style]="{ width: '100%' }"
-          optionLabel="importedAt"
-          optionValue="importId"
-          placeholder="Select an import..."
-        >
-          <ng-template let-import pTemplate="item">
-            <div class="flex justify-between items-center py-2">
-              <div>
-                <div class="font-semibold">
-                  <i class="pi pi-calendar mr-2 text-gray-500"></i>
-                  {{ import.importedAt | date: 'medium' }}
-                </div>
-                <div class="text-sm mt-1">
-                  <span class="text-gray-600">By: {{ import.importedBy | defaultValue }}</span>
-                  <span class="mx-2">•</span>
-                  <span class="text-green-700 font-semibold"
-                    >{{ import.successCount }} success</span
-                  >
-                  @if (import.failureCount > 0) {
-                    <span class="mx-2">•</span>
-                    <span class="text-red-700 font-semibold">{{ import.failureCount }} failed</span>
-                  }
-                </div>
-              </div>
+        <ng-template let-error pTemplate="body">
+          <tr>
+            <td class="font-semibold">{{ error.rowNumber }}</td>
+            <td>
               <p-tag
                 [rounded]="true"
-                [severity]="getImportStatusSeverity(import.status)"
-                [value]="import.status"
+                [value]="error.errorType"
+                severity="danger"
                 size="small"
               ></p-tag>
-            </div>
-          </ng-template>
-          <ng-template let-import pTemplate="selectedItem">
-            <div class="flex items-center">
-              <i class="pi pi-calendar mr-2"></i>
-              {{ import.importedAt | date: 'medium' }}
-              <span class="ml-2 text-sm text-gray-600"
-                >({{ import.successCount }} participants)</span
-              >
-            </div>
-          </ng-template>
-        </p-select>
+            </td>
+            <td class="font-medium">{{ error.field | defaultValue }}</td>
+            <td class="text-sm"><i class="pi pi-times-circle mr-2"></i>{{ error.message }}</td>
+          </tr>
+        </ng-template>
+      </p-table>
+
+      <!-- Load More / End -->
+      <div class="text-center mt-4">
+        @if (hasMore() && !isLoading()) {
+          <p-button
+            (onClick)="onLoadMore()"
+            [outlined]="true"
+            icon="pi pi-arrow-down"
+            label="Load More Errors"
+            severity="warn"
+            size="small"
+          ></p-button>
+        }
+        @if (isLoading()) {
+          <i class="pi pi-spin pi-spinner text-2xl"></i>
+        }
+        @if (!hasMore() && errors().length > 0) {
+          <p class="text-sm">All errors loaded ({{ errors().length }} total)</p>
+        }
       </div>
-    </div>
-
-    <!-- Import Errors Section -->
-    @if (selectedImportId()) {
-      @if (selectedImport()?.failureCount && selectedImport()!.failureCount > 0) {
-        <div class="mt-6">
-          <!-- Errors Table -->
-          <p-table [scrollable]="true" [value]="importErrors()" scrollHeight="400px" size="small">
-            <!-- Table Headers -->
-            <ng-template pTemplate="header">
-              <tr>
-                <th style="min-width: 100px">Row #</th>
-                <th style="min-width: 150px">Error Type</th>
-                <th style="min-width: 150px">Field</th>
-                <th style="min-width: 300px">Message</th>
-              </tr>
-            </ng-template>
-
-            <!-- Table Body -->
-            <ng-template let-error pTemplate="body">
-              <tr>
-                <td class="font-semibold">{{ error.rowNumber }}</td>
-                <td>
-                  <p-tag
-                    [rounded]="true"
-                    [value]="error.errorType"
-                    severity="danger"
-                    size="small"
-                  ></p-tag>
-                </td>
-                <td class="font-medium">{{ error.field | defaultValue }}</td>
-                <td class="text-red-700 text-sm">
-                  <i class="pi pi-times-circle mr-2"></i>{{ error.message }}
-                </td>
-              </tr>
-            </ng-template>
-
-            <!-- Empty State -->
-            <ng-template pTemplate="emptymessage">
-              <tr>
-                <td class="text-center py-12" colspan="4">
-                  <i class="pi pi-check-circle text-green-500 text-4xl mb-3 block"></i>
-                  <p class="text-lg">No errors found</p>
-                </td>
-              </tr>
-            </ng-template>
-          </p-table>
-
-          <!-- Load More Errors Button -->
-          <div class="text-center mt-4">
-            @if (hasMoreErrors() && !isLoadingErrors()) {
-              <p-button
-                (onClick)="onLoadMoreErrors()"
-                [outlined]="true"
-                icon="pi pi-arrow-down"
-                label="Load More Errors"
-                severity="warn"
-                size="small"
-              ></p-button>
-            }
-
-            <!-- Loading Indicator -->
-            @if (isLoadingErrors()) {
-              <div>
-                <i class="pi pi-spin pi-spinner text-2xl"></i>
-                <p class="mt-2">Loading errors...</p>
-              </div>
-            }
-
-            <!-- End Message -->
-            @if (!hasMoreErrors() && importErrors().length > 0) {
-              <p class="text-sm text-gray-600">
-                All errors loaded ({{ importErrors().length }} total)
-              </p>
-            }
-          </div>
-        </div>
-      } @else {
-        <!-- No errors for this import -->
-        <div class="mt-6 text-center py-12 bg-green-50 rounded-lg border border-green-200">
-          <i class="pi pi-check-circle text-green-500 text-6xl"></i>
-          <p class="mt-4 font-medium text-lg text-green-800">Import Completed Successfully</p>
-          <p class="text-sm text-green-700 mt-2">
-            All {{ selectedImport()!.successCount }} participants were imported without errors
-          </p>
-        </div>
-      }
-    } @else {
-      <!-- No Import Selected Message -->
-      <div class="mt-6 text-center py-12 bg-gray-50 rounded-lg">
-        <i class="pi pi-arrow-up text-gray-400 text-4xl"></i>
-        <p class="mt-4 font-medium">Select an import from the dropdown above</p>
-        <p class="text-sm text-gray-600 mt-2">View error details from previous imports</p>
+    } @else if (!isLoading()) {
+      <!-- No errors -->
+      <div class="text-center py-16 rounded-lg border">
+        <i class="pi pi-check-circle text-4xl block mb-3"></i>
+        <p class="font-medium text-lg">No errors from latest import</p>
+        <p class="text-sm mt-2">The last CSV import completed without any row-level errors.</p>
       </div>
     }
-  }
-
-  <!-- Empty State -->
-  @if (!isLoadingHistory() && importHistory().length === 0) {
-    <div class="text-center py-16 bg-gray-50 rounded-lg">
-      <i class="pi pi-history text-gray-400 text-6xl"></i>
-      <p class="mt-4 font-medium text-lg">No import history found</p>
-      <p class="text-sm text-gray-600 mt-2">Import a CSV file to see history here</p>
-    </div>
   }
 </div>

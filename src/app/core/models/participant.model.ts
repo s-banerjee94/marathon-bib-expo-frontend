@@ -78,7 +78,7 @@ export interface ImportParticipantsResponse {
   message: string;
 }
 
-export interface ParticipantStatistics {
+export interface ParticipantStatisticsResponse {
   eventId: number;
   totalParticipants: number;
   bibCollectedCount: number;
@@ -149,36 +149,78 @@ export interface UpdateParticipantRequest {
   bibCollectedAt?: string;
 }
 
+export type ImportErrorType =
+  | 'VALIDATION_ERROR'
+  | 'DUPLICATE_BIB'
+  | 'REFERENCE_ERROR'
+  | 'BATCH_WRITE_ERROR'
+  | 'PROCESSING_ERROR';
+
 export interface ImportErrorItem {
   rowNumber: number;
-  bibNumber?: string;
-  fullName?: string;
-  errorMessage: string;
-  rawData?: string;
-}
-
-export interface ImportDetails {
-  importId: string;
-  eventId: number;
-  status: string;
-  totalRows: number;
-  successCount: number;
-  failureCount: number;
-  importedBy?: string;
-  importedAt: string;
-  completedAt?: string;
+  errorType: ImportErrorType;
+  field?: string;
   message: string;
-  errors?: ImportErrorItem[];
 }
 
-export interface ImportHistoryItem {
+export interface ErrorSummary {
+  validationErrors: number;
+  duplicateBibErrors: number;
+  referenceErrors: number;
+  batchWriteErrors: number;
+  processingErrors: number;
+}
+
+export interface ImportErrorListResponse {
+  importId: string;
+  errors: ImportErrorItem[];
+  count: number;
+  lastEvaluatedKey?: string;
+  hasMore: boolean;
+}
+
+export interface ImportJobResponse {
   importId: string;
   eventId: number;
+  eventName?: string;
+  fileName?: string;
   status: string;
   totalRows: number;
   successCount: number;
   failureCount: number;
-  importedBy?: string;
+  errorSummary?: ErrorSummary;
+  importedBy?: number;
   importedAt: string;
-  completedAt?: string;
+}
+
+export interface ImportJobListResponse {
+  imports: ImportJobResponse[];
+  totalCount: number;
+  currentPage: number;
+  pageSize: number;
+  totalPages: number;
+}
+
+export interface BatchImportResponse {
+  jobExecutionId: number;
+  status: string;
+  deletedCount?: number;
+}
+
+export interface BatchJobStatusResponse {
+  jobExecutionId: number;
+  status: string; // STARTING | STARTED | COMPLETED | FAILED | STOPPED | ABANDONED | UNKNOWN
+  readCount: number;
+  writeCount: number;
+  skipCount: number;
+  startTime: string;
+  endTime?: string;
+}
+
+export interface DeleteParticipantsResponse {
+  eventId: number;
+  eventName?: string;
+  deletedCount: number;
+  failedCount: number;
+  message: string;
 }

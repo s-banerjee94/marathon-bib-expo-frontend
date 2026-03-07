@@ -2,14 +2,18 @@ import { inject, Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import {
+  BatchImportResponse,
+  BatchJobStatusResponse,
   CreateParticipantRequest,
-  ImportDetails,
+  DeleteParticipantsResponse,
+  ImportErrorListResponse,
+  ImportJobListResponse,
   ImportParticipantsResponse,
   Participant,
   ParticipantListResponse,
   ParticipantLookupParams,
   ParticipantSearchParams,
-  ParticipantStatistics,
+  ParticipantStatisticsResponse,
   UpdateParticipantRequest,
 } from '../models/participant.model';
 import { BASE_URI } from '../../shared/constants/api.constant';
@@ -133,13 +137,25 @@ export class ParticipantService {
     );
   }
 
-  deleteParticipant(eventId: number, bibNumber: string): Observable<void> {
-    return this.http.delete<void>(`${this.apiUrl}/${eventId}/participants/${bibNumber}`);
+  deleteParticipant(eventId: number, bibNumber: string): Observable<DeleteParticipantsResponse> {
+    return this.http.delete<DeleteParticipantsResponse>(
+      `${this.apiUrl}/${eventId}/participants/${bibNumber}`,
+    );
   }
 
   /**
-   * Import participants from CSV file (FULL REPLACE)
-   * WARNING: This will delete all existing participants before importing
+   * Delete ALL participants for an event
+   * ⚠️ WARNING: Permanently deletes all participants. Cannot be undone.
+   */
+  deleteAllParticipants(eventId: number): Observable<DeleteParticipantsResponse> {
+    return this.http.delete<DeleteParticipantsResponse>(`${this.apiUrl}/${eventId}/participants`);
+  }
+
+  /**
+   * Import participants from CSV file (FULL REPLACE) — DEPRECATED
+   * WARNING: Synchronous, deletes all existing participants before importing.
+   * Use launchBatchImport instead.
+   * @deprecated Use launchBatchImport
    */
   importParticipants(eventId: number, file: File): Observable<ImportParticipantsResponse> {
     const formData = new FormData();
@@ -152,10 +168,57 @@ export class ParticipantService {
   }
 
   /**
+   * Launch async CSV import via Spring Batch (returns 202 immediately)
+   * Use getBatchImportStatus to poll progress
+   */
+  launchBatchImport(eventId: number, file: File): Observable<BatchImportResponse> {
+    const formData = new FormData();
+    formData.append('file', file);
+    return this.http.post<BatchImportResponse>(
+      `${this.apiUrl}/${eventId}/participants/batch-import`,
+      formData,
+    );
+  }
+
+  /**
+   * Poll Spring Batch job status
+   * Status values: STARTING, STARTED, COMPLETED, FAILED, STOPPED, ABANDONED, UNKNOWN
+   */
+  getBatchImportStatus(
+    eventId: number,
+    jobExecutionId: number,
+  ): Observable<BatchJobStatusResponse> {
+    return this.http.get<BatchJobStatusResponse>(
+      `${this.apiUrl}/${eventId}/participants/batch-import/${jobExecutionId}/status`,
+    );
+  }
+
+  /**
+   * Get errors from the latest batch import for an event
+   * Uses /api/events/{eventId}/participants/batch-import/latest/errors endpoint
+   */
+  getLatestBatchImportErrors(
+    eventId: number,
+    limit: number = 50,
+    lastEvaluatedKey?: string,
+  ): Observable<ImportErrorListResponse> {
+    let httpParams = new HttpParams().set('limit', limit.toString());
+
+    if (lastEvaluatedKey) {
+      httpParams = httpParams.set('lastEvaluatedKey', lastEvaluatedKey);
+    }
+
+    return this.http.get<ImportErrorListResponse>(
+      `${this.apiUrl}/${eventId}/participants/batch-import/latest/errors`,
+      { params: httpParams },
+    );
+  }
+
+  /**
    * Get participant statistics for an event
    */
-  getParticipantStatistics(eventId: number): Observable<ParticipantStatistics> {
-    return this.http.get<ParticipantStatistics>(
+  getParticipantStatistics(eventId: number): Observable<ParticipantStatisticsResponse> {
+    return this.http.get<ParticipantStatisticsResponse>(
       `${this.apiUrl}/${eventId}/participants/statistics`,
     );
   }
@@ -188,58 +251,41 @@ export class ParticipantService {
   }
 
   /**
-   * Get detailed import job information
-   * Uses /api/events/{eventId}/participants/imports/{importId} endpoint
-   * @param eventId Event ID
-   * @param importId Import job ID returned from import API
-   * @returns Observable of ImportDetails
+   * Get import job history for an event (paginated) — DEPRECATED
+   * @deprecated Use getLatestImportErrors for batch import error retrieval
    */
-  getImportDetails(eventId: number, importId: string): Observable<ImportDetails> {
-    return this.http.get<ImportDetails>(
-      `${this.apiUrl}/${eventId}/participants/imports/${importId}`,
-    );
-  }
-
-  /**
-   * Get import history for an event (paginated)
-   * Uses /api/events/{eventId}/participants/imports endpoint
-   * @param eventId Event ID
-   * @param page Optional page number (0-indexed)
-   * @param size Optional page size
-   * @returns Observable of paginated import history
-   */
-  getImportHistory(eventId: number, page: number = 0, size: number = 20): Observable<any> {
+  getImportHistory(
+    eventId: number,
+    page: number = 0,
+    size: number = 20,
+  ): Observable<ImportJobListResponse> {
     const httpParams = new HttpParams().set('page', page.toString()).set('size', size.toString());
 
-    return this.http.get<any>(`${this.apiUrl}/${eventId}/participants/imports`, {
+    return this.http.get<ImportJobListResponse>(`${this.apiUrl}/${eventId}/participants/imports`, {
       params: httpParams,
     });
   }
 
   /**
-   * Get paginated errors for a specific import
-   * Uses /api/events/{eventId}/participants/imports/{importId}/errors endpoint
-   * @param eventId Event ID
-   * @param importId Import job ID
-   * @param limit Maximum number of errors to return (default: 50)
-   * @param lastEvaluatedKey Pagination token from previous response
-   * @returns Observable of paginated import errors
+   * Get paginated errors for a specific import — DEPRECATED
+   * @deprecated Use getLatestBatchImportErrors instead
    */
   getImportErrors(
     eventId: number,
     importId: string,
     limit: number = 50,
     lastEvaluatedKey?: string,
-  ): Observable<any> {
+  ): Observable<ImportErrorListResponse> {
     let httpParams = new HttpParams().set('limit', limit.toString());
 
     if (lastEvaluatedKey) {
       httpParams = httpParams.set('lastEvaluatedKey', lastEvaluatedKey);
     }
 
-    return this.http.get<any>(`${this.apiUrl}/${eventId}/participants/imports/${importId}/errors`, {
-      params: httpParams,
-    });
+    return this.http.get<ImportErrorListResponse>(
+      `${this.apiUrl}/${eventId}/participants/imports/${importId}/errors`,
+      { params: httpParams },
+    );
   }
 
   /**
@@ -252,8 +298,8 @@ export class ParticipantService {
   bulkDeleteParticipants(
     eventId: number,
     bibNumbers: string[],
-  ): Observable<{ deletedCount: number; failedCount: number; message: string }> {
-    return this.http.delete<{ deletedCount: number; failedCount: number; message: string }>(
+  ): Observable<DeleteParticipantsResponse> {
+    return this.http.delete<DeleteParticipantsResponse>(
       `${this.apiUrl}/${eventId}/participants/bulk`,
       {
         body: { bibNumbers },

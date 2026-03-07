@@ -1,100 +1,116 @@
-<!-- Import Participants Dialog -->
 <p-dialog
   [(visible)]="visible"
+  (onHide)="onDialogHide()"
   [closable]="!isUploading()"
   [closeOnEscape]="!isUploading()"
   [draggable]="false"
   [modal]="true"
   [resizable]="false"
-  [style]="{ width: '600px' }"
+  [style]="{ width: '700px', maxHeight: '90vh' }"
   header="Import Participants"
 >
   <div class="space-y-4">
-    <!-- Import Instructions -->
-    <p-message severity="info">
-      Upload a CSV file to import participants. The file should include required columns: BIB
-      Number, Chip Number, Full Name, Race, Category, Gender.
-    </p-message>
-
-    <!-- Warning Message -->
-    @if (!importResponse() && !isUploading()) {
-      <p-message severity="warn">
-        Warning: This will DELETE all existing participants for this event before importing the CSV
-        file. This action cannot be undone.
+    <!-- Idle state -->
+    @if (!jobStatus() && !isUploading()) {
+      <p-message severity="info">
+        Upload a CSV file to import participants. Required columns: CHIP No., BIB No., NAME, DOB,
+        Age, Gender, Race, Category, Phone, Email-Id, Country, City.
       </p-message>
-    }
 
-    <!-- File Upload -->
-    @if (!importResponse() && !isUploading()) {
+      <p-message severity="warn">
+        Warning: This will DELETE all existing participants for this event before importing. This
+        action cannot be undone.
+      </p-message>
+
       <div>
-        <label class="block text-sm font-medium mb-2"> Select CSV File * </label>
+        <label class="block text-sm font-medium mb-2">Select CSV File *</label>
         <p-fileUpload
           (onSelect)="onFileSelect($event)"
           [auto]="false"
           [chooseIcon]="'pi pi-file'"
-          [disabled]="isUploading()"
           [maxFileSize]="10000000"
           accept=".csv"
           chooseLabel="Choose CSV File"
           mode="basic"
         ></p-fileUpload>
         @if (selectedFile()) {
-          <p class="text-sm mt-2 text-gray-700">
+          <p class="text-sm mt-2">
             <i class="pi pi-file mr-2"></i>Selected: <strong>{{ selectedFile()?.name }}</strong>
           </p>
         }
       </div>
     }
 
-    <!-- Upload Status -->
+    <!-- Launching state -->
     @if (isUploading()) {
-      <div class="text-center py-12 bg-blue-50 rounded-lg">
-        <i class="pi pi-spin pi-spinner text-6xl text-blue-500"></i>
-        <p class="mt-4 font-medium text-xl">Uploading and processing...</p>
-        <p class="text-sm mt-2 text-gray-600">Please wait, this may take a few moments</p>
+      <div class="text-center py-10">
+        <i class="pi pi-spin pi-spinner text-5xl"></i>
+        <p class="mt-4 font-medium text-lg">Launching import job...</p>
+        <p class="text-sm mt-2">Please wait</p>
       </div>
     }
 
-    <!-- Import Response -->
-    @if (importResponse()) {
-      <div>
-        <!-- Success Response -->
-        @if (importResponse()!.success) {
-          <p-message severity="success" styleClass="mb-4">
-            Import Completed Successfully!
-          </p-message>
-
-          <div class="grid grid-cols-3 gap-4 mb-4">
-            <div class="p-4 bg-gray-50 rounded-lg text-center">
-              <p class="text-sm text-gray-600">Total Rows</p>
-              <p class="text-2xl font-bold text-gray-900">{{ importResponse()!.totalRows }}</p>
-            </div>
-            <div class="p-4 bg-green-50 rounded-lg text-center">
-              <p class="text-sm text-green-600">Successfully Imported</p>
-              <p class="text-2xl font-bold text-green-900">{{ importResponse()!.successCount }}</p>
-            </div>
-            <div class="p-4 bg-red-50 rounded-lg text-center">
-              <p class="text-sm text-red-600">Failed</p>
-              <p class="text-2xl font-bold text-red-900">{{ importResponse()!.failureCount }}</p>
-            </div>
-          </div>
-
-          <p-message severity="info">{{ importResponse()!.message }}</p-message>
-        }
-
-        <!-- Error Response -->
-        @if (!importResponse()!.success) {
-          <p-message severity="error">Import Failed: {{ importResponse()!.message }}</p-message>
-        }
+    <!-- Processing state: live counters -->
+    @if (isProcessing()) {
+      <div class="text-center py-4">
+        <i class="pi pi-spin pi-spinner text-5xl"></i>
+        <p class="mt-4 font-medium text-lg">Processing CSV file...</p>
+        <p class="text-sm mt-1">
+          Job #{{ jobStatus()?.jobExecutionId }} — {{ jobStatus()?.status }}
+        </p>
+        <p class="text-xs mt-3">
+          <i class="pi pi-info-circle mr-1"></i>
+          You can close this dialog. The import will continue in the background.
+        </p>
       </div>
+      <div class="grid grid-cols-3 gap-4 mt-2">
+        <div class="p-4 rounded-lg text-center border">
+          <p class="text-sm font-medium">Rows Read</p>
+          <p class="text-3xl font-bold mt-1">{{ jobStatus()?.readCount ?? 0 }}</p>
+        </div>
+        <div class="p-4 rounded-lg text-center border">
+          <p class="text-sm font-medium">Imported</p>
+          <p class="text-3xl font-bold mt-1">{{ jobStatus()?.writeCount ?? 0 }}</p>
+        </div>
+        <div class="p-4 rounded-lg text-center border">
+          <p class="text-sm font-medium">Skipped</p>
+          <p class="text-3xl font-bold mt-1">{{ jobStatus()?.skipCount ?? 0 }}</p>
+        </div>
+      </div>
+    }
+
+    <!-- Completed state -->
+    @if (isCompleted()) {
+      <p-message severity="success">Import completed successfully!</p-message>
+      <div class="grid grid-cols-3 gap-4">
+        <div class="p-4 rounded-lg text-center border">
+          <p class="text-sm font-medium">Total Read</p>
+          <p class="text-3xl font-bold mt-1">{{ jobStatus()?.readCount ?? 0 }}</p>
+        </div>
+        <div class="p-4 rounded-lg text-center border">
+          <p class="text-sm font-medium">Imported</p>
+          <p class="text-3xl font-bold mt-1">{{ jobStatus()?.writeCount ?? 0 }}</p>
+        </div>
+        <div class="p-4 rounded-lg text-center border">
+          <p class="text-sm font-medium">Skipped / Failed</p>
+          <p class="text-3xl font-bold mt-1">{{ jobStatus()?.skipCount ?? 0 }}</p>
+        </div>
+      </div>
+    }
+
+    <!-- Failed / Stopped state -->
+    @if (isFailed()) {
+      <p-message severity="error">
+        Import {{ jobStatus()?.status === 'STOPPED' ? 'was stopped' : 'failed' }}. Please check the
+        file and try again.
+      </p-message>
     }
   </div>
 
   <ng-template pTemplate="footer">
-    @if (!importResponse()) {
+    @if (!jobStatus() && !isUploading()) {
       <p-button
         (onClick)="close()"
-        [disabled]="isUploading()"
         [outlined]="true"
         icon="pi pi-times"
         label="Cancel"
@@ -102,23 +118,25 @@
       ></p-button>
       <p-button
         (onClick)="import()"
-        [disabled]="!selectedFile() || isUploading()"
+        [disabled]="!selectedFile()"
         [icon]="isUploading() ? 'pi pi-spin pi-spinner' : 'pi pi-upload'"
         label="Import"
         severity="success"
       ></p-button>
-    } @else {
-      @if (selectedFile()) {
-        <p-button
-          (onClick)="clearFile()"
-          [outlined]="true"
-          icon="pi pi-times"
-          label="Clear Selection"
-          severity="secondary"
-        ></p-button>
-      }
+    }
+    @if (isProcessing()) {
+      <p-button
+        (onClick)="close()"
+        [outlined]="true"
+        icon="pi pi-times"
+        label="Close"
+        severity="secondary"
+      ></p-button>
+    }
+    @if (isCompleted() || isFailed()) {
       <p-button
         (onClick)="reset()"
+        [outlined]="true"
         icon="pi pi-refresh"
         label="Import Another File"
         severity="primary"

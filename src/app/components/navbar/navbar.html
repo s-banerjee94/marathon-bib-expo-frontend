@@ -25,8 +25,8 @@
         [text]="true"
       />
 
-      <!-- Theme Configurator (only for logged in users) -->
       @if (isAuthenticated()) {
+        <!-- Theme Configurator -->
         <p-button
           (onClick)="themePopover.toggle($event)"
           [rounded]="true"
@@ -37,12 +37,103 @@
         <p-popover #themePopover>
           <app-theme-configurator />
         </p-popover>
+
+        <!-- Notification Bell -->
+        <p-button
+          (onClick)="notifPopover.toggle($event)"
+          [rounded]="true"
+          [text]="true"
+          pTooltip="Notifications"
+        >
+          <p-overlaybadge
+            [value]="
+              notificationService.unreadCount() > 99
+                ? '99+'
+                : notificationService.unreadCount().toString()
+            "
+            severity="danger"
+            [badgeDisabled]="notificationService.unreadCount() === 0"
+            badgeSize="small"
+          >
+            <i class="pi pi-bell"></i>
+          </p-overlaybadge>
+        </p-button>
+
+        <!-- Notification Popover -->
+        <p-popover #notifPopover>
+          <div class="flex flex-col w-80">
+            <!-- Header -->
+            <div class="flex items-center justify-between px-4 pt-3 pb-2">
+              <span class="font-semibold text-sm tracking-wide">Notifications</span>
+              @if (notificationService.unreadCount() > 0) {
+                <span
+                  class="text-[11px] font-semibold px-2 py-0.5 rounded-full"
+                  style="background: var(--p-primary-50); color: var(--p-primary-color)"
+                >
+                  {{ notificationService.unreadCount() }} unread
+                </span>
+              }
+            </div>
+
+            <!-- List -->
+            <div class="flex flex-col gap-1 max-h-80 overflow-y-auto px-2 pb-2">
+              @if (notificationService.notifications().length === 0) {
+                <div class="flex flex-col items-center justify-center py-10 px-4">
+                  <span
+                    class="w-12 h-12 rounded-full flex items-center justify-center mb-3"
+                    style="background: var(--p-surface-100)"
+                  >
+                    <i
+                      class="pi pi-bell-slash text-xl"
+                      style="color: var(--p-text-muted-color)"
+                    ></i>
+                  </span>
+                  <p class="text-sm font-medium">All caught up</p>
+                  <p class="text-xs mt-1" style="color: var(--p-text-muted-color)">
+                    No notifications yet
+                  </p>
+                </div>
+              } @else {
+                @for (notif of notificationService.notifications(); track notif.id) {
+                  <div
+                    (click)="onNotificationRead(notif.id, notif.read); notifPopover.hide()"
+                    class="flex flex-col gap-1 px-3 py-2.5 rounded-lg cursor-pointer transition-all"
+                    [style]="
+                      !notif.read
+                        ? 'background: var(--p-primary-50); border-left: 3px solid var(--p-primary-color)'
+                        : 'border-left: 3px solid transparent'
+                    "
+                    style="padding-left: calc(0.75rem - 3px)"
+                  >
+                    <div class="flex items-start justify-between gap-2">
+                      <span class="text-sm leading-snug" [class.font-semibold]="!notif.read">
+                        {{ notif.title }}
+                      </span>
+                      @if (!notif.read) {
+                        <span
+                          class="w-2 h-2 rounded-full shrink-0 mt-1.5"
+                          style="background: var(--p-primary-color)"
+                        ></span>
+                      }
+                    </div>
+                    <p class="text-xs line-clamp-2" style="color: var(--p-text-muted-color)">
+                      {{ notif.message }}
+                    </p>
+                    <span class="text-[11px]" style="color: var(--p-text-muted-color)">
+                      {{ notif.createdAt | date: 'dd MMM, h:mm a' }}
+                    </span>
+                  </div>
+                }
+              }
+            </div>
+          </div>
+        </p-popover>
       }
 
       <!-- User Avatar Menu -->
       <p-avatar
         (click)="menu.toggle($event)"
-        label="U"
+        [label]="avatarLabel()"
         shape="circle"
         size="normal"
         styleClass="cursor-pointer"
