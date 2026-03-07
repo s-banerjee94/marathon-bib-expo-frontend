@@ -28,13 +28,16 @@ export class MenuComponent {
       ],
     },
     {
-      label: 'Management',
-      icon: 'pi pi-cog',
+      label: 'Users',
+      icon: 'pi pi-users',
+      routerLink: '/users',
       roles: [UserRole.ROOT, UserRole.ADMIN],
-      items: [
-        { label: 'Users', icon: 'pi pi-users', routerLink: '/users' },
-        { label: 'Organizations', icon: 'pi pi-building', routerLink: '/organizations' },
-      ],
+    },
+    {
+      label: 'Organizations',
+      icon: 'pi pi-building',
+      routerLink: '/organizations',
+      roles: [UserRole.ROOT, UserRole.ADMIN],
     },
     {
       label: 'Events',
