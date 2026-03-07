@@ -165,7 +165,7 @@ export class AuthService {
 
     if (error instanceof HttpErrorResponse) {
       if (error.status === 401) {
-        errorMessage = 'Invalid username or password';
+        errorMessage = error.error?.message || 'Invalid username or password';
       } else if (error.status === 0) {
         errorMessage = 'Unable to connect to server. Please check your connection.';
       } else {
