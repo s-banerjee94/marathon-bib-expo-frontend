@@ -1,9 +1,7 @@
 <div class="min-h-screen">
   <!-- ── Header ── -->
   <div class="px-6 py-5 shadow-sm">
-    <div
-      class="max-w-7xl mx-auto flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2"
-    >
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
       <div>
         <h1 class="text-2xl font-bold tracking-tight">Organizer Dashboard</h1>
         <p class="text-sm mt-0.5">
@@ -28,7 +26,7 @@
     </div>
   </div>
 
-  <div class="max-w-7xl mx-auto px-6 py-6 space-y-6">
+  <div class="max-w-full px-6 py-6 space-y-6">
     <!-- ── Event Stat Cards ── -->
     <section aria-label="Event overview">
       <h2 class="text-base font-semibold uppercase tracking-wide mb-3">Event Overview</h2>
@@ -114,7 +112,7 @@
     </section>
 
     <!-- ── Charts: Event Status + Team Role ── -->
-    <section class="grid grid-cols-1 lg:grid-cols-2 gap-4" aria-label="Statistics charts">
+    <section class="grid grid-cols-1 md:grid-cols-2 gap-4" aria-label="Statistics charts">
       <!-- Event Status Distribution -->
       <p-card header="Event Status Distribution">
         @if (isLoadingStats()) {
@@ -126,7 +124,7 @@
             type="doughnut"
             [data]="eventStatusChart()!"
             [options]="chartOptions"
-            style="height: 260px"
+            height="264px"
             class="w-full"
             aria-label="Doughnut chart showing event status distribution"
           ></p-chart>
@@ -149,7 +147,7 @@
             type="doughnut"
             [data]="userRoleChart()!"
             [options]="chartOptions"
-            style="height: 260px"
+            height="264px"
             class="w-full"
             aria-label="Doughnut chart showing team role distribution"
           ></p-chart>
@@ -163,7 +161,7 @@
     </section>
 
     <!-- ── Organization Details + Capacity ── -->
-    <section class="grid grid-cols-1 lg:grid-cols-2 gap-4" aria-label="Organization details">
+    <section class="grid grid-cols-1 md:grid-cols-2 gap-4" aria-label="Organization details">
       <!-- Organization Details -->
       <p-card>
         <ng-template pTemplate="header">

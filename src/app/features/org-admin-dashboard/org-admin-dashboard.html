@@ -1,9 +1,7 @@
 <div class="min-h-screen">
   <!-- ── Header ── -->
   <div class="px-6 py-5 shadow-sm">
-    <div
-      class="max-w-7xl mx-auto flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2"
-    >
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
       <div>
         <h1 class="text-2xl font-bold tracking-tight">Organizer Admin Dashboard</h1>
         <p class="text-sm mt-0.5">
@@ -26,7 +24,7 @@
     </div>
   </div>
 
-  <div class="max-w-7xl mx-auto px-6 py-6 space-y-6">
+  <div class="max-w-full px-6 py-6 space-y-6">
     <!-- ── Stats Row ── -->
     <section>
       <h2 class="text-base font-semibold uppercase tracking-wide mb-3">Overview</h2>
@@ -104,7 +102,7 @@
     </section>
 
     <!-- ── Charts Row: Event Status + User Role ── -->
-    <section class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+    <section class="grid grid-cols-1 md:grid-cols-2 gap-4">
       <!-- Event Status Chart -->
       <p-card header="Event Status Distribution">
         @if (isLoadingEvents()) {
@@ -117,7 +115,7 @@
             [data]="eventStatusChart()!"
             [options]="chartOptions"
             class="w-full"
-            style="height: 240px"
+            height="243px"
           ></p-chart>
         } @else {
           <div class="flex flex-col items-center justify-center py-12 gap-2">
@@ -138,7 +136,7 @@
             type="doughnut"
             [data]="userRoleChartData()!"
             [options]="chartOptions"
-            style="height: 240px"
+            height="243px"
             class="w-full"
           ></p-chart>
         } @else {
@@ -151,7 +149,7 @@
     </section>
 
     <!-- ── Capacity + Org Info ── -->
-    <section class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+    <section class="grid grid-cols-1 md:grid-cols-2 gap-4">
       <!-- Org Info -->
       <p-card header="Organization Details">
         @if (isLoadingOrg()) {

@@ -1,16 +1,14 @@
 <div class="min-h-screen">
   <!-- ── Header ── -->
   <div class="px-6 py-4 shadow-sm">
-    <div class="max-w-7xl mx-auto">
-      <h1 class="text-2xl font-bold tracking-tight">Root Dashboard</h1>
-      <p class="text-sm mt-0.5">
-        Welcome back,
-        <span class="font-semibold">{{ user()?.fullName || user()?.username }}</span>
-      </p>
-    </div>
+    <h1 class="text-2xl font-bold tracking-tight">Root Dashboard</h1>
+    <p class="text-sm mt-0.5">
+      Welcome back,
+      <span class="font-semibold">{{ user()?.fullName || user()?.username }}</span>
+    </p>
   </div>
 
-  <div class="max-w-7xl mx-auto px-6 py-6 space-y-6">
+  <div class="max-w-full px-6 py-6 space-y-6">
     <!-- ── Stats Row ── -->
     <section>
       <div class="flex items-center justify-between mb-3">
@@ -122,7 +120,7 @@
     </section>
 
     <!-- ── Charts Row 1: Role + Event Status ── -->
-    <section class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+    <section class="grid grid-cols-1 md:grid-cols-2 gap-4">
       <!-- User Role Distribution -->
       <p-card header="User Role Distribution">
         @if (isLoadingStats()) {
@@ -134,7 +132,7 @@
             type="doughnut"
             [data]="roleChartData()!"
             [options]="chartOptions"
-            style="height: 240px"
+            height="243px"
             class="w-full"
           ></p-chart>
         } @else {
@@ -156,7 +154,7 @@
             type="doughnut"
             [data]="eventStatusChartData()!"
             [options]="chartOptions"
-            style="height: 240px"
+            height="243px"
             class="w-full"
           ></p-chart>
         } @else {
@@ -169,7 +167,7 @@
     </section>
 
     <!-- ── Charts Row 2: Org by Tier + Org by Status ── -->
-    <section class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+    <section class="grid grid-cols-1 md:grid-cols-2 gap-4">
       <!-- Org by Subscription Tier -->
       <p-card header="Organizations by Subscription Tier">
         @if (isLoadingStats()) {
@@ -181,7 +179,7 @@
             type="doughnut"
             [data]="orgTierChartData()!"
             [options]="chartOptions"
-            style="height: 240px"
+            height="243px"
             class="w-full"
           ></p-chart>
         } @else {
@@ -203,7 +201,7 @@
             type="doughnut"
             [data]="orgStatusChartData()!"
             [options]="chartOptions"
-            style="height: 240px"
+            height="243px"
             class="w-full"
           ></p-chart>
         } @else {
