@@ -147,8 +147,8 @@ export class DistributionService {
     );
   }
 
-  getParticipantLogs(eventId: number, bibNumber: string): Observable<DistributionLogListResponse> {
-    return this.http.get<DistributionLogListResponse>(
+  getParticipantLogs(eventId: number, bibNumber: string): Observable<DistributionLogResponse> {
+    return this.http.get<DistributionLogResponse>(
       `${this.apiUrl}/${eventId}/distribution/logs/${bibNumber}`,
     );
   }

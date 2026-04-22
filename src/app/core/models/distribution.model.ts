@@ -121,7 +121,7 @@ export interface DistributionLogResponse {
   timestamp: string;
   bibNumber: string;
   action: DistributionAction;
-  itemName?: string;
+  itemNames?: string[];
   performedBy?: string;
   collectorName?: string;
   collectorPhone?: string;

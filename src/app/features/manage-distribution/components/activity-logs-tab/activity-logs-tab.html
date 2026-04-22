@@ -173,7 +173,7 @@
           </td>
 
           <!-- Item -->
-          <td>{{ log.itemName | defaultValue }}</td>
+          <td>{{ log.itemNames | join }}</td>
 
           <!-- Performed By -->
           <td>{{ getStaffUsername(log.performedBy) }}</td>

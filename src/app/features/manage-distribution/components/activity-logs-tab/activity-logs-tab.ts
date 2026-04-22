@@ -8,8 +8,9 @@ import {
   signal,
   SimpleChanges,
 } from '@angular/core';
+import { forkJoin } from 'rxjs';
 import { map } from 'rxjs/operators';
-import { CommonModule } from '@angular/common';
+import { DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
 import { TableModule } from 'primeng/table';
@@ -29,6 +30,7 @@ import { UserService } from '../../../../core/services/user.service';
 import { AuthService } from '../../../../core/services/auth.service';
 import { ErrorHandlerService } from '../../../../core/services/error-handler.service';
 import { DefaultValuePipe } from '../../../../shared/pipes/default-value.pipe';
+import { JoinPipe } from '../../../../shared/pipes/join.pipe';
 import {
   LOG_ACTION_OPTIONS,
   LOG_SEARCH_TYPES,
@@ -43,10 +45,9 @@ import {
 
 @Component({
   selector: 'app-activity-logs-tab',
-  standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    CommonModule,
+    DatePipe,
     FormsModule,
     ButtonModule,
     TableModule,
@@ -60,6 +61,7 @@ import {
     FloatLabelModule,
     TooltipModule,
     DefaultValuePipe,
+    JoinPipe,
   ],
   templateUrl: './activity-logs-tab.html',
 })
@@ -259,16 +261,23 @@ export class ActivityLogsTab implements OnChanges {
 
   private loadOrgUsers(): void {
     this.isUsersLoading.set(true);
-
     const isRootOrAdmin = this.authService.hasAnyRole([UserRole.ROOT, UserRole.ADMIN]);
 
-    // ROOT/ADMIN must filter by organizationId via the pageable endpoint;
-    // org-scoped roles use the /organization endpoint (auto-scoped to their org).
     const users$ = isRootOrAdmin
-      ? this.userService
-          .searchUsers({ organizationId: this.organizationId, size: 200, page: 0 })
-          .pipe(map((response) => response.content))
-      : this.userService.getOrganizationUsers({ enabled: true });
+      ? forkJoin([
+          this.userService.searchUsers({ role: UserRole.ROOT, size: 200, page: 0 }),
+          this.userService.searchUsers({ role: UserRole.ADMIN, size: 200, page: 0 }),
+          this.userService.searchUsers({ organizationId: this.organizationId, size: 200, page: 0 }),
+        ]).pipe(
+          map(([roots, admins, orgUsers]) => [
+            ...roots.content,
+            ...admins.content,
+            ...orgUsers.content,
+          ]),
+        )
+      : this.userService
+          .searchUsers({ enabled: true, size: 200, page: 0 })
+          .pipe(map((r) => r.content));
 
     users$.subscribe({
       next: (users) => {
