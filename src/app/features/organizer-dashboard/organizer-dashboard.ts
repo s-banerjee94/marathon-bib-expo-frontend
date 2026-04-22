@@ -131,21 +131,13 @@ export class OrganizerDashboard implements OnInit {
     this.isLoadingUsers.set(true);
 
     forkJoin({
-      orgUsers: this.userService.getOrganizationUsers({ role: UserRole.ORGANIZER_USER }),
-      orgAdmins: this.userService.getOrganizationUsers({ role: UserRole.ORGANIZER_ADMIN }),
-      distributors: this.userService.getOrganizationUsers({ role: UserRole.DISTRIBUTOR }),
+      orgUsers: this.userService.searchUsers({ role: UserRole.ORGANIZER_USER, size: 1, page: 0 }),
+      orgAdmins: this.userService.searchUsers({ role: UserRole.ORGANIZER_ADMIN, size: 1, page: 0 }),
+      distributors: this.userService.searchUsers({ role: UserRole.DISTRIBUTOR, size: 1, page: 0 }),
     }).subscribe({
       next: ({ orgUsers, orgAdmins, distributors }) => {
-        // Count array lengths since endpoint returns a simple list
-        const orgUserCount = orgUsers.length;
-        const orgAdminCount = orgAdmins.length;
-        const distributorCount = distributors.length;
-
-        console.log('User counts:', { orgUserCount, orgAdminCount, distributorCount });
-
-        // Total org users includes both ORGANIZER_USER and ORGANIZER_ADMIN
-        this.totalOrgUsers.set(orgUserCount + orgAdminCount);
-        this.totalDistributors.set(distributorCount);
+        this.totalOrgUsers.set(orgUsers.totalElements + orgAdmins.totalElements);
+        this.totalDistributors.set(distributors.totalElements);
         this.isLoadingUsers.set(false);
       },
       error: (error) => {
