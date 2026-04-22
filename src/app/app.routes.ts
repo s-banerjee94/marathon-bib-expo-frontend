@@ -9,6 +9,7 @@ import {
   rootGuard,
   rootOrAdminGuard,
   userCreationGuard,
+  userManagementGuard,
 } from './core/guards/auth.guard';
 
 export const routes: Routes = [
@@ -54,12 +55,12 @@ export const routes: Routes = [
   {
     path: 'users',
     loadComponent: () => import('./features/user-list/user-list').then((m) => m.UserList),
-    canActivate: [rootOrAdminGuard],
+    canActivate: [userManagementGuard],
   },
   {
     path: 'user-form',
     loadComponent: () => import('./features/user-form/user-form').then((m) => m.UserForm),
-    canActivate: [userCreationGuard],
+    canActivate: [userManagementGuard],
   },
   {
     path: 'organizer-dashboard',

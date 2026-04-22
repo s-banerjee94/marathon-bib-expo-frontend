@@ -31,7 +31,7 @@ export class MenuComponent {
       label: 'Users',
       icon: 'pi pi-users',
       routerLink: '/users',
-      roles: [UserRole.ROOT, UserRole.ADMIN],
+      roles: [UserRole.ROOT, UserRole.ADMIN, UserRole.ORGANIZER_ADMIN, UserRole.ORGANIZER_USER],
     },
     {
       label: 'Organizations',

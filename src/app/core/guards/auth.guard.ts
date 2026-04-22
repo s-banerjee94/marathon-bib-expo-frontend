@@ -167,8 +167,36 @@ export const distributorGuard: CanActivateFn = (_route, _state) => {
 };
 
 /**
+ * User Management Guard: ROOT, ADMIN, ORGANIZER_ADMIN, and ORGANIZER_USER can access
+ * Used for: /user-form, /users
+ */
+export const userManagementGuard: CanActivateFn = (_route, _state) => {
+  const authService = inject(AuthService);
+  const router = inject(Router);
+
+  if (!authService.isAuthenticated()) {
+    router.navigate(['/login']);
+    return false;
+  }
+
+  if (
+    authService.hasAnyRole([
+      UserRole.ROOT,
+      UserRole.ADMIN,
+      UserRole.ORGANIZER_ADMIN,
+      UserRole.ORGANIZER_USER,
+    ])
+  ) {
+    return true;
+  }
+
+  router.navigate(['/unauthorized']);
+  return false;
+};
+
+/**
  * User Creation Guard: ROOT, ADMIN, ORGANIZER_ADMIN, and ORGANIZER_USER can access
- * Used for: /user-form, /event-form, /participant-form
+ * Used for: /events, /event-form, /participant-form
  */
 export const userCreationGuard: CanActivateFn = (_route, _state) => {
   const authService = inject(AuthService);
