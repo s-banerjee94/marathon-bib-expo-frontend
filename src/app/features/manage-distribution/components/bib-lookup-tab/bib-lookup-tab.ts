@@ -2,16 +2,13 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  effect,
   inject,
-  Input,
-  OnChanges,
-  Output,
+  input,
+  output,
   signal,
-  SimpleChanges,
-  EventEmitter,
 } from '@angular/core';
 import { forkJoin } from 'rxjs';
-import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ButtonModule, ButtonSeverity } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
@@ -40,10 +37,8 @@ import {
 
 @Component({
   selector: 'app-bib-lookup-tab',
-  standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    CommonModule,
     FormsModule,
     ButtonModule,
     InputTextModule,
@@ -61,39 +56,34 @@ import {
   ],
   templateUrl: './bib-lookup-tab.html',
 })
-export class BibLookupTab implements OnChanges {
+export class BibLookupTab {
   private participantService = inject(ParticipantService);
   private eventService = inject(EventService);
   private errorHandler = inject(ErrorHandlerService);
 
-  @Input() eventId: number | undefined;
-  @Input() canUndoBib = false;
+  eventId = input<number | undefined>(undefined);
+  canUndoBib = input(false);
 
-  @Output() collectBib = new EventEmitter<Participant>();
-  @Output() distributeGoodies = new EventEmitter<Participant>();
-  @Output() undoBib = new EventEmitter<Participant>();
+  collectBib = output<Participant>();
+  distributeGoodies = output<Participant>();
+  undoBib = output<Participant>();
 
-  // Sizing
   buttonSize = BUTTON_SIZE;
   inputSize = FORM_INPUT_SIZE;
 
-  // Search state
   lookupSearchTypes = LOOKUP_SEARCH_TYPES;
   selectedSearchType = signal<LookupSearchType>('BIB');
   searchValue = signal<string>('');
   dropdownSelectedItem = signal<string>('');
 
-  // Race / Category dropdown data
   races = signal<Race[]>([]);
   categories = signal<Category[]>([]);
   isRacesLoading = signal(false);
 
-  // Computed: true when current search type uses a dropdown instead of text input
   isDropdownSearch = computed(
     () => this.selectedSearchType() === 'RACE' || this.selectedSearchType() === 'CATEGORY',
   );
 
-  // Results state
   results = signal<Participant[]>([]);
   loading = signal(false);
   error = signal<string | null>(null);
@@ -111,18 +101,17 @@ export class BibLookupTab implements OnChanges {
     return option?.placeholder || 'Enter search value';
   });
 
-  ngOnChanges(changes: SimpleChanges): void {
-    if (changes['eventId']) {
-      if (!changes['eventId'].firstChange) {
-        this.resetState();
-      }
-      if (this.eventId) {
-        this.loadEventData(this.eventId);
+  constructor() {
+    effect(() => {
+      const id = this.eventId();
+      this.resetState();
+      if (id) {
+        this.loadEventData(id);
       } else {
         this.races.set([]);
         this.categories.set([]);
       }
-    }
+    });
   }
 
   onSearchTypeChange(): void {
@@ -133,7 +122,7 @@ export class BibLookupTab implements OnChanges {
   performSearch(): void {
     const isDropdown = this.isDropdownSearch();
     const value = isDropdown ? this.dropdownSelectedItem() : this.searchValue().trim();
-    if (!value || value.length < 2 || !this.eventId) return;
+    if (!value || value.length < 2 || !this.eventId()) return;
 
     this.results.set([]);
     this.lastEvaluatedKey.set(undefined);
@@ -147,9 +136,8 @@ export class BibLookupTab implements OnChanges {
     this.doSearch();
   }
 
-  /** Called by parent after a distribution action to refresh results */
   reload(): void {
-    if (!this.isSearched() || !this.eventId) return;
+    if (!this.isSearched() || !this.eventId()) return;
     const currentResults = this.results();
     this.results.set([]);
     this.lastEvaluatedKey.set(undefined);
@@ -159,8 +147,12 @@ export class BibLookupTab implements OnChanges {
     );
   }
 
+  clearSearch(): void {
+    this.resetState();
+  }
+
   private doSearch(limit = PAGINATION_LIMIT): void {
-    const eventId = this.eventId;
+    const eventId = this.eventId();
     if (!eventId) return;
 
     const isDropdown = this.isDropdownSearch();
@@ -188,10 +180,6 @@ export class BibLookupTab implements OnChanges {
           this.error.set('Search failed. Please try again.');
         },
       });
-  }
-
-  clearSearch(): void {
-    this.resetState();
   }
 
   private resetState(): void {
@@ -225,12 +213,10 @@ export class BibLookupTab implements OnChanges {
     });
   }
 
-  // BIB status helpers
   getBibStatus(participant: Participant): boolean {
     return !!participant.bibCollectedAt;
   }
 
-  // Goodies helpers
   hasPendingGoodies(participant: Participant): boolean {
     if (!participant.goodies) return false;
     const keys = Object.keys(participant.goodies);

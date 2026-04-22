@@ -231,7 +231,7 @@
                     tooltipPosition="top"
                   />
                 }
-                @if (getBibStatus(participant) && canUndoBib) {
+                @if (getBibStatus(participant) && canUndoBib()) {
                   <p-button
                     (onClick)="undoBib.emit(participant)"
                     [rounded]="true"
