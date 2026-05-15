@@ -1,122 +1,89 @@
 <div class="space-y-4">
   <!-- Header -->
-  <div class="flex justify-between items-center">
+  <div class="space-y-3">
     <h2 class="text-xl font-semibold">SMS Templates</h2>
-    <div class="flex items-center gap-4">
-      <!-- Column Selection -->
+    <div class="flex flex-wrap justify-between items-center gap-3">
+      <!-- Left: Search -->
       <div class="flex items-center gap-2">
-        <label for="smsTemplateColumnSelect" class="text-sm">Columns:</label>
-        <p-multiselect
-          (ngModelChange)="onColumnSelectionChange()"
-          [(ngModel)]="selectedCols"
-          [maxSelectedLabels]="2"
-          [options]="cols()"
-          [size]="inputSize"
-          inputId="smsTemplateColumnSelect"
-          optionLabel="header"
-          placeholder="Select Columns"
+        <p-iconfield>
+          <p-inputicon class="pi pi-search" />
+          <input
+            pInputText
+            [pSize]="inputSize"
+            placeholder="Search templates..."
+            [ngModel]="searchTerm()"
+            (ngModelChange)="onSearchInput($event)"
+          />
+        </p-iconfield>
+        @if (searchTerm().trim().length > 0) {
+          <p-button
+            icon="pi pi-filter-slash"
+            label="Clear"
+            severity="secondary"
+            [text]="true"
+            [size]="buttonSize"
+            (onClick)="onClearSearch()"
+            pTooltip="Clear search"
+          />
+        }
+      </div>
+      <!-- Right: Column Selection + Create -->
+      <div class="flex items-center gap-3">
+        <div class="flex items-center gap-2">
+          <label for="smsTemplateColumnSelect" class="text-sm">Columns:</label>
+          <p-multiselect
+            (ngModelChange)="onColumnSelectionChange()"
+            [(ngModel)]="selectedCols"
+            [maxSelectedLabels]="2"
+            [options]="cols()"
+            [size]="inputSize"
+            inputId="smsTemplateColumnSelect"
+            optionLabel="header"
+            placeholder="Select Columns"
+          />
+        </div>
+        <p-button
+          label="Create SMS Template"
+          icon="pi pi-plus"
+          [size]="buttonSize"
+          (onClick)="onCreate()"
+          [disabled]="isLoading()"
         />
       </div>
-      <p-button
-        label="Create SMS Template"
-        icon="pi pi-plus"
-        [size]="buttonSize"
-        (onClick)="onCreate()"
-        [disabled]="isLoading()"
-      />
     </div>
-  </div>
-
-  <!-- Filters -->
-  <div class="flex flex-wrap items-center gap-3">
-    <!-- Search -->
-    <p-iconfield>
-      <p-inputicon class="pi pi-search" />
-      <input
-        pInputText
-        [pSize]="inputSize"
-        placeholder="Search templates..."
-        [ngModel]="searchTerm()"
-        (ngModelChange)="onSearchInput($event)"
-      />
-    </p-iconfield>
-
-    <!-- Status Filter -->
-    <p-select
-      [options]="statusOptions"
-      [(ngModel)]="filterEnabled"
-      (ngModelChange)="onFilterChange()"
-      optionLabel="label"
-      optionValue="value"
-      placeholder="Status"
-      [size]="inputSize"
-      [style]="{ 'min-width': '9rem' }"
-    />
-
-    <!-- From Date -->
-    <p-datepicker
-      [(ngModel)]="filterFromDate"
-      (ngModelChange)="onFilterChange()"
-      placeholder="From Date"
-      [showButtonBar]="true"
-      dateFormat="M dd, yy"
-      [size]="inputSize"
-    />
-
-    <!-- To Date -->
-    <p-datepicker
-      [(ngModel)]="filterToDate"
-      (ngModelChange)="onFilterChange()"
-      placeholder="To Date"
-      [showButtonBar]="true"
-      dateFormat="M dd, yy"
-      [size]="inputSize"
-    />
-
-    <!-- Clear Filters -->
-    @if (hasActiveFilters()) {
-      <p-button
-        icon="pi pi-filter-slash"
-        label="Clear"
-        severity="secondary"
-        [text]="true"
-        [size]="buttonSize"
-        (onClick)="onClearFilters()"
-        pTooltip="Clear all filters"
-      />
-    }
   </div>
 
   <!-- Table -->
   <p-table
     [value]="displayData()"
     dataKey="id"
+    [scrollable]="true"
     [tableStyle]="{ 'min-width': '50rem' }"
     [size]="inputSize"
   >
     <ng-template pTemplate="header">
       <tr>
+        <th class="w-16">Sl. No</th>
         @for (col of selectedCols(); track col.field) {
           <th>{{ col.header }}</th>
         }
-        <th style="width: 150px">Actions</th>
+        <th class="w-36" pFrozenColumn alignFrozen="right">Actions</th>
       </tr>
     </ng-template>
 
-    <ng-template pTemplate="body" let-template>
+    <ng-template pTemplate="body" let-template let-rowIndex="rowIndex">
       <tr>
         @if (isLoading()) {
+          <td><p-skeleton /></td>
           @for (col of selectedCols(); track col.field) {
             <td><p-skeleton /></td>
           }
-          <td><p-skeleton height="2rem" width="6rem" /></td>
+          <td pFrozenColumn alignFrozen="right"><p-skeleton height="2rem" width="6rem" /></td>
         } @else {
+          <td class="text-color-secondary">{{ rowIndex + 1 }}</td>
           @for (col of selectedCols(); track col.field) {
             <td>
               @switch (col.field) {
-                @case ('id') {
-                  {{ template.id }}
-                }
                 @case ('name') {
                   {{ template.name | defaultValue }}
                 }
@@ -125,38 +92,13 @@
                 }
                 @case ('template') {
                   <div class="max-w-md truncate" [title]="template.template">
-                    {{ truncateText(template.template, 40) }}
+                    {{ template.template | truncate: 40 }}
                   </div>
                 }
                 @case ('note') {
                   <div class="max-w-xs truncate" [title]="template.note">
                     {{ template.note | defaultValue }}
                   </div>
-                }
-                @case ('scheduledDateTime') {
-                  {{ template.scheduledDateTime | formatDateTime }}
-                }
-                @case ('enabled') {
-                  <div class="text-center">
-                    @if (togglingTemplateId() === template.id) {
-                      <p-skeleton height="1.5rem" width="5rem" />
-                    } @else {
-                      <p-tag
-                        (click)="onToggleStatus($event, template)"
-                        [value]="template.enabled ? 'Active' : 'Inactive'"
-                        [severity]="template.enabled ? 'success' : 'danger'"
-                        [rounded]="true"
-                        [pt]="{
-                          root: { class: 'cursor-pointer hover:opacity-80 transition-opacity' },
-                        }"
-                        pTooltip="Click to toggle status"
-                        tooltipPosition="top"
-                      />
-                    }
-                  </div>
-                }
-                @case ('eventName') {
-                  {{ template.eventName | defaultValue }}
                 }
                 @case ('createdAt') {
                   {{ template.createdAt | formatDateTime }}
@@ -173,7 +115,7 @@
               }
             </td>
           }
-          <td>
+          <td pFrozenColumn alignFrozen="right">
             <div class="flex gap-1">
               <p-button
                 icon="pi pi-eye"
@@ -213,7 +155,7 @@
 
     <ng-template pTemplate="emptymessage">
       <tr>
-        <td [attr.colspan]="selectedCols().length + 1" class="text-center py-8 text-gray-500">
+        <td [attr.colspan]="selectedCols().length + 2" class="text-center py-8">
           No SMS templates found. Click "Create SMS Template" to add one.
         </td>
       </tr>

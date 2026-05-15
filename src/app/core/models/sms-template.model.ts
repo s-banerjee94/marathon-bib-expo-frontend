@@ -4,12 +4,10 @@
  */
 export interface SmsTemplate {
   id: number;
-  name: string; // Human-readable name for the template
-  smsTemplateId: string; // DLT Template ID from telecom provider
-  template: string; // SMS template text with placeholders
+  name: string;
+  smsTemplateId: string;
+  template: string;
   note?: string;
-  scheduledDateTime?: string; // ISO date-time string
-  enabled: boolean;
   eventId: number;
   eventName?: string;
   createdAt?: string;
@@ -26,7 +24,6 @@ export interface CreateSmsTemplateRequest {
   smsTemplateId: string; // Required: 20-200 chars, pattern ^[0-9]+$
   template: string; // Required: 2-1000 chars
   note?: string; // Optional: 0-500 chars
-  scheduledDateTime?: string; // Optional: ISO date-time string
 }
 
 /**
@@ -37,12 +34,4 @@ export interface UpdateSmsTemplateRequest {
   smsTemplateId?: string; // 20-200 chars, pattern ^[0-9]+$
   template?: string; // 2-1000 chars
   note?: string; // 0-500 chars
-  scheduledDateTime?: string; // ISO date-time string
-}
-
-/**
- * Filter preferences for SMS template table (persisted to localStorage)
- */
-export interface SmsTemplateFilterPrefs {
-  enabled: boolean | null;
 }

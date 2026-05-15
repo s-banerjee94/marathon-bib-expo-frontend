@@ -1,7 +1,6 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { DividerModule } from 'primeng/divider';
-import { TagModule } from 'primeng/tag';
 import { ButtonModule } from 'primeng/button';
 import { DynamicDialogConfig, DynamicDialogRef } from 'primeng/dynamicdialog';
 import { SmsTemplate } from '../../../core/models/sms-template.model';
@@ -11,14 +10,7 @@ import { FormatDateTimePipe } from '../../../shared/pipes/format-date-time.pipe'
 @Component({
   selector: 'app-sms-template-detail',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [
-    CommonModule,
-    DividerModule,
-    TagModule,
-    ButtonModule,
-    DefaultValuePipe,
-    FormatDateTimePipe,
-  ],
+  imports: [CommonModule, DividerModule, ButtonModule, DefaultValuePipe, FormatDateTimePipe],
   templateUrl: './sms-template-detail.html',
 })
 export class SmsTemplateDetail {

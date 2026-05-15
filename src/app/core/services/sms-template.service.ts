@@ -1,14 +1,12 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import {
   SmsTemplate,
   CreateSmsTemplateRequest,
   UpdateSmsTemplateRequest,
 } from '../models/sms-template.model';
-import { PageableParams, PageableResponse } from '../models/api.model';
 import { BASE_URI } from '../../shared/constants/api.constant';
-import { buildHttpParams } from '../../shared/utils/http-params.utils';
 
 @Injectable({
   providedIn: 'root',
@@ -16,44 +14,12 @@ import { buildHttpParams } from '../../shared/utils/http-params.utils';
 export class SmsTemplateService {
   private http = inject(HttpClient);
 
-  getSmsTemplatesByEvent(
-    eventId: number,
-    params: PageableParams & {
-      search?: string;
-      enabled?: boolean;
-      fromDate?: string;
-      toDate?: string;
-    },
-  ): Observable<PageableResponse<SmsTemplate>> {
-    let httpParams = buildHttpParams(params);
-
-    if (params.search !== undefined) {
-      httpParams = httpParams.set('search', params.search);
+  getSmsTemplatesByEvent(eventId: number, search?: string): Observable<SmsTemplate[]> {
+    let params = new HttpParams();
+    if (search && search.trim().length >= 2) {
+      params = params.set('search', search.trim());
     }
-    if (params.enabled !== undefined) {
-      httpParams = httpParams.set('enabled', params.enabled.toString());
-    }
-    if (params.fromDate !== undefined) {
-      httpParams = httpParams.set('fromDate', params.fromDate);
-    }
-    if (params.toDate !== undefined) {
-      httpParams = httpParams.set('toDate', params.toDate);
-    }
-
-    return this.http.get<PageableResponse<SmsTemplate>>(
-      `${BASE_URI}/events/${eventId}/sms-templates`,
-      { params: httpParams },
-    );
-  }
-
-  getSmsTemplateById(eventId: number, templateId: number): Observable<SmsTemplate> {
-    return this.http.get<SmsTemplate>(`${BASE_URI}/events/${eventId}/sms-templates/${templateId}`);
-  }
-
-  getSmsTemplateBySmsTemplateId(eventId: number, smsTemplateId: string): Observable<SmsTemplate> {
-    return this.http.get<SmsTemplate>(
-      `${BASE_URI}/events/${eventId}/sms-templates/by-template-id/${smsTemplateId}`,
-    );
+    return this.http.get<SmsTemplate[]>(`${BASE_URI}/events/${eventId}/sms-templates`, { params });
   }
 
   createSmsTemplate(eventId: number, request: CreateSmsTemplateRequest): Observable<SmsTemplate> {
@@ -73,12 +39,5 @@ export class SmsTemplateService {
 
   deleteSmsTemplate(eventId: number, templateId: number): Observable<void> {
     return this.http.delete<void>(`${BASE_URI}/events/${eventId}/sms-templates/${templateId}`);
-  }
-
-  toggleSmsTemplateEnabled(eventId: number, templateId: number): Observable<SmsTemplate> {
-    return this.http.patch<SmsTemplate>(
-      `${BASE_URI}/events/${eventId}/sms-templates/${templateId}/toggle-enabled`,
-      {},
-    );
   }
 }

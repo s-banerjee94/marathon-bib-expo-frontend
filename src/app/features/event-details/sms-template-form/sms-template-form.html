@@ -1,24 +1,27 @@
-<form [formGroup]="smsTemplateForm" (ngSubmit)="onSubmit()" class="flex flex-col gap-4 mt-2">
+<form #templateForm="ngForm" (ngSubmit)="onSubmit()" class="flex flex-col gap-4 mt-2">
   <!-- Template Name -->
   <div class="flex flex-col gap-1">
     <p-floatlabel variant="on">
       <input
         pInputText
         id="name"
-        formControlName="name"
+        name="name"
+        [(ngModel)]="formData.name"
         [pSize]="inputSize"
         fluid="true"
         placeholder="e.g., Bib Collection Reminder"
+        required
+        maxlength="100"
+        #name="ngModel"
       />
       <label for="name">Template Name *</label>
     </p-floatlabel>
-
-    @if (smsTemplateForm.get('name')?.invalid && smsTemplateForm.get('name')?.touched) {
+    @if (name.invalid && name.touched) {
       <p-message [size]="inputSize" severity="error" variant="simple">
-        @if (smsTemplateForm.get('name')?.hasError('required')) {
+        @if (name.hasError('required')) {
           Template name is required.
         }
-        @if (smsTemplateForm.get('name')?.hasError('maxlength')) {
+        @if (name.hasError('maxlength')) {
           Template name must not exceed 100 characters.
         }
       </p-message>
@@ -31,28 +34,31 @@
       <input
         pInputText
         id="smsTemplateId"
-        formControlName="smsTemplateId"
+        name="smsTemplateId"
+        [(ngModel)]="formData.smsTemplateId"
         [pSize]="inputSize"
         fluid="true"
         placeholder="e.g., 11071612345678901234"
+        required
+        minlength="20"
+        maxlength="200"
+        pattern="^[0-9]+$"
+        #smsTemplateId="ngModel"
       />
       <label for="smsTemplateId">DLT Template ID *</label>
     </p-floatlabel>
-
-    @if (
-      smsTemplateForm.get('smsTemplateId')?.invalid && smsTemplateForm.get('smsTemplateId')?.touched
-    ) {
+    @if (smsTemplateId.invalid && smsTemplateId.touched) {
       <p-message [size]="inputSize" severity="error" variant="simple">
-        @if (smsTemplateForm.get('smsTemplateId')?.hasError('required')) {
+        @if (smsTemplateId.hasError('required')) {
           DLT Template ID is required.
         }
-        @if (smsTemplateForm.get('smsTemplateId')?.hasError('minlength')) {
+        @if (smsTemplateId.hasError('minlength')) {
           DLT Template ID must be at least 20 characters.
         }
-        @if (smsTemplateForm.get('smsTemplateId')?.hasError('maxlength')) {
+        @if (smsTemplateId.hasError('maxlength')) {
           DLT Template ID must not exceed 200 characters.
         }
-        @if (smsTemplateForm.get('smsTemplateId')?.hasError('pattern')) {
+        @if (smsTemplateId.hasError('pattern')) {
           DLT Template ID must contain only numbers.
         }
       </p-message>
@@ -65,32 +71,69 @@
       <textarea
         pTextarea
         id="template"
-        formControlName="template"
+        name="template"
+        [(ngModel)]="formData.template"
+        (ngModelChange)="onTemplateChange($event)"
         rows="4"
         fluid="true"
-        placeholder="e.g., Hi {participantName}, your bib #{bibNumber} is ready!"
+        placeholder="e.g., Dear #{fullName}, your bib #{bibNumber} is ready for collection!"
+        required
+        minlength="2"
+        maxlength="1000"
+        #templateCtrl="ngModel"
       ></textarea>
       <label for="template">Template Text *</label>
     </p-floatlabel>
-
-    @if (smsTemplateForm.get('template')?.invalid && smsTemplateForm.get('template')?.touched) {
+    @if (templateCtrl.invalid && templateCtrl.touched) {
       <p-message [size]="inputSize" severity="error" variant="simple">
-        @if (smsTemplateForm.get('template')?.hasError('required')) {
+        @if (templateCtrl.hasError('required')) {
           Template text is required.
         }
-        @if (smsTemplateForm.get('template')?.hasError('minlength')) {
+        @if (templateCtrl.hasError('minlength')) {
           Template text must be at least 2 characters.
         }
-        @if (smsTemplateForm.get('template')?.hasError('maxlength')) {
+        @if (templateCtrl.hasError('maxlength')) {
           Template text must not exceed 1000 characters.
         }
       </p-message>
     }
-    <small class="text-gray-500">
-      Use placeholders like &#123;participantName&#125;, &#123;bibNumber&#125;,
-      &#123;venueName&#125;, &#123;eventName&#125;
-    </small>
   </div>
+
+  <!-- Template Preview with Inline Variable Chips -->
+  @if (detectedVars().length > 0) {
+    <div class="flex flex-col gap-1">
+      <span class="text-xs font-medium">Preview — click a red placeholder to replace it:</span>
+      <div class="border rounded-lg px-3 py-2 text-sm leading-loose">
+        @for (seg of segments(); track $index) {
+          @if (seg.type === 'text') {
+            <span class="whitespace-pre-wrap">{{ seg.content }}</span>
+          } @else {
+            <span
+              class="inline-flex cursor-pointer align-middle"
+              (click)="onVarChipClick(seg.field, $event)"
+            >
+              @if (seg.valid) {
+                <p-tag [value]="'#{' + seg.field + '}'" severity="success" [rounded]="true" />
+              } @else {
+                <p-tag
+                  [value]="'#{' + (seg.field || 'empty') + '}'"
+                  severity="danger"
+                  icon="pi pi-exclamation-triangle"
+                  [rounded]="true"
+                />
+              }
+            </span>
+          }
+        }
+      </div>
+      @if (hasInvalidVars()) {
+        <small class="text-xs">
+          <i class="pi pi-info-circle"></i>
+          Save is disabled until all invalid placeholders are replaced.
+        </small>
+      }
+    </div>
+  }
 
   <!-- Note -->
   <div class="flex flex-col gap-1">
@@ -98,37 +141,21 @@
       <textarea
         pTextarea
         id="note"
-        formControlName="note"
+        name="note"
+        [(ngModel)]="formData.note"
         rows="2"
         fluid="true"
         placeholder="Optional note or description"
+        maxlength="500"
+        #note="ngModel"
       ></textarea>
       <label for="note">Note</label>
     </p-floatlabel>
-
-    @if (smsTemplateForm.get('note')?.invalid && smsTemplateForm.get('note')?.touched) {
+    @if (note.invalid && note.touched) {
       <p-message [size]="inputSize" severity="error" variant="simple">
         Note must not exceed 500 characters.
       </p-message>
     }
-  </div>
-
-  <!-- Scheduled Date Time -->
-  <div class="flex flex-col gap-1">
-    <p-floatlabel variant="on">
-      <p-datepicker
-        inputId="scheduledDateTime"
-        formControlName="scheduledDateTime"
-        [showTime]="true"
-        [showIcon]="true"
-        [showButtonBar]="true"
-        dateFormat="M dd, yy"
-        fluid="true"
-        placeholder="Select date and time"
-      />
-      <label for="scheduledDateTime">Scheduled Date & Time</label>
-    </p-floatlabel>
-    <small class="text-gray-500">Optional: Schedule when this SMS should be sent</small>
   </div>
 
   <!-- Actions -->
@@ -145,7 +172,23 @@
       pButton
       type="submit"
       [label]="isEditMode() ? 'Update Template' : 'Create Template'"
-      [disabled]="smsTemplateForm.invalid"
+      [disabled]="templateForm.invalid || hasInvalidVars() || isSubmitting()"
     ></button>
   </div>
 </form>
+
+<!-- Replacement picker popover (always in DOM for ViewChild) -->
+<p-popover #replacerOp>
+  <div class="w-72 overflow-y-auto" style="max-height: 260px">
+    @for (opt of pickerOptions; track opt.field) {
+      <button
+        type="button"
+        class="flex items-center gap-2 w-full px-3 py-2 text-left border-none bg-transparent cursor-pointer hover:bg-emphasis"
+        (click)="onPickReplacement(opt.field)"
+      >
+        <code class="font-mono text-xs shrink-0">{{ '#{' + opt.field + '}' }}</code>
+        <span class="text-xs text-color-secondary">{{ opt.label }}</span>
+      </button>
+    }
+  </div>
+</p-popover>

@@ -1,16 +1,9 @@
 @if (template(); as t) {
   <div class="flex flex-col gap-4">
-    <!-- Status & ID -->
-    <div class="flex items-center justify-between">
-      <div class="flex flex-col gap-1">
-        <span class="text-xs font-medium uppercase tracking-wide">ID</span>
-        <span class="font-mono">{{ t.id }}</span>
-      </div>
-      <p-tag
-        [value]="t.enabled ? 'Active' : 'Inactive'"
-        [severity]="t.enabled ? 'success' : 'danger'"
-        [rounded]="true"
-      />
+    <!-- ID -->
+    <div class="flex flex-col gap-1">
+      <span class="text-xs font-medium uppercase tracking-wide">ID</span>
+      <span class="font-mono">{{ t.id }}</span>
     </div>
 
     <p-divider styleClass="my-0" />
@@ -36,12 +29,6 @@
         <span class="text-sm">{{ t.note }}</span>
       </div>
     }
-
-    <!-- Scheduled Date/Time -->
-    <div class="flex flex-col gap-1">
-      <span class="text-xs font-medium uppercase tracking-wide">Scheduled Date & Time</span>
-      <span class="text-sm">{{ t.scheduledDateTime | formatDateTime | defaultValue }}</span>
-    </div>
 
     <p-divider styleClass="my-0" />
 
