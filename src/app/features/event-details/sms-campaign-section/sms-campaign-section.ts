@@ -16,7 +16,7 @@ import { ErrorHandlerService } from '../../../core/services/error-handler.servic
 import { SmsCampaignForm } from '../sms-campaign-form/sms-campaign-form';
 import { SmsCampaignDetail } from '../sms-campaign-detail/sms-campaign-detail';
 import { DefaultValuePipe } from '../../../shared/pipes/default-value.pipe';
-import { FormatDateTimePipe } from '../../../shared/pipes/format-date-time.pipe';
+import { FormatEventDateTimePipe } from '../../../shared/pipes/format-event-date-time-pipe';
 import { SmsTriggerLabelPipe } from '../../../shared/pipes/sms-trigger-label-pipe';
 import { SmsTargetLabelPipe } from '../../../shared/pipes/sms-target-label-pipe';
 import { TableColumn } from '../../../shared/models/table-config.model';
@@ -45,7 +45,7 @@ import {
     TooltipModule,
     ConfirmPopupModule,
     DefaultValuePipe,
-    FormatDateTimePipe,
+    FormatEventDateTimePipe,
     SmsTriggerLabelPipe,
     SmsTargetLabelPipe,
   ],
@@ -55,6 +55,7 @@ import {
 })
 export class SmsCampaignSection implements OnInit {
   eventId = input.required<number>();
+  eventTimezone = input<string>('');
 
   private campaignService = inject(SmsCampaignService);
   private errorHandler = inject(ErrorHandlerService);
@@ -105,7 +106,7 @@ export class SmsCampaignSection implements OnInit {
     this.dialogRef = this.dialogService.open(SmsCampaignForm, {
       header: 'Create SMS Campaign',
       width: '560px',
-      data: { campaign: null, eventId: this.eventId() },
+      data: { campaign: null, eventId: this.eventId(), eventTimezone: this.eventTimezone() },
     });
 
     this.dialogRef?.onClose.subscribe((result: SmsCampaign | undefined) => {
@@ -120,7 +121,7 @@ export class SmsCampaignSection implements OnInit {
     this.dialogRef = this.dialogService.open(SmsCampaignForm, {
       header: 'Edit SMS Campaign',
       width: '560px',
-      data: { campaign, eventId: this.eventId() },
+      data: { campaign, eventId: this.eventId(), eventTimezone: this.eventTimezone() },
     });
 
     this.dialogRef?.onClose.subscribe((result: SmsCampaign | undefined) => {
@@ -184,7 +185,7 @@ export class SmsCampaignSection implements OnInit {
       closable: true,
       closeOnEscape: true,
       dismissableMask: true,
-      data: { campaign },
+      data: { campaign, eventTimezone: this.eventTimezone() },
     });
   }
 

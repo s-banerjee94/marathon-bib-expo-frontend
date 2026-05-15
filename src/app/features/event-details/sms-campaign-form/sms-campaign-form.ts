@@ -54,12 +54,13 @@ export class SmsCampaignForm implements OnInit {
   isSubmitting = signal(false);
   templates = signal<SmsTemplate[]>([]);
   loadingTemplates = signal(true);
+  eventTimezone = signal<string>('');
+  minScheduledDate = signal<Date>(new Date());
 
   triggerTypeValue = signal<SmsCampaignTriggerType | null>(null);
   isScheduled = computed(() => this.triggerTypeValue() === 'SCHEDULED');
   hasTrigger = computed(() => !!this.triggerTypeValue());
 
-  readonly minScheduledDate = new Date();
   readonly inputSize = FORM_INPUT_SIZE;
   readonly triggerOptions = SMS_CAMPAIGN_TRIGGER_OPTIONS;
   readonly targetOptions = SMS_CAMPAIGN_TARGET_OPTIONS;
@@ -82,18 +83,33 @@ export class SmsCampaignForm implements OnInit {
   };
 
   ngOnInit(): void {
-    const data = this.config.data as { campaign?: SmsCampaign; eventId: number };
+    const data = this.config.data as {
+      campaign?: SmsCampaign;
+      eventId: number;
+      eventTimezone?: string;
+    };
     const c = data?.campaign ?? null;
     this.eventId = data.eventId;
     this.campaignId = c?.id ?? null;
     this.isEditMode.set(!!c);
+
+    const tz = data.eventTimezone ?? '';
+    this.eventTimezone.set(tz);
+    this.minScheduledDate.set(this.computeMinScheduledDate(tz));
+
+    let scheduledAt: Date | null = null;
+    if (c?.scheduledDate && c?.scheduledTime) {
+      const [year, month, day] = c.scheduledDate.split('-').map(Number);
+      const [hour, minute] = c.scheduledTime.split(':').map(Number);
+      scheduledAt = new Date(year, month - 1, day, hour, minute);
+    }
 
     this.formData = {
       name: c?.name ?? '',
       smsTemplateId: c?.smsTemplateId ?? null,
       triggerType: c?.triggerType ?? null,
       targetFilter: c?.targetFilter ?? null,
-      scheduledAt: c?.scheduledAt ? new Date(c.scheduledAt) : null,
+      scheduledAt,
     };
 
     this.triggerTypeValue.set(c?.triggerType ?? null);
@@ -112,6 +128,26 @@ export class SmsCampaignForm implements OnInit {
 
   onScheduledAtSelect(value: Date): void {
     this.formData.scheduledAt = value;
+  }
+
+  private computeMinScheduledDate(timezone: string): Date {
+    const nowPlus3 = new Date(Date.now() + 3 * 60 * 1000);
+    if (!timezone) return nowPlus3;
+    try {
+      const parts = new Intl.DateTimeFormat('en-CA', {
+        timeZone: timezone,
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false,
+      }).formatToParts(nowPlus3);
+      const g = (t: string) => Number(parts.find((p) => p.type === t)!.value);
+      return new Date(g('year'), g('month') - 1, g('day'), g('hour'), g('minute'));
+    } catch {
+      return nowPlus3;
+    }
   }
 
   private loadTemplates(eventId: number): void {
@@ -137,7 +173,16 @@ export class SmsCampaignForm implements OnInit {
       payload['targetFilter'] = this.formData.targetFilter;
       if (this.formData.triggerType === 'SCHEDULED') {
         if (!this.formData.scheduledAt) return;
-        payload['scheduledAt'] = new Date(this.formData.scheduledAt).toISOString();
+        const d = this.formData.scheduledAt;
+        payload['scheduledDate'] = [
+          String(d.getFullYear()),
+          String(d.getMonth() + 1).padStart(2, '0'),
+          String(d.getDate()).padStart(2, '0'),
+        ].join('-');
+        payload['scheduledTime'] = [
+          String(d.getHours()).padStart(2, '0'),
+          String(d.getMinutes()).padStart(2, '0'),
+        ].join(':');
       }
     }
 

@@ -6,7 +6,9 @@ import { ButtonModule } from 'primeng/button';
 import { DynamicDialogConfig, DynamicDialogRef } from 'primeng/dynamicdialog';
 import { SmsCampaign } from '../../../core/models/sms-campaign.model';
 import { DefaultValuePipe } from '../../../shared/pipes/default-value.pipe';
-import { FormatDateTimePipe } from '../../../shared/pipes/format-date-time.pipe';
+import { FormatEventDateTimePipe } from '../../../shared/pipes/format-event-date-time-pipe';
+import { SmsTriggerLabelPipe } from '../../../shared/pipes/sms-trigger-label-pipe';
+import { SmsTargetLabelPipe } from '../../../shared/pipes/sms-target-label-pipe';
 
 @Component({
   selector: 'app-sms-campaign-detail',
@@ -17,7 +19,9 @@ import { FormatDateTimePipe } from '../../../shared/pipes/format-date-time.pipe'
     TagModule,
     ButtonModule,
     DefaultValuePipe,
-    FormatDateTimePipe,
+    FormatEventDateTimePipe,
+    SmsTriggerLabelPipe,
+    SmsTargetLabelPipe,
   ],
   templateUrl: './sms-campaign-detail.html',
 })
@@ -26,33 +30,21 @@ export class SmsCampaignDetail {
   private ref = inject(DynamicDialogRef);
 
   campaign = signal<SmsCampaign | null>(this.config.data?.campaign ?? null);
+  eventTimezone = signal<string>(this.config.data?.eventTimezone ?? '');
 
-  statusSeverity(status: string): 'success' | 'info' | 'secondary' {
+  statusSeverity(status: string): 'success' | 'info' | 'warn' | 'danger' | 'secondary' {
     switch (status) {
       case 'ACTIVE':
         return 'success';
+      case 'SENDING':
+        return 'info';
       case 'SENT':
         return 'info';
+      case 'FAILED':
+        return 'danger';
       default:
         return 'secondary';
     }
-  }
-
-  triggerLabel(type: string): string {
-    switch (type) {
-      case 'AUTO_BIB_COLLECTED':
-        return 'Auto (Bib Collected)';
-      case 'SCHEDULED':
-        return 'Scheduled';
-      case 'MANUAL':
-        return 'Manual';
-      default:
-        return type;
-    }
-  }
-
-  targetLabel(filter: string): string {
-    return filter === 'ALL' ? 'All Participants' : 'Not Yet Collected';
   }
 
   onClose(): void {

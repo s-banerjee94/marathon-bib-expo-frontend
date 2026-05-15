@@ -11,7 +11,8 @@ export interface SmsCampaign {
   smsTemplateName?: string;
   triggerType?: SmsCampaignTriggerType;
   targetFilter?: SmsCampaignTargetFilter;
-  scheduledAt?: string;
+  scheduledDate?: string;
+  scheduledTime?: string;
   status: SmsCampaignStatus;
   sentCount?: number;
   retryCount?: number;
@@ -28,7 +29,8 @@ export interface CreateSmsCampaignRequest {
   smsTemplateId: number;
   triggerType?: SmsCampaignTriggerType;
   targetFilter?: SmsCampaignTargetFilter;
-  scheduledAt?: string;
+  scheduledDate?: string;
+  scheduledTime?: string;
 }
 
 export interface UpdateSmsCampaignRequest {
@@ -36,5 +38,6 @@ export interface UpdateSmsCampaignRequest {
   smsTemplateId?: number;
   triggerType?: SmsCampaignTriggerType;
   targetFilter?: SmsCampaignTargetFilter;
-  scheduledAt?: string;
+  scheduledDate?: string;
+  scheduledTime?: string;
 }

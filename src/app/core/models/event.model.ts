@@ -27,6 +27,7 @@ export interface Event {
   stateProvince?: string;
   postalCode?: string;
   country?: string;
+  timezone?: string;
   latitude?: number; // Backend field, not used in form
   longitude?: number; // Backend field, not used in form
   status: EventStatus;
@@ -55,6 +56,7 @@ export interface CreateEventRequest {
   stateProvince?: string;
   postalCode?: string;
   country?: string;
+  timezone: string;
   latitude?: number;
   longitude?: number;
   status?: EventStatus;
@@ -78,6 +80,7 @@ export interface UpdateEventRequest {
   stateProvince?: string;
   postalCode?: string;
   country?: string;
+  timezone?: string;
   latitude?: number;
   longitude?: number;
   status?: EventStatus;

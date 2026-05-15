@@ -1,5 +1,5 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
-import { CommonModule, Location } from '@angular/common';
+import { CommonModule, Location, NgTemplateOutlet } from '@angular/common';
 import { FormsModule, NgForm } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { InputTextModule } from 'primeng/inputtext';
@@ -26,6 +26,12 @@ import { UserRole } from '../../core/models/user.model';
 import { initializeErrorHandler, shouldShowError } from '../../shared/utils/form.utils';
 import { FORM_INPUT_SIZE } from '../../shared/constants/form.constants';
 import { OrganizationSelector } from '../../components/organization-selector/organization-selector';
+import {
+  COUNTRY_OPTIONS,
+  CountryOption,
+  detectBrowserLocale,
+  getCountryTimezones,
+} from '../../shared/constants/country-timezone.constant';
 
 /**
  * Event Form Component
@@ -37,6 +43,7 @@ import { OrganizationSelector } from '../../components/organization-selector/org
   standalone: true,
   imports: [
     CommonModule,
+    NgTemplateOutlet,
     FormsModule,
     InputTextModule,
     TextareaModule,
@@ -69,6 +76,7 @@ export class EventForm implements OnInit {
     stateProvince: '',
     postalCode: '',
     country: '',
+    timezone: '',
     status: EventStatus.DRAFT,
     organizationId: 0,
   };
@@ -77,6 +85,9 @@ export class EventForm implements OnInit {
   isEditMode = signal(false);
   eventId = signal<number | null>(null);
   isLoading = signal(false);
+  timezoneOptions = signal<string[]>([]);
+  // Country and timezone data
+  readonly countryOptions: CountryOption[] = COUNTRY_OPTIONS;
   // Form input size (controlled centrally via constant)
   readonly inputSize = FORM_INPUT_SIZE;
   // Event status options for dropdown
@@ -88,7 +99,6 @@ export class EventForm implements OnInit {
   ];
   // Template utility function
   shouldShowError = shouldShowError;
-  protected datetime12h: any;
   private eventService = inject(EventService);
   private authService = inject(AuthService);
   // Check if user is ROOT or ADMIN (can create events for any organization)
@@ -134,6 +144,23 @@ export class EventForm implements OnInit {
         this.event.organizationId = currentUser.organizationId;
       }
     }
+
+    // Pre-fill country and timezone from browser locale (create mode only)
+    if (!this.isEditMode()) {
+      const locale = detectBrowserLocale();
+      if (locale.country) {
+        this.event.country = locale.country;
+        this.timezoneOptions.set(getCountryTimezones(locale.country));
+      }
+      if (locale.timezone) {
+        this.event.timezone = locale.timezone;
+      }
+    }
+  }
+
+  onCountryChange(countryName: string): void {
+    this.timezoneOptions.set(getCountryTimezones(countryName));
+    this.event.timezone = '';
   }
 
   /**
@@ -221,6 +248,9 @@ export class EventForm implements OnInit {
    * Populate form with event data
    */
   private populateForm(event: Event): void {
+    if (event.country) {
+      this.timezoneOptions.set(getCountryTimezones(event.country));
+    }
     this.event = {
       eventName: event.eventName,
       eventDescription: event.eventDescription,
@@ -233,6 +263,7 @@ export class EventForm implements OnInit {
       stateProvince: event.stateProvince,
       postalCode: event.postalCode,
       country: event.country,
+      timezone: event.timezone ?? '',
       status: event.status,
       organizationId: event.organizationId,
     };
@@ -255,7 +286,7 @@ export class EventForm implements OnInit {
             summary: 'Success',
             detail: 'Event created successfully',
           });
-          this.router.navigate(['/events']);
+          void this.router.navigate(['/events']);
         }
       },
       error: (error) => {
@@ -281,6 +312,7 @@ export class EventForm implements OnInit {
       stateProvince: this.event.stateProvince,
       postalCode: this.event.postalCode,
       country: this.event.country,
+      timezone: this.event.timezone,
       status: this.event.status,
     };
 
@@ -297,7 +329,7 @@ export class EventForm implements OnInit {
             summary: 'Success',
             detail: 'Event updated successfully',
           });
-          this.router.navigate(['/events']);
+          void this.router.navigate(['/events']);
         }
       },
       error: (error) => {

@@ -20,7 +20,6 @@ import { ErrorHandlerService } from '../../../core/services/error-handler.servic
 import { SmsTemplateForm } from '../sms-template-form/sms-template-form';
 import { SmsTemplateDetail } from '../sms-template-detail/sms-template-detail';
 import { DefaultValuePipe } from '../../../shared/pipes/default-value.pipe';
-import { FormatDateTimePipe } from '../../../shared/pipes/format-date-time.pipe';
 import { TruncatePipe } from '../../../shared/pipes/truncate-pipe';
 import { TableColumn } from '../../../shared/models/table-config.model';
 import {
@@ -49,7 +48,6 @@ import {
     TooltipModule,
     ConfirmPopupModule,
     DefaultValuePipe,
-    FormatDateTimePipe,
     TruncatePipe,
   ],
   providers: [DialogService, ConfirmationService],

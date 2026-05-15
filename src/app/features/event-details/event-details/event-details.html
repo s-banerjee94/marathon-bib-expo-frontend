@@ -128,7 +128,10 @@
         </p-tabpanel>
 
         <p-tabpanel value="sms-campaigns">
-          <app-sms-campaign-section [eventId]="eventId()" />
+          <app-sms-campaign-section
+            [eventId]="eventId()"
+            [eventTimezone]="event()?.timezone ?? ''"
+          />
         </p-tabpanel>
 
         <p-tabpanel value="participants">

@@ -5,12 +5,11 @@ import { ButtonModule } from 'primeng/button';
 import { DynamicDialogConfig, DynamicDialogRef } from 'primeng/dynamicdialog';
 import { SmsTemplate } from '../../../core/models/sms-template.model';
 import { DefaultValuePipe } from '../../../shared/pipes/default-value.pipe';
-import { FormatDateTimePipe } from '../../../shared/pipes/format-date-time.pipe';
 
 @Component({
   selector: 'app-sms-template-detail',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, DividerModule, ButtonModule, DefaultValuePipe, FormatDateTimePipe],
+  imports: [CommonModule, DividerModule, ButtonModule, DefaultValuePipe],
   templateUrl: './sms-template-detail.html',
 })
 export class SmsTemplateDetail {

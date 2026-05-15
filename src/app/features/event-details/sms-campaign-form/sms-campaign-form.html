@@ -114,7 +114,7 @@
           #scheduledAtCtrl="ngModel"
           [(ngModel)]="formData.scheduledAt"
           [showTime]="true"
-          [minDate]="minScheduledDate"
+          [minDate]="minScheduledDate()"
           [size]="inputSize"
           [invalid]="shouldShowError(scheduledAtCtrl, campaignForm.submitted)"
           [showOnFocus]="false"
@@ -132,6 +132,9 @@
         ></p-datepicker>
         <label for="scheduledAt">Scheduled At *</label>
       </p-floatlabel>
+      @if (eventTimezone()) {
+        <small class="text-sm">Times are in event timezone: {{ eventTimezone() }}</small>
+      }
       @if (shouldShowError(scheduledAtCtrl, campaignForm.submitted)) {
         <p-message [size]="inputSize" severity="error" variant="simple">
           Scheduled date and time is required.

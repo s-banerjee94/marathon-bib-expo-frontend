@@ -101,10 +101,10 @@
                   </div>
                 }
                 @case ('createdAt') {
-                  {{ template.createdAt | formatDateTime }}
+                  {{ template.createdAt | date: 'dd MMM yyyy, hh:mm a' }}
                 }
                 @case ('updatedAt') {
-                  {{ template.updatedAt | formatDateTime }}
+                  {{ template.updatedAt | date: 'dd MMM yyyy, hh:mm a' }}
                 }
                 @case ('createdBy') {
                   {{ template.createdBy | defaultValue }}

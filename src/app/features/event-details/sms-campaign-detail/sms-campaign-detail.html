@@ -21,16 +21,21 @@
     <div class="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
       <div class="flex flex-col gap-1">
         <span class="text-xs font-medium uppercase tracking-wide">Trigger Type</span>
-        <span>{{ c.triggerType ? triggerLabel(c.triggerType) : '--' }}</span>
+        <span>{{ c.triggerType | smsTriggerLabel | defaultValue }}</span>
       </div>
       <div class="flex flex-col gap-1">
         <span class="text-xs font-medium uppercase tracking-wide">Target</span>
-        <span>{{ c.targetFilter ? targetLabel(c.targetFilter) : '--' }}</span>
+        <span>{{ c.targetFilter | smsTargetLabel | defaultValue }}</span>
       </div>
       @if (c.triggerType === 'SCHEDULED') {
         <div class="flex flex-col gap-1 col-span-2">
           <span class="text-xs font-medium uppercase tracking-wide">Scheduled At</span>
-          <span>{{ c.scheduledAt | formatDateTime | defaultValue }}</span>
+          <div class="flex flex-col gap-0.5 leading-tight">
+            <span>{{ c.scheduledDate | formatEventDateTime: c.scheduledTime }}</span>
+            <span class="text-xs">{{
+              c.scheduledDate | formatEventDateTime: c.scheduledTime : eventTimezone() : 'abbr'
+            }}</span>
+          </div>
         </div>
       }
     </div>
@@ -52,11 +57,11 @@
       <div></div>
       <div class="flex flex-col gap-1">
         <span class="text-xs font-medium uppercase tracking-wide">Created At</span>
-        <span>{{ c.createdAt | formatDateTime | defaultValue }}</span>
+        <span>{{ c.createdAt | date: 'dd MMM yyyy, hh:mm a' | defaultValue }}</span>
       </div>
       <div class="flex flex-col gap-1">
         <span class="text-xs font-medium uppercase tracking-wide">Updated At</span>
-        <span>{{ c.updatedAt | formatDateTime | defaultValue }}</span>
+        <span>{{ c.updatedAt | date: 'dd MMM yyyy, hh:mm a' | defaultValue }}</span>
       </div>
       <div class="flex flex-col gap-1">
         <span class="text-xs font-medium uppercase tracking-wide">Created By</span>

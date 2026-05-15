@@ -6,7 +6,7 @@ export const SMS_CAMPAIGN_COLUMNS: TableColumn[] = [
   { field: 'smsTemplateName', header: 'Template' },
   { field: 'triggerType', header: 'Trigger' },
   { field: 'targetFilter', header: 'Target' },
-  { field: 'scheduledAt', header: 'Scheduled At' },
+  { field: 'scheduledDate', header: 'Scheduled At' },
   { field: 'status', header: 'Status' },
   { field: 'sentCount', header: 'Sent Count' },
   { field: 'createdAt', header: 'Created At' },
@@ -20,7 +20,7 @@ export const DEFAULT_SMS_CAMPAIGN_COLUMNS = [
   'smsTemplateName',
   'triggerType',
   'targetFilter',
-  'scheduledAt',
+  'scheduledDate',
   'status',
   'sentCount',
 ];
