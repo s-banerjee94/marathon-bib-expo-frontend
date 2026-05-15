@@ -8,7 +8,7 @@ import { TagModule } from 'primeng/tag';
 import { SkeletonModule } from 'primeng/skeleton';
 import { Menu } from 'primeng/menu';
 import { ConfirmPopupModule } from 'primeng/confirmpopup';
-import { ConfirmationService, MenuItem, MessageService } from 'primeng/api';
+import { ConfirmationService, MenuItem } from 'primeng/api';
 import { DialogService } from 'primeng/dynamicdialog';
 import { Event, EventStatus } from '../../../core/models/event.model';
 import { Race } from '../../../core/models/race.model';
@@ -18,6 +18,7 @@ import { ErrorHandlerService } from '../../../core/services/error-handler.servic
 import { RaceSection } from '../race-section/race-section';
 import { CategorySection } from '../category-section/category-section';
 import { SmsTemplateSection } from '../sms-template-section/sms-template-section';
+import { SmsCampaignSection } from '../sms-campaign-section/sms-campaign-section';
 import { FormatDateTimePipe } from '../../../shared/pipes/format-date-time.pipe';
 import {
   getEventStatusLabel,
@@ -40,9 +41,10 @@ import { BUTTON_SIZE } from '../../../shared/constants/form.constants';
     RaceSection,
     CategorySection,
     SmsTemplateSection,
+    SmsCampaignSection,
     FormatDateTimePipe,
   ],
-  providers: [DialogService, MessageService, ConfirmationService],
+  providers: [DialogService, ConfirmationService],
   templateUrl: './event-details.html',
   styleUrl: './event-details.css',
 })
@@ -53,7 +55,6 @@ export class EventDetails implements OnInit {
   private raceService = inject(RaceService);
   private errorHandler = inject(ErrorHandlerService);
   private dialogService = inject(DialogService);
-  private messageService = inject(MessageService);
   private confirmationService = inject(ConfirmationService);
 
   event = signal<Event | null>(null);
@@ -135,11 +136,7 @@ export class EventDetails implements OnInit {
       if (result?.event) {
         // Reload event details after successful update
         this.loadEventDetails();
-        this.messageService.add({
-          severity: 'success',
-          summary: 'Success',
-          detail: result.message || 'Event updated successfully',
-        });
+        this.errorHandler.showSuccess(result.message || 'Event updated successfully');
       }
     });
   }
@@ -221,11 +218,10 @@ export class EventDetails implements OnInit {
             this.event.set(updatedEvent);
             this.buildStatusMenuItems(updatedEvent.status);
             this.changingStatus.set(false);
-            this.messageService.add({
-              severity: 'success',
-              summary: 'Updated',
-              detail: `Event status changed to ${statusLabel} successfully`,
-            });
+            this.errorHandler.showSuccess(
+              `Event status changed to ${statusLabel} successfully`,
+              'Updated',
+            );
           },
           error: (error) => {
             this.changingStatus.set(false);

@@ -9,7 +9,7 @@ import { TagModule } from 'primeng/tag';
 import { SkeletonModule } from 'primeng/skeleton';
 import { TooltipModule } from 'primeng/tooltip';
 import { DialogService, DynamicDialogRef } from 'primeng/dynamicdialog';
-import { ConfirmationService, MessageService } from 'primeng/api';
+import { ConfirmationService } from 'primeng/api';
 import { ConfirmPopupModule } from 'primeng/confirmpopup';
 import { Category } from '../../../core/models/category.model';
 import { Race } from '../../../core/models/race.model';
@@ -42,7 +42,7 @@ const DEFAULT_CATEGORY_FIELDS = ['id', 'categoryName', 'createdBy', 'createdAt']
     TooltipModule,
     ConfirmPopupModule,
   ],
-  providers: [DialogService, ConfirmationService, MessageService],
+  providers: [DialogService, ConfirmationService],
   templateUrl: './category-section.html',
   styleUrl: './category-section.css',
 })
@@ -55,7 +55,6 @@ export class CategorySection {
   private errorHandler = inject(ErrorHandlerService);
   private dialogService = inject(DialogService);
   private confirmationService = inject(ConfirmationService);
-  private messageService = inject(MessageService);
 
   categories = signal<Category[]>([]);
   isLoading = signal(false);
@@ -140,11 +139,7 @@ export class CategorySection {
         const request = result as CreateCategoryRequest;
         this.categoryService.createCategory(this.eventId(), race.id, request).subscribe({
           next: () => {
-            this.messageService.add({
-              severity: 'success',
-              summary: 'Success',
-              detail: 'Category created successfully',
-            });
+            this.errorHandler.showSuccess('Category created successfully');
             this.loadCategories();
           },
           error: (error: unknown) => {
@@ -171,11 +166,7 @@ export class CategorySection {
           .updateCategory(this.eventId(), category.raceId, category.id, request)
           .subscribe({
             next: () => {
-              this.messageService.add({
-                severity: 'success',
-                summary: 'Success',
-                detail: 'Category updated successfully',
-              });
+              this.errorHandler.showSuccess('Category updated successfully');
               this.loadCategories();
             },
             error: (error: unknown) => {
@@ -200,11 +191,7 @@ export class CategorySection {
           .deleteCategory(this.eventId(), category.raceId, category.id)
           .subscribe({
             next: () => {
-              this.messageService.add({
-                severity: 'success',
-                summary: 'Success',
-                detail: 'Category deleted successfully',
-              });
+              this.errorHandler.showSuccess('Category deleted successfully');
               this.loadCategories();
             },
             error: (error: unknown) => {

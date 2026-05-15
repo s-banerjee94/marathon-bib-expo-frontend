@@ -1,0 +1,175 @@
+<div class="space-y-4">
+  <!-- Header -->
+  <div class="space-y-3">
+    <h2 class="text-xl font-semibold">SMS Campaigns</h2>
+    <div class="flex justify-end items-center gap-3">
+      <div class="flex items-center gap-2">
+        <label for="campaignColumnSelect" class="text-sm">Columns:</label>
+        <p-multiselect
+          (ngModelChange)="onColumnSelectionChange()"
+          [(ngModel)]="selectedCols"
+          [maxSelectedLabels]="2"
+          [options]="cols()"
+          [size]="inputSize"
+          inputId="campaignColumnSelect"
+          optionLabel="header"
+          placeholder="Select Columns"
+        />
+      </div>
+      <p-button
+        label="Create Campaign"
+        icon="pi pi-plus"
+        [size]="buttonSize"
+        (onClick)="onCreate()"
+        [disabled]="isLoading()"
+      />
+    </div>
+  </div>
+
+  <!-- Table -->
+  <p-table
+    [value]="displayData()"
+    dataKey="id"
+    [scrollable]="true"
+    [tableStyle]="{ 'min-width': '50rem' }"
+    [size]="inputSize"
+  >
+    <ng-template pTemplate="header">
+      <tr>
+        <th class="w-16">Sl. No</th>
+        @for (col of selectedCols(); track col.field) {
+          <th>{{ col.header }}</th>
+        }
+        <th class="w-40" pFrozenColumn alignFrozen="right">Actions</th>
+      </tr>
+    </ng-template>
+
+    <ng-template pTemplate="body" let-campaign let-rowIndex="rowIndex">
+      <tr>
+        @if (isLoading()) {
+          <td><p-skeleton /></td>
+          @for (col of selectedCols(); track col.field) {
+            <td><p-skeleton /></td>
+          }
+          <td pFrozenColumn alignFrozen="right"><p-skeleton height="2rem" width="8rem" /></td>
+        } @else {
+          <td class="text-color-secondary">{{ rowIndex + 1 }}</td>
+          @for (col of selectedCols(); track col.field) {
+            <td>
+              @switch (col.field) {
+                @case ('id') {
+                  {{ campaign.id }}
+                }
+                @case ('name') {
+                  {{ campaign.name | defaultValue }}
+                }
+                @case ('smsTemplateName') {
+                  {{ campaign.smsTemplateName | defaultValue }}
+                }
+                @case ('triggerType') {
+                  {{ campaign.triggerType | smsTriggerLabel }}
+                }
+                @case ('targetFilter') {
+                  {{ campaign.targetFilter | smsTargetLabel }}
+                }
+                @case ('scheduledAt') {
+                  @if (campaign.triggerType === 'SCHEDULED') {
+                    {{ campaign.scheduledAt | formatDateTime | defaultValue }}
+                  } @else {
+                    <span>--</span>
+                  }
+                }
+                @case ('status') {
+                  @if (actionLoadingId() === campaign.id) {
+                    <p-skeleton height="1.5rem" width="4rem" />
+                  } @else {
+                    <p-tag
+                      [value]="campaign.status"
+                      [severity]="statusSeverity(campaign.status)"
+                      [rounded]="true"
+                    />
+                  }
+                }
+                @case ('sentCount') {
+                  {{ campaign.sentCount ?? 0 }}
+                }
+                @case ('createdAt') {
+                  {{ campaign.createdAt | formatDateTime }}
+                }
+                @case ('updatedAt') {
+                  {{ campaign.updatedAt | formatDateTime }}
+                }
+                @case ('createdBy') {
+                  {{ campaign.createdBy | defaultValue }}
+                }
+                @case ('lastModifiedBy') {
+                  {{ campaign.lastModifiedBy | defaultValue }}
+                }
+              }
+            </td>
+          }
+          <td pFrozenColumn alignFrozen="right">
+            <div class="flex gap-1">
+              <p-button
+                icon="pi pi-eye"
+                [text]="true"
+                [rounded]="true"
+                severity="secondary"
+                size="small"
+                (onClick)="onView(campaign)"
+                pTooltip="View Details"
+                tooltipPosition="top"
+              />
+              @if (canEdit(campaign)) {
+                <p-button
+                  icon="pi pi-pencil"
+                  [text]="true"
+                  [rounded]="true"
+                  severity="info"
+                  size="small"
+                  (onClick)="onEdit(campaign)"
+                  pTooltip="Edit"
+                  tooltipPosition="top"
+                />
+              }
+              @if (canDisarm(campaign)) {
+                <p-button
+                  icon="pi pi-pause"
+                  [text]="true"
+                  [rounded]="true"
+                  severity="warn"
+                  size="small"
+                  (onClick)="onDisarm(campaign, $event)"
+                  pTooltip="Disarm"
+                  tooltipPosition="top"
+                />
+              }
+              @if (canDelete(campaign)) {
+                <p-button
+                  icon="pi pi-trash"
+                  [text]="true"
+                  [rounded]="true"
+                  severity="danger"
+                  size="small"
+                  (onClick)="onDelete(campaign, $event)"
+                  pTooltip="Delete"
+                  tooltipPosition="top"
+                />
+              }
+            </div>
+          </td>
+        }
+      </tr>
+    </ng-template>
+
+    <ng-template pTemplate="emptymessage">
+      <tr>
+        <td [attr.colspan]="selectedCols().length + 2" class="text-center py-8">
+          No campaigns found. Click "Create Campaign" to add one.
+        </td>
+      </tr>
+    </ng-template>
+  </p-table>
+</div>
+
+<p-confirmpopup />

@@ -9,7 +9,7 @@ import { TagModule } from 'primeng/tag';
 import { SkeletonModule } from 'primeng/skeleton';
 import { TooltipModule } from 'primeng/tooltip';
 import { DialogService, DynamicDialogRef } from 'primeng/dynamicdialog';
-import { ConfirmationService, MessageService } from 'primeng/api';
+import { ConfirmationService } from 'primeng/api';
 import { ConfirmPopupModule } from 'primeng/confirmpopup';
 import { Race, CreateRaceRequest, UpdateRaceRequest } from '../../../core/models/race.model';
 import { RaceService } from '../../../core/services/race.service';
@@ -43,7 +43,7 @@ const DEFAULT_RACE_FIELDS = ['id', 'raceName', 'raceDescription', 'categoryCount
     ConfirmPopupModule,
     DefaultValuePipe,
   ],
-  providers: [DialogService, ConfirmationService, MessageService],
+  providers: [DialogService, ConfirmationService],
   templateUrl: './race-section.html',
   styleUrl: './race-section.css',
 })
@@ -55,7 +55,6 @@ export class RaceSection implements OnInit {
   private errorHandler = inject(ErrorHandlerService);
   private dialogService = inject(DialogService);
   private confirmationService = inject(ConfirmationService);
-  private messageService = inject(MessageService);
 
   races = signal<Race[]>([]);
   isLoading = signal(true);
@@ -110,11 +109,7 @@ export class RaceSection implements OnInit {
         const request = result as CreateRaceRequest;
         this.raceService.createRace(this.eventId(), request).subscribe({
           next: () => {
-            this.messageService.add({
-              severity: 'success',
-              summary: 'Success',
-              detail: 'Race created successfully',
-            });
+            this.errorHandler.showSuccess('Race created successfully');
             this.loadRaces();
           },
           error: (error: unknown) => {
@@ -139,11 +134,7 @@ export class RaceSection implements OnInit {
         const request = result as UpdateRaceRequest;
         this.raceService.updateRace(this.eventId(), race.id, request).subscribe({
           next: () => {
-            this.messageService.add({
-              severity: 'success',
-              summary: 'Success',
-              detail: 'Race updated successfully',
-            });
+            this.errorHandler.showSuccess('Race updated successfully');
             this.loadRaces();
           },
           error: (error: unknown) => {
@@ -166,11 +157,7 @@ export class RaceSection implements OnInit {
         this.isLoading.set(true);
         this.raceService.deleteRace(this.eventId(), race.id).subscribe({
           next: () => {
-            this.messageService.add({
-              severity: 'success',
-              summary: 'Success',
-              detail: 'Race deleted successfully',
-            });
+            this.errorHandler.showSuccess('Race deleted successfully');
             this.loadRaces();
           },
           error: (error: unknown) => {

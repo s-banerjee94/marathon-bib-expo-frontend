@@ -22,7 +22,7 @@ export const STORAGE_KEYS = {
   CATEGORY_TABLE_COLUMNS: 'marathon_category_table_columns',
   CATEGORY_TABLE_FILTERS: 'marathon_category_table_filters',
   SMS_TEMPLATE_TABLE_COLUMNS: 'marathon_sms_template_table_columns',
-  SMS_TEMPLATE_TABLE_FILTERS: 'marathon_sms_template_table_filters',
+  SMS_CAMPAIGN_TABLE_COLUMNS: 'marathon_sms_campaign_table_columns',
 
   // Layout preferences
   LAYOUT_CONFIG: 'marathon_layout_config',
