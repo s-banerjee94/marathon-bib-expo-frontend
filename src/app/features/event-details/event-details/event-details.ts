@@ -19,7 +19,7 @@ import { RaceSection } from '../race-section/race-section';
 import { CategorySection } from '../category-section/category-section';
 import { SmsTemplateSection } from '../sms-template-section/sms-template-section';
 import { SmsCampaignSection } from '../sms-campaign-section/sms-campaign-section';
-import { FormatDateTimePipe } from '../../../shared/pipes/format-date-time.pipe';
+import { FormatEventDateTimePipe } from '../../../shared/pipes/format-event-date-time-pipe';
 import {
   getEventStatusLabel,
   getEventStatusSeverity,
@@ -42,7 +42,7 @@ import { BUTTON_SIZE } from '../../../shared/constants/form.constants';
     CategorySection,
     SmsTemplateSection,
     SmsCampaignSection,
-    FormatDateTimePipe,
+    FormatEventDateTimePipe,
   ],
   providers: [DialogService, ConfirmationService],
   templateUrl: './event-details.html',

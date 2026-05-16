@@ -31,7 +31,7 @@
         <tr>
           <td class="font-medium">{{ event.eventName }}</td>
           <td>{{ event.venueName || '--' }}</td>
-          <td>{{ event.eventStartDate | date: 'dd-MM-yyyy hh:mm a' }}</td>
+          <td>{{ event.eventStartDate | formatEventDateTime: event.eventStartTime }}</td>
           <td>
             <p-tag [value]="event.status" [severity]="getStatusSeverity(event.status)"></p-tag>
           </td>

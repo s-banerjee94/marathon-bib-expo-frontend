@@ -19,6 +19,23 @@ import {
   EventStatus,
   UpdateEventRequest,
 } from '../../core/models/event.model';
+
+interface EventFormModel {
+  eventName: string;
+  eventDescription?: string;
+  eventStartDate: Date;
+  eventEndDate: Date;
+  venueName: string;
+  addressLine1?: string;
+  addressLine2?: string;
+  city?: string;
+  stateProvince?: string;
+  postalCode?: string;
+  country?: string;
+  timezone: string;
+  status: EventStatus;
+  organizationId: number;
+}
 import { EventService } from '../../core/services/event.service';
 import { AuthService } from '../../core/services/auth.service';
 import { ErrorHandlerService } from '../../core/services/error-handler.service';
@@ -63,8 +80,7 @@ export class EventForm implements OnInit {
   public dialogConfig = inject(DynamicDialogConfig, { optional: true });
   public dialogRef = inject(DynamicDialogRef, { optional: true });
   isDialogMode = signal(false);
-  // Form data as plain object for ngModel binding
-  event: CreateEventRequest = {
+  event: EventFormModel = {
     eventName: '',
     eventDescription: '',
     eventStartDate: new Date(),
@@ -158,6 +174,13 @@ export class EventForm implements OnInit {
     }
   }
 
+  isTimezoneLocked(): boolean {
+    return (
+      this.isEditMode() &&
+      (this.event.status === EventStatus.PUBLISHED || this.event.status === EventStatus.COMPLETED)
+    );
+  }
+
   onCountryChange(countryName: string): void {
     this.timezoneOptions.set(getCountryTimezones(countryName));
     this.event.timezone = '';
@@ -244,6 +267,23 @@ export class EventForm implements OnInit {
     });
   }
 
+  private parseDateFromStrings(date: string, time?: string): Date {
+    const [y, m, d] = date.split('-').map(Number);
+    if (time) {
+      const [h, min] = time.split(':').map(Number);
+      return new Date(y, m - 1, d, h, min);
+    }
+    return new Date(y, m - 1, d);
+  }
+
+  private toDateString(d: Date): string {
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  }
+
+  private toTimeString(d: Date): string {
+    return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+  }
+
   /**
    * Populate form with event data
    */
@@ -254,8 +294,8 @@ export class EventForm implements OnInit {
     this.event = {
       eventName: event.eventName,
       eventDescription: event.eventDescription,
-      eventStartDate: new Date(event.eventStartDate),
-      eventEndDate: new Date(event.eventEndDate),
+      eventStartDate: this.parseDateFromStrings(event.eventStartDate, event.eventStartTime),
+      eventEndDate: this.parseDateFromStrings(event.eventEndDate, event.eventEndTime),
       venueName: event.venueName || '',
       addressLine1: event.addressLine1,
       addressLine2: event.addressLine2,
@@ -269,11 +309,32 @@ export class EventForm implements OnInit {
     };
   }
 
+  private buildCreateRequest(): CreateEventRequest {
+    return {
+      eventName: this.event.eventName,
+      eventDescription: this.event.eventDescription,
+      eventStartDate: this.toDateString(this.event.eventStartDate),
+      eventStartTime: this.toTimeString(this.event.eventStartDate),
+      eventEndDate: this.toDateString(this.event.eventEndDate),
+      eventEndTime: this.toTimeString(this.event.eventEndDate),
+      venueName: this.event.venueName,
+      addressLine1: this.event.addressLine1,
+      addressLine2: this.event.addressLine2,
+      city: this.event.city,
+      stateProvince: this.event.stateProvince,
+      postalCode: this.event.postalCode,
+      country: this.event.country,
+      timezone: this.event.timezone,
+      status: this.event.status,
+      organizationId: this.event.organizationId,
+    };
+  }
+
   /**
    * Create new event
    */
   private createEvent(): void {
-    this.eventService.createEvent(this.event).subscribe({
+    this.eventService.createEvent(this.buildCreateRequest()).subscribe({
       next: (createdEvent) => {
         this.isSubmitting.set(false);
 
@@ -303,8 +364,10 @@ export class EventForm implements OnInit {
     const updateRequest: UpdateEventRequest = {
       eventName: this.event.eventName,
       eventDescription: this.event.eventDescription,
-      eventStartDate: this.event.eventStartDate,
-      eventEndDate: this.event.eventEndDate,
+      eventStartDate: this.toDateString(this.event.eventStartDate),
+      eventStartTime: this.toTimeString(this.event.eventStartDate),
+      eventEndDate: this.toDateString(this.event.eventEndDate),
+      eventEndTime: this.toTimeString(this.event.eventEndDate),
       venueName: this.event.venueName,
       addressLine1: this.event.addressLine1,
       addressLine2: this.event.addressLine2,

@@ -46,7 +46,7 @@
               class="text-sm"
             ></span>
             @if (event.eventStartDate) {
-              <span class="text-xs">{{ event.eventStartDate | date: 'MMM d, yyyy' }}</span>
+              <span class="text-xs">{{ event.eventStartDate | formatEventDateTime }}</span>
             }
           </div>
         </div>
@@ -101,7 +101,7 @@
             class="text-sm"
           ></span>
           @if (event.eventStartDate) {
-            <span class="text-xs">{{ event.eventStartDate | date: 'MMM d, yyyy' }}</span>
+            <span class="text-xs">{{ event.eventStartDate | formatEventDateTime }}</span>
           }
         </div>
       </div>

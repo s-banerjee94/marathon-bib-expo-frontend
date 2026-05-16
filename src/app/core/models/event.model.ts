@@ -17,9 +17,11 @@ export interface Event {
   id: number;
   eventName: string;
   eventDescription?: string;
-  logoUrl?: string; // Backend field, not used in form
-  eventStartDate: Date;
-  eventEndDate: Date;
+  logoUrl?: string;
+  eventStartDate: string;
+  eventStartTime?: string;
+  eventEndDate: string;
+  eventEndTime?: string;
   venueName?: string;
   addressLine1?: string;
   addressLine2?: string;
@@ -28,14 +30,14 @@ export interface Event {
   postalCode?: string;
   country?: string;
   timezone?: string;
-  latitude?: number; // Backend field, not used in form
-  longitude?: number; // Backend field, not used in form
+  latitude?: number;
+  longitude?: number;
   status: EventStatus;
   organizationId: number;
-  eventGoodies?: string; // Backend field, not used in form
+  eventGoodies?: string;
   enabled: boolean;
-  createdAt?: Date;
-  updatedAt?: Date;
+  createdAt?: string;
+  updatedAt?: string;
   createdBy?: string;
   lastModifiedBy?: string;
 }
@@ -47,8 +49,10 @@ export interface CreateEventRequest {
   eventName: string;
   eventDescription?: string;
   logoUrl?: string;
-  eventStartDate: Date;
-  eventEndDate: Date;
+  eventStartDate: string;
+  eventStartTime?: string;
+  eventEndDate: string;
+  eventEndTime?: string;
   venueName: string;
   addressLine1?: string;
   addressLine2?: string;
@@ -71,8 +75,10 @@ export interface UpdateEventRequest {
   eventName?: string;
   eventDescription?: string;
   logoUrl?: string;
-  eventStartDate?: Date;
-  eventEndDate?: Date;
+  eventStartDate?: string;
+  eventStartTime?: string;
+  eventEndDate?: string;
+  eventEndTime?: string;
   venueName?: string;
   addressLine1?: string;
   addressLine2?: string;

@@ -56,9 +56,23 @@
         <div>
           <p class="text-sm text-gray-600 mb-1">Event Dates</p>
           <p class="font-medium">
-            {{ event()!.eventStartDate | formatDateTime: 'date' }} -
-            {{ event()!.eventEndDate | formatDateTime: 'date' }}
+            {{
+              event()!.eventStartDate
+                | formatEventDateTime: event()!.eventStartTime : event()!.timezone
+            }}
+            –
+            {{
+              event()!.eventEndDate | formatEventDateTime: event()!.eventEndTime : event()!.timezone
+            }}
           </p>
+          @if (event()!.timezone) {
+            <p class="text-xs">
+              {{
+                event()!.eventStartDate
+                  | formatEventDateTime: event()!.eventStartTime : event()!.timezone : 'abbr'
+              }}
+            </p>
+          }
         </div>
 
         @if (event()!.venueName) {

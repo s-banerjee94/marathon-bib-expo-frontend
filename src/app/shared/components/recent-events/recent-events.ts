@@ -6,11 +6,20 @@ import { SkeletonModule } from 'primeng/skeleton';
 import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
 import { Event, EventStatus } from '../../../core/models/event.model';
+import { FormatEventDateTimePipe } from '../../pipes/format-event-date-time-pipe';
 
 @Component({
   selector: 'app-recent-events',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, ButtonModule, CardModule, SkeletonModule, TableModule, TagModule],
+  imports: [
+    CommonModule,
+    ButtonModule,
+    CardModule,
+    SkeletonModule,
+    TableModule,
+    TagModule,
+    FormatEventDateTimePipe,
+  ],
   templateUrl: './recent-events.html',
 })
 export class RecentEvents {

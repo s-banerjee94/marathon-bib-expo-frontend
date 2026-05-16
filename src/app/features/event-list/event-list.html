@@ -196,9 +196,28 @@
                   />
                 }
               }
-              <!-- Event date fields - format with time in AM/PM -->
-              @else if (col.field === 'eventStartDate' || col.field === 'eventEndDate') {
-                {{ getDateValue(event, col.field) | defaultValue | date: 'dd-MM-yyyy hh:mm a' }}
+              <!-- Event date fields - format with event timezone -->
+              @else if (col.field === 'eventStartDate') {
+                <div class="flex flex-col gap-0.5 leading-tight">
+                  <span>{{
+                    event.eventStartDate
+                      | formatEventDateTime: event.eventStartTime : event.timezone
+                  }}</span>
+                  <span class="text-xs">{{
+                    event.eventStartDate
+                      | formatEventDateTime: event.eventStartTime : event.timezone : 'abbr'
+                  }}</span>
+                </div>
+              } @else if (col.field === 'eventEndDate') {
+                <div class="flex flex-col gap-0.5 leading-tight">
+                  <span>{{
+                    event.eventEndDate | formatEventDateTime: event.eventEndTime : event.timezone
+                  }}</span>
+                  <span class="text-xs">{{
+                    event.eventEndDate
+                      | formatEventDateTime: event.eventEndTime : event.timezone : 'abbr'
+                  }}</span>
+                </div>
               }
               <!-- Created/Updated date fields - format without time -->
               @else if (col.field === 'createdAt' || col.field === 'updatedAt') {

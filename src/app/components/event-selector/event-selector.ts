@@ -12,6 +12,7 @@ import { AuthService } from '../../core/services/auth.service';
 import { ErrorHandlerService } from '../../core/services/error-handler.service';
 import { FORM_INPUT_SIZE } from '../../shared/constants/form.constants';
 import { HighlightPipe } from '../../shared/pipes/highlight.pipe';
+import { FormatEventDateTimePipe } from '../../shared/pipes/format-event-date-time-pipe';
 
 /**
  * Reusable Event Autocomplete Selector Component
@@ -49,6 +50,7 @@ import { HighlightPipe } from '../../shared/pipes/highlight.pipe';
     TagModule,
     AvatarModule,
     HighlightPipe,
+    FormatEventDateTimePipe,
   ],
   templateUrl: './event-selector.html',
 })

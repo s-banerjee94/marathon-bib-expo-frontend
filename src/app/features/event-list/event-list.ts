@@ -32,6 +32,7 @@ import { STORAGE_KEYS } from '../../shared/constants/storage-keys.constant';
 import { EVENT_SORT_OPTIONS } from '../../shared/constants/sort-options.constant';
 import { EventForm } from '../event-form/event-form';
 import { DefaultValuePipe } from '../../shared/pipes/default-value.pipe';
+import { FormatEventDateTimePipe } from '../../shared/pipes/format-event-date-time-pipe';
 import { BaseTableComponent } from '../../shared/base/base-table.component';
 import { TableFilterPreferences } from '../../shared/models/table-config.model';
 import { OrganizationSelector } from '../../components/organization-selector/organization-selector';
@@ -65,6 +66,7 @@ interface EventFilterPreferences extends TableFilterPreferences {
     DividerModule,
     FloatLabelModule,
     DefaultValuePipe,
+    FormatEventDateTimePipe,
     OrganizationSelector,
   ],
   providers: [DialogService, ConfirmationService],
