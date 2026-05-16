@@ -35,22 +35,25 @@
     selectionMode="single"
     [(selection)]="internalSelectedRace"
     (onRowSelect)="onRowSelect($event)"
+    [scrollable]="true"
     [tableStyle]="{ 'min-width': '50rem' }"
     [size]="inputSize"
   >
     <ng-template pTemplate="header">
       <tr>
+        <th class="w-16 whitespace-nowrap" pFrozenColumn>Sl. No</th>
         @for (col of selectedCols(); track col.field) {
-          <th>{{ col.header }}</th>
+          <th class="whitespace-nowrap">{{ col.header }}</th>
         }
-        <th style="width: 120px">Actions</th>
+        <th class="w-32 whitespace-nowrap" pFrozenColumn alignFrozen="right">Actions</th>
       </tr>
     </ng-template>
 
-    <ng-template pTemplate="body" let-race>
+    <ng-template pTemplate="body" let-race let-rowIndex="rowIndex">
       <tr [pSelectableRow]="race">
+        <td class="text-color-secondary whitespace-nowrap" pFrozenColumn>{{ rowIndex + 1 }}</td>
         @for (col of selectedCols(); track col.field) {
-          <td>
+          <td class="whitespace-nowrap">
             @switch (col.field) {
               @case ('id') {
                 {{ race.id }}
@@ -59,7 +62,7 @@
                 {{ race.raceName }}
               }
               @case ('raceDescription') {
-                <div class="max-w-xs truncate" [title]="race.raceDescription">
+                <div class="max-w-[50ch] truncate" [title]="race.raceDescription">
                   {{ race.raceDescription | defaultValue }}
                 </div>
               }
@@ -81,7 +84,7 @@
             }
           </td>
         }
-        <td>
+        <td class="whitespace-nowrap" pFrozenColumn alignFrozen="right">
           <div class="flex gap-1">
             <p-button
               icon="pi pi-pencil"
@@ -91,6 +94,7 @@
               size="small"
               (onClick)="onEdit(race)"
               pTooltip="Edit"
+              tooltipPosition="top"
             />
             <p-button
               icon="pi pi-trash"
@@ -100,6 +104,7 @@
               size="small"
               (onClick)="onDelete(race, $event)"
               pTooltip="Delete"
+              tooltipPosition="top"
             />
           </div>
         </td>
@@ -108,7 +113,7 @@
 
     <ng-template pTemplate="emptymessage">
       <tr>
-        <td [attr.colspan]="selectedCols().length + 1" class="text-center py-8 text-gray-500">
+        <td [attr.colspan]="selectedCols().length + 2" class="text-center py-8 text-gray-500">
           No races found. Click "Create Race" to add one.
         </td>
       </tr>
@@ -116,7 +121,7 @@
 
     <ng-template pTemplate="loadingbody">
       <tr>
-        <td [attr.colspan]="selectedCols().length + 1">
+        <td [attr.colspan]="selectedCols().length + 2">
           <div class="flex flex-col gap-2 py-4">
             <p-skeleton height="3rem" />
             <p-skeleton height="3rem" />

@@ -36,26 +36,26 @@
   >
     <ng-template pTemplate="header">
       <tr>
-        <th class="w-16">Sl. No</th>
+        <th class="w-16 whitespace-nowrap" pFrozenColumn>Sl. No</th>
         @for (col of selectedCols(); track col.field) {
-          <th>{{ col.header }}</th>
+          <th class="whitespace-nowrap">{{ col.header }}</th>
         }
-        <th class="w-40" pFrozenColumn alignFrozen="right">Actions</th>
+        <th class="w-40 whitespace-nowrap" pFrozenColumn alignFrozen="right">Actions</th>
       </tr>
     </ng-template>
 
     <ng-template pTemplate="body" let-campaign let-rowIndex="rowIndex">
       <tr>
         @if (isLoading()) {
-          <td><p-skeleton /></td>
+          <td pFrozenColumn><p-skeleton /></td>
           @for (col of selectedCols(); track col.field) {
             <td><p-skeleton /></td>
           }
           <td pFrozenColumn alignFrozen="right"><p-skeleton height="2rem" width="8rem" /></td>
         } @else {
-          <td class="text-color-secondary">{{ rowIndex + 1 }}</td>
+          <td class="text-color-secondary whitespace-nowrap" pFrozenColumn>{{ rowIndex + 1 }}</td>
           @for (col of selectedCols(); track col.field) {
-            <td>
+            <td class="whitespace-nowrap">
               @switch (col.field) {
                 @case ('id') {
                   {{ campaign.id }}
@@ -73,16 +73,18 @@
                   {{ campaign.targetFilter | smsTargetLabel }}
                 }
                 @case ('scheduledDate') {
-                  <div class="flex flex-col gap-0.5 leading-tight">
-                    <span>{{
+                  <span class="whitespace-nowrap">
+                    {{
                       campaign.scheduledDate
                         | formatEventDateTime: campaign.scheduledTime : eventTimezone()
-                    }}</span>
-                    <span class="text-xs">{{
-                      campaign.scheduledDate
-                        | formatEventDateTime: campaign.scheduledTime : eventTimezone() : 'abbr'
-                    }}</span>
-                  </div>
+                    }}
+                    @if (eventTimezone()) {
+                      ({{
+                        campaign.scheduledDate
+                          | formatEventDateTime: campaign.scheduledTime : eventTimezone() : 'abbr'
+                      }})
+                    }
+                  </span>
                 }
                 @case ('status') {
                   @if (actionLoadingId() === campaign.id) {
@@ -113,7 +115,7 @@
               }
             </td>
           }
-          <td pFrozenColumn alignFrozen="right">
+          <td class="whitespace-nowrap" pFrozenColumn alignFrozen="right">
             <div class="flex gap-1">
               <p-button
                 icon="pi pi-eye"

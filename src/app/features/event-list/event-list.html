@@ -115,6 +115,7 @@
     [rows]="pageSize()"
     [scrollable]="true"
     [size]="inputSize"
+    [tableStyle]="{ 'min-width': '75rem' }"
     [totalRecords]="totalRecords()"
     [value]="displayData()"
     scrollHeight="600px"
@@ -122,8 +123,9 @@
     <!-- Table Header -->
     <ng-template pTemplate="header">
       <tr>
+        <th class="w-16 whitespace-nowrap" pFrozenColumn>Sl. No</th>
         @for (col of visibleCols; track col.field) {
-          <th [class]="getColumnAlignment(col.field)">
+          <th [class]="getColumnAlignment(col.field) + ' whitespace-nowrap'">
             <span>{{ col.header }}</span>
             <!-- Show sort indicator if column is currently sorted -->
             @if (isSorted(col.field)) {
@@ -131,25 +133,29 @@
             }
           </th>
         }
-        <th class="text-center">Action</th>
+        <th class="text-center w-36 whitespace-nowrap" pFrozenColumn alignFrozen="right">Action</th>
       </tr>
     </ng-template>
 
     <!-- Table Body -->
-    <ng-template let-event pTemplate="body">
+    <ng-template let-event let-rowIndex="rowIndex" pTemplate="body">
       <tr>
         @if (isLoading()) {
+          <td pFrozenColumn><p-skeleton /></td>
           @for (col of visibleCols; track col.field) {
-            <td [class]="getColumnAlignment(col.field)">
+            <td [class]="getColumnAlignment(col.field) + ' whitespace-nowrap'">
               <p-skeleton />
             </td>
           }
-          <td class="text-center">
+          <td class="text-center whitespace-nowrap" pFrozenColumn alignFrozen="right">
             <p-skeleton height="2rem" width="5rem" />
           </td>
         } @else {
+          <td class="text-color-secondary whitespace-nowrap" pFrozenColumn>
+            {{ currentPage() * pageSize() + rowIndex + 1 }}
+          </td>
           @for (col of visibleCols; track col.field) {
-            <td [class]="getColumnAlignment(col.field)">
+            <td [class]="getColumnAlignment(col.field) + ' whitespace-nowrap'">
               <!-- Event Status - show colored tag (clickable if user can change status) -->
               @if (col.field === 'status') {
                 @if (changingStatusEventId() === event.id) {
@@ -198,26 +204,30 @@
               }
               <!-- Event date fields - format with event timezone -->
               @else if (col.field === 'eventStartDate') {
-                <div class="flex flex-col gap-0.5 leading-tight">
-                  <span>{{
+                <span class="whitespace-nowrap">
+                  {{
                     event.eventStartDate
                       | formatEventDateTime: event.eventStartTime : event.timezone
-                  }}</span>
-                  <span class="text-xs">{{
-                    event.eventStartDate
-                      | formatEventDateTime: event.eventStartTime : event.timezone : 'abbr'
-                  }}</span>
-                </div>
+                  }}
+                  @if (event.timezone) {
+                    ({{
+                      event.eventStartDate
+                        | formatEventDateTime: event.eventStartTime : event.timezone : 'abbr'
+                    }})
+                  }
+                </span>
               } @else if (col.field === 'eventEndDate') {
-                <div class="flex flex-col gap-0.5 leading-tight">
-                  <span>{{
+                <span class="whitespace-nowrap">
+                  {{
                     event.eventEndDate | formatEventDateTime: event.eventEndTime : event.timezone
-                  }}</span>
-                  <span class="text-xs">{{
-                    event.eventEndDate
-                      | formatEventDateTime: event.eventEndTime : event.timezone : 'abbr'
-                  }}</span>
-                </div>
+                  }}
+                  @if (event.timezone) {
+                    ({{
+                      event.eventEndDate
+                        | formatEventDateTime: event.eventEndTime : event.timezone : 'abbr'
+                    }})
+                  }
+                </span>
               }
               <!-- Created/Updated date fields - format without time -->
               @else if (col.field === 'createdAt' || col.field === 'updatedAt') {
@@ -225,7 +235,7 @@
               }
               <!-- Event description - truncate if too long -->
               @else if (col.field === 'eventDescription') {
-                <div [title]="getCellValue(event, col.field)" class="max-w-xs truncate">
+                <div [title]="getCellValue(event, col.field)" class="max-w-[50ch] truncate">
                   {{ getCellValue(event, col.field) | defaultValue }}
                 </div>
               }
@@ -279,7 +289,7 @@
           }
 
           <!-- Action Column -->
-          <td class="text-center">
+          <td class="text-center whitespace-nowrap" pFrozenColumn alignFrozen="right">
             <div class="flex items-center justify-center gap-1">
               <!-- View button -->
               <p-button
@@ -323,7 +333,7 @@
     <!-- Empty State -->
     <ng-template pTemplate="emptymessage">
       <tr>
-        <td [attr.colspan]="visibleCols.length + 1">
+        <td [attr.colspan]="visibleCols.length + 2">
           @if (!isLoading()) {
             <div class="flex flex-col items-center justify-center py-12 px-4">
               <i class="pi pi-calendar text-6xl mb-4 opacity-30"></i>
