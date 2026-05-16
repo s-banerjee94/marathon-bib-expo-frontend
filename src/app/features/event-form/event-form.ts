@@ -215,7 +215,7 @@ export class EventForm implements OnInit {
     this.isSubmitting.set(true);
 
     if (this.isEditMode()) {
-      this.updateEvent();
+      this.updateEvent(form);
     } else {
       this.createEvent();
     }
@@ -357,27 +357,38 @@ export class EventForm implements OnInit {
     });
   }
 
+  private buildPatchRequest(form: NgForm): UpdateEventRequest {
+    const TRANSFORMED = new Set(['eventStartDate', 'eventEndDate']);
+
+    const patch = Object.fromEntries(
+      Object.keys(this.event)
+        .filter((key) => !TRANSFORMED.has(key) && form.controls[key]?.dirty)
+        .map((key) => [key, this.event[key as keyof EventFormModel]]),
+    ) as UpdateEventRequest;
+
+    if (form.controls['eventStartDate']?.dirty) {
+      patch.eventStartDate = this.toDateString(this.event.eventStartDate);
+      patch.eventStartTime = this.toTimeString(this.event.eventStartDate);
+    }
+    if (form.controls['eventEndDate']?.dirty) {
+      patch.eventEndDate = this.toDateString(this.event.eventEndDate);
+      patch.eventEndTime = this.toTimeString(this.event.eventEndDate);
+    }
+
+    return patch;
+  }
+
   /**
-   * Update existing event
+   * Update existing event — sends only dirty fields as PATCH payload
    */
-  private updateEvent(): void {
-    const updateRequest: UpdateEventRequest = {
-      eventName: this.event.eventName,
-      eventDescription: this.event.eventDescription,
-      eventStartDate: this.toDateString(this.event.eventStartDate),
-      eventStartTime: this.toTimeString(this.event.eventStartDate),
-      eventEndDate: this.toDateString(this.event.eventEndDate),
-      eventEndTime: this.toTimeString(this.event.eventEndDate),
-      venueName: this.event.venueName,
-      addressLine1: this.event.addressLine1,
-      addressLine2: this.event.addressLine2,
-      city: this.event.city,
-      stateProvince: this.event.stateProvince,
-      postalCode: this.event.postalCode,
-      country: this.event.country,
-      timezone: this.event.timezone,
-      status: this.event.status,
-    };
+  private updateEvent(form: NgForm): void {
+    const updateRequest = this.buildPatchRequest(form);
+
+    if (Object.keys(updateRequest).length === 0) {
+      this.isSubmitting.set(false);
+      this.handleCancel();
+      return;
+    }
 
     this.eventService.updateEvent(this.eventId()!, updateRequest).subscribe({
       next: (updatedEvent) => {

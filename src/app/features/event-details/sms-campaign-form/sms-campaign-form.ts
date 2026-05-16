@@ -163,27 +163,11 @@ export class SmsCampaignForm implements OnInit {
   onSubmit(form: NgForm): void {
     if (form.invalid) return;
 
-    const payload: Record<string, unknown> = {
-      name: this.formData.name,
-      smsTemplateId: this.formData.smsTemplateId,
-    };
+    const payload = this.isEditMode() ? this.buildPatch(form) : this.buildPayload();
 
-    if (this.formData.triggerType) {
-      payload['triggerType'] = this.formData.triggerType;
-      payload['targetFilter'] = this.formData.targetFilter;
-      if (this.formData.triggerType === 'SCHEDULED') {
-        if (!this.formData.scheduledAt) return;
-        const d = this.formData.scheduledAt;
-        payload['scheduledDate'] = [
-          String(d.getFullYear()),
-          String(d.getMonth() + 1).padStart(2, '0'),
-          String(d.getDate()).padStart(2, '0'),
-        ].join('-');
-        payload['scheduledTime'] = [
-          String(d.getHours()).padStart(2, '0'),
-          String(d.getMinutes()).padStart(2, '0'),
-        ].join(':');
-      }
+    if (this.isEditMode() && !Object.keys(payload).length) {
+      this.ref.close();
+      return;
     }
 
     this.isSubmitting.set(true);
@@ -192,12 +176,9 @@ export class SmsCampaignForm implements OnInit {
       ? this.campaignService.updateCampaign(
           this.eventId,
           this.campaignId!,
-          payload as unknown as UpdateSmsCampaignRequest,
+          payload as UpdateSmsCampaignRequest,
         )
-      : this.campaignService.createCampaign(
-          this.eventId,
-          payload as unknown as CreateSmsCampaignRequest,
-        );
+      : this.campaignService.createCampaign(this.eventId, payload as CreateSmsCampaignRequest);
 
     request$.subscribe({
       next: (result) => {
@@ -212,6 +193,49 @@ export class SmsCampaignForm implements OnInit {
         );
       },
     });
+  }
+
+  private buildPayload(): CreateSmsCampaignRequest {
+    const payload: CreateSmsCampaignRequest = {
+      name: this.formData.name,
+      smsTemplateId: this.formData.smsTemplateId!,
+    };
+
+    if (this.formData.triggerType) {
+      payload.triggerType = this.formData.triggerType;
+      payload.targetFilter = this.formData.targetFilter ?? undefined;
+      if (this.formData.triggerType === 'SCHEDULED' && this.formData.scheduledAt) {
+        payload.scheduledDate = this.toDateStr(this.formData.scheduledAt);
+        payload.scheduledTime = this.toTimeStr(this.formData.scheduledAt);
+      }
+    }
+
+    return payload;
+  }
+
+  private buildPatch(form: NgForm): UpdateSmsCampaignRequest {
+    const TRANSFORMED = new Set(['scheduledAt']);
+
+    const patch = Object.fromEntries(
+      Object.keys(this.formData)
+        .filter((key) => !TRANSFORMED.has(key) && form.controls[key]?.dirty)
+        .map((key) => [key, this.formData[key as keyof typeof this.formData]]),
+    ) as UpdateSmsCampaignRequest;
+
+    if (form.controls['scheduledAt']?.dirty && this.formData.scheduledAt) {
+      patch.scheduledDate = this.toDateStr(this.formData.scheduledAt);
+      patch.scheduledTime = this.toTimeStr(this.formData.scheduledAt);
+    }
+
+    return patch;
+  }
+
+  private toDateStr(d: Date): string {
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  }
+
+  private toTimeStr(d: Date): string {
+    return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
   }
 
   onCancel(): void {

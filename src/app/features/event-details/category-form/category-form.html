@@ -1,27 +1,31 @@
-<form [formGroup]="categoryForm" (ngSubmit)="onSubmit()" class="flex flex-col gap-4 mt-2">
+<form #categoryForm="ngForm" (ngSubmit)="onSubmit(categoryForm)" class="flex flex-col gap-4 mt-2">
   <!-- Category Name -->
   <div class="flex flex-col gap-1">
     <p-floatlabel variant="on">
       <input
-        pInputText
-        id="categoryName"
-        formControlName="categoryName"
+        #categoryName="ngModel"
+        [(ngModel)]="formData.categoryName"
+        [invalid]="shouldShowError(categoryName, categoryForm.submitted)"
         [pSize]="inputSize"
         fluid="true"
-        placeholder="e.g., Men 18-34, Women Elite"
+        id="categoryName"
+        maxlength="200"
+        minlength="2"
+        name="categoryName"
+        pInputText
+        required
       />
       <label for="categoryName">Category Name *</label>
     </p-floatlabel>
-
-    @if (categoryForm.get('categoryName')?.invalid && categoryForm.get('categoryName')?.touched) {
+    @if (shouldShowError(categoryName, categoryForm.submitted)) {
       <p-message [size]="inputSize" severity="error" variant="simple">
-        @if (categoryForm.get('categoryName')?.hasError('required')) {
+        @if (categoryName.hasError('required')) {
           Category name is required.
         }
-        @if (categoryForm.get('categoryName')?.hasError('minlength')) {
+        @if (categoryName.hasError('minlength')) {
           Category name must be at least 2 characters.
         }
-        @if (categoryForm.get('categoryName')?.hasError('maxlength')) {
+        @if (categoryName.hasError('maxlength')) {
           Category name must not exceed 200 characters.
         }
       </p-message>
@@ -32,41 +36,33 @@
   <div class="flex flex-col gap-1">
     <p-floatlabel variant="on">
       <textarea
-        pTextarea
-        id="description"
-        formControlName="description"
+        #description="ngModel"
+        [(ngModel)]="formData.description"
+        [invalid]="shouldShowError(description, categoryForm.submitted)"
         [pSize]="inputSize"
         fluid="true"
+        id="description"
+        maxlength="1000"
+        name="description"
+        pTextarea
         rows="3"
-        placeholder="e.g., Male participants aged 18 to 34 years"
       ></textarea>
       <label for="description">Description</label>
     </p-floatlabel>
-
-    @if (categoryForm.get('description')?.invalid && categoryForm.get('description')?.touched) {
+    @if (shouldShowError(description, categoryForm.submitted)) {
       <p-message [size]="inputSize" severity="error" variant="simple">
-        @if (categoryForm.get('description')?.hasError('maxlength')) {
-          Description must not exceed 1000 characters.
-        }
+        Description must not exceed 1000 characters.
       </p-message>
     }
   </div>
 
   <!-- Actions -->
   <div class="flex justify-end gap-3 pt-4 border-t">
-    <button
-      pButton
-      type="button"
-      label="Cancel"
-      severity="secondary"
-      [outlined]="true"
-      (click)="onCancel()"
-    ></button>
-    <button
-      pButton
-      type="submit"
-      [label]="isEditMode() ? 'Update Category' : 'Create Category'"
-      [disabled]="categoryForm.invalid"
-    ></button>
+    <button (click)="onCancel()" [outlined]="true" pButton severity="secondary" type="button">
+      <span pButtonLabel>Cancel</span>
+    </button>
+    <button [disabled]="categoryForm.invalid" pButton type="submit">
+      <span pButtonLabel>{{ isEditMode() ? 'Update Category' : 'Create Category' }}</span>
+    </button>
   </div>
 </form>

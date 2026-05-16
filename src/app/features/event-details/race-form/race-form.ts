@@ -1,6 +1,6 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormsModule, NgForm } from '@angular/forms';
 import { DynamicDialogConfig, DynamicDialogRef } from 'primeng/dynamicdialog';
 import { InputTextModule } from 'primeng/inputtext';
 import { TextareaModule } from 'primeng/textarea';
@@ -9,12 +9,13 @@ import { FloatLabelModule } from 'primeng/floatlabel';
 import { MessageModule } from 'primeng/message';
 import { Race } from '../../../core/models/race.model';
 import { FORM_INPUT_SIZE } from '../../../shared/constants/form.constants';
+import { shouldShowError } from '../../../shared/utils/form.utils';
 
 @Component({
   selector: 'app-race-form',
   imports: [
     CommonModule,
-    ReactiveFormsModule,
+    FormsModule,
     InputTextModule,
     TextareaModule,
     ButtonModule,
@@ -25,38 +26,39 @@ import { FORM_INPUT_SIZE } from '../../../shared/constants/form.constants';
   styleUrl: './race-form.css',
 })
 export class RaceForm implements OnInit {
-  private fb = inject(FormBuilder);
   private config = inject(DynamicDialogConfig);
   private ref = inject(DynamicDialogRef);
 
-  raceForm!: FormGroup;
   isEditMode = signal(false);
-  race = signal<Race | null>(null);
-
   readonly inputSize = FORM_INPUT_SIZE;
+  readonly shouldShowError = shouldShowError;
+
+  formData = { raceName: '', raceDescription: '' };
 
   ngOnInit(): void {
-    this.race.set(this.config.data?.race || null);
-    this.isEditMode.set(!!this.race());
-    this.initForm();
+    const race = this.config.data?.race as Race | null;
+    this.isEditMode.set(!!race);
+    this.formData = {
+      raceName: race?.raceName ?? '',
+      raceDescription: race?.raceDescription ?? '',
+    };
   }
 
-  initForm(): void {
-    const race = this.race();
+  onSubmit(form: NgForm): void {
+    if (!form.valid) return;
 
-    this.raceForm = this.fb.group({
-      raceName: [
-        race?.raceName || '',
-        [Validators.required, Validators.minLength(2), Validators.maxLength(200)],
-      ],
-      raceDescription: [race?.raceDescription || '', [Validators.maxLength(500)]],
-    });
-  }
-
-  onSubmit(): void {
-    if (this.raceForm.valid) {
-      this.ref.close(this.raceForm.value);
+    if (!this.isEditMode()) {
+      this.ref.close(this.formData);
+      return;
     }
+
+    const patch = Object.fromEntries(
+      Object.keys(this.formData)
+        .filter((key) => form.controls[key]?.dirty)
+        .map((key) => [key, this.formData[key as keyof typeof this.formData]]),
+    );
+
+    this.ref.close(Object.keys(patch).length ? patch : undefined);
   }
 
   onCancel(): void {

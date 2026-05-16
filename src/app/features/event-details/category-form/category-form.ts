@@ -1,6 +1,6 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormsModule, NgForm } from '@angular/forms';
 import { DynamicDialogConfig, DynamicDialogRef } from 'primeng/dynamicdialog';
 import { InputTextModule } from 'primeng/inputtext';
 import { TextareaModule } from 'primeng/textarea';
@@ -9,12 +9,13 @@ import { FloatLabelModule } from 'primeng/floatlabel';
 import { MessageModule } from 'primeng/message';
 import { Category } from '../../../core/models/category.model';
 import { FORM_INPUT_SIZE } from '../../../shared/constants/form.constants';
+import { shouldShowError } from '../../../shared/utils/form.utils';
 
 @Component({
   selector: 'app-category-form',
   imports: [
     CommonModule,
-    ReactiveFormsModule,
+    FormsModule,
     InputTextModule,
     TextareaModule,
     ButtonModule,
@@ -25,38 +26,39 @@ import { FORM_INPUT_SIZE } from '../../../shared/constants/form.constants';
   styleUrl: './category-form.css',
 })
 export class CategoryForm implements OnInit {
-  private fb = inject(FormBuilder);
   private config = inject(DynamicDialogConfig);
   private ref = inject(DynamicDialogRef);
 
-  categoryForm!: FormGroup;
   isEditMode = signal(false);
-  category = signal<Category | null>(null);
-
   readonly inputSize = FORM_INPUT_SIZE;
+  readonly shouldShowError = shouldShowError;
+
+  formData = { categoryName: '', description: '' };
 
   ngOnInit(): void {
-    this.category.set(this.config.data?.category || null);
-    this.isEditMode.set(!!this.category());
-    this.initForm();
+    const category = this.config.data?.category as Category | null;
+    this.isEditMode.set(!!category);
+    this.formData = {
+      categoryName: category?.categoryName ?? '',
+      description: category?.description ?? '',
+    };
   }
 
-  initForm(): void {
-    const category = this.category();
+  onSubmit(form: NgForm): void {
+    if (!form.valid) return;
 
-    this.categoryForm = this.fb.group({
-      categoryName: [
-        category?.categoryName || '',
-        [Validators.required, Validators.maxLength(200), Validators.minLength(2)],
-      ],
-      description: [category?.description || '', [Validators.maxLength(1000)]],
-    });
-  }
-
-  onSubmit(): void {
-    if (this.categoryForm.valid) {
-      this.ref.close(this.categoryForm.value);
+    if (!this.isEditMode()) {
+      this.ref.close(this.formData);
+      return;
     }
+
+    const patch = Object.fromEntries(
+      Object.keys(this.formData)
+        .filter((key) => form.controls[key]?.dirty)
+        .map((key) => [key, this.formData[key as keyof typeof this.formData]]),
+    );
+
+    this.ref.close(Object.keys(patch).length ? patch : undefined);
   }
 
   onCancel(): void {

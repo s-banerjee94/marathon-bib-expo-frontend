@@ -51,12 +51,10 @@ export class SmsTemplateForm implements OnInit {
   private smsTemplateService = inject(SmsTemplateService);
   private errorHandler = inject(ErrorHandlerService);
 
-  @ViewChild('templateForm') templateForm!: NgForm;
   @ViewChild('replacerOp') replacerOp!: Popover;
 
   isEditMode = signal(false);
   isSubmitting = signal(false);
-  smsTemplate = signal<SmsTemplate | null>(null);
 
   private eventId!: number;
   private templateId: number | null = null;
@@ -69,12 +67,7 @@ export class SmsTemplateForm implements OnInit {
     label,
   }));
 
-  formData: {
-    name: string;
-    smsTemplateId: string;
-    template: string;
-    note: string;
-  } = {
+  formData: { name: string; smsTemplateId: string; template: string; note: string } = {
     name: '',
     smsTemplateId: '',
     template: '',
@@ -112,7 +105,6 @@ export class SmsTemplateForm implements OnInit {
   });
 
   invalidVars = computed(() => this.detectedVars().filter((f) => !VALID_PLACEHOLDER_FIELDS.has(f)));
-
   hasInvalidVars = computed(() => this.invalidVars().length > 0);
 
   ngOnInit(): void {
@@ -120,16 +112,13 @@ export class SmsTemplateForm implements OnInit {
     const t = data?.smsTemplate ?? null;
     this.eventId = data.eventId;
     this.templateId = t?.id ?? null;
-    this.smsTemplate.set(t);
     this.isEditMode.set(!!t);
-
     this.formData = {
       name: t?.name ?? '',
       smsTemplateId: t?.smsTemplateId ?? '',
       template: t?.template ?? '',
       note: t?.note ?? '',
     };
-
     this.templateValue.set(this.formData.template);
   }
 
@@ -154,14 +143,18 @@ export class SmsTemplateForm implements OnInit {
     this.activeReplaceField.set(null);
   }
 
-  private escapeRegex(s: string): string {
-    return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  }
+  onSubmit(form: NgForm): void {
+    if (form.invalid || this.hasInvalidVars()) return;
 
-  onSubmit(): void {
-    if (this.templateForm.invalid || this.hasInvalidVars()) return;
+    const payload = this.isEditMode()
+      ? this.buildPatch(form)
+      : ({ ...this.formData } as CreateSmsTemplateRequest);
 
-    const payload = { ...this.formData };
+    if (this.isEditMode() && !Object.keys(payload).length) {
+      this.ref.close();
+      return;
+    }
+
     this.isSubmitting.set(true);
 
     const request$ = this.isEditMode()
@@ -190,7 +183,19 @@ export class SmsTemplateForm implements OnInit {
     });
   }
 
+  private buildPatch(form: NgForm): UpdateSmsTemplateRequest {
+    return Object.fromEntries(
+      Object.keys(this.formData)
+        .filter((key) => form.controls[key]?.dirty)
+        .map((key) => [key, this.formData[key as keyof typeof this.formData]]),
+    ) as UpdateSmsTemplateRequest;
+  }
+
   onCancel(): void {
     this.ref.close();
+  }
+
+  private escapeRegex(s: string): string {
+    return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   }
 }

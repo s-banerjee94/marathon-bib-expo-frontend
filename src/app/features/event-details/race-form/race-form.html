@@ -1,25 +1,32 @@
-<form [formGroup]="raceForm" (ngSubmit)="onSubmit()" class="flex flex-col gap-4 mt-2">
+<form #raceForm="ngForm" (ngSubmit)="onSubmit(raceForm)" class="flex flex-col gap-4 mt-2">
   <!-- Race Name -->
   <div class="flex flex-col gap-1">
     <p-floatlabel variant="on">
       <input
-        pInputText
-        id="raceName"
-        formControlName="raceName"
+        #raceName="ngModel"
+        [(ngModel)]="formData.raceName"
+        [invalid]="shouldShowError(raceName, raceForm.submitted)"
         [pSize]="inputSize"
         fluid="true"
-        placeholder="e.g., 5K Run, 10K Marathon"
+        id="raceName"
+        maxlength="200"
+        minlength="2"
+        name="raceName"
+        pInputText
+        required
       />
       <label for="raceName">Race Name *</label>
     </p-floatlabel>
-
-    @if (raceForm.get('raceName')?.invalid && raceForm.get('raceName')?.touched) {
+    @if (shouldShowError(raceName, raceForm.submitted)) {
       <p-message [size]="inputSize" severity="error" variant="simple">
-        @if (raceForm.get('raceName')?.hasError('required')) {
+        @if (raceName.hasError('required')) {
           Race name is required.
         }
-        @if (raceForm.get('raceName')?.hasError('maxlength')) {
-          Race name must not exceed 100 characters.
+        @if (raceName.hasError('minlength')) {
+          Race name must be at least 2 characters.
+        }
+        @if (raceName.hasError('maxlength')) {
+          Race name must not exceed 200 characters.
         }
       </p-message>
     }
@@ -29,38 +36,26 @@
   <div class="flex flex-col gap-1">
     <p-floatlabel variant="on">
       <textarea
-        pTextarea
-        id="raceDescription"
-        formControlName="raceDescription"
-        rows="4"
+        [(ngModel)]="formData.raceDescription"
+        [pSize]="inputSize"
         fluid="true"
-        placeholder="Optional race description"
+        id="raceDescription"
+        maxlength="500"
+        name="raceDescription"
+        pTextarea
+        rows="4"
       ></textarea>
       <label for="raceDescription">Description</label>
     </p-floatlabel>
-
-    @if (raceForm.get('raceDescription')?.invalid && raceForm.get('raceDescription')?.touched) {
-      <p-message [size]="inputSize" severity="error" variant="simple">
-        Description must not exceed 500 characters.
-      </p-message>
-    }
   </div>
 
   <!-- Actions -->
   <div class="flex justify-end gap-3 pt-4 border-t">
-    <button
-      pButton
-      type="button"
-      label="Cancel"
-      severity="secondary"
-      [outlined]="true"
-      (click)="onCancel()"
-    ></button>
-    <button
-      pButton
-      type="submit"
-      [label]="isEditMode() ? 'Update Race' : 'Create Race'"
-      [disabled]="raceForm.invalid"
-    ></button>
+    <button (click)="onCancel()" [outlined]="true" pButton severity="secondary" type="button">
+      <span pButtonLabel>Cancel</span>
+    </button>
+    <button [disabled]="raceForm.invalid" pButton type="submit">
+      <span pButtonLabel>{{ isEditMode() ? 'Update Race' : 'Create Race' }}</span>
+    </button>
   </div>
 </form>
