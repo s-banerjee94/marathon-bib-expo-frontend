@@ -96,37 +96,45 @@
     [rows]="pageSize()"
     [scrollable]="true"
     [size]="inputSize"
+    [tableStyle]="{ 'min-width': '75rem' }"
     [totalRecords]="totalRecords()"
     [value]="displayData()"
     scrollHeight="600px"
   >
     <ng-template pTemplate="header">
       <tr>
+        <th class="w-16 whitespace-nowrap" pFrozenColumn>Sl. No</th>
         @for (col of visibleCols; track col.field) {
-          <th [class]="getColumnAlignment(col.field)">
+          <th [class]="getColumnAlignment(col.field) + ' whitespace-nowrap'">
             <span>{{ col.header }}</span>
             @if (isSorted(col.field)) {
               <i [class]="getSortIcon(col.field)" class="ml-2"></i>
             }
           </th>
         }
-        <th class="text-center">Action</th>
+        <th class="text-center w-36 whitespace-nowrap" pFrozenColumn alignFrozen="right">
+          Actions
+        </th>
       </tr>
     </ng-template>
-    <ng-template let-org pTemplate="body">
+    <ng-template let-org let-rowIndex="rowIndex" pTemplate="body">
       <tr>
         @if (isLoading()) {
+          <td pFrozenColumn><p-skeleton /></td>
           @for (col of visibleCols; track col.field) {
-            <td [class]="getColumnAlignment(col.field)">
+            <td [class]="getColumnAlignment(col.field) + ' whitespace-nowrap'">
               <p-skeleton />
             </td>
           }
-          <td class="text-center">
+          <td class="text-center whitespace-nowrap" pFrozenColumn alignFrozen="right">
             <p-skeleton height="2rem" width="5rem" />
           </td>
         } @else {
+          <td class="text-color-secondary whitespace-nowrap" pFrozenColumn>
+            {{ currentPage() * pageSize() + rowIndex + 1 }}
+          </td>
           @for (col of visibleCols; track col.field) {
-            <td [class]="getColumnAlignment(col.field)">
+            <td [class]="getColumnAlignment(col.field) + ' whitespace-nowrap'">
               @if (col.field === 'phoneNumber') {
                 <a class="hover:underline" href="tel:{{ getCellValue(org, col.field) }}">
                   {{ getCellValue(org, col.field) | defaultValue }}
@@ -208,7 +216,7 @@
               }
             </td>
           }
-          <td class="text-center">
+          <td class="text-center whitespace-nowrap" pFrozenColumn alignFrozen="right">
             <div class="flex items-center gap-1">
               <p-button
                 (click)="onEdit(org)"
@@ -249,7 +257,7 @@
 
     <ng-template pTemplate="emptymessage">
       <tr>
-        <td [attr.colspan]="visibleCols.length + 1">
+        <td [attr.colspan]="visibleCols.length + 2">
           @if (!isLoading()) {
             <div class="flex flex-col items-center justify-center py-12 px-4">
               <i class="pi pi-building text-6xl mb-4 opacity-30"></i>

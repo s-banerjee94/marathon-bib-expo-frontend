@@ -6,7 +6,7 @@
 import { TableColumn } from '../models/table-config.model';
 
 export const ORGANIZATION_COLUMNS: TableColumn[] = [
-  { field: 'id', header: 'ID', required: true, disabled: true },
+  { field: 'id', header: 'ID' },
   { field: 'organizerName', header: 'Organization Name', required: true, disabled: true },
   { field: 'phoneNumber', header: 'Phone', required: true, disabled: true },
   { field: 'email', header: 'Email' },
