@@ -4,9 +4,9 @@ import { TableColumn } from '../models/table-config.model';
  * SMS Template table column definitions
  */
 export const SMS_TEMPLATE_COLUMNS: TableColumn[] = [
-  { field: 'name', header: 'Name' },
+  { field: 'name', header: 'Name', required: true, disabled: true },
   { field: 'smsTemplateId', header: 'DLT Template ID' },
-  { field: 'template', header: 'Template' },
+  { field: 'template', header: 'Template', required: true, disabled: true },
   { field: 'note', header: 'Note' },
   { field: 'createdAt', header: 'Created At' },
   { field: 'updatedAt', header: 'Updated At' },

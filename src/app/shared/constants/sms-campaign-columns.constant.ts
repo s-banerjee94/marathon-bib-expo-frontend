@@ -2,12 +2,12 @@ import { TableColumn } from '../models/table-config.model';
 
 export const SMS_CAMPAIGN_COLUMNS: TableColumn[] = [
   { field: 'id', header: 'ID' },
-  { field: 'name', header: 'Name' },
+  { field: 'name', header: 'Name', required: true, disabled: true },
   { field: 'smsTemplateName', header: 'Template' },
   { field: 'triggerType', header: 'Trigger' },
   { field: 'targetFilter', header: 'Target' },
   { field: 'scheduledDate', header: 'Scheduled At' },
-  { field: 'status', header: 'Status' },
+  { field: 'status', header: 'Status', required: true, disabled: true },
   { field: 'sentCount', header: 'Sent Count' },
   { field: 'createdAt', header: 'Created At' },
   { field: 'updatedAt', header: 'Updated At' },

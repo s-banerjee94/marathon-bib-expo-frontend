@@ -1,4 +1,4 @@
-import { Component, inject, input, OnInit, output, signal } from '@angular/core';
+import { Component, computed, inject, input, OnInit, output, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TableModule } from 'primeng/table';
@@ -22,6 +22,8 @@ import { RACE_COLUMNS } from '../../../shared/constants/race-columns.constant';
 import { STORAGE_KEYS } from '../../../shared/constants/storage-keys.constant';
 import { BUTTON_SIZE, FORM_INPUT_SIZE } from '../../../shared/constants/form.constants';
 import {
+  enforceRequiredColumns,
+  getVisibleCols,
   initializeColumnPreferences,
   saveColumnPreferences,
 } from '../../../shared/utils/column.utils';
@@ -62,6 +64,7 @@ export class RaceSection implements OnInit {
 
   cols = signal<TableColumn[]>([]);
   selectedCols = signal<TableColumn[]>([]);
+  visibleCols = computed(() => getVisibleCols(RACE_COLUMNS, this.selectedCols()));
   readonly inputSize = FORM_INPUT_SIZE;
   readonly buttonSize = BUTTON_SIZE;
 
@@ -79,6 +82,7 @@ export class RaceSection implements OnInit {
   }
 
   onColumnSelectionChange(): void {
+    enforceRequiredColumns(this.selectedCols, RACE_COLUMNS);
     saveColumnPreferences(this.selectedCols, STORAGE_KEYS.RACE_TABLE_COLUMNS);
   }
 

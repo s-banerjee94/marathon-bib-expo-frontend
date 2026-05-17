@@ -1,4 +1,12 @@
-import { ChangeDetectionStrategy, Component, inject, input, OnInit, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  inject,
+  input,
+  OnInit,
+  signal,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
@@ -27,6 +35,8 @@ import {
 import { STORAGE_KEYS } from '../../../shared/constants/storage-keys.constant';
 import { BUTTON_SIZE, FORM_INPUT_SIZE } from '../../../shared/constants/form.constants';
 import {
+  enforceRequiredColumns,
+  getVisibleCols,
   initializeColumnPreferences,
   saveColumnPreferences,
 } from '../../../shared/utils/column.utils';
@@ -66,6 +76,7 @@ export class SmsCampaignSection implements OnInit {
   isLoading = signal(true);
   cols = signal<TableColumn[]>([]);
   selectedCols = signal<TableColumn[]>([]);
+  visibleCols = computed(() => getVisibleCols(SMS_CAMPAIGN_COLUMNS, this.selectedCols()));
   actionLoadingId = signal<number | null>(null);
 
   readonly inputSize = FORM_INPUT_SIZE;
@@ -85,6 +96,7 @@ export class SmsCampaignSection implements OnInit {
   }
 
   onColumnSelectionChange(): void {
+    enforceRequiredColumns(this.selectedCols, SMS_CAMPAIGN_COLUMNS);
     saveColumnPreferences(this.selectedCols, STORAGE_KEYS.SMS_CAMPAIGN_TABLE_COLUMNS);
   }
 

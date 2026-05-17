@@ -56,20 +56,11 @@ export abstract class BaseTableComponent<T, F extends TableFilterPreferences>
     });
   }
 
+  // Canonical-order visible columns: filter allColumns by required-or-selected
+  // so iteration order always follows the constant definition, not selection order.
   get visibleCols(): TableColumn[] {
-    const selected = this.selectedCols();
-    const required = this.getRequiredColumns();
-
-    // Always include required columns + selected columns (without duplicates)
-    const result = [...required];
-
-    selected.forEach((col) => {
-      if (!required.find((r) => r.field === col.field)) {
-        result.push(col);
-      }
-    });
-
-    return result;
+    const selectedFields = new Set(this.selectedCols().map((c) => c.field));
+    return this.allColumns.filter((col) => col.required || selectedFields.has(col.field));
   }
 
   displayData(): T[] {
@@ -131,6 +122,14 @@ export abstract class BaseTableComponent<T, F extends TableFilterPreferences>
   }
 
   onColumnSelectionChange(): void {
+    // Defense in depth: re-add any required columns the user managed to remove
+    // (e.g. via stale localStorage from before a column was marked required).
+    const current = this.selectedCols();
+    const required = this.getRequiredColumns();
+    const missing = required.filter((r) => !current.some((c) => c.field === r.field));
+    if (missing.length > 0) {
+      this.selectedCols.set([...current, ...missing]);
+    }
     this.preferenceSaveSubject.next();
   }
 
@@ -189,23 +188,28 @@ export abstract class BaseTableComponent<T, F extends TableFilterPreferences>
   }
 
   protected loadColumnPreferences(): TableColumn[] {
+    const required = this.getRequiredColumns();
     try {
       const savedPrefs = localStorage.getItem(this.columnPreferenceKey);
       if (savedPrefs) {
         const savedFields = JSON.parse(savedPrefs) as string[];
-        // Map saved field names back to column objects
+        // Map saved field names back to column objects (drops stale fields)
         const savedColumns = savedFields
           .map((field) => this.allColumns.find((col) => col.field === field))
           .filter((col): col is TableColumn => col !== undefined);
 
-        // Return saved columns if any were found, otherwise return required columns
-        return savedColumns.length > 0 ? savedColumns : this.getRequiredColumns();
+        if (savedColumns.length > 0) {
+          // Ensure required columns are always present (handles upgrades where
+          // a column was newly marked required after the user saved prefs).
+          const missing = required.filter((r) => !savedColumns.some((c) => c.field === r.field));
+          return [...savedColumns, ...missing];
+        }
       }
     } catch (error) {
       console.error('Failed to load column preferences:', error);
     }
-    // Default to required columns
-    return this.getRequiredColumns();
+    // First-time default: required columns only
+    return required;
   }
 
   protected saveColumnPreferences(columns: TableColumn[]): void {

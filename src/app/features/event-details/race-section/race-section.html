@@ -13,6 +13,7 @@
           [options]="cols()"
           [size]="inputSize"
           inputId="raceColumnSelect"
+          optionDisabled="disabled"
           optionLabel="header"
           placeholder="Select Columns"
         />
@@ -42,7 +43,7 @@
     <ng-template pTemplate="header">
       <tr>
         <th class="w-16 whitespace-nowrap" pFrozenColumn>Sl. No</th>
-        @for (col of selectedCols(); track col.field) {
+        @for (col of visibleCols(); track col.field) {
           <th class="whitespace-nowrap">{{ col.header }}</th>
         }
         <th class="w-32 whitespace-nowrap" pFrozenColumn alignFrozen="right">Actions</th>
@@ -52,7 +53,7 @@
     <ng-template pTemplate="body" let-race let-rowIndex="rowIndex">
       <tr [pSelectableRow]="race">
         <td class="text-color-secondary whitespace-nowrap" pFrozenColumn>{{ rowIndex + 1 }}</td>
-        @for (col of selectedCols(); track col.field) {
+        @for (col of visibleCols(); track col.field) {
           <td class="whitespace-nowrap">
             @switch (col.field) {
               @case ('id') {
@@ -113,7 +114,7 @@
 
     <ng-template pTemplate="emptymessage">
       <tr>
-        <td [attr.colspan]="selectedCols().length + 2" class="text-center py-8 text-gray-500">
+        <td [attr.colspan]="visibleCols().length + 2" class="text-center py-8 text-gray-500">
           No races found. Click "Create Race" to add one.
         </td>
       </tr>
@@ -121,7 +122,7 @@
 
     <ng-template pTemplate="loadingbody">
       <tr>
-        <td [attr.colspan]="selectedCols().length + 2">
+        <td [attr.colspan]="visibleCols().length + 2">
           <div class="flex flex-col gap-2 py-4">
             <p-skeleton height="3rem" />
             <p-skeleton height="3rem" />

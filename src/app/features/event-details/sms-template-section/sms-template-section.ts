@@ -1,4 +1,4 @@
-import { Component, inject, input, OnDestroy, OnInit, signal } from '@angular/core';
+import { Component, computed, inject, input, OnDestroy, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Subject } from 'rxjs';
@@ -29,6 +29,8 @@ import {
 import { STORAGE_KEYS } from '../../../shared/constants/storage-keys.constant';
 import { BUTTON_SIZE, FORM_INPUT_SIZE } from '../../../shared/constants/form.constants';
 import {
+  enforceRequiredColumns,
+  getVisibleCols,
   initializeColumnPreferences,
   saveColumnPreferences,
 } from '../../../shared/utils/column.utils';
@@ -66,6 +68,7 @@ export class SmsTemplateSection implements OnInit, OnDestroy {
   isLoading = signal(true);
   cols = signal<TableColumn[]>([]);
   selectedCols = signal<TableColumn[]>([]);
+  visibleCols = computed(() => getVisibleCols(SMS_TEMPLATE_COLUMNS, this.selectedCols()));
   searchTerm = signal('');
 
   readonly inputSize = FORM_INPUT_SIZE;
@@ -98,6 +101,7 @@ export class SmsTemplateSection implements OnInit, OnDestroy {
   }
 
   onColumnSelectionChange(): void {
+    enforceRequiredColumns(this.selectedCols, SMS_TEMPLATE_COLUMNS);
     saveColumnPreferences(this.selectedCols, STORAGE_KEYS.SMS_TEMPLATE_TABLE_COLUMNS);
   }
 

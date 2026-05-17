@@ -7,7 +7,7 @@ import { SortOption } from '../models/table-config.model';
  */
 export const CATEGORY_COLUMNS: TableColumn[] = [
   { field: 'id', header: 'ID' },
-  { field: 'categoryName', header: 'Category Name' },
+  { field: 'categoryName', header: 'Category Name', required: true, disabled: true },
   { field: 'description', header: 'Description' },
   { field: 'raceId', header: 'Race ID' },
   { field: 'eventId', header: 'Event ID' },

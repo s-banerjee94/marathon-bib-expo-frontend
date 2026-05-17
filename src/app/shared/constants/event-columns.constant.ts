@@ -6,12 +6,12 @@
 import { TableColumn } from '../models/table-config.model';
 
 export const EVENT_COLUMNS: TableColumn[] = [
-  { field: 'id', header: 'ID', required: true, disabled: true },
+  { field: 'id', header: 'ID' },
   { field: 'eventName', header: 'Event Name', required: true, disabled: true },
   { field: 'eventDescription', header: 'Description' },
-  { field: 'status', header: 'Status', required: true, disabled: false },
-  { field: 'eventStartDate', header: 'Start Date', required: true, disabled: false },
-  { field: 'eventEndDate', header: 'End Date', required: true, disabled: false },
+  { field: 'status', header: 'Status', required: true, disabled: true },
+  { field: 'eventStartDate', header: 'Start Date', required: true, disabled: true },
+  { field: 'eventEndDate', header: 'End Date', required: true, disabled: true },
   { field: 'venueName', header: 'Venue' },
   { field: 'city', header: 'City' },
   { field: 'stateProvince', header: 'State/Province' },
