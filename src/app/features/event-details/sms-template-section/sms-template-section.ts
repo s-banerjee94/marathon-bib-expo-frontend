@@ -71,6 +71,9 @@ export class SmsTemplateSection implements OnInit, OnDestroy {
   cols = signal<TableColumn[]>([]);
   selectedCols = signal<TableColumn[]>([]);
   visibleCols = computed(() => getVisibleCols(SMS_TEMPLATE_COLUMNS, this.selectedCols()));
+  displayData = computed(() =>
+    this.isLoading() ? (Array(5).fill({}) as SmsTemplate[]) : this.smsTemplates(),
+  );
   searchTerm = signal('');
 
   readonly inputSize = FORM_INPUT_SIZE;
@@ -191,10 +194,5 @@ export class SmsTemplateSection implements OnInit, OnDestroy {
       dismissableMask: true,
       data: { template },
     });
-  }
-
-  displayData(): SmsTemplate[] {
-    if (this.isLoading()) return Array(5).fill({} as SmsTemplate);
-    return this.smsTemplates();
   }
 }

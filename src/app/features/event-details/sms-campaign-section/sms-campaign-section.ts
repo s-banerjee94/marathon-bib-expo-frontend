@@ -79,6 +79,9 @@ export class SmsCampaignSection implements OnInit {
   cols = signal<TableColumn[]>([]);
   selectedCols = signal<TableColumn[]>([]);
   visibleCols = computed(() => getVisibleCols(SMS_CAMPAIGN_COLUMNS, this.selectedCols()));
+  displayData = computed(() =>
+    this.isLoading() ? (Array(3).fill({}) as SmsCampaign[]) : this.campaigns(),
+  );
   actionLoadingId = signal<number | null>(null);
 
   readonly inputSize = FORM_INPUT_SIZE;
@@ -228,10 +231,5 @@ export class SmsCampaignSection implements OnInit {
 
   canDelete(campaign: SmsCampaign): boolean {
     return campaign.status === 'DRAFT';
-  }
-
-  displayData(): SmsCampaign[] {
-    if (this.isLoading()) return Array(3).fill({} as SmsCampaign);
-    return this.campaigns();
   }
 }
