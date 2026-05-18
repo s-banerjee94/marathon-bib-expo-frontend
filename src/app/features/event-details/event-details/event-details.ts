@@ -65,10 +65,9 @@ export class EventDetails implements OnInit {
   changingStatus = signal(false);
   lastClickTarget: EventTarget | null = null;
 
-  EventStatus = EventStatus;
-  getStatusSeverity = getEventStatusSeverity;
-  getStatusLabel = getEventStatusLabel;
-  readonly buttonSize = BUTTON_SIZE;
+  protected readonly getStatusSeverity = getEventStatusSeverity;
+  protected readonly getStatusLabel = getEventStatusLabel;
+  protected readonly buttonSize = BUTTON_SIZE;
 
   ngOnInit(): void {
     const id = this.route.snapshot.paramMap.get('id');
