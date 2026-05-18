@@ -104,9 +104,6 @@ export class EventDetails implements OnInit {
     this.router.navigate(['/events']);
   }
 
-  /**
-   * Open event edit dialog
-   */
   onEditEvent(): void {
     const ref = this.dialogService.open(EventForm, {
       header: 'Edit Event',
@@ -121,17 +118,12 @@ export class EventDetails implements OnInit {
 
     ref?.onClose.subscribe((result) => {
       if (result?.event) {
-        // Reload event details after successful update
         this.loadEventDetails();
         this.toast.success(result.message || 'Event updated successfully');
       }
     });
   }
 
-  /**
-   * Build status menu items - show all statuses with current one disabled
-   * Matches pattern from event-list component
-   */
   private buildStatusMenuItems(currentStatus: EventStatus): void {
     const currentEvent = this.event();
     if (!currentEvent) return;
@@ -164,19 +156,11 @@ export class EventDetails implements OnInit {
     ]);
   }
 
-  /**
-   * Show status menu with click tracking
-   * Matches pattern from event-list component
-   */
   showStatusMenu(menu: Menu, clickEvent: MouseEvent): void {
     this.lastClickTarget = clickEvent.currentTarget;
     menu.toggle(clickEvent);
   }
 
-  /**
-   * Change event status with confirmation
-   * Matches pattern from event-list component
-   */
   private changeStatus(event: Event, newStatus: EventStatus): void {
     if (!event) {
       return;
