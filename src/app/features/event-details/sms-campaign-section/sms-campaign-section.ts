@@ -8,6 +8,7 @@ import {
   signal,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { finalize } from 'rxjs/operators';
 import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
 import { MultiSelectModule } from 'primeng/multiselect';
@@ -179,17 +180,18 @@ export class SmsCampaignSection implements OnInit {
       rejectButtonProps: { label: 'Cancel', severity: 'secondary', outlined: true },
       accept: () => {
         this.actionLoadingId.set(campaign.id);
-        this.campaignService.disarmCampaign(this.eventId(), campaign.id).subscribe({
-          next: (updated) => {
-            this.campaigns.update((list) => list.map((c) => (c.id === updated.id ? updated : c)));
-            this.actionLoadingId.set(null);
-            this.toast.success('Campaign moved back to Draft', 'Disarmed');
-          },
-          error: (error: unknown) => {
-            this.actionLoadingId.set(null);
-            this.errorHandler.showError(error, 'Failed to disarm campaign');
-          },
-        });
+        this.campaignService
+          .disarmCampaign(this.eventId(), campaign.id)
+          .pipe(finalize(() => this.actionLoadingId.set(null)))
+          .subscribe({
+            next: (updated) => {
+              this.campaigns.update((list) => list.map((c) => (c.id === updated.id ? updated : c)));
+              this.toast.success('Campaign moved back to Draft', 'Disarmed');
+            },
+            error: (error: unknown) => {
+              this.errorHandler.showError(error, 'Failed to disarm campaign');
+            },
+          });
       },
     });
   }
