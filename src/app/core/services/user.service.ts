@@ -41,10 +41,6 @@ export class UserService {
       httpParams = httpParams.set('enabled', params.enabled.toString());
     }
 
-    if (params.includeDeleted !== undefined) {
-      httpParams = httpParams.set('includeDeleted', params.includeDeleted.toString());
-    }
-
     if (params.role) {
       httpParams = httpParams.set('role', params.role);
     }
@@ -66,5 +62,9 @@ export class UserService {
 
   toggleEnabled(id: number): Observable<User> {
     return this.http.patch<User>(`${this.apiUrl}/${id}/toggle-enabled`, {});
+  }
+
+  deleteUser(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.apiUrl}/${id}`);
   }
 }

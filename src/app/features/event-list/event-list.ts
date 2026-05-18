@@ -23,7 +23,6 @@ import { FloatLabelModule } from 'primeng/floatlabel';
 import { Event, EventStatus } from '../../core/models/event.model';
 import { PageableParams } from '../../core/models/api.model';
 import { EventService } from '../../core/services/event.service';
-import { AuthService } from '../../core/services/auth.service';
 import { OrganizationService } from '../../core/services/organization.service';
 import { Organization } from '../../core/models/organization.model';
 import { UserRole } from '../../core/models/user.model';
@@ -95,7 +94,6 @@ export class EventList extends BaseTableComponent<Event, EventFilterPreferences>
   protected override filterPreferenceKey = STORAGE_KEYS.EVENT_TABLE_FILTERS;
   protected override allColumns = EVENT_COLUMNS;
   private eventService = inject(EventService);
-  private authService = inject(AuthService);
   readonly isRootOrAdmin = this.authService.hasAnyRole([UserRole.ROOT, UserRole.ADMIN]);
   readonly canChangeStatus = this.authService.hasAnyRole([
     UserRole.ROOT,

@@ -23,9 +23,13 @@ export interface User {
   organizationId?: number;
   organizationName?: string;
   enabled: boolean;
-  deleted?: boolean;
+  accountNonExpired?: boolean;
+  accountNonLocked?: boolean;
+  credentialsNonExpired?: boolean;
   createdAt?: Date;
   updatedAt?: Date;
+  createdBy?: string;
+  lastModifiedBy?: string;
 }
 
 /**

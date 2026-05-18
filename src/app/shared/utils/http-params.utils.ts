@@ -40,9 +40,6 @@ export function buildHttpParams(params: PageableParams): HttpParams {
   if (params.subscriptionTier) {
     httpParams = httpParams.set('subscriptionTier', params.subscriptionTier);
   }
-  if (params.includeDeleted !== undefined) {
-    httpParams = httpParams.set('includeDeleted', params.includeDeleted.toString());
-  }
 
   return httpParams;
 }

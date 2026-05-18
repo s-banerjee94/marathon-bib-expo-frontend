@@ -18,7 +18,6 @@ import { TagModule } from 'primeng/tag';
 import { FloatLabelModule } from 'primeng/floatlabel';
 
 import { User, UserRole } from '../../core/models/user.model';
-import { PageableParams } from '../../core/models/api.model';
 import { UserService } from '../../core/services/user.service';
 import { OrganizationService } from '../../core/services/organization.service';
 import { Organization } from '../../core/models/organization.model';
@@ -28,13 +27,20 @@ import { USER_SORT_OPTIONS } from '../../shared/constants/sort-options.constant'
 import { UserForm } from '../user-form/user-form';
 import { DefaultValuePipe } from '../../shared/pipes/default-value.pipe';
 import { BaseTableComponent } from '../../shared/base/base-table.component';
-import { TableFilterPreferences } from '../../shared/models/table-config.model';
+import { TableColumn, TableFilterPreferences } from '../../shared/models/table-config.model';
+import { OrganizationSelector } from '../../components/organization-selector/organization-selector';
+import { RoleOption } from '../../core/models/user.model';
+import {
+  FULL_ROLE_FILTER_OPTIONS,
+  ORG_ROLE_FILTER_OPTIONS,
+} from '../../shared/constants/role-filter-options.constant';
 import { ConfirmationService } from 'primeng/api';
 import { DialogService } from 'primeng/dynamicdialog';
 
 interface UserFilterPreferences extends TableFilterPreferences {
   enabled: boolean;
-  includeDeleted: boolean;
+  role: UserRole | null;
+  organizationId: number | null;
   sort: string[];
 }
 
@@ -60,6 +66,7 @@ interface UserFilterPreferences extends TableFilterPreferences {
     TagModule,
     FloatLabelModule,
     DefaultValuePipe,
+    OrganizationSelector,
   ],
   providers: [DialogService, ConfirmationService],
   templateUrl: './user-list.html',
@@ -67,20 +74,23 @@ interface UserFilterPreferences extends TableFilterPreferences {
 })
 export class UserList extends BaseTableComponent<User, UserFilterPreferences> {
   @ViewChild('orgPopover') orgPopover!: Popover;
-  // User-specific filter
-  filterIncludeDeleted = signal(false);
   // Organization popover state
   organizationCache = new Map<number, Organization>();
   loadingOrganizationId = signal<number | null>(null);
   currentOrganizationDetails = signal<Organization | null>(null);
   // Toggle enabled state
   togglingUserId = signal<number | null>(null);
+  // Delete state
+  deletingUserId = signal<number | null>(null);
+  // User-specific filters
+  filterRole = signal<UserRole | null>(null);
+  filterOrganizationId = signal<number | null>(null);
   // User-specific sort options
   readonly sortOptions = USER_SORT_OPTIONS;
   // Base class requirements
   protected override columnPreferenceKey = STORAGE_KEYS.USER_TABLE_COLUMNS;
   protected override filterPreferenceKey = STORAGE_KEYS.USER_TABLE_FILTERS;
-  protected override allColumns = USER_COLUMNS;
+  protected override allColumns: TableColumn[] = USER_COLUMNS;
   private userService = inject(UserService);
   private organizationService = inject(OrganizationService);
   private confirmationService = inject(ConfirmationService);
@@ -109,7 +119,15 @@ export class UserList extends BaseTableComponent<User, UserFilterPreferences> {
 
   getColumnAlignment(field: string): string {
     // Center alignment for status/tag columns
-    if (['enabled', 'deleted', 'role'].includes(field)) {
+    if (
+      [
+        'enabled',
+        'role',
+        'accountNonExpired',
+        'accountNonLocked',
+        'credentialsNonExpired',
+      ].includes(field)
+    ) {
       return 'text-center';
     }
     // Right alignment for numeric columns
@@ -276,12 +294,105 @@ export class UserList extends BaseTableComponent<User, UserFilterPreferences> {
     }
   }
 
+  canManageUser(user: User): boolean {
+    const currentUser = this.authService.currentUser();
+    if (!currentUser) return false;
+
+    // Never act on self or on any ROOT user
+    if (user.id === currentUser.id) return false;
+    if (user.role === UserRole.ROOT) return false;
+
+    switch (currentUser.role) {
+      case UserRole.ROOT:
+        return true;
+      case UserRole.ADMIN:
+        return user.role !== UserRole.ADMIN;
+      case UserRole.ORGANIZER_ADMIN:
+        return (
+          (user.role === UserRole.ORGANIZER_USER || user.role === UserRole.DISTRIBUTOR) &&
+          user.organizationId === currentUser.organizationId
+        );
+      case UserRole.ORGANIZER_USER:
+        return (
+          user.role === UserRole.DISTRIBUTOR && user.organizationId === currentUser.organizationId
+        );
+      default:
+        return false;
+    }
+  }
+
+  onDelete(event: Event, user: User): void {
+    this.confirmationService.confirm({
+      target: event.currentTarget as EventTarget,
+      message: `Delete user ${user.username}? This cannot be undone.`,
+      icon: 'pi pi-exclamation-triangle',
+      acceptButtonProps: {
+        label: 'Delete',
+        severity: 'danger',
+      },
+      rejectButtonProps: {
+        label: 'Cancel',
+        severity: 'secondary',
+        outlined: true,
+      },
+      accept: () => {
+        this.deletingUserId.set(user.id);
+
+        this.userService.deleteUser(user.id).subscribe({
+          next: () => {
+            const remaining = this.entities().filter((u) => u.id !== user.id);
+            this.entities.set(remaining);
+            this.totalRecords.set(Math.max(0, this.totalRecords() - 1));
+            this.deletingUserId.set(null);
+
+            this.messageService.add({
+              severity: 'success',
+              summary: 'Deleted',
+              detail: `User ${user.username} deleted successfully`,
+            });
+          },
+          error: (error) => {
+            this.deletingUserId.set(null);
+            this.errorHandler.showError(error, 'Failed to delete user');
+          },
+        });
+      },
+    });
+  }
+
+  canFilterByOrganization(): boolean {
+    return this.authService.hasAnyRole([UserRole.ROOT, UserRole.ADMIN]);
+  }
+
+  get roleOptions(): RoleOption[] {
+    return this.authService.hasAnyRole([UserRole.ROOT, UserRole.ADMIN])
+      ? FULL_ROLE_FILTER_OPTIONS
+      : ORG_ROLE_FILTER_OPTIONS;
+  }
+
+  onRoleFilterChange(value: UserRole | null): void {
+    this.filterRole.set(value);
+    this.onFilterChange();
+  }
+
+  onOrganizationFilterChange(value: number | undefined): void {
+    this.filterOrganizationId.set(value ?? null);
+    this.onFilterChange();
+  }
+
   protected override loadData(): void {
     this.isLoading.set(true);
 
     const params = this.buildPageableParams();
-    if (this.filterIncludeDeleted()) {
-      params.includeDeleted = true;
+    const role = this.filterRole();
+    if (role) {
+      params.role = role;
+    }
+    if (this.canFilterByOrganization()) {
+      const orgId = this.filterOrganizationId();
+      if (orgId !== null) {
+        params.organizationId = orgId;
+      }
     }
 
     this.userService.searchUsers(params).subscribe({
@@ -293,7 +404,8 @@ export class UserList extends BaseTableComponent<User, UserFilterPreferences> {
   protected override getDefaultFilterPreferences(): UserFilterPreferences {
     return {
       enabled: true,
-      includeDeleted: false,
+      role: null,
+      organizationId: null,
       sort: [],
     };
   }
@@ -301,14 +413,21 @@ export class UserList extends BaseTableComponent<User, UserFilterPreferences> {
   protected override getCurrentFilterPreferences(): UserFilterPreferences {
     return {
       enabled: this.filterEnabled(),
-      includeDeleted: this.filterIncludeDeleted(),
+      role: this.filterRole(),
+      organizationId: this.filterOrganizationId(),
       sort: this.filterSort(),
     };
   }
 
   protected override applyFilterPreferences(prefs: UserFilterPreferences): void {
     this.filterEnabled.set(prefs.enabled);
-    this.filterIncludeDeleted.set(prefs.includeDeleted);
+
+    // Drop saved role if it's no longer in the user's allowed role-filter set
+    // (e.g., prefs saved while logged in as ROOT, now logged in as ORGANIZER_USER).
+    const allowedRoles = new Set(this.roleOptions.map((o) => o.value));
+    this.filterRole.set(prefs.role && allowedRoles.has(prefs.role) ? prefs.role : null);
+
+    this.filterOrganizationId.set(prefs.organizationId ?? null);
     this.filterSort.set(prefs.sort);
   }
 }

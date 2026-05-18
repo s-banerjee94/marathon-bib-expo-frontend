@@ -4,6 +4,7 @@
  */
 
 import { TableColumn } from '../models/table-config.model';
+import { UserRole } from '../../core/models/user.model';
 
 export const USER_COLUMNS: TableColumn[] = [
   { field: 'id', header: 'ID' },
@@ -12,10 +13,34 @@ export const USER_COLUMNS: TableColumn[] = [
   { field: 'email', header: 'Email' },
   { field: 'phoneNumber', header: 'Phone Number' },
   { field: 'role', header: 'Role' },
-  { field: 'organizationId', header: 'Organization ID' },
-  { field: 'organizationName', header: 'Organization', required: true, disabled: true },
+  {
+    field: 'organizationId',
+    header: 'Organization ID',
+    visibleFor: [UserRole.ROOT, UserRole.ADMIN],
+  },
+  {
+    field: 'organizationName',
+    header: 'Organization',
+    required: true,
+    disabled: true,
+    visibleFor: [UserRole.ROOT, UserRole.ADMIN],
+  },
   { field: 'enabled', header: 'Enabled' },
-  { field: 'deleted', header: 'Deleted' },
+  {
+    field: 'accountNonExpired',
+    header: 'Account Non-Expired',
+    visibleFor: [UserRole.ROOT, UserRole.ADMIN],
+  },
+  {
+    field: 'accountNonLocked',
+    header: 'Account Non-Locked',
+    visibleFor: [UserRole.ROOT, UserRole.ADMIN],
+  },
+  {
+    field: 'credentialsNonExpired',
+    header: 'Credentials Non-Expired',
+    visibleFor: [UserRole.ROOT, UserRole.ADMIN],
+  },
   { field: 'createdAt', header: 'Created At' },
   { field: 'updatedAt', header: 'Updated At' },
   { field: 'createdBy', header: 'Created By' },

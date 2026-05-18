@@ -1,8 +1,11 @@
+import { UserRole } from '../../core/models/user.model';
+
 export interface TableColumn {
   field: string;
   header: string;
   required?: boolean; // If true, column cannot be removed from view
   disabled?: boolean; // If true, option is disabled in dropdown
+  visibleFor?: UserRole[]; // If set, column is hidden for any role not in this list
 }
 
 export interface SortOption {
@@ -10,20 +13,8 @@ export interface SortOption {
   value: string;
 }
 
-export interface TableConfig {
-  storageKeyPrefix: string;
-  defaultPageSize?: number;
-  enableSearch?: boolean;
-  searchMinChars?: number;
-  searchDebounceMs?: number;
-  enableFilters?: boolean;
-  enableSort?: boolean;
-  enableColumnSelection?: boolean;
-}
-
 export interface TableFilterPreferences {
   enabled?: boolean;
-  deleted?: boolean;
   sort?: string[];
   [key: string]: unknown;
 }

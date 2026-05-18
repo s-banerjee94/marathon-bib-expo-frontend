@@ -46,15 +46,31 @@
       <label class="cursor-pointer" for="filterEnabled">Show Enabled Only</label>
     </div>
 
-    <div class="flex items-center gap-2">
-      <p-checkbox
-        (ngModelChange)="filterIncludeDeleted.set($event); onFilterChange()"
-        [binary]="true"
-        [ngModel]="filterIncludeDeleted()"
-        inputId="filterIncludeDeleted"
+    <p-floatlabel variant="on">
+      <p-select
+        (ngModelChange)="onRoleFilterChange($event)"
+        [ngModel]="filterRole()"
+        [options]="roleOptions"
+        [showClear]="true"
+        [size]="inputSize"
+        class="w-48"
+        inputId="roleFilter"
+        optionLabel="label"
+        optionValue="value"
       />
-      <label class="cursor-pointer" for="filterIncludeDeleted">Include Deleted</label>
-    </div>
+      <label for="roleFilter">Role</label>
+    </p-floatlabel>
+
+    @if (canFilterByOrganization()) {
+      <div class="w-64">
+        <app-organization-selector
+          (organizationIdChange)="onOrganizationFilterChange($event)"
+          [selectedOrganizationId]="filterOrganizationId() ?? undefined"
+          inputId="orgFilter"
+          label="Organization"
+        />
+      </div>
+    }
 
     <p-floatlabel variant="on">
       <p-select
@@ -155,40 +171,38 @@
               } @else if (col.field === 'enabled') {
                 @if (togglingUserId() === user.id) {
                   <p-skeleton height="1.5rem" width="5rem" />
-                } @else {
+                } @else if (canManageUser(user)) {
                   <p-tag
                     (click)="toggleUserEnabled($event, user)"
                     [rounded]="true"
                     [severity]="user.enabled ? 'success' : 'danger'"
-                    [style]="{
-                      '--be-tag-font-size': '0.75rem',
-                      '--be-tag-padding': '0.25rem 0.5rem',
-                    }"
                     [value]="user.enabled ? 'Enabled' : 'Disabled'"
                     pTooltip="Click to toggle status"
                     styleClass="cursor-pointer hover:opacity-80 transition-opacity"
                     tooltipPosition="top"
                   />
+                } @else {
+                  <p-tag
+                    [rounded]="true"
+                    [severity]="user.enabled ? 'success' : 'danger'"
+                    [value]="user.enabled ? 'Enabled' : 'Disabled'"
+                  />
                 }
-              } @else if (col.field === 'deleted') {
-                <p-tag
-                  [rounded]="true"
-                  [severity]="user.deleted ? 'danger' : 'success'"
-                  [style]="{
-                    '--be-tag-font-size': '0.75rem',
-                    '--be-tag-padding': '0.25rem 0.5rem',
-                  }"
-                  [value]="user.deleted ? 'Deleted' : 'Active'"
-                />
               } @else if (col.field === 'role') {
                 <p-tag
                   [rounded]="true"
                   [severity]="getRoleSeverity(user.role)"
-                  [style]="{
-                    '--be-tag-font-size': '0.75rem',
-                    '--be-tag-padding': '0.25rem 0.5rem',
-                  }"
                   [value]="user.role"
+                />
+              } @else if (
+                col.field === 'accountNonExpired' ||
+                col.field === 'accountNonLocked' ||
+                col.field === 'credentialsNonExpired'
+              ) {
+                <p-tag
+                  [rounded]="true"
+                  [severity]="getCellValue(user, col.field) !== false ? 'success' : 'danger'"
+                  [value]="getCellValue(user, col.field) !== false ? 'Yes' : 'No'"
                 />
               } @else if (col.field === 'createdAt' || col.field === 'updatedAt') {
                 {{ getDateValue(user, col.field) | defaultValue | date: 'dd-MM-yyyy' }}
@@ -199,25 +213,29 @@
           }
           <td class="text-center whitespace-nowrap" pFrozenColumn alignFrozen="right">
             <div class="flex items-center justify-center gap-1">
-              <p-button
-                (click)="onEdit(user)"
-                [rounded]="true"
-                [size]="inputSize"
-                [text]="true"
-                icon="pi pi-pencil"
-                pTooltip="Edit"
-                severity="info"
-                tooltipPosition="top"
-              ></p-button>
-              <p-button
-                [rounded]="true"
-                [size]="inputSize"
-                [text]="true"
-                icon="pi pi-trash"
-                pTooltip="Delete"
-                severity="danger"
-                tooltipPosition="top"
-              ></p-button>
+              @if (canManageUser(user)) {
+                <p-button
+                  (click)="onEdit(user)"
+                  [rounded]="true"
+                  [size]="inputSize"
+                  [text]="true"
+                  icon="pi pi-pencil"
+                  pTooltip="Edit"
+                  severity="info"
+                  tooltipPosition="top"
+                ></p-button>
+                <p-button
+                  (click)="onDelete($event, user)"
+                  [loading]="deletingUserId() === user.id"
+                  [rounded]="true"
+                  [size]="inputSize"
+                  [text]="true"
+                  icon="pi pi-trash"
+                  pTooltip="Delete"
+                  severity="danger"
+                  tooltipPosition="top"
+                ></p-button>
+              }
             </div>
           </td>
         }

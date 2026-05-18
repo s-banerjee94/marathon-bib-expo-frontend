@@ -27,6 +27,5 @@ export interface PageableParams {
   subscriptionTier?: string;
   role?: string;
   organizationId?: number;
-  includeDeleted?: boolean;
   status?: string;
 }

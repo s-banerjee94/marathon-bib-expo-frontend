@@ -7,6 +7,7 @@ import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
 import { TableColumn, TableFilterPreferences } from '../models/table-config.model';
 import { PageableParams, PageableResponse } from '../../core/models/api.model';
 import { ErrorHandlerService } from '../../core/services/error-handler.service';
+import { AuthService } from '../../core/services/auth.service';
 import { FORM_INPUT_SIZE } from '../constants/form.constants';
 
 /**
@@ -40,6 +41,7 @@ export abstract class BaseTableComponent<T, F extends TableFilterPreferences>
   protected dialogService = inject(DialogService);
   protected messageService = inject(MessageService);
   protected errorHandler = inject(ErrorHandlerService);
+  protected authService = inject(AuthService);
   protected dialogRef: DynamicDialogRef | null = null;
   protected searchSubject = new Subject<string>();
   // Abstract properties - must be implemented by subclasses
@@ -169,7 +171,13 @@ export abstract class BaseTableComponent<T, F extends TableFilterPreferences>
   }
 
   protected initializeColumns(): void {
-    // Initialize columns (call this from subclass constructor)
+    // Drop columns the current user shouldn't see (declared via TableColumn.visibleFor).
+    // Subclasses get this for free — no per-list role check needed.
+    const currentRole = this.authService.getCurrentRole();
+    this.allColumns = this.allColumns.filter(
+      (col) => !col.visibleFor || (currentRole !== null && col.visibleFor.includes(currentRole)),
+    );
+
     this.cols.set(this.allColumns);
     this.selectedCols.set(this.loadColumnPreferences());
 
