@@ -13,7 +13,6 @@ import { DialogService } from 'primeng/dynamicdialog';
 import { Event, EventStatus } from '../../../core/models/event.model';
 import { Race } from '../../../core/models/race.model';
 import { EventService } from '../../../core/services/event.service';
-import { RaceService } from '../../../core/services/race.service';
 import { ErrorHandlerService } from '../../../core/services/error-handler.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { RaceSection } from '../race-section/race-section';
@@ -53,14 +52,12 @@ export class EventDetails implements OnInit {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private eventService = inject(EventService);
-  private raceService = inject(RaceService);
   private errorHandler = inject(ErrorHandlerService);
   private toast = inject(ToastService);
   private dialogService = inject(DialogService);
   private confirmationService = inject(ConfirmationService);
 
   event = signal<Event | null>(null);
-  races = signal<Race[]>([]);
   selectedRace = signal<Race | null>(null);
   isLoading = signal(true);
   eventId = signal<number>(0);
@@ -90,23 +87,11 @@ export class EventDetails implements OnInit {
         this.event.set(event);
         this.buildStatusMenuItems(event.status);
         this.isLoading.set(false);
-        this.loadRaces();
       },
       error: (error) => {
         this.errorHandler.showError(error, 'Failed to load event details');
         this.isLoading.set(false);
         this.router.navigate(['/events']);
-      },
-    });
-  }
-
-  loadRaces(): void {
-    this.raceService.getRacesByEventId(this.eventId()).subscribe({
-      next: (races: Race[]) => {
-        this.races.set(races);
-      },
-      error: (error: unknown) => {
-        this.errorHandler.showError(error, 'Failed to load races');
       },
     });
   }

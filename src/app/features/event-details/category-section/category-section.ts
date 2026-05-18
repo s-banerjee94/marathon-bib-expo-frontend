@@ -14,6 +14,7 @@ import { ConfirmPopupModule } from 'primeng/confirmpopup';
 import { Category } from '../../../core/models/category.model';
 import { Race } from '../../../core/models/race.model';
 import { CategoryService } from '../../../core/services/category.service';
+import { RaceService } from '../../../core/services/race.service';
 import { ErrorHandlerService } from '../../../core/services/error-handler.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { CategoryForm } from '../category-form/category-form';
@@ -51,16 +52,17 @@ const DEFAULT_CATEGORY_FIELDS = ['id', 'categoryName', 'createdBy', 'createdAt']
 })
 export class CategorySection {
   eventId = input.required<number>();
-  races = input.required<Race[]>();
   selectedRaceFromParent = input<Race | null>(null);
 
   private categoryService = inject(CategoryService);
+  private raceService = inject(RaceService);
   private errorHandler = inject(ErrorHandlerService);
   private toast = inject(ToastService);
   private dialogService = inject(DialogService);
   private confirmationService = inject(ConfirmationService);
 
   categories = signal<Category[]>([]);
+  races = signal<Race[]>([]);
   isLoading = signal(false);
   selectedRace = signal<Race | null>(null);
 
@@ -85,6 +87,13 @@ export class CategorySection {
 
     effect(
       () => {
+        this.loadRaces(this.eventId());
+      },
+      { allowSignalWrites: true },
+    );
+
+    effect(
+      () => {
         const raceFromParent = this.selectedRaceFromParent();
         if (raceFromParent) {
           this.selectedRace.set(raceFromParent);
@@ -101,6 +110,13 @@ export class CategorySection {
       },
       { allowSignalWrites: true },
     );
+  }
+
+  private loadRaces(eventId: number): void {
+    this.raceService.getRacesByEventId(eventId).subscribe({
+      next: (races) => this.races.set(races),
+      error: (error: unknown) => this.errorHandler.showError(error, 'Failed to load races'),
+    });
   }
 
   onColumnSelectionChange(): void {

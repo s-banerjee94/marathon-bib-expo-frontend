@@ -130,11 +130,7 @@
         </p-tabpanel>
 
         <p-tabpanel value="categories">
-          <app-category-section
-            [eventId]="eventId()"
-            [races]="races()"
-            [selectedRaceFromParent]="selectedRace()"
-          />
+          <app-category-section [eventId]="eventId()" [selectedRaceFromParent]="selectedRace()" />
         </p-tabpanel>
 
         <p-tabpanel value="sms-templates">
