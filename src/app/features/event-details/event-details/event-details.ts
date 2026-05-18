@@ -1,5 +1,6 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { finalize } from 'rxjs/operators';
 import { ActivatedRoute, Router } from '@angular/router';
 import { TabsModule } from 'primeng/tabs';
 import { CardModule } from 'primeng/card';
@@ -183,18 +184,19 @@ export class EventDetails implements OnInit {
       accept: () => {
         this.changingStatus.set(true);
 
-        this.eventService.changeEventStatus(event.id, newStatus).subscribe({
-          next: (updatedEvent) => {
-            this.event.set(updatedEvent);
-            this.buildStatusMenuItems(updatedEvent.status);
-            this.changingStatus.set(false);
-            this.toast.success(`Event status changed to ${statusLabel} successfully`, 'Updated');
-          },
-          error: (error) => {
-            this.changingStatus.set(false);
-            this.errorHandler.showError(error, 'Failed to change event status');
-          },
-        });
+        this.eventService
+          .changeEventStatus(event.id, newStatus)
+          .pipe(finalize(() => this.changingStatus.set(false)))
+          .subscribe({
+            next: (updatedEvent) => {
+              this.event.set(updatedEvent);
+              this.buildStatusMenuItems(updatedEvent.status);
+              this.toast.success(`Event status changed to ${statusLabel} successfully`, 'Updated');
+            },
+            error: (error) => {
+              this.errorHandler.showError(error, 'Failed to change event status');
+            },
+          });
       },
     });
   }
