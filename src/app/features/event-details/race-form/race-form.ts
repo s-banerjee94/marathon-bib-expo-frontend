@@ -7,7 +7,9 @@ import { TextareaModule } from 'primeng/textarea';
 import { ButtonModule } from 'primeng/button';
 import { FloatLabelModule } from 'primeng/floatlabel';
 import { MessageModule } from 'primeng/message';
-import { Race } from '../../../core/models/race.model';
+import { Race, CreateRaceRequest, UpdateRaceRequest } from '../../../core/models/race.model';
+import { RaceService } from '../../../core/services/race.service';
+import { ErrorHandlerService } from '../../../core/services/error-handler.service';
 import { FORM_INPUT_SIZE } from '../../../shared/constants/form.constants';
 import { shouldShowError } from '../../../shared/utils/form.utils';
 
@@ -28,15 +30,24 @@ import { shouldShowError } from '../../../shared/utils/form.utils';
 export class RaceForm implements OnInit {
   private config = inject(DynamicDialogConfig);
   private ref = inject(DynamicDialogRef);
+  private raceService = inject(RaceService);
+  private errorHandler = inject(ErrorHandlerService);
 
   isEditMode = signal(false);
+  isSubmitting = signal(false);
   readonly inputSize = FORM_INPUT_SIZE;
   readonly shouldShowError = shouldShowError;
+
+  private eventId!: number;
+  private raceId: number | null = null;
 
   formData = { raceName: '', raceDescription: '' };
 
   ngOnInit(): void {
-    const race = this.config.data?.race as Race | null;
+    const data = this.config.data as { race?: Race | null; eventId: number };
+    const race = data?.race ?? null;
+    this.eventId = data.eventId;
+    this.raceId = race?.id ?? null;
     this.isEditMode.set(!!race);
     this.formData = {
       raceName: race?.raceName ?? '',
@@ -47,18 +58,43 @@ export class RaceForm implements OnInit {
   onSubmit(form: NgForm): void {
     if (!form.valid) return;
 
-    if (!this.isEditMode()) {
-      this.ref.close(this.formData);
+    if (this.isEditMode()) {
+      const patch = Object.fromEntries(
+        Object.keys(this.formData)
+          .filter((key) => form.controls[key]?.dirty)
+          .map((key) => [key, this.formData[key as keyof typeof this.formData]]),
+      ) as UpdateRaceRequest;
+
+      if (!Object.keys(patch).length) {
+        this.ref.close();
+        return;
+      }
+
+      this.isSubmitting.set(true);
+      this.raceService.updateRace(this.eventId, this.raceId!, patch).subscribe({
+        next: (result) => {
+          this.isSubmitting.set(false);
+          this.ref.close(result);
+        },
+        error: (error: unknown) => {
+          this.isSubmitting.set(false);
+          this.errorHandler.showError(error, 'Failed to update race');
+        },
+      });
       return;
     }
 
-    const patch = Object.fromEntries(
-      Object.keys(this.formData)
-        .filter((key) => form.controls[key]?.dirty)
-        .map((key) => [key, this.formData[key as keyof typeof this.formData]]),
-    );
-
-    this.ref.close(Object.keys(patch).length ? patch : undefined);
+    this.isSubmitting.set(true);
+    this.raceService.createRace(this.eventId, this.formData as CreateRaceRequest).subscribe({
+      next: (result) => {
+        this.isSubmitting.set(false);
+        this.ref.close(result);
+      },
+      error: (error: unknown) => {
+        this.isSubmitting.set(false);
+        this.errorHandler.showError(error, 'Failed to create race');
+      },
+    });
   }
 
   onCancel(): void {

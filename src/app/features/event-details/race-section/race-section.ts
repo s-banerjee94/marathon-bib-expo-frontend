@@ -11,7 +11,7 @@ import { TooltipModule } from 'primeng/tooltip';
 import { DialogService, DynamicDialogRef } from 'primeng/dynamicdialog';
 import { ConfirmationService } from 'primeng/api';
 import { ConfirmPopupModule } from 'primeng/confirmpopup';
-import { Race, CreateRaceRequest, UpdateRaceRequest } from '../../../core/models/race.model';
+import { Race } from '../../../core/models/race.model';
 import { RaceService } from '../../../core/services/race.service';
 import { ErrorHandlerService } from '../../../core/services/error-handler.service';
 import { ToastService } from '../../../core/services/toast.service';
@@ -106,23 +106,13 @@ export class RaceSection implements OnInit {
     this.dialogRef = this.dialogService.open(RaceForm, {
       header: 'Create Race',
       width: '600px',
-      data: { race: null },
+      data: { race: null, eventId: this.eventId() },
     });
 
-    this.dialogRef?.onClose.subscribe((result: unknown) => {
+    this.dialogRef?.onClose.subscribe((result: Race | undefined) => {
       if (result) {
-        this.isLoading.set(true);
-        const request = result as CreateRaceRequest;
-        this.raceService.createRace(this.eventId(), request).subscribe({
-          next: () => {
-            this.toast.success('Race created successfully');
-            this.loadRaces();
-          },
-          error: (error: unknown) => {
-            this.errorHandler.showError(error, 'Failed to create race');
-            this.isLoading.set(false);
-          },
-        });
+        this.races.update((list) => [result, ...list]);
+        this.toast.success('Race created successfully');
       }
     });
   }
@@ -131,23 +121,13 @@ export class RaceSection implements OnInit {
     this.dialogRef = this.dialogService.open(RaceForm, {
       header: 'Edit Race',
       width: '600px',
-      data: { race },
+      data: { race, eventId: this.eventId() },
     });
 
-    this.dialogRef?.onClose.subscribe((result: unknown) => {
+    this.dialogRef?.onClose.subscribe((result: Race | undefined) => {
       if (result) {
-        this.isLoading.set(true);
-        const request = result as UpdateRaceRequest;
-        this.raceService.updateRace(this.eventId(), race.id, request).subscribe({
-          next: () => {
-            this.toast.success('Race updated successfully');
-            this.loadRaces();
-          },
-          error: (error: unknown) => {
-            this.errorHandler.showError(error, 'Failed to update race');
-            this.isLoading.set(false);
-          },
-        });
+        this.races.update((list) => list.map((r) => (r.id === result.id ? result : r)));
+        this.toast.success('Race updated successfully');
       }
     });
   }
@@ -160,15 +140,13 @@ export class RaceSection implements OnInit {
       acceptButtonStyleClass: 'p-button-danger p-button-sm',
       rejectButtonStyleClass: 'p-button-sm',
       accept: () => {
-        this.isLoading.set(true);
         this.raceService.deleteRace(this.eventId(), race.id).subscribe({
           next: () => {
+            this.races.update((list) => list.filter((r) => r.id !== race.id));
             this.toast.success('Race deleted successfully');
-            this.loadRaces();
           },
           error: (error: unknown) => {
             this.errorHandler.showError(error, 'Failed to delete race');
-            this.isLoading.set(false);
           },
         });
       },

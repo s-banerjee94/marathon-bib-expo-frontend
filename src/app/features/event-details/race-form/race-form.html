@@ -54,7 +54,7 @@
     <button (click)="onCancel()" [outlined]="true" pButton severity="secondary" type="button">
       <span pButtonLabel>Cancel</span>
     </button>
-    <button [disabled]="raceForm.invalid" pButton type="submit">
+    <button [disabled]="raceForm.invalid || isSubmitting()" pButton type="submit">
       <span pButtonLabel>{{ isEditMode() ? 'Update Race' : 'Create Race' }}</span>
     </button>
   </div>
