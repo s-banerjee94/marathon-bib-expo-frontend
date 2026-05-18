@@ -17,7 +17,7 @@ import { SkeletonModule } from 'primeng/skeleton';
 import { TooltipModule } from 'primeng/tooltip';
 import { ConfirmPopupModule } from 'primeng/confirmpopup';
 import { FormsModule } from '@angular/forms';
-import { DialogService, DynamicDialogRef } from 'primeng/dynamicdialog';
+import { DialogService } from 'primeng/dynamicdialog';
 import { ConfirmationService } from 'primeng/api';
 import { SmsCampaign } from '../../../core/models/sms-campaign.model';
 import { SmsCampaignService } from '../../../core/services/sms-campaign.service';
@@ -88,8 +88,6 @@ export class SmsCampaignSection implements OnInit {
   readonly inputSize = FORM_INPUT_SIZE;
   readonly buttonSize = BUTTON_SIZE;
 
-  private dialogRef: DynamicDialogRef | null = null;
-
   ngOnInit(): void {
     initializeColumnPreferences(
       SMS_CAMPAIGN_COLUMNS,
@@ -121,13 +119,13 @@ export class SmsCampaignSection implements OnInit {
   }
 
   onCreate(): void {
-    this.dialogRef = this.dialogService.open(SmsCampaignForm, {
+    const ref = this.dialogService.open(SmsCampaignForm, {
       header: 'Create SMS Campaign',
       width: '560px',
       data: { campaign: null, eventId: this.eventId(), eventTimezone: this.eventTimezone() },
     });
 
-    this.dialogRef?.onClose.subscribe((result: SmsCampaign | undefined) => {
+    ref?.onClose.subscribe((result: SmsCampaign | undefined) => {
       if (result) {
         this.campaigns.update((list) => [result, ...list]);
         this.toast.success('Campaign created successfully');
@@ -136,13 +134,13 @@ export class SmsCampaignSection implements OnInit {
   }
 
   onEdit(campaign: SmsCampaign): void {
-    this.dialogRef = this.dialogService.open(SmsCampaignForm, {
+    const ref = this.dialogService.open(SmsCampaignForm, {
       header: 'Edit SMS Campaign',
       width: '560px',
       data: { campaign, eventId: this.eventId(), eventTimezone: this.eventTimezone() },
     });
 
-    this.dialogRef?.onClose.subscribe((result: SmsCampaign | undefined) => {
+    ref?.onClose.subscribe((result: SmsCampaign | undefined) => {
       if (result) {
         this.campaigns.update((list) => list.map((c) => (c.id === result.id ? result : c)));
         this.toast.success('Campaign updated successfully');

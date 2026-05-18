@@ -17,6 +17,8 @@ export const RACE_COLUMNS: TableColumn[] = [
   { field: 'lastModifiedBy', header: 'Last Modified By' },
 ];
 
+export const DEFAULT_RACE_COLUMNS = ['id', 'raceName', 'raceDescription', 'categoryCount'];
+
 /**
  * Sort options for race dropdown
  */

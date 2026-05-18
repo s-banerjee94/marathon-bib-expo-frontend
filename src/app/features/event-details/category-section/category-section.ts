@@ -8,7 +8,7 @@ import { MultiSelectModule } from 'primeng/multiselect';
 import { TagModule } from 'primeng/tag';
 import { SkeletonModule } from 'primeng/skeleton';
 import { TooltipModule } from 'primeng/tooltip';
-import { DialogService, DynamicDialogRef } from 'primeng/dynamicdialog';
+import { DialogService } from 'primeng/dynamicdialog';
 import { ConfirmationService } from 'primeng/api';
 import { ConfirmPopupModule } from 'primeng/confirmpopup';
 import { Category } from '../../../core/models/category.model';
@@ -71,8 +71,6 @@ export class CategorySection {
   visibleCols = computed(() => getVisibleCols(CATEGORY_COLUMNS, this.selectedCols()));
   readonly inputSize = FORM_INPUT_SIZE;
   readonly buttonSize = BUTTON_SIZE;
-
-  private dialogRef: DynamicDialogRef | null = null;
 
   canLoadCategories = computed(() => !!this.selectedRace());
 
@@ -149,13 +147,13 @@ export class CategorySection {
     const race = this.selectedRace();
     if (!race) return;
 
-    this.dialogRef = this.dialogService.open(CategoryForm, {
+    const ref = this.dialogService.open(CategoryForm, {
       header: 'Create Category',
       width: '500px',
       data: { category: null },
     });
 
-    this.dialogRef?.onClose.subscribe((result: unknown) => {
+    ref?.onClose.subscribe((result: unknown) => {
       if (result) {
         this.isLoading.set(true);
         const request = result as CreateCategoryRequest;
@@ -174,13 +172,13 @@ export class CategorySection {
   }
 
   onEdit(category: Category): void {
-    this.dialogRef = this.dialogService.open(CategoryForm, {
+    const ref = this.dialogService.open(CategoryForm, {
       header: 'Edit Category',
       width: '500px',
       data: { category },
     });
 
-    this.dialogRef?.onClose.subscribe((result: unknown) => {
+    ref?.onClose.subscribe((result: unknown) => {
       if (result) {
         this.isLoading.set(true);
         const request = result as UpdateCategoryRequest;

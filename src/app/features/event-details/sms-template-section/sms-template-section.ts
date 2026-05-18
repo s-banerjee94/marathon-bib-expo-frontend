@@ -11,7 +11,7 @@ import { InputIconModule } from 'primeng/inputicon';
 import { MultiSelectModule } from 'primeng/multiselect';
 import { SkeletonModule } from 'primeng/skeleton';
 import { TooltipModule } from 'primeng/tooltip';
-import { DialogService, DynamicDialogRef } from 'primeng/dynamicdialog';
+import { DialogService } from 'primeng/dynamicdialog';
 import { ConfirmationService } from 'primeng/api';
 import { ConfirmPopupModule } from 'primeng/confirmpopup';
 import { SmsTemplate } from '../../../core/models/sms-template.model';
@@ -79,7 +79,6 @@ export class SmsTemplateSection implements OnInit, OnDestroy {
   readonly inputSize = FORM_INPUT_SIZE;
   readonly buttonSize = BUTTON_SIZE;
 
-  private dialogRef: DynamicDialogRef | null = null;
   private searchSubject = new Subject<string>();
 
   ngOnInit(): void {
@@ -134,13 +133,13 @@ export class SmsTemplateSection implements OnInit, OnDestroy {
   }
 
   onCreate(): void {
-    this.dialogRef = this.dialogService.open(SmsTemplateForm, {
+    const ref = this.dialogService.open(SmsTemplateForm, {
       header: 'Create SMS Template',
       width: '600px',
       data: { smsTemplate: null, eventId: this.eventId() },
     });
 
-    this.dialogRef?.onClose.subscribe((result: SmsTemplate | undefined) => {
+    ref?.onClose.subscribe((result: SmsTemplate | undefined) => {
       if (result) {
         this.smsTemplates.update((list) => [result, ...list]);
         this.toast.success('SMS template created successfully');
@@ -149,13 +148,13 @@ export class SmsTemplateSection implements OnInit, OnDestroy {
   }
 
   onEdit(template: SmsTemplate): void {
-    this.dialogRef = this.dialogService.open(SmsTemplateForm, {
+    const ref = this.dialogService.open(SmsTemplateForm, {
       header: 'Edit SMS Template',
       width: '600px',
       data: { smsTemplate: template, eventId: this.eventId() },
     });
 
-    this.dialogRef?.onClose.subscribe((result: SmsTemplate | undefined) => {
+    ref?.onClose.subscribe((result: SmsTemplate | undefined) => {
       if (result) {
         this.smsTemplates.update((list) => list.map((t) => (t.id === result.id ? result : t)));
         this.toast.success('SMS template updated successfully');

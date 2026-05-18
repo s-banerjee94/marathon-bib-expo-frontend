@@ -8,7 +8,7 @@ import { MultiSelectModule } from 'primeng/multiselect';
 import { TagModule } from 'primeng/tag';
 import { SkeletonModule } from 'primeng/skeleton';
 import { TooltipModule } from 'primeng/tooltip';
-import { DialogService, DynamicDialogRef } from 'primeng/dynamicdialog';
+import { DialogService } from 'primeng/dynamicdialog';
 import { ConfirmationService } from 'primeng/api';
 import { ConfirmPopupModule } from 'primeng/confirmpopup';
 import { Race } from '../../../core/models/race.model';
@@ -19,7 +19,10 @@ import { RaceForm } from '../race-form/race-form';
 import { DefaultValuePipe } from '../../../shared/pipes/default-value.pipe';
 import { TableRowSelectEvent } from 'primeng/table';
 import { TableColumn } from '../../../shared/models/table-config.model';
-import { RACE_COLUMNS } from '../../../shared/constants/race-columns.constant';
+import {
+  RACE_COLUMNS,
+  DEFAULT_RACE_COLUMNS,
+} from '../../../shared/constants/race-columns.constant';
 import { STORAGE_KEYS } from '../../../shared/constants/storage-keys.constant';
 import { BUTTON_SIZE, FORM_INPUT_SIZE } from '../../../shared/constants/form.constants';
 import {
@@ -28,8 +31,6 @@ import {
   initializeColumnPreferences,
   saveColumnPreferences,
 } from '../../../shared/utils/column.utils';
-
-const DEFAULT_RACE_FIELDS = ['id', 'raceName', 'raceDescription', 'categoryCount'];
 
 @Component({
   selector: 'app-race-section',
@@ -70,12 +71,10 @@ export class RaceSection implements OnInit {
   readonly inputSize = FORM_INPUT_SIZE;
   readonly buttonSize = BUTTON_SIZE;
 
-  private dialogRef: DynamicDialogRef | null = null;
-
   ngOnInit(): void {
     initializeColumnPreferences(
       RACE_COLUMNS,
-      DEFAULT_RACE_FIELDS,
+      DEFAULT_RACE_COLUMNS,
       STORAGE_KEYS.RACE_TABLE_COLUMNS,
       this.cols,
       this.selectedCols,
@@ -103,13 +102,13 @@ export class RaceSection implements OnInit {
   }
 
   onCreate(): void {
-    this.dialogRef = this.dialogService.open(RaceForm, {
+    const ref = this.dialogService.open(RaceForm, {
       header: 'Create Race',
       width: '600px',
       data: { race: null, eventId: this.eventId() },
     });
 
-    this.dialogRef?.onClose.subscribe((result: Race | undefined) => {
+    ref?.onClose.subscribe((result: Race | undefined) => {
       if (result) {
         this.races.update((list) => [result, ...list]);
         this.toast.success('Race created successfully');
@@ -118,13 +117,13 @@ export class RaceSection implements OnInit {
   }
 
   onEdit(race: Race): void {
-    this.dialogRef = this.dialogService.open(RaceForm, {
+    const ref = this.dialogService.open(RaceForm, {
       header: 'Edit Race',
       width: '600px',
       data: { race, eventId: this.eventId() },
     });
 
-    this.dialogRef?.onClose.subscribe((result: Race | undefined) => {
+    ref?.onClose.subscribe((result: Race | undefined) => {
       if (result) {
         this.races.update((list) => list.map((r) => (r.id === result.id ? result : r)));
         this.toast.success('Race updated successfully');
