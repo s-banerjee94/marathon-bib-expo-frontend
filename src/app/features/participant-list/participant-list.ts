@@ -295,6 +295,12 @@ export class ParticipantList implements OnInit {
     this.formDialogData.set(null);
   }
 
+  onFormDialogVisibleChange(visible: boolean): void {
+    if (!visible) {
+      this.closeFormDialog();
+    }
+  }
+
   submitFormDialog(): void {
     this.participantFormComponent()?.submitForm();
   }

@@ -132,12 +132,13 @@
 
 <!-- Create/Edit Participant Form Dialog -->
 <p-dialog
-  [(visible)]="showFormDialog"
+  (visibleChange)="onFormDialogVisibleChange($event)"
   [draggable]="false"
   [header]="formDialogHeader()"
   [modal]="true"
   [resizable]="false"
   [style]="{ width: '95vw', maxWidth: '700px', maxHeight: '90vh' }"
+  [visible]="showFormDialog()"
 >
   @if (formDialogData()) {
     <app-participant-form
