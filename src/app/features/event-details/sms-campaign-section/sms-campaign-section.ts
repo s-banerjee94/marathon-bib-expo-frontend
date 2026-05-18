@@ -211,7 +211,6 @@ export class SmsCampaignSection implements OnInit {
       case 'ACTIVE':
         return 'success';
       case 'SENDING':
-        return 'info';
       case 'SENT':
         return 'info';
       case 'FAILED':
