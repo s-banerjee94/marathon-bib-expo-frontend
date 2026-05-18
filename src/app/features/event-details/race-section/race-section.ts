@@ -14,6 +14,7 @@ import { ConfirmPopupModule } from 'primeng/confirmpopup';
 import { Race, CreateRaceRequest, UpdateRaceRequest } from '../../../core/models/race.model';
 import { RaceService } from '../../../core/services/race.service';
 import { ErrorHandlerService } from '../../../core/services/error-handler.service';
+import { ToastService } from '../../../core/services/toast.service';
 import { RaceForm } from '../race-form/race-form';
 import { DefaultValuePipe } from '../../../shared/pipes/default-value.pipe';
 import { TableRowSelectEvent } from 'primeng/table';
@@ -55,6 +56,7 @@ export class RaceSection implements OnInit {
 
   private raceService = inject(RaceService);
   private errorHandler = inject(ErrorHandlerService);
+  private toast = inject(ToastService);
   private dialogService = inject(DialogService);
   private confirmationService = inject(ConfirmationService);
 
@@ -113,7 +115,7 @@ export class RaceSection implements OnInit {
         const request = result as CreateRaceRequest;
         this.raceService.createRace(this.eventId(), request).subscribe({
           next: () => {
-            this.errorHandler.showSuccess('Race created successfully');
+            this.toast.success('Race created successfully');
             this.loadRaces();
           },
           error: (error: unknown) => {
@@ -138,7 +140,7 @@ export class RaceSection implements OnInit {
         const request = result as UpdateRaceRequest;
         this.raceService.updateRace(this.eventId(), race.id, request).subscribe({
           next: () => {
-            this.errorHandler.showSuccess('Race updated successfully');
+            this.toast.success('Race updated successfully');
             this.loadRaces();
           },
           error: (error: unknown) => {
@@ -161,7 +163,7 @@ export class RaceSection implements OnInit {
         this.isLoading.set(true);
         this.raceService.deleteRace(this.eventId(), race.id).subscribe({
           next: () => {
-            this.errorHandler.showSuccess('Race deleted successfully');
+            this.toast.success('Race deleted successfully');
             this.loadRaces();
           },
           error: (error: unknown) => {

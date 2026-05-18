@@ -212,7 +212,7 @@ export class EventList extends BaseTableComponent<Event, EventFilterPreferences>
             this.entities.set([result.event, ...currentEvents]);
             this.totalRecords.set(this.totalRecords() + 1);
             if (result.message) {
-              this.messageService.add(result.message);
+              this.toast.show(result.message);
             }
           }
         },
@@ -248,7 +248,7 @@ export class EventList extends BaseTableComponent<Event, EventFilterPreferences>
             );
             this.entities.set(updatedEvents);
             if (result.message) {
-              this.messageService.add(result.message);
+              this.toast.show(result.message);
             }
           }
         },
@@ -268,11 +268,7 @@ export class EventList extends BaseTableComponent<Event, EventFilterPreferences>
       accept: () => {
         this.eventService.deleteEvent(event.id).subscribe({
           next: () => {
-            this.messageService.add({
-              severity: 'success',
-              summary: 'Deleted',
-              detail: 'Event deleted successfully',
-            });
+            this.toast.success('Event deleted successfully', 'Deleted');
             this.loadData();
           },
           error: (error) => {
@@ -310,11 +306,10 @@ export class EventList extends BaseTableComponent<Event, EventFilterPreferences>
             );
             this.entities.set(updatedEvents);
             this.togglingEventId.set(null);
-            this.messageService.add({
-              severity: 'success',
-              summary: 'Updated',
-              detail: `Event ${updatedEvent.enabled ? 'enabled' : 'disabled'} successfully`,
-            });
+            this.toast.success(
+              `Event ${updatedEvent.enabled ? 'enabled' : 'disabled'} successfully`,
+              'Updated',
+            );
           },
           error: (error) => {
             this.togglingEventId.set(null);
@@ -356,11 +351,7 @@ export class EventList extends BaseTableComponent<Event, EventFilterPreferences>
             );
             this.entities.set(updatedEvents);
             this.changingStatusEventId.set(null);
-            this.messageService.add({
-              severity: 'success',
-              summary: 'Updated',
-              detail: `Event status changed to ${statusLabel} successfully`,
-            });
+            this.toast.success(`Event status changed to ${statusLabel} successfully`, 'Updated');
           },
           error: (error) => {
             this.changingStatusEventId.set(null);

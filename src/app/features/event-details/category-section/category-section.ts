@@ -15,6 +15,7 @@ import { Category } from '../../../core/models/category.model';
 import { Race } from '../../../core/models/race.model';
 import { CategoryService } from '../../../core/services/category.service';
 import { ErrorHandlerService } from '../../../core/services/error-handler.service';
+import { ToastService } from '../../../core/services/toast.service';
 import { CategoryForm } from '../category-form/category-form';
 import { CreateCategoryRequest, UpdateCategoryRequest } from '../../../core/models/category.model';
 import { TableColumn } from '../../../shared/models/table-config.model';
@@ -55,6 +56,7 @@ export class CategorySection {
 
   private categoryService = inject(CategoryService);
   private errorHandler = inject(ErrorHandlerService);
+  private toast = inject(ToastService);
   private dialogService = inject(DialogService);
   private confirmationService = inject(ConfirmationService);
 
@@ -143,7 +145,7 @@ export class CategorySection {
         const request = result as CreateCategoryRequest;
         this.categoryService.createCategory(this.eventId(), race.id, request).subscribe({
           next: () => {
-            this.errorHandler.showSuccess('Category created successfully');
+            this.toast.success('Category created successfully');
             this.loadCategories();
           },
           error: (error: unknown) => {
@@ -170,7 +172,7 @@ export class CategorySection {
           .updateCategory(this.eventId(), category.raceId, category.id, request)
           .subscribe({
             next: () => {
-              this.errorHandler.showSuccess('Category updated successfully');
+              this.toast.success('Category updated successfully');
               this.loadCategories();
             },
             error: (error: unknown) => {
@@ -195,7 +197,7 @@ export class CategorySection {
           .deleteCategory(this.eventId(), category.raceId, category.id)
           .subscribe({
             next: () => {
-              this.errorHandler.showSuccess('Category deleted successfully');
+              this.toast.success('Category deleted successfully');
               this.loadCategories();
             },
             error: (error: unknown) => {

@@ -152,11 +152,10 @@ export class OrganizationList extends BaseTableComponent<
               this.entities().map((o) => (o.id === updatedOrg.id ? updatedOrg : o)),
             );
             this.togglingOrgId.set(null);
-            this.messageService.add({
-              severity: 'success',
-              summary: 'Updated',
-              detail: `Organization ${updatedOrg.enabled ? 'enabled' : 'disabled'} successfully`,
-            });
+            this.toast.success(
+              `Organization ${updatedOrg.enabled ? 'enabled' : 'disabled'} successfully`,
+              'Updated',
+            );
           },
           error: (error) => {
             this.togglingOrgId.set(null);
@@ -196,7 +195,7 @@ export class OrganizationList extends BaseTableComponent<
             this.totalRecords.set(this.totalRecords() + 1);
             // Show success toast with custom message
             if (result.message) {
-              this.messageService.add(result.message);
+              this.toast.show(result.message);
             }
           }
         },
@@ -234,7 +233,7 @@ export class OrganizationList extends BaseTableComponent<
             this.entities.set(updatedOrgs);
             // Show success toast with custom message
             if (result.message) {
-              this.messageService.add(result.message);
+              this.toast.show(result.message);
             }
           }
         },

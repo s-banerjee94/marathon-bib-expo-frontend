@@ -10,7 +10,6 @@ import { CardModule } from 'primeng/card';
 import { SelectModule } from 'primeng/select';
 import { SkeletonModule } from 'primeng/skeleton';
 import { InputNumberModule } from 'primeng/inputnumber';
-import { MessageService } from 'primeng/api';
 import { DynamicDialogConfig, DynamicDialogRef } from 'primeng/dynamicdialog';
 import {
   CreateParticipantRequest,
@@ -20,9 +19,10 @@ import {
 import { ParticipantService } from '../../core/services/participant.service';
 import { AuthService } from '../../core/services/auth.service';
 import { ErrorHandlerService } from '../../core/services/error-handler.service';
+import { ToastService } from '../../core/services/toast.service';
 import { OrganizationSelector } from '../../components/organization-selector/organization-selector';
 import { EventSelector } from '../../components/event-selector/event-selector';
-import { initializeErrorHandler, shouldShowError } from '../../shared/utils/form.utils';
+import { shouldShowError } from '../../shared/utils/form.utils';
 import { FORM_INPUT_SIZE } from '../../shared/constants/form.constants';
 import { GENDER_OPTIONS } from '../../shared/constants/participant-columns.constant';
 import { UserRole } from '../../core/models/user.model';
@@ -97,14 +97,12 @@ export class ParticipantForm implements OnInit {
   private router = inject(Router);
   private route = inject(ActivatedRoute);
   private location = inject(Location);
-  private messageService = inject(MessageService);
+  private toast = inject(ToastService);
   private errorHandler = inject(ErrorHandlerService);
   // Optional injection for dialog mode (DynamicDialog)
   private injectedDialogConfig = inject(DynamicDialogConfig, { optional: true });
 
   ngOnInit(): void {
-    initializeErrorHandler(this.errorHandler, this.messageService);
-
     // Check if opened in dialog mode (either via Input or DynamicDialog injection)
     const dialogData = this.dialogData || this.injectedDialogConfig?.data;
 
@@ -231,30 +229,18 @@ export class ParticipantForm implements OnInit {
       !model.categoryName ||
       !model.gender
     ) {
-      this.messageService.add({
-        severity: 'warn',
-        summary: 'Validation Error',
-        detail: 'Please fill in all required fields',
-      });
+      this.toast.warn('Please fill in all required fields', 'Validation Error');
       return;
     }
 
     // Validate conditional requirements
     if (!model.phoneNumber && !model.email) {
-      this.messageService.add({
-        severity: 'warn',
-        summary: 'Validation Error',
-        detail: 'Either phone number or email must be provided',
-      });
+      this.toast.warn('Either phone number or email must be provided', 'Validation Error');
       return;
     }
 
     if (!model.dateOfBirth && !model.age) {
-      this.messageService.add({
-        severity: 'warn',
-        summary: 'Validation Error',
-        detail: 'Either date of birth or age must be provided',
-      });
+      this.toast.warn('Either date of birth or age must be provided', 'Validation Error');
       return;
     }
 
@@ -262,11 +248,7 @@ export class ParticipantForm implements OnInit {
     const targetEventId = this.isDialogMode() ? this.eventId() : this.selectedEventId();
 
     if (!targetEventId) {
-      this.messageService.add({
-        severity: 'error',
-        summary: 'Error',
-        detail: 'Event is required. Please select an event.',
-      });
+      this.toast.error('Event is required. Please select an event.');
       return;
     }
 
@@ -310,11 +292,7 @@ export class ParticipantForm implements OnInit {
               this.formSubmitSuccess.emit(updatedParticipant);
             } else {
               // Route mode - show toast and navigate back
-              this.messageService.add({
-                severity: 'success',
-                summary: 'Success',
-                detail: 'Participant updated successfully',
-              });
+              this.toast.success('Participant updated successfully');
               setTimeout(() => {
                 this.location.back();
               }, 1500);
@@ -364,11 +342,7 @@ export class ParticipantForm implements OnInit {
             this.formSubmitSuccess.emit(createdParticipant);
           } else {
             // Route mode - show toast and reset form
-            this.messageService.add({
-              severity: 'success',
-              summary: 'Success',
-              detail: 'Participant created successfully',
-            });
+            this.toast.success('Participant created successfully');
             setTimeout(() => {
               form.resetForm();
               this.participant = {

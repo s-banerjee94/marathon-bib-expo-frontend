@@ -1,7 +1,6 @@
 import { NgModel } from '@angular/forms';
-import { MessageService } from 'primeng/api';
 import { Router } from '@angular/router';
-import { ErrorHandlerService } from '../../core/services/error-handler.service';
+import { ToastService } from '../../core/services/toast.service';
 
 /**
  * Check if form control should show error message
@@ -17,25 +16,11 @@ export function shouldShowError(
  * Show success message and navigate to dashboard
  */
 export function showSuccessAndNavigate(
-  messageService: MessageService,
+  toast: ToastService,
   message: string,
   router: Router,
   dashboardRoute: string,
 ): void {
-  messageService.add({
-    severity: 'success',
-    summary: 'Success',
-    detail: message,
-  });
+  toast.success(message);
   router.navigate([dashboardRoute]);
-}
-
-/**
- * Initialize error handler with message service
- */
-export function initializeErrorHandler(
-  errorHandler: ErrorHandlerService,
-  messageService: MessageService,
-): void {
-  errorHandler.setMessageService(messageService);
 }

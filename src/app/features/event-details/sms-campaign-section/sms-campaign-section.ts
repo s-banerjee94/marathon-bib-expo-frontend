@@ -21,6 +21,7 @@ import { ConfirmationService } from 'primeng/api';
 import { SmsCampaign } from '../../../core/models/sms-campaign.model';
 import { SmsCampaignService } from '../../../core/services/sms-campaign.service';
 import { ErrorHandlerService } from '../../../core/services/error-handler.service';
+import { ToastService } from '../../../core/services/toast.service';
 import { SmsCampaignForm } from '../sms-campaign-form/sms-campaign-form';
 import { SmsCampaignDetail } from '../sms-campaign-detail/sms-campaign-detail';
 import { DefaultValuePipe } from '../../../shared/pipes/default-value.pipe';
@@ -69,6 +70,7 @@ export class SmsCampaignSection implements OnInit {
 
   private campaignService = inject(SmsCampaignService);
   private errorHandler = inject(ErrorHandlerService);
+  private toast = inject(ToastService);
   private dialogService = inject(DialogService);
   private confirmationService = inject(ConfirmationService);
 
@@ -124,7 +126,7 @@ export class SmsCampaignSection implements OnInit {
     this.dialogRef?.onClose.subscribe((result: SmsCampaign | undefined) => {
       if (result) {
         this.campaigns.update((list) => [result, ...list]);
-        this.errorHandler.showSuccess('Campaign created successfully');
+        this.toast.success('Campaign created successfully');
       }
     });
   }
@@ -139,7 +141,7 @@ export class SmsCampaignSection implements OnInit {
     this.dialogRef?.onClose.subscribe((result: SmsCampaign | undefined) => {
       if (result) {
         this.campaigns.update((list) => list.map((c) => (c.id === result.id ? result : c)));
-        this.errorHandler.showSuccess('Campaign updated successfully');
+        this.toast.success('Campaign updated successfully');
       }
     });
   }
@@ -155,7 +157,7 @@ export class SmsCampaignSection implements OnInit {
         this.campaignService.deleteCampaign(this.eventId(), campaign.id).subscribe({
           next: () => {
             this.campaigns.update((list) => list.filter((c) => c.id !== campaign.id));
-            this.errorHandler.showSuccess('Campaign deleted successfully', 'Deleted');
+            this.toast.success('Campaign deleted successfully', 'Deleted');
           },
           error: (error: unknown) => {
             this.errorHandler.showError(error, 'Failed to delete campaign');
@@ -178,7 +180,7 @@ export class SmsCampaignSection implements OnInit {
           next: (updated) => {
             this.campaigns.update((list) => list.map((c) => (c.id === updated.id ? updated : c)));
             this.actionLoadingId.set(null);
-            this.errorHandler.showSuccess('Campaign moved back to Draft', 'Disarmed');
+            this.toast.success('Campaign moved back to Draft', 'Disarmed');
           },
           error: (error: unknown) => {
             this.actionLoadingId.set(null);

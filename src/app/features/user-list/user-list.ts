@@ -210,11 +210,10 @@ export class UserList extends BaseTableComponent<User, UserFilterPreferences> {
             this.togglingUserId.set(null);
 
             // Show success message
-            this.messageService.add({
-              severity: 'success',
-              summary: 'Updated',
-              detail: `User ${updatedUser.enabled ? 'enabled' : 'disabled'} successfully`,
-            });
+            this.toast.success(
+              `User ${updatedUser.enabled ? 'enabled' : 'disabled'} successfully`,
+              'Updated',
+            );
           },
           error: (error) => {
             this.togglingUserId.set(null);
@@ -251,7 +250,7 @@ export class UserList extends BaseTableComponent<User, UserFilterPreferences> {
             this.totalRecords.set(this.totalRecords() + 1);
             // Show success toast with custom message
             if (result.message) {
-              this.messageService.add(result.message);
+              this.toast.show(result.message);
             }
           }
         },
@@ -286,7 +285,7 @@ export class UserList extends BaseTableComponent<User, UserFilterPreferences> {
             this.entities.set(updatedUsers);
             // Show success toast with custom message
             if (result.message) {
-              this.messageService.add(result.message);
+              this.toast.show(result.message);
             }
           }
         },
@@ -345,11 +344,7 @@ export class UserList extends BaseTableComponent<User, UserFilterPreferences> {
             this.totalRecords.set(Math.max(0, this.totalRecords() - 1));
             this.deletingUserId.set(null);
 
-            this.messageService.add({
-              severity: 'success',
-              summary: 'Deleted',
-              detail: `User ${user.username} deleted successfully`,
-            });
+            this.toast.success(`User ${user.username} deleted successfully`, 'Deleted');
           },
           error: (error) => {
             this.deletingUserId.set(null);

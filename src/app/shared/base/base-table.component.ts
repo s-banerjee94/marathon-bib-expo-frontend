@@ -1,12 +1,12 @@
 import { Directive, inject, OnDestroy, OnInit, signal } from '@angular/core';
 import { DialogService, DynamicDialogRef } from 'primeng/dynamicdialog';
-import { MessageService } from 'primeng/api';
 import { TableLazyLoadEvent } from 'primeng/table';
 import { Subject } from 'rxjs';
 import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
 import { TableColumn, TableFilterPreferences } from '../models/table-config.model';
 import { PageableParams, PageableResponse } from '../../core/models/api.model';
 import { ErrorHandlerService } from '../../core/services/error-handler.service';
+import { ToastService } from '../../core/services/toast.service';
 import { AuthService } from '../../core/services/auth.service';
 import { FORM_INPUT_SIZE } from '../constants/form.constants';
 
@@ -39,7 +39,7 @@ export abstract class BaseTableComponent<T, F extends TableFilterPreferences>
   // Form input size (controlled centrally via constant)
   readonly inputSize = FORM_INPUT_SIZE;
   protected dialogService = inject(DialogService);
-  protected messageService = inject(MessageService);
+  protected toast = inject(ToastService);
   protected errorHandler = inject(ErrorHandlerService);
   protected authService = inject(AuthService);
   protected dialogRef: DynamicDialogRef | null = null;

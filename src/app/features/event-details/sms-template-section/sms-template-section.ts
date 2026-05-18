@@ -17,6 +17,7 @@ import { ConfirmPopupModule } from 'primeng/confirmpopup';
 import { SmsTemplate } from '../../../core/models/sms-template.model';
 import { SmsTemplateService } from '../../../core/services/sms-template.service';
 import { ErrorHandlerService } from '../../../core/services/error-handler.service';
+import { ToastService } from '../../../core/services/toast.service';
 import { SmsTemplateForm } from '../sms-template-form/sms-template-form';
 import { SmsTemplateDetail } from '../sms-template-detail/sms-template-detail';
 import { DefaultValuePipe } from '../../../shared/pipes/default-value.pipe';
@@ -61,6 +62,7 @@ export class SmsTemplateSection implements OnInit, OnDestroy {
 
   private smsTemplateService = inject(SmsTemplateService);
   private errorHandler = inject(ErrorHandlerService);
+  private toast = inject(ToastService);
   private dialogService = inject(DialogService);
   private confirmationService = inject(ConfirmationService);
 
@@ -138,7 +140,7 @@ export class SmsTemplateSection implements OnInit, OnDestroy {
     this.dialogRef?.onClose.subscribe((result: SmsTemplate | undefined) => {
       if (result) {
         this.smsTemplates.update((list) => [result, ...list]);
-        this.errorHandler.showSuccess('SMS template created successfully');
+        this.toast.success('SMS template created successfully');
       }
     });
   }
@@ -153,7 +155,7 @@ export class SmsTemplateSection implements OnInit, OnDestroy {
     this.dialogRef?.onClose.subscribe((result: SmsTemplate | undefined) => {
       if (result) {
         this.smsTemplates.update((list) => list.map((t) => (t.id === result.id ? result : t)));
-        this.errorHandler.showSuccess('SMS template updated successfully');
+        this.toast.success('SMS template updated successfully');
       }
     });
   }
@@ -169,7 +171,7 @@ export class SmsTemplateSection implements OnInit, OnDestroy {
         this.smsTemplateService.deleteSmsTemplate(this.eventId(), template.id).subscribe({
           next: () => {
             this.smsTemplates.update((list) => list.filter((t) => t.id !== template.id));
-            this.errorHandler.showSuccess('SMS template deleted successfully');
+            this.toast.success('SMS template deleted successfully');
           },
           error: (error: unknown) => {
             this.errorHandler.showError(error, 'Failed to delete SMS template');

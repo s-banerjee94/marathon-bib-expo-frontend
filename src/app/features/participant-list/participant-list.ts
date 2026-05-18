@@ -24,6 +24,7 @@ import { ParticipantService } from '../../core/services/participant.service';
 import { AuthService } from '../../core/services/auth.service';
 import { UserRole } from '../../core/models/user.model';
 import { ErrorHandlerService } from '../../core/services/error-handler.service';
+import { ToastService } from '../../core/services/toast.service';
 import { OrganizationSelector } from '../../components/organization-selector/organization-selector';
 import { EventSelector } from '../../components/event-selector/event-selector';
 import { ParticipantForm } from '../participant-form/participant-form';
@@ -118,6 +119,7 @@ export class ParticipantList implements OnInit {
   private readonly participantService = inject(ParticipantService);
   private readonly authService = inject(AuthService);
   private readonly errorHandler = inject(ErrorHandlerService);
+  private readonly toast = inject(ToastService);
   private readonly confirmationService = inject(ConfirmationService);
   private readonly destroyRef = inject(DestroyRef);
   private lastEvaluatedKey?: string;
@@ -303,7 +305,7 @@ export class ParticipantList implements OnInit {
       ? 'Participant updated successfully'
       : 'Participant created successfully';
 
-    this.errorHandler.showSuccess(message, 'Success');
+    this.toast.success(message, 'Success');
     this.closeFormDialog();
 
     if (!isEditMode) {
@@ -327,7 +329,7 @@ export class ParticipantList implements OnInit {
 
         this.participantService.deleteParticipant(eventId, participant.bibNumber).subscribe({
           next: () => {
-            this.errorHandler.showSuccess('Participant deleted successfully', 'Success');
+            this.toast.success('Participant deleted successfully', 'Success');
             // Remove from local state instead of reloading from API
             this.removeParticipantFromList(participant.bibNumber);
             this.totalCount.update((count) => Math.max(0, count - 1));
@@ -373,7 +375,7 @@ export class ParticipantList implements OnInit {
                 ? `${response.deletedCount} participant(s) deleted, ${response.failedCount} failed`
                 : `${response.deletedCount} participant(s) deleted successfully`;
 
-            this.errorHandler.showSuccess(message, 'Success');
+            this.toast.success(message, 'Success');
             // Remove deleted participants from local state instead of reloading from API
             this.removeParticipantsFromList(bibNumbers);
             this.totalCount.update((count) => Math.max(0, count - response.deletedCount));
@@ -410,7 +412,7 @@ export class ParticipantList implements OnInit {
 
         this.isExporting.set(false);
         this.showExportDialog.set(false);
-        this.errorHandler.showSuccess('Participants exported successfully', 'Success');
+        this.toast.success('Participants exported successfully', 'Success');
       },
       error: (error) => {
         this.isExporting.set(false);
@@ -492,7 +494,7 @@ export class ParticipantList implements OnInit {
                 this.loadLatestImportErrors();
                 // Show toast only when dialog is already closed (background completion)
                 if (!this.showImportDialog()) {
-                  this.errorHandler.showSuccess('Import completed successfully', 'Import Complete');
+                  this.toast.success('Import completed successfully', 'Import Complete');
                 }
               }
             } else {

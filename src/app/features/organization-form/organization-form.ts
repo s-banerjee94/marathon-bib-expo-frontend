@@ -10,7 +10,6 @@ import { CardModule } from 'primeng/card';
 import { SelectModule } from 'primeng/select';
 import { InputNumberModule } from 'primeng/inputnumber';
 import { SkeletonModule } from 'primeng/skeleton';
-import { MessageService } from 'primeng/api';
 import { DynamicDialogConfig, DynamicDialogRef } from 'primeng/dynamicdialog';
 import {
   CreateOrganizationRequest,
@@ -20,7 +19,7 @@ import {
 import { OrganizationService } from '../../core/services/organization.service';
 import { AuthService } from '../../core/services/auth.service';
 import { ErrorHandlerService } from '../../core/services/error-handler.service';
-import { initializeErrorHandler } from '../../shared/utils/form.utils';
+import { ToastService } from '../../core/services/toast.service';
 import { FORM_INPUT_SIZE } from '../../shared/constants/form.constants';
 import { SUBSCRIPTION_TIER_OPTIONS } from '../../shared/constants/subscription.constant';
 
@@ -79,12 +78,10 @@ export class OrganizationForm implements OnInit {
   private router = inject(Router);
   private route = inject(ActivatedRoute);
   private location = inject(Location);
-  private messageService = inject(MessageService);
+  private toast = inject(ToastService);
   private errorHandler = inject(ErrorHandlerService);
 
   ngOnInit(): void {
-    initializeErrorHandler(this.errorHandler, this.messageService);
-
     // Check if opened in dialog mode
     if (this.dialogConfig?.data) {
       this.isDialogMode.set(true);
@@ -140,11 +137,7 @@ export class OrganizationForm implements OnInit {
               this.dialogRef!.close({ organization: updatedOrg, message: successMessage });
             } else {
               // Show toast for non-dialog mode
-              this.messageService.add({
-                severity: 'success',
-                summary: 'Success',
-                detail: 'Organization updated successfully',
-              });
+              this.toast.success('Organization updated successfully');
               setTimeout(() => {
                 this.location.back();
               }, 1500);
@@ -168,11 +161,7 @@ export class OrganizationForm implements OnInit {
             this.dialogRef!.close({ organization: createdOrg, message: successMessage });
           } else {
             // Show toast for non-dialog mode
-            this.messageService.add({
-              severity: 'success',
-              summary: 'Success',
-              detail: 'Organization created successfully',
-            });
+            this.toast.success('Organization created successfully');
             // Reset form for creating another organization
             setTimeout(() => {
               form.resetForm();

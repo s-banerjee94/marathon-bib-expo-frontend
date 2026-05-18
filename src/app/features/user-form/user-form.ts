@@ -9,7 +9,6 @@ import { MessageModule } from 'primeng/message';
 import { CardModule } from 'primeng/card';
 import { SelectModule } from 'primeng/select';
 import { SkeletonModule } from 'primeng/skeleton';
-import { MessageService } from 'primeng/api';
 import { DynamicDialogConfig, DynamicDialogRef } from 'primeng/dynamicdialog';
 import {
   CreateUserRequest,
@@ -22,8 +21,9 @@ import {
 import { UserService } from '../../core/services/user.service';
 import { AuthService } from '../../core/services/auth.service';
 import { ErrorHandlerService } from '../../core/services/error-handler.service';
+import { ToastService } from '../../core/services/toast.service';
 import { roleRequiresEmailPhone, roleRequiresOrganization } from './user-form.utils';
-import { initializeErrorHandler, shouldShowError } from '../../shared/utils/form.utils';
+import { shouldShowError } from '../../shared/utils/form.utils';
 import { FORM_INPUT_SIZE } from '../../shared/constants/form.constants';
 import { OrganizationSelector } from '../../components/organization-selector/organization-selector';
 
@@ -76,12 +76,10 @@ export class UserForm implements OnInit {
   private router = inject(Router);
   private route = inject(ActivatedRoute);
   private location = inject(Location);
-  private messageService = inject(MessageService);
+  private toast = inject(ToastService);
   private errorHandler = inject(ErrorHandlerService);
 
   ngOnInit(): void {
-    initializeErrorHandler(this.errorHandler, this.messageService);
-
     this.initializeCurrentUserRole();
     this.initializeAvailableRoles();
 
@@ -167,11 +165,7 @@ export class UserForm implements OnInit {
 
     // Validate organizationId is set when required (not needed for ROOT/ADMIN creating ROOT/ADMIN)
     if (roleRequiresOrganization(this.selectedRole()) && !this.user.organizationId) {
-      this.messageService.add({
-        severity: 'error',
-        summary: 'Error',
-        detail: 'Organization is required. Please select an organization.',
-      });
+      this.toast.error('Organization is required. Please select an organization.');
       return;
     }
 
@@ -197,11 +191,7 @@ export class UserForm implements OnInit {
             const successMessage = this.dialogConfig?.data?.successMessage;
             this.dialogRef!.close({ user: updatedUser, message: successMessage });
           } else {
-            this.messageService.add({
-              severity: 'success',
-              summary: 'Success',
-              detail: 'User updated successfully',
-            });
+            this.toast.success('User updated successfully');
             setTimeout(() => this.location.back(), 1500);
           }
         },
@@ -223,11 +213,7 @@ export class UserForm implements OnInit {
             this.dialogRef!.close({ user: createdUser, message: successMessage });
           } else {
             // Show toast for non-dialog mode
-            this.messageService.add({
-              severity: 'success',
-              summary: 'Success',
-              detail: 'User created successfully',
-            });
+            this.toast.success('User created successfully');
             // Reset form for creating another user
             setTimeout(() => {
               form.resetForm();

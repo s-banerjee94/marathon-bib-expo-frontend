@@ -15,8 +15,7 @@ import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { DialogModule } from 'primeng/dialog';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
-import { ToastModule } from 'primeng/toast';
-import { ConfirmationService, MessageService } from 'primeng/api';
+import { ConfirmationService } from 'primeng/api';
 import { AuthService } from '../../core/services/auth.service';
 import { ErrorHandlerService } from '../../core/services/error-handler.service';
 import { DistributionService } from '../../core/services/distribution.service';
@@ -49,7 +48,6 @@ type DistributionTarget = Participant | ParticipantDistributionResponse;
     InputTextModule,
     DialogModule,
     ConfirmDialogModule,
-    ToastModule,
     OrganizationSelector,
     EventSelector,
     BibLookupTab,
@@ -57,7 +55,7 @@ type DistributionTarget = Participant | ParticipantDistributionResponse;
     PendingGoodiesTab,
     ActivityLogsTab,
   ],
-  providers: [ConfirmationService, MessageService],
+  providers: [ConfirmationService],
   templateUrl: './manage-distribution.html',
   styleUrl: './manage-distribution.css',
 })

@@ -15,6 +15,7 @@ import { Race } from '../../../core/models/race.model';
 import { EventService } from '../../../core/services/event.service';
 import { RaceService } from '../../../core/services/race.service';
 import { ErrorHandlerService } from '../../../core/services/error-handler.service';
+import { ToastService } from '../../../core/services/toast.service';
 import { RaceSection } from '../race-section/race-section';
 import { CategorySection } from '../category-section/category-section';
 import { SmsTemplateSection } from '../sms-template-section/sms-template-section';
@@ -54,6 +55,7 @@ export class EventDetails implements OnInit {
   private eventService = inject(EventService);
   private raceService = inject(RaceService);
   private errorHandler = inject(ErrorHandlerService);
+  private toast = inject(ToastService);
   private dialogService = inject(DialogService);
   private confirmationService = inject(ConfirmationService);
 
@@ -136,7 +138,7 @@ export class EventDetails implements OnInit {
       if (result?.event) {
         // Reload event details after successful update
         this.loadEventDetails();
-        this.errorHandler.showSuccess(result.message || 'Event updated successfully');
+        this.toast.success(result.message || 'Event updated successfully');
       }
     });
   }
@@ -218,10 +220,7 @@ export class EventDetails implements OnInit {
             this.event.set(updatedEvent);
             this.buildStatusMenuItems(updatedEvent.status);
             this.changingStatus.set(false);
-            this.errorHandler.showSuccess(
-              `Event status changed to ${statusLabel} successfully`,
-              'Updated',
-            );
+            this.toast.success(`Event status changed to ${statusLabel} successfully`, 'Updated');
           },
           error: (error) => {
             this.changingStatus.set(false);

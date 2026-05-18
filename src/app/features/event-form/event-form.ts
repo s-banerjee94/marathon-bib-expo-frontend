@@ -11,7 +11,6 @@ import { CardModule } from 'primeng/card';
 import { SelectModule } from 'primeng/select';
 import { DatePickerModule } from 'primeng/datepicker';
 import { SkeletonModule } from 'primeng/skeleton';
-import { MessageService } from 'primeng/api';
 import { DynamicDialogConfig, DynamicDialogRef } from 'primeng/dynamicdialog';
 import {
   CreateEventRequest,
@@ -39,8 +38,9 @@ interface EventFormModel {
 import { EventService } from '../../core/services/event.service';
 import { AuthService } from '../../core/services/auth.service';
 import { ErrorHandlerService } from '../../core/services/error-handler.service';
+import { ToastService } from '../../core/services/toast.service';
 import { UserRole } from '../../core/models/user.model';
-import { initializeErrorHandler, shouldShowError } from '../../shared/utils/form.utils';
+import { shouldShowError } from '../../shared/utils/form.utils';
 import { FORM_INPUT_SIZE } from '../../shared/constants/form.constants';
 import { OrganizationSelector } from '../../components/organization-selector/organization-selector';
 import {
@@ -122,12 +122,10 @@ export class EventForm implements OnInit {
   private router = inject(Router);
   private route = inject(ActivatedRoute);
   private location = inject(Location);
-  private messageService = inject(MessageService);
+  private toast = inject(ToastService);
   private errorHandler = inject(ErrorHandlerService);
 
   ngOnInit(): void {
-    initializeErrorHandler(this.errorHandler, this.messageService);
-
     // Check if opened in dialog mode
     if (this.dialogConfig?.data) {
       this.isDialogMode.set(true);
@@ -204,11 +202,7 @@ export class EventForm implements OnInit {
 
     // Validate organizationId is set
     if (!this.event.organizationId) {
-      this.messageService.add({
-        severity: 'error',
-        summary: 'Error',
-        detail: 'Organization is required. Please select an organization.',
-      });
+      this.toast.error('Organization is required. Please select an organization.');
       return;
     }
 
@@ -342,11 +336,7 @@ export class EventForm implements OnInit {
           const successMessage = this.dialogConfig?.data?.successMessage;
           this.dialogRef.close({ event: createdEvent, message: successMessage });
         } else {
-          this.messageService.add({
-            severity: 'success',
-            summary: 'Success',
-            detail: 'Event created successfully',
-          });
+          this.toast.success('Event created successfully');
           void this.router.navigate(['/events']);
         }
       },
@@ -398,11 +388,7 @@ export class EventForm implements OnInit {
           const successMessage = this.dialogConfig?.data?.successMessage;
           this.dialogRef.close({ event: updatedEvent, message: successMessage });
         } else {
-          this.messageService.add({
-            severity: 'success',
-            summary: 'Success',
-            detail: 'Event updated successfully',
-          });
+          this.toast.success('Event updated successfully');
           void this.router.navigate(['/events']);
         }
       },
