@@ -85,7 +85,6 @@ export class Navbar implements OnDestroy {
   }
 
   protected onLogout(): void {
-    this.authService.logout();
-    this.router.navigate(['/login']);
+    this.authService.logout().subscribe(() => this.router.navigate(['/login']));
   }
 }

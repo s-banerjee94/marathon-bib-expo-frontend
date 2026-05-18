@@ -66,16 +66,16 @@ export interface LoginRequest {
 
 /**
  * Auth Response from API (Login Response)
- * Matches backend LoginResponse structure
+ * Matches backend LoginResponse structure.
+ * Access token is short-lived (15 min); refresh token is delivered as an HttpOnly cookie.
  */
 export interface AuthResponse {
-  token: string;
-  tokenType: string;
+  accessToken: string;
   expiresIn: number;
   username: string;
   role: string;
   organizationId?: number;
-  id: number; // Optional - will be added in backend in future
+  id: number;
 }
 
 /**
