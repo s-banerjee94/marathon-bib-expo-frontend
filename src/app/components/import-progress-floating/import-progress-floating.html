@@ -1,0 +1,25 @@
+@for (job of importProgress.jobs(); track job.jobExecutionId; let i = $index) {
+  <app-floating-progress
+    (dismissed)="onDismiss($event)"
+    [id]="job.jobExecutionId"
+    [index]="i"
+    [severity]="severityFor(job)"
+    [status]="statusLabelFor(job)"
+    [title]="'Import #' + job.jobExecutionId"
+  >
+    <div class="grid grid-cols-3 gap-1">
+      <div class="px-1 text-center">
+        <p class="text-[10px] font-medium opacity-70 leading-none">READ</p>
+        <p class="text-sm font-bold leading-none mt-0.5">{{ job.status()?.readCount ?? 0 }}</p>
+      </div>
+      <div class="px-1 text-center">
+        <p class="text-[10px] font-medium opacity-70 leading-none">Imported</p>
+        <p class="text-sm font-bold leading-none mt-0.5">{{ job.status()?.writeCount ?? 0 }}</p>
+      </div>
+      <div class="px-1 text-center">
+        <p class="text-[10px] font-medium opacity-70 leading-none">Skipped</p>
+        <p class="text-sm font-bold leading-none mt-0.5">{{ job.status()?.skipCount ?? 0 }}</p>
+      </div>
+    </div>
+  </app-floating-progress>
+}

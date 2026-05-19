@@ -15,11 +15,7 @@ import { DialogModule } from 'primeng/dialog';
 import { ButtonModule } from 'primeng/button';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { ConfirmationService } from 'primeng/api';
-import {
-  BatchJobStatusResponse,
-  ImportErrorItem,
-  Participant,
-} from '../../core/models/participant.model';
+import { ImportErrorItem, Participant } from '../../core/models/participant.model';
 import { ParticipantService } from '../../core/services/participant.service';
 import { AuthService } from '../../core/services/auth.service';
 import { UserRole } from '../../core/models/user.model';
@@ -42,6 +38,7 @@ import { ImportHistoryTab } from './components/import-history-tab/import-history
 import { ParticipantViewDialog } from './components/participant-view-dialog/participant-view-dialog';
 import { ParticipantExportDialog } from './components/participant-export-dialog/participant-export-dialog';
 import { ParticipantImportDialog } from './components/participant-import-dialog/participant-import-dialog';
+import { ImportProgressService } from '../../core/services/import-progress.service';
 
 @Component({
   selector: 'app-participant-list',
@@ -66,6 +63,7 @@ import { ParticipantImportDialog } from './components/participant-import-dialog/
   providers: [ConfirmationService],
 })
 export class ParticipantList implements OnInit {
+  private readonly importProgress = inject(ImportProgressService);
   private readonly eventSelector = viewChild(EventSelector);
   private readonly participantFormComponent = viewChild<ParticipantForm>(
     'participantFormComponent',
@@ -86,8 +84,6 @@ export class ParticipantList implements OnInit {
   // Import dialog state
   showImportDialog = signal(false);
   isUploading = signal(false);
-  batchJobStatus = signal<BatchJobStatusResponse | null>(null);
-  private pollingInterval: ReturnType<typeof setTimeout> | null = null;
   // Latest import errors state
   importErrors = signal<ImportErrorItem[]>([]);
   isLoadingImportErrors = signal(false);
@@ -126,7 +122,13 @@ export class ParticipantList implements OnInit {
   private lastEvaluatedKeyImportErrors?: string;
 
   ngOnInit(): void {
-    this.destroyRef.onDestroy(() => this.stopPolling());
+    this.importProgress.completed$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((evt) => {
+      if (evt.eventId !== this.selectedEventId()) return;
+      if (evt.status === 'COMPLETED') {
+        this.reloadParticipants();
+        this.loadLatestImportErrors();
+      }
+    });
 
     const isOrgUser = this.authService.hasAnyRole([
       UserRole.ORGANIZER_ADMIN,
@@ -157,7 +159,6 @@ export class ParticipantList implements OnInit {
     this.totalCount.set(0);
     this.hasMore.set(true);
     this.lastEvaluatedKey = undefined;
-    this.resetImport();
     this.resetSearch();
 
     if (eventId) {
@@ -430,7 +431,6 @@ export class ParticipantList implements OnInit {
   // Import functionality
   openImportDialog(): void {
     this.showImportDialog.set(true);
-    this.batchJobStatus.set(null);
   }
 
   handleBatchImport(file: File): void {
@@ -438,12 +438,12 @@ export class ParticipantList implements OnInit {
     if (!eventId || !file) return;
 
     this.isUploading.set(true);
-    this.batchJobStatus.set(null);
 
     this.participantService.launchBatchImport(eventId, file).subscribe({
       next: (response) => {
         this.isUploading.set(false);
-        this.startPolling(eventId, response.jobExecutionId);
+        this.showImportDialog.set(false);
+        this.importProgress.start(eventId, response.jobExecutionId);
       },
       error: (error) => {
         this.isUploading.set(false);
@@ -452,76 +452,13 @@ export class ParticipantList implements OnInit {
     });
   }
 
-  resetImport(): void {
-    this.stopPolling();
-    this.batchJobStatus.set(null);
-  }
-
   onImportDialogClosed(): void {
-    const status = this.batchJobStatus()?.status;
-    const isTerminal = status === 'COMPLETED' || status === 'FAILED' || status === 'STOPPED';
-
-    if (isTerminal) {
-      this.stopPolling();
-      if (status === 'COMPLETED') {
-        this.reloadParticipants();
-        this.loadLatestImportErrors();
-      }
-    }
-    // If still processing: polling continues in background.
-    // startPolling will reload + show a toast when the job finishes.
-    this.batchJobStatus.set(null);
+    // Polling is owned by the global progress service; nothing to tear down here.
   }
 
   loadMoreImportErrors(): void {
     if (this.hasMoreImportErrors() && !this.isLoadingImportErrors()) {
       this.loadLatestImportErrors(true);
-    }
-  }
-
-  private startPolling(eventId: number, jobExecutionId: number): void {
-    this.stopPolling();
-
-    const poll = (): void => {
-      this.participantService
-        .getBatchImportStatus(eventId, jobExecutionId)
-        .pipe(takeUntilDestroyed(this.destroyRef))
-        .subscribe({
-          next: (status) => {
-            this.batchJobStatus.set(status);
-            if (
-              status.status === 'COMPLETED' ||
-              status.status === 'FAILED' ||
-              status.status === 'STOPPED'
-            ) {
-              this.stopPolling();
-              if (status.status === 'COMPLETED') {
-                this.reloadParticipants();
-                this.loadLatestImportErrors();
-                // Show toast only when dialog is already closed (background completion)
-                if (!this.showImportDialog()) {
-                  this.toast.success('Import completed successfully', 'Import Complete');
-                }
-              }
-            } else {
-              // Schedule next poll only after this response arrives (prevents concurrent requests)
-              this.pollingInterval = setTimeout(poll, 2000);
-            }
-          },
-          error: (error) => {
-            this.stopPolling();
-            this.errorHandler.showError(error, 'Failed to get import status');
-          },
-        });
-    };
-
-    poll();
-  }
-
-  private stopPolling(): void {
-    if (this.pollingInterval !== null) {
-      clearTimeout(this.pollingInterval);
-      this.pollingInterval = null;
     }
   }
 

@@ -123,11 +123,9 @@
 <app-participant-import-dialog
   (closed)="onImportDialogClosed()"
   (importRequested)="handleBatchImport($event)"
-  (resetClicked)="resetImport()"
   [(visible)]="showImportDialog"
   [eventId]="selectedEventId()"
   [isUploading]="isUploading()"
-  [jobStatus]="batchJobStatus()"
 />
 
 <!-- Create/Edit Participant Form Dialog -->

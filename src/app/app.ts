@@ -6,11 +6,19 @@ import { Navbar } from './components/navbar/navbar';
 import { SidebarComponent } from './components/sidebar/sidebar';
 import { LayoutService } from './core/services/layout.service';
 import { AuthService } from './core/services/auth.service';
+import { ImportProgressFloating } from './components/import-progress-floating/import-progress-floating';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule, RouterOutlet, Navbar, SidebarComponent, ToastModule],
+  imports: [
+    CommonModule,
+    RouterOutlet,
+    Navbar,
+    SidebarComponent,
+    ToastModule,
+    ImportProgressFloating,
+  ],
   templateUrl: './app.html',
   styleUrl: './app.css',
 })

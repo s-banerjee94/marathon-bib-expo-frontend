@@ -1,0 +1,67 @@
+@if (minimized()) {
+  <button
+    (click)="restore()"
+    [style]="tabStyle()"
+    [attr.aria-label]="'Restore ' + (title() || 'progress')"
+    class="flex flex-col items-center justify-center gap-2 cursor-pointer shadow-md rounded-l-md p-0"
+    type="button"
+  >
+    <p-badge [severity]="severity()" />
+    <i class="pi pi-chevron-left text-xs" aria-hidden="true"></i>
+  </button>
+} @else {
+  <p-dialog
+    [closable]="false"
+    [closeOnEscape]="false"
+    [contentStyleClass]="'!px-2 !pb-1 !pt-0'"
+    [draggable]="true"
+    [focusOnShow]="false"
+    [focusTrap]="false"
+    [modal]="false"
+    [pt]="{ header: { class: '!py-1 !px-2' } }"
+    [resizable]="false"
+    [style]="dialogStyle()"
+    [visible]="true"
+    styleClass="!border-0"
+  >
+    <ng-template pTemplate="header">
+      <div class="flex items-center justify-between w-full gap-1">
+        <div class="flex items-center gap-1 min-w-0">
+          @if (title()) {
+            <span class="font-semibold text-xs truncate">{{ title() }}</span>
+          }
+          @if (status()) {
+            <p-tag [severity]="severity()" [value]="status()" [rounded]="true" />
+          }
+        </div>
+        <div class="flex items-center gap-0">
+          <p-button
+            (onClick)="minimize()"
+            (mousedown)="$event.stopPropagation()"
+            [rounded]="true"
+            [text]="true"
+            icon="pi pi-minus"
+            size="small"
+            styleClass="!w-6 !h-6"
+          ></p-button>
+          <p-button
+            (onClick)="onDismiss()"
+            (mousedown)="$event.stopPropagation()"
+            [rounded]="true"
+            [text]="true"
+            icon="pi pi-times"
+            severity="secondary"
+            size="small"
+            styleClass="!w-6 !h-6"
+          ></p-button>
+          <i
+            class="pi pi-ellipsis-v text-[10px] opacity-50 ml-1 cursor-move"
+            aria-hidden="true"
+          ></i>
+        </div>
+      </div>
+    </ng-template>
+
+    <ng-content />
+  </p-dialog>
+}

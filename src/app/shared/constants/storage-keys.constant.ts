@@ -26,4 +26,7 @@ export const STORAGE_KEYS = {
 
   // Layout preferences
   LAYOUT_CONFIG: 'marathon_layout_config',
+
+  // In-flight imports (for reload-proof progress widgets)
+  ACTIVE_IMPORTS: 'marathon_active_imports',
 } as const;
