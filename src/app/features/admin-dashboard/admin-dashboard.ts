@@ -305,6 +305,6 @@ export class AdminDashboard implements OnInit {
     this.router.navigate(['/users/new'], { queryParams: { role: UserRole.ORGANIZER_ADMIN } });
   }
   goToCreateOrganization(): void {
-    this.router.navigate(['/organization-form']);
+    this.router.navigate(['/organizations/new']);
   }
 }

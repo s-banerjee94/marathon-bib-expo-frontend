@@ -1,272 +1,280 @@
-<div class="p-6">
-  <p-confirmpopup />
+@if (isMobile() && hasFormRoute()) {
+  <router-outlet />
+} @else {
+  <div class="p-6">
+    <p-confirmpopup />
 
-  <div class="mb-6">
-    <h1 class="text-3xl font-bold mb-2">Organizations</h1>
-    <p class="text-gray-600">Manage organizations and their subscriptions</p>
-  </div>
-
-  <!-- Search and Actions -->
-  <div class="mb-4 flex flex-wrap items-center justify-between gap-4">
-    <p-iconfield class="flex-1 max-w-md">
-      <p-inputicon class="pi pi-search" />
-      <input
-        (input)="onSearchInput($any($event.target).value)"
-        [pSize]="inputSize"
-        [value]="searchTerm()"
-        class="w-full"
-        pInputText
-        placeholder="Search organizations (min 2 chars)..."
-        type="text"
-      />
-      @if (searchTerm()) {
-        <p-inputicon (click)="clearSearch()" class="pi pi-times cursor-pointer" />
-      }
-    </p-iconfield>
-
-    <div class="flex items-center gap-2">
-      <p-button
-        (click)="onCreate()"
-        [size]="inputSize"
-        icon="pi pi-plus"
-        label="New Organization"
-      ></p-button>
-    </div>
-  </div>
-
-  <!-- Filter and Sort Options -->
-  <div class="mb-4 flex flex-wrap items-center gap-6">
-    <div class="flex items-center gap-2">
-      <p-checkbox
-        (ngModelChange)="filterEnabled.set($event); onFilterChange()"
-        [binary]="true"
-        [ngModel]="filterEnabled()"
-        inputId="filterEnabled"
-      />
-      <label class="cursor-pointer" for="filterEnabled">Show Enabled Only</label>
+    <div class="mb-6">
+      <h1 class="text-3xl font-bold mb-2">Organizations</h1>
+      <p class="text-gray-600">Manage organizations and their subscriptions</p>
     </div>
 
-    <div class="flex items-center gap-2">
-      <p-checkbox
-        (ngModelChange)="filterDeleted.set($event); onFilterChange()"
-        [binary]="true"
-        [ngModel]="filterDeleted()"
-        inputId="filterDeleted"
-      />
-      <label class="cursor-pointer" for="filterDeleted">Show Deleted</label>
-    </div>
-
-    <p-floatlabel variant="on">
-      <p-select
-        (ngModelChange)="onSortChange($event)"
-        [ngModel]="selectedSort()"
-        [options]="sortOptions"
-        [showClear]="true"
-        [size]="inputSize"
-        class="w-48"
-        inputId="sortSelect"
-        optionLabel="label"
-        optionValue="value"
-      />
-      <label for="sortSelect">Sort By</label>
-    </p-floatlabel>
-
-    <div class="flex items-center gap-2">
-      <label for="columnSelect">Columns:</label>
-      <p-multiselect
-        (ngModelChange)="onColumnSelectionChange()"
-        [(ngModel)]="selectedCols"
-        [maxSelectedLabels]="2"
-        [options]="cols()"
-        [size]="inputSize"
-        inputId="columnSelect"
-        optionDisabled="disabled"
-        optionLabel="header"
-        placeholder="Select Columns"
-      />
-    </div>
-  </div>
-
-  <p-table
-    (onLazyLoad)="onPageChange($event)"
-    [first]="currentPage() * pageSize()"
-    [lazy]="true"
-    [paginator]="true"
-    [rowsPerPageOptions]="[5, 10, 50, 100]"
-    [rows]="pageSize()"
-    [scrollable]="true"
-    [size]="inputSize"
-    [tableStyle]="{ 'min-width': '75rem' }"
-    [totalRecords]="totalRecords()"
-    [value]="displayData()"
-    scrollHeight="600px"
-  >
-    <ng-template pTemplate="header">
-      <tr>
-        <th class="w-16 whitespace-nowrap" pFrozenColumn>Sl. No</th>
-        @for (col of visibleCols; track col.field) {
-          <th [class]="getColumnAlignment(col.field) + ' whitespace-nowrap'">
-            <span>{{ col.header }}</span>
-            @if (isSorted(col.field)) {
-              <i [class]="getSortIcon(col.field)" class="ml-2"></i>
-            }
-          </th>
-        }
-        <th class="text-center w-36 whitespace-nowrap" pFrozenColumn alignFrozen="right">
-          Actions
-        </th>
-      </tr>
-    </ng-template>
-    <ng-template let-org let-rowIndex="rowIndex" pTemplate="body">
-      <tr>
+    <!-- Search and Actions -->
+    <div class="mb-4 flex flex-wrap items-center justify-between gap-4">
+      <p-iconfield class="flex-1 max-w-md">
         @if (isLoading()) {
-          <td pFrozenColumn><p-skeleton /></td>
-          @for (col of visibleCols; track col.field) {
-            <td [class]="getColumnAlignment(col.field) + ' whitespace-nowrap'">
-              <p-skeleton />
-            </td>
-          }
-          <td class="text-center whitespace-nowrap" pFrozenColumn alignFrozen="right">
-            <p-skeleton height="2rem" width="5rem" />
-          </td>
+          <p-inputicon class="pi pi-spin pi-spinner" />
         } @else {
-          <td class="text-color-secondary whitespace-nowrap" pFrozenColumn>
-            {{ currentPage() * pageSize() + rowIndex + 1 }}
-          </td>
+          <p-inputicon class="pi pi-search" />
+        }
+        <input
+          (input)="onSearchInput($any($event.target).value)"
+          [pSize]="inputSize"
+          [value]="searchTerm()"
+          class="w-full"
+          pInputText
+          placeholder="Search organizations (min 2 chars)..."
+          type="text"
+        />
+        @if (searchTerm()) {
+          <p-inputicon (click)="clearSearch()" class="pi pi-times cursor-pointer" />
+        }
+      </p-iconfield>
+
+      <div class="flex items-center gap-2">
+        <p-button
+          (click)="onCreate()"
+          [size]="inputSize"
+          icon="pi pi-plus"
+          label="New Organization"
+        ></p-button>
+      </div>
+    </div>
+
+    <!-- Filter and Sort Options -->
+    <div class="mb-4 flex flex-wrap items-center gap-6">
+      <div class="flex items-center gap-2">
+        <p-checkbox
+          (ngModelChange)="filterEnabled.set($event); onFilterChange()"
+          [binary]="true"
+          [ngModel]="filterEnabled()"
+          inputId="filterEnabled"
+        />
+        <label class="cursor-pointer" for="filterEnabled">Show Enabled Only</label>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <p-checkbox
+          (ngModelChange)="filterDeleted.set($event); onFilterChange()"
+          [binary]="true"
+          [ngModel]="filterDeleted()"
+          inputId="filterDeleted"
+        />
+        <label class="cursor-pointer" for="filterDeleted">Show Deleted</label>
+      </div>
+
+      <p-floatlabel variant="on">
+        <p-select
+          (ngModelChange)="onSortChange($event)"
+          [ngModel]="selectedSort()"
+          [options]="sortOptions"
+          [showClear]="true"
+          [size]="inputSize"
+          class="w-48"
+          inputId="sortSelect"
+          optionLabel="label"
+          optionValue="value"
+        />
+        <label for="sortSelect">Sort By</label>
+      </p-floatlabel>
+
+      <div class="flex items-center gap-2">
+        <label for="columnSelect">Columns:</label>
+        <p-multiselect
+          (ngModelChange)="onColumnSelectionChange()"
+          [(ngModel)]="selectedCols"
+          [maxSelectedLabels]="2"
+          [options]="cols()"
+          [size]="inputSize"
+          inputId="columnSelect"
+          optionDisabled="disabled"
+          optionLabel="header"
+          placeholder="Select Columns"
+        />
+      </div>
+    </div>
+
+    <p-table
+      (onLazyLoad)="onPageChange($event)"
+      [first]="currentPage() * pageSize()"
+      [lazy]="true"
+      [paginator]="true"
+      [rowsPerPageOptions]="[5, 10, 50, 100]"
+      [rows]="pageSize()"
+      [scrollable]="true"
+      [size]="inputSize"
+      [tableStyle]="{ 'min-width': '75rem' }"
+      [totalRecords]="totalRecords()"
+      [value]="displayData()"
+      scrollHeight="600px"
+    >
+      <ng-template pTemplate="header">
+        <tr>
+          <th class="w-16 whitespace-nowrap" pFrozenColumn>Sl. No</th>
           @for (col of visibleCols; track col.field) {
-            <td [class]="getColumnAlignment(col.field) + ' whitespace-nowrap'">
-              @if (col.field === 'phoneNumber') {
-                <a class="hover:underline" href="tel:{{ getCellValue(org, col.field) }}">
-                  {{ getCellValue(org, col.field) | defaultValue }}
-                </a>
-              } @else if (col.field === 'email' || col.field === 'billingEmail') {
-                <a class="hover:underline" href="mailto:{{ getCellValue(org, col.field) }}">
-                  {{ getCellValue(org, col.field) | defaultValue }}
-                </a>
-              } @else if (col.field === 'website') {
-                @if (getCellValue(org, col.field)) {
-                  <a
-                    class="hover:underline"
-                    href="{{ getCellValue(org, col.field) }}"
-                    rel="noopener noreferrer"
-                    target="_blank"
-                  >
-                    {{ getCellValue(org, col.field) }}
-                  </a>
-                } @else {
-                  {{ getCellValue(org, col.field) | defaultValue }}
-                }
-              } @else if (col.field === 'subscriptionTier') {
-                @if (getCellValue(org, col.field)) {
-                  <p-tag
-                    [rounded]="true"
-                    [severity]="getSubscriptionTierSeverity($any(getCellValue(org, col.field)))"
-                    [style]="{
-                      '--be-tag-font-size': '0.75rem',
-                      '--be-tag-padding': '0.25rem 0.5rem',
-                    }"
-                    [value]="$any(getCellValue(org, col.field))"
-                  />
-                } @else {
-                  {{ getCellValue(org, col.field) | defaultValue }}
-                }
-              } @else if (col.field === 'subscriptionStatus') {
-                @if (getCellValue(org, col.field)) {
-                  <p-tag
-                    [rounded]="true"
-                    [severity]="getSubscriptionStatusSeverity($any(getCellValue(org, col.field)))"
-                    [style]="{
-                      '--be-tag-font-size': '0.75rem',
-                      '--be-tag-padding': '0.25rem 0.5rem',
-                    }"
-                    [value]="$any(getCellValue(org, col.field))"
-                  />
-                } @else {
-                  {{ getCellValue(org, col.field) | defaultValue }}
-                }
-              } @else if (col.field === 'enabled') {
-                <p-tag
-                  [rounded]="true"
-                  [severity]="org.enabled ? 'success' : 'danger'"
-                  [style]="{
-                    '--be-tag-font-size': '0.75rem',
-                    '--be-tag-padding': '0.25rem 0.5rem',
-                  }"
-                  [value]="org.enabled ? 'Enabled' : 'Disabled'"
-                />
-              } @else if (col.field === 'deleted') {
-                <p-tag
-                  [rounded]="true"
-                  [severity]="org.deleted ? 'danger' : 'success'"
-                  [style]="{
-                    '--be-tag-font-size': '0.75rem',
-                    '--be-tag-padding': '0.25rem 0.5rem',
-                  }"
-                  [value]="org.deleted ? 'Deleted' : 'Active'"
-                />
-              } @else if (
-                col.field === 'createdAt' ||
-                col.field === 'updatedAt' ||
-                col.field === 'subscriptionStartDate' ||
-                col.field === 'subscriptionEndDate'
-              ) {
-                {{ getDateValue(org, col.field) | defaultValue | date: 'dd-MM-yyyy' }}
-              } @else {
-                {{ getCellValue(org, col.field) | defaultValue }}
+            <th [class]="getColumnAlignment(col.field) + ' whitespace-nowrap'">
+              <span>{{ col.header }}</span>
+              @if (isSorted(col.field)) {
+                <i [class]="getSortIcon(col.field)" class="ml-2"></i>
               }
+            </th>
+          }
+          <th class="text-center w-36 whitespace-nowrap" pFrozenColumn alignFrozen="right">
+            Actions
+          </th>
+        </tr>
+      </ng-template>
+      <ng-template let-org let-rowIndex="rowIndex" pTemplate="body">
+        <tr>
+          @if (isLoading()) {
+            <td pFrozenColumn><p-skeleton /></td>
+            @for (col of visibleCols; track col.field) {
+              <td [class]="getColumnAlignment(col.field) + ' whitespace-nowrap'">
+                <p-skeleton />
+              </td>
+            }
+            <td class="text-center whitespace-nowrap" pFrozenColumn alignFrozen="right">
+              <p-skeleton height="2rem" width="5rem" />
+            </td>
+          } @else {
+            <td class="text-color-secondary whitespace-nowrap" pFrozenColumn>
+              {{ currentPage() * pageSize() + rowIndex + 1 }}
+            </td>
+            @for (col of visibleCols; track col.field) {
+              <td [class]="getColumnAlignment(col.field) + ' whitespace-nowrap'">
+                @if (col.field === 'phoneNumber') {
+                  <a class="hover:underline" href="tel:{{ getCellValue(org, col.field) }}">
+                    {{ getCellValue(org, col.field) | defaultValue }}
+                  </a>
+                } @else if (col.field === 'email' || col.field === 'billingEmail') {
+                  <a class="hover:underline" href="mailto:{{ getCellValue(org, col.field) }}">
+                    {{ getCellValue(org, col.field) | defaultValue }}
+                  </a>
+                } @else if (col.field === 'website') {
+                  @if (getCellValue(org, col.field)) {
+                    <a
+                      class="hover:underline"
+                      href="{{ getCellValue(org, col.field) }}"
+                      rel="noopener noreferrer"
+                      target="_blank"
+                    >
+                      {{ getCellValue(org, col.field) }}
+                    </a>
+                  } @else {
+                    {{ getCellValue(org, col.field) | defaultValue }}
+                  }
+                } @else if (col.field === 'subscriptionTier') {
+                  @if (getCellValue(org, col.field)) {
+                    <p-tag
+                      [rounded]="true"
+                      [severity]="getSubscriptionTierSeverity($any(getCellValue(org, col.field)))"
+                      [style]="{
+                        '--be-tag-font-size': '0.75rem',
+                        '--be-tag-padding': '0.25rem 0.5rem',
+                      }"
+                      [value]="$any(getCellValue(org, col.field))"
+                    />
+                  } @else {
+                    {{ getCellValue(org, col.field) | defaultValue }}
+                  }
+                } @else if (col.field === 'subscriptionStatus') {
+                  @if (getCellValue(org, col.field)) {
+                    <p-tag
+                      [rounded]="true"
+                      [severity]="getSubscriptionStatusSeverity($any(getCellValue(org, col.field)))"
+                      [style]="{
+                        '--be-tag-font-size': '0.75rem',
+                        '--be-tag-padding': '0.25rem 0.5rem',
+                      }"
+                      [value]="$any(getCellValue(org, col.field))"
+                    />
+                  } @else {
+                    {{ getCellValue(org, col.field) | defaultValue }}
+                  }
+                } @else if (col.field === 'enabled') {
+                  <p-tag
+                    [rounded]="true"
+                    [severity]="org.enabled ? 'success' : 'danger'"
+                    [style]="{
+                      '--be-tag-font-size': '0.75rem',
+                      '--be-tag-padding': '0.25rem 0.5rem',
+                    }"
+                    [value]="org.enabled ? 'Enabled' : 'Disabled'"
+                  />
+                } @else if (col.field === 'deleted') {
+                  <p-tag
+                    [rounded]="true"
+                    [severity]="org.deleted ? 'danger' : 'success'"
+                    [style]="{
+                      '--be-tag-font-size': '0.75rem',
+                      '--be-tag-padding': '0.25rem 0.5rem',
+                    }"
+                    [value]="org.deleted ? 'Deleted' : 'Active'"
+                  />
+                } @else if (
+                  col.field === 'createdAt' ||
+                  col.field === 'updatedAt' ||
+                  col.field === 'subscriptionStartDate' ||
+                  col.field === 'subscriptionEndDate'
+                ) {
+                  {{ getDateValue(org, col.field) | defaultValue | date: 'dd-MM-yyyy' }}
+                } @else {
+                  {{ getCellValue(org, col.field) | defaultValue }}
+                }
+              </td>
+            }
+            <td class="text-center whitespace-nowrap" pFrozenColumn alignFrozen="right">
+              <div class="flex items-center gap-1">
+                <p-button
+                  (click)="onEdit(org)"
+                  [rounded]="true"
+                  [size]="inputSize"
+                  [text]="true"
+                  icon="pi pi-pencil"
+                  pTooltip="Edit"
+                  severity="info"
+                  tooltipPosition="top"
+                ></p-button>
+                <p-button
+                  (click)="toggleOrgStatus($event, org)"
+                  [disabled]="togglingOrgId() === org.id"
+                  [icon]="org.enabled ? 'pi pi-ban' : 'pi pi-check-circle'"
+                  [loading]="togglingOrgId() === org.id"
+                  [pTooltip]="org.enabled ? 'Disable' : 'Enable'"
+                  [rounded]="true"
+                  [severity]="org.enabled ? 'warn' : 'success'"
+                  [size]="inputSize"
+                  [text]="true"
+                  tooltipPosition="top"
+                ></p-button>
+                <p-button
+                  [rounded]="true"
+                  [size]="inputSize"
+                  [text]="true"
+                  icon="pi pi-trash"
+                  pTooltip="Delete"
+                  severity="danger"
+                  tooltipPosition="top"
+                ></p-button>
+              </div>
             </td>
           }
-          <td class="text-center whitespace-nowrap" pFrozenColumn alignFrozen="right">
-            <div class="flex items-center gap-1">
-              <p-button
-                (click)="onEdit(org)"
-                [rounded]="true"
-                [size]="inputSize"
-                [text]="true"
-                icon="pi pi-pencil"
-                pTooltip="Edit"
-                severity="info"
-                tooltipPosition="top"
-              ></p-button>
-              <p-button
-                (click)="toggleOrgStatus($event, org)"
-                [disabled]="togglingOrgId() === org.id"
-                [icon]="org.enabled ? 'pi pi-ban' : 'pi pi-check-circle'"
-                [loading]="togglingOrgId() === org.id"
-                [pTooltip]="org.enabled ? 'Disable' : 'Enable'"
-                [rounded]="true"
-                [severity]="org.enabled ? 'warn' : 'success'"
-                [size]="inputSize"
-                [text]="true"
-                tooltipPosition="top"
-              ></p-button>
-              <p-button
-                [rounded]="true"
-                [size]="inputSize"
-                [text]="true"
-                icon="pi pi-trash"
-                pTooltip="Delete"
-                severity="danger"
-                tooltipPosition="top"
-              ></p-button>
-            </div>
-          </td>
-        }
-      </tr>
-    </ng-template>
+        </tr>
+      </ng-template>
 
-    <ng-template pTemplate="emptymessage">
-      <tr>
-        <td [attr.colspan]="visibleCols.length + 2">
-          @if (!isLoading()) {
-            <div class="flex flex-col items-center justify-center py-12 px-4">
-              <i class="pi pi-building text-6xl mb-4 opacity-30"></i>
-              <p class="text-lg font-medium mb-1">No organizations found</p>
-              <p class="text-sm opacity-60">Try adjusting your search or filters</p>
-            </div>
-          }
-        </td>
-      </tr>
-    </ng-template>
-  </p-table>
-</div>
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td [attr.colspan]="visibleCols.length + 2">
+            @if (!isLoading()) {
+              <div class="flex flex-col items-center justify-center py-12 px-4">
+                <i class="pi pi-building text-6xl mb-4 opacity-30"></i>
+                <p class="text-lg font-medium mb-1">No organizations found</p>
+                <p class="text-sm opacity-60">Try adjusting your search or filters</p>
+              </div>
+            }
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+}

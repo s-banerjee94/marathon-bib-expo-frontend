@@ -17,11 +17,11 @@ import {
   SubscriptionTier,
 } from '../../core/models/organization.model';
 import { OrganizationService } from '../../core/services/organization.service';
-import { AuthService } from '../../core/services/auth.service';
 import { ErrorHandlerService } from '../../core/services/error-handler.service';
 import { ToastService } from '../../core/services/toast.service';
 import { FORM_INPUT_SIZE } from '../../shared/constants/form.constants';
 import { SUBSCRIPTION_TIER_OPTIONS } from '../../shared/constants/subscription.constant';
+import { OrganizationListBus } from '../organizations/organization-list-bus.service';
 
 @Component({
   selector: 'app-organization-form',
@@ -74,12 +74,12 @@ export class OrganizationForm implements OnInit {
   readonly inputSize = FORM_INPUT_SIZE;
   readonly subscriptionTiers = SUBSCRIPTION_TIER_OPTIONS;
   private organizationService = inject(OrganizationService);
-  private authService = inject(AuthService);
   private router = inject(Router);
   private route = inject(ActivatedRoute);
   private location = inject(Location);
   private toast = inject(ToastService);
   private errorHandler = inject(ErrorHandlerService);
+  private organizationListBus = inject(OrganizationListBus);
 
   ngOnInit(): void {
     // Check if opened in dialog mode
@@ -105,7 +105,7 @@ export class OrganizationForm implements OnInit {
           this.loadOrganizationData(id);
         } else {
           // Invalid ID, redirect to create mode
-          this.router.navigate(['/organization-form']);
+          this.router.navigate(['/organizations/new']);
         }
       } else {
         // Create mode - default state
@@ -129,18 +129,14 @@ export class OrganizationForm implements OnInit {
         .subscribe({
           next: (updatedOrg: Organization) => {
             this.isSubmitting.set(false);
+            this.organizationListBus.publish({ action: 'updated', organization: updatedOrg });
 
-            // Close dialog or navigate back based on mode
             if (this.isDialogMode() && this.dialogRef) {
-              // Close immediately - parent will show toast with custom message from dialog data
               const successMessage = this.dialogConfig?.data?.successMessage;
               this.dialogRef!.close({ organization: updatedOrg, message: successMessage });
             } else {
-              // Show toast for non-dialog mode
               this.toast.success('Organization updated successfully');
-              setTimeout(() => {
-                this.location.back();
-              }, 1500);
+              setTimeout(() => this.location.back(), 1500);
             }
           },
           error: (error) => {
@@ -153,37 +149,14 @@ export class OrganizationForm implements OnInit {
       this.organizationService.createOrganization(this.organization).subscribe({
         next: (createdOrg: Organization) => {
           this.isSubmitting.set(false);
+          this.organizationListBus.publish({ action: 'created', organization: createdOrg });
 
-          // Close dialog or reset form based on mode
           if (this.isDialogMode() && this.dialogRef) {
-            // Close immediately - parent will show toast with custom message from dialog data
             const successMessage = this.dialogConfig?.data?.successMessage;
             this.dialogRef!.close({ organization: createdOrg, message: successMessage });
           } else {
-            // Show toast for non-dialog mode
             this.toast.success('Organization created successfully');
-            // Reset form for creating another organization
-            setTimeout(() => {
-              form.resetForm();
-              this.organization = {
-                organizerName: '',
-                email: '',
-                phoneNumber: '',
-                website: '',
-                addressLine1: '',
-                addressLine2: '',
-                city: '',
-                stateProvince: '',
-                postalCode: '',
-                country: '',
-                taxId: '',
-                registrationNumber: '',
-                maxOrganizerUsers: 5,
-                maxDistributors: 30,
-                subscriptionTier: SubscriptionTier.FREE,
-                billingEmail: '',
-              };
-            }, 1500);
+            setTimeout(() => this.location.back(), 1500);
           }
         },
         error: (error) => {
@@ -192,6 +165,10 @@ export class OrganizationForm implements OnInit {
         },
       });
     }
+  }
+
+  goBack(): void {
+    this.location.back();
   }
 
   getTitle(): string {
@@ -210,17 +187,23 @@ export class OrganizationForm implements OnInit {
 
     this.organizationService.getOrganizationById(id).subscribe({
       next: (org: Organization) => {
-        this.populateFormFromOrganization(org);
         this.isLoading.set(false);
+        this.populateFormFromOrganization(org);
       },
       error: (error) => {
         this.isLoading.set(false);
-        this.errorHandler.showError(error, 'Error', {
-          customMessage: 'Failed to load organization data. Please try again.',
-        });
-        this.router.navigate([this.authService.getDashboardRoute()]);
+        this.errorHandler.showError(error, 'Error');
+        this.dismiss();
       },
     });
+  }
+
+  private dismiss(): void {
+    if (this.isDialogMode() && this.dialogRef) {
+      this.dialogRef.close();
+    } else {
+      this.router.navigate(['/organizations']);
+    }
   }
 
   private populateFormFromOrganization(org: Organization): void {

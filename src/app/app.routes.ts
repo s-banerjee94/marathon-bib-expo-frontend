@@ -18,22 +18,9 @@ export const routes: Routes = [
     canActivate: [authGuard],
   },
   {
-    path: 'organization-form',
-    loadComponent: () =>
-      import('./features/organization-form/organization-form').then((m) => m.OrganizationForm),
-    canActivate: [roleGuard([UserRole.ROOT, UserRole.ADMIN])],
-  },
-  {
-    path: 'organization-form/:id',
-    loadComponent: () =>
-      import('./features/organization-form/organization-form').then((m) => m.OrganizationForm),
-    canActivate: [roleGuard([UserRole.ROOT, UserRole.ADMIN])],
-  },
-  {
     path: 'organizations',
-    loadComponent: () =>
-      import('./features/organization-list/organization-list').then((m) => m.OrganizationList),
-    canActivate: [roleGuard([UserRole.ROOT, UserRole.ADMIN])],
+    loadChildren: () =>
+      import('./features/organizations/organizations.routes').then((m) => m.ORGANIZATIONS_ROUTES),
   },
   {
     path: 'users',
