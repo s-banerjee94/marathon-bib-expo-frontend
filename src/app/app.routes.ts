@@ -37,17 +37,7 @@ export const routes: Routes = [
   },
   {
     path: 'users',
-    loadComponent: () => import('./features/user-list/user-list').then((m) => m.UserList),
-    canActivate: [
-      roleGuard([UserRole.ROOT, UserRole.ADMIN, UserRole.ORGANIZER_ADMIN, UserRole.ORGANIZER_USER]),
-    ],
-  },
-  {
-    path: 'user-form',
-    loadComponent: () => import('./features/user-form/user-form').then((m) => m.UserForm),
-    canActivate: [
-      roleGuard([UserRole.ROOT, UserRole.ADMIN, UserRole.ORGANIZER_ADMIN, UserRole.ORGANIZER_USER]),
-    ],
+    loadChildren: () => import('./features/users/users.routes').then((m) => m.USERS_ROUTES),
   },
   {
     path: 'events',

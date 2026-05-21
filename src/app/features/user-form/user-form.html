@@ -230,7 +230,18 @@
             </div>
 
             <!-- Submit Button -->
-            <div class="flex justify-end gap-3 pt-4 border-t">
+            <div class="flex justify-between gap-3 pt-4 border-t">
+              <button
+                (click)="goBack()"
+                [disabled]="isSubmitting()"
+                [outlined]="true"
+                icon="pi pi-arrow-left"
+                pButton
+                severity="secondary"
+                type="button"
+              >
+                <span pButtonLabel>Back to Users</span>
+              </button>
               <button
                 [disabled]="isSubmitting() || isLoading() || userForm.invalid"
                 pButton

@@ -275,11 +275,11 @@ export class OrgAdminDashboard implements OnInit {
   }
 
   goToCreateUser(): void {
-    this.router.navigate(['/user-form']);
+    this.router.navigate(['/users/new']);
   }
 
   goToCreateDistributor(): void {
-    this.router.navigate(['/user-form'], { queryParams: { role: UserRole.DISTRIBUTOR } });
+    this.router.navigate(['/users/new'], { queryParams: { role: UserRole.DISTRIBUTOR } });
   }
 
   goToParticipants(): void {

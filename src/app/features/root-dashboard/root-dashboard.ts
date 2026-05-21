@@ -304,7 +304,7 @@ export class RootDashboard implements OnInit {
     this.router.navigate(['/events']);
   }
   goToCreateAdmin(): void {
-    this.router.navigate(['/user-form'], { queryParams: { role: UserRole.ADMIN } });
+    this.router.navigate(['/users/new'], { queryParams: { role: UserRole.ADMIN } });
   }
   goToCreateOrganization(): void {
     this.router.navigate(['/organization-form']);

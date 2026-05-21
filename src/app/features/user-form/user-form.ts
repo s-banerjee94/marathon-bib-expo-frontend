@@ -23,6 +23,8 @@ import { AuthService } from '../../core/services/auth.service';
 import { ErrorHandlerService } from '../../core/services/error-handler.service';
 import { ToastService } from '../../core/services/toast.service';
 import { roleRequiresEmailPhone, roleRequiresOrganization } from './user-form.utils';
+import { UserListBus } from '../users/user-list-bus.service';
+import { userCanManage } from '../../shared/utils/user-permissions.utils';
 import { shouldShowError } from '../../shared/utils/form.utils';
 import { FORM_INPUT_SIZE } from '../../shared/constants/form.constants';
 import { OrganizationSelector } from '../../components/organization-selector/organization-selector';
@@ -78,6 +80,7 @@ export class UserForm implements OnInit {
   private location = inject(Location);
   private toast = inject(ToastService);
   private errorHandler = inject(ErrorHandlerService);
+  private userListBus = inject(UserListBus);
 
   ngOnInit(): void {
     this.initializeCurrentUserRole();
@@ -106,7 +109,7 @@ export class UserForm implements OnInit {
           this.loadUserData(id);
         } else {
           // Invalid ID, redirect to create mode
-          this.router.navigate(['/user-form']);
+          this.router.navigate(['/users/new']);
         }
       } else {
         // Create mode - default state
@@ -186,6 +189,7 @@ export class UserForm implements OnInit {
       this.userService.updateUser(this.userId()!, updateRequest).subscribe({
         next: (updatedUser: User) => {
           this.isSubmitting.set(false);
+          this.userListBus.publish({ action: 'updated', user: updatedUser });
 
           if (this.isDialogMode() && this.dialogRef) {
             const successMessage = this.dialogConfig?.data?.successMessage;
@@ -205,29 +209,14 @@ export class UserForm implements OnInit {
       this.userService.createUser(this.user).subscribe({
         next: (createdUser: User) => {
           this.isSubmitting.set(false);
+          this.userListBus.publish({ action: 'created', user: createdUser });
 
-          // Close dialog or reset form based on mode
           if (this.isDialogMode() && this.dialogRef) {
-            // Close immediately - parent will show toast with custom message from dialog data
             const successMessage = this.dialogConfig?.data?.successMessage;
             this.dialogRef!.close({ user: createdUser, message: successMessage });
           } else {
-            // Show toast for non-dialog mode
             this.toast.success('User created successfully');
-            // Reset form for creating another user
-            setTimeout(() => {
-              form.resetForm();
-              this.user = {
-                username: '',
-                password: '',
-                email: '',
-                fullName: '',
-                phoneNumber: '',
-                role: UserRole.ADMIN,
-                organizationId: undefined,
-              };
-              this.selectedRole.set(UserRole.ADMIN);
-            }, 1500);
+            setTimeout(() => this.location.back(), 1500);
           }
         },
         error: (error) => {
@@ -240,6 +229,10 @@ export class UserForm implements OnInit {
 
   getTitle(): string {
     return this.isEditMode() ? 'Edit User' : 'Create User';
+  }
+
+  goBack(): void {
+    this.location.back();
   }
 
   getSubmitButtonText(): string {
@@ -265,19 +258,28 @@ export class UserForm implements OnInit {
 
     this.userService.getUserById(id).subscribe({
       next: (user: User) => {
-        this.populateFormFromUser(user);
         this.isLoading.set(false);
+        if (!userCanManage(this.authService.currentUser(), user)) {
+          this.toast.error('You do not have permission to edit this user.');
+          this.dismiss();
+          return;
+        }
+        this.populateFormFromUser(user);
       },
       error: (error) => {
         this.isLoading.set(false);
-        this.errorHandler.showError(error, 'Error', {
-          customMessage: 'Failed to load user data. Please try again.',
-        });
-        if (!this.isDialogMode()) {
-          this.router.navigate([this.authService.getDashboardRoute()]);
-        }
+        this.errorHandler.showError(error, 'Error');
+        this.dismiss();
       },
     });
+  }
+
+  private dismiss(): void {
+    if (this.isDialogMode() && this.dialogRef) {
+      this.dialogRef.close();
+    } else {
+      this.router.navigate([this.authService.getDashboardRoute()]);
+    }
   }
 
   private populateFormFromUser(userData: User): void {

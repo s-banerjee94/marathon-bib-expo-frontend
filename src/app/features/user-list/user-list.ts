@@ -1,4 +1,16 @@
-import { Component, inject, signal, ViewChild } from '@angular/core';
+import { Component, DestroyRef, inject, signal, ViewChild } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import {
+  ActivatedRoute,
+  NavigationEnd,
+  Params,
+  ParamMap,
+  Router,
+  RouterOutlet,
+} from '@angular/router';
+import { EMPTY, Subject } from 'rxjs';
+import { catchError, debounceTime, distinctUntilChanged, filter, switchMap } from 'rxjs/operators';
+import { TableLazyLoadEvent } from 'primeng/table';
 import { CommonModule } from '@angular/common';
 import { Popover, PopoverModule } from 'primeng/popover';
 import { FormsModule } from '@angular/forms';
@@ -18,6 +30,7 @@ import { TagModule } from 'primeng/tag';
 import { FloatLabelModule } from 'primeng/floatlabel';
 
 import { User, UserRole } from '../../core/models/user.model';
+import { PageableParams, PageableResponse } from '../../core/models/api.model';
 import { UserService } from '../../core/services/user.service';
 import { OrganizationService } from '../../core/services/organization.service';
 import { Organization } from '../../core/models/organization.model';
@@ -25,6 +38,7 @@ import { USER_COLUMNS } from '../../shared/constants/user-columns.constant';
 import { STORAGE_KEYS } from '../../shared/constants/storage-keys.constant';
 import { USER_SORT_OPTIONS } from '../../shared/constants/sort-options.constant';
 import { UserForm } from '../user-form/user-form';
+import { UserListBus, UserMutation } from '../users/user-list-bus.service';
 import { DefaultValuePipe } from '../../shared/pipes/default-value.pipe';
 import { BaseTableComponent } from '../../shared/base/base-table.component';
 import { TableColumn, TableFilterPreferences } from '../../shared/models/table-config.model';
@@ -34,6 +48,7 @@ import {
   FULL_ROLE_FILTER_OPTIONS,
   ORG_ROLE_FILTER_OPTIONS,
 } from '../../shared/constants/role-filter-options.constant';
+import { userCanManage } from '../../shared/utils/user-permissions.utils';
 import { ConfirmationService } from 'primeng/api';
 import { DialogService } from 'primeng/dynamicdialog';
 
@@ -67,6 +82,7 @@ interface UserFilterPreferences extends TableFilterPreferences {
     FloatLabelModule,
     DefaultValuePipe,
     OrganizationSelector,
+    RouterOutlet,
   ],
   providers: [DialogService, ConfirmationService],
   templateUrl: './user-list.html',
@@ -94,10 +110,95 @@ export class UserList extends BaseTableComponent<User, UserFilterPreferences> {
   private userService = inject(UserService);
   private organizationService = inject(OrganizationService);
   private confirmationService = inject(ConfirmationService);
+  private router = inject(Router);
+  private route = inject(ActivatedRoute);
+  private destroyRef = inject(DestroyRef);
+  private userListBus = inject(UserListBus);
+  // Tracks which dialog is currently driven by the URL: null = closed, 'new' = create, 'edit:<id>' = edit.
+  // Used to ignore router events that don't change the dialog state.
+  private dialogKey: string | null = null;
+  // True when the dialog is being closed by syncDialogToRoute (URL change),
+  // so the onClose handler skips its own URL-clearing navigation.
+  private closingDialogFromRoute = false;
+  // Viewport tracking: on mobile the form renders full-page via <router-outlet />;
+  // on desktop the same URL opens the form in an overlay dialog.
+  private mediaQuery = window.matchMedia('(max-width: 768px)');
+  isMobile = signal(this.mediaQuery.matches);
+  hasFormRoute = signal(false);
+  // Debounces raw search input keystrokes before pushing the next URL.
+  private urlSearchSubject = new Subject<string>();
+  // Single-flight load trigger; switchMap below cancels the prior HTTP request when a new emit arrives.
+  private loadTrigger = new Subject<void>();
+  // Default page size — kept consistent with BaseTableComponent's initial pageSize signal so
+  // the URL stays clean (?size=… is only emitted when the user picks a non-default size).
+  private readonly DEFAULT_PAGE_SIZE = 5;
 
   constructor() {
     super();
     this.initializeColumns();
+    this.syncDialogToRoute();
+    this.router.events
+      .pipe(
+        filter((event): event is NavigationEnd => event instanceof NavigationEnd),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe(() => this.syncDialogToRoute());
+
+    const onViewportChange = (event: MediaQueryListEvent) => {
+      this.isMobile.set(event.matches);
+      this.syncDialogToRoute();
+    };
+    this.mediaQuery.addEventListener('change', onViewportChange);
+    this.destroyRef.onDestroy(() => {
+      this.mediaQuery.removeEventListener('change', onViewportChange);
+    });
+
+    // Subscribe to the load pipeline BEFORE queryParamMap — the route observable emits the
+    // current value synchronously on subscribe, which triggers loadTrigger.next() inside
+    // applyUrlToState. If the switchMap subscription isn't active yet, that first emission is
+    // dropped (Subject doesn't replay) and the initial fetch never fires.
+    this.loadTrigger
+      .pipe(
+        switchMap(() => {
+          this.isLoading.set(true);
+          const params = this.buildUserSearchParams();
+          return this.userService.searchUsers(params).pipe(
+            catchError((error) => {
+              this.handleLoadError(error);
+              return EMPTY;
+            }),
+          );
+        }),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe((response: PageableResponse<User>) => this.handleLoadSuccess(response));
+
+    this.urlSearchSubject
+      .pipe(debounceTime(400), distinctUntilChanged(), takeUntilDestroyed(this.destroyRef))
+      .subscribe((value) => {
+        const trimmed = value.trim();
+        // Backend treats <2 chars as no filter; mirror that in the URL so links stay clean.
+        this.pushStateToUrl({ q: trimmed.length >= 2 ? trimmed : null, page: null });
+      });
+
+    this.route.queryParamMap
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((params) => this.applyUrlToState(params));
+
+    this.userListBus.mutations$
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((mutation) => this.applyUserMutation(mutation));
+  }
+
+  private applyUserMutation(mutation: UserMutation): void {
+    const current = this.entities();
+    if (mutation.action === 'created') {
+      this.entities.set([mutation.user, ...current]);
+      this.totalRecords.set(this.totalRecords() + 1);
+    } else {
+      const updated = current.map((u) => (u.id === mutation.user.id ? mutation.user : u));
+      this.entities.set(updated);
+    }
   }
 
   getRoleSeverity(role: UserRole): 'danger' | 'success' | 'info' | 'warn' | 'secondary' {
@@ -225,6 +326,60 @@ export class UserList extends BaseTableComponent<User, UserFilterPreferences> {
   }
 
   onCreate(): void {
+    this.router.navigate(['/users/new'], { queryParamsHandling: 'preserve' });
+  }
+
+  onEdit(user: User): void {
+    this.router.navigate(['/users', user.id, 'edit'], { queryParamsHandling: 'preserve' });
+  }
+
+  private syncDialogToRoute(): void {
+    const child = this.route.snapshot.firstChild;
+    const segments = child?.url ?? [];
+    let nextKey: string | null = null;
+
+    if (segments[0]?.path === 'new') {
+      nextKey = 'new';
+    } else if (segments.length === 2 && segments[1].path === 'edit') {
+      nextKey = `edit:${segments[0].path}`;
+    }
+
+    this.hasFormRoute.set(nextKey !== null);
+
+    // On mobile the routed UserForm component takes the whole view; skip the dialog flow
+    // and tear down any dialog that was open before a viewport change.
+    if (this.isMobile()) {
+      if (this.dialogKey !== null && this.dialogRef) {
+        this.closingDialogFromRoute = true;
+        this.dialogRef.close();
+      }
+      this.dialogKey = null;
+      return;
+    }
+
+    if (nextKey === this.dialogKey) {
+      return;
+    }
+
+    const previousKey = this.dialogKey;
+    this.dialogKey = nextKey;
+
+    if (previousKey !== null && this.dialogRef) {
+      this.closingDialogFromRoute = true;
+      this.dialogRef.close();
+    }
+
+    if (nextKey === 'new') {
+      this.openCreateDialog();
+    } else if (nextKey?.startsWith('edit:')) {
+      const id = Number(nextKey.slice('edit:'.length));
+      if (Number.isFinite(id)) {
+        this.openEditDialog(id);
+      }
+    }
+  }
+
+  private openCreateDialog(): void {
     this.openDialog(UserForm, 'Create User', {
       isEditMode: false,
       successMessage: {
@@ -241,26 +396,18 @@ export class UserList extends BaseTableComponent<User, UserFilterPreferences> {
             | { user?: User; message?: { severity: string; summary: string; detail: string } }
             | undefined,
         ) => {
-          // Add the new user to the list locally if user was created
-          if (result?.user) {
-            const currentUsers = this.entities();
-            // Add to the beginning of the list
-            this.entities.set([result.user, ...currentUsers]);
-            // Update total records
-            this.totalRecords.set(this.totalRecords() + 1);
-            // Show success toast with custom message
-            if (result.message) {
-              this.toast.show(result.message);
-            }
+          if (result?.message) {
+            this.toast.show(result.message);
           }
+          this.returnToList();
         },
       );
     }
   }
 
-  onEdit(user: User): void {
+  private openEditDialog(userId: number): void {
     this.openDialog(UserForm, 'Edit User', {
-      userId: user.id,
+      userId,
       isEditMode: true,
       successMessage: {
         severity: 'success',
@@ -276,48 +423,28 @@ export class UserList extends BaseTableComponent<User, UserFilterPreferences> {
             | { user?: User; message?: { severity: string; summary: string; detail: string } }
             | undefined,
         ) => {
-          // Update the list locally if user was updated
-          if (result?.user) {
-            const currentUsers = this.entities();
-            const updatedUsers = currentUsers.map((u) =>
-              u.id === result.user!.id ? result.user! : u,
-            );
-            this.entities.set(updatedUsers);
-            // Show success toast with custom message
-            if (result.message) {
-              this.toast.show(result.message);
-            }
+          if (result?.message) {
+            this.toast.show(result.message);
           }
+          this.returnToList();
         },
       );
     }
   }
 
-  canManageUser(user: User): boolean {
-    const currentUser = this.authService.currentUser();
-    if (!currentUser) return false;
-
-    // Never act on self or on any ROOT user
-    if (user.id === currentUser.id) return false;
-    if (user.role === UserRole.ROOT) return false;
-
-    switch (currentUser.role) {
-      case UserRole.ROOT:
-        return true;
-      case UserRole.ADMIN:
-        return user.role !== UserRole.ADMIN;
-      case UserRole.ORGANIZER_ADMIN:
-        return (
-          (user.role === UserRole.ORGANIZER_USER || user.role === UserRole.DISTRIBUTOR) &&
-          user.organizationId === currentUser.organizationId
-        );
-      case UserRole.ORGANIZER_USER:
-        return (
-          user.role === UserRole.DISTRIBUTOR && user.organizationId === currentUser.organizationId
-        );
-      default:
-        return false;
+  // Clear the dialog segment from the URL once the dialog finishes.
+  // Skipped when syncDialogToRoute initiated the close — the URL is already moving elsewhere.
+  private returnToList(): void {
+    if (this.closingDialogFromRoute) {
+      this.closingDialogFromRoute = false;
+      return;
     }
+    this.dialogKey = null;
+    this.router.navigate(['/users'], { queryParamsHandling: 'preserve' });
+  }
+
+  canManageUser(user: User): boolean {
+    return userCanManage(this.authService.currentUser(), user);
   }
 
   onDelete(event: Event, user: User): void {
@@ -375,9 +502,44 @@ export class UserList extends BaseTableComponent<User, UserFilterPreferences> {
     this.onFilterChange();
   }
 
-  protected override loadData(): void {
-    this.isLoading.set(true);
+  override onSearchInput(value: string): void {
+    this.urlSearchSubject.next(value);
+  }
 
+  override clearSearch(): void {
+    this.pushStateToUrl({ q: null, page: null });
+  }
+
+  override onFilterChange(): void {
+    this.pushStateToUrl({
+      enabled: this.filterEnabled() ? null : 'false',
+      role: this.filterRole(),
+      org: this.canFilterByOrganization() ? this.filterOrganizationId() : null,
+      page: null,
+    });
+  }
+
+  override onSortChange(value: string | null): void {
+    this.selectedSort.set(value);
+    this.filterSort.set(value ? [value] : []);
+    this.pushStateToUrl({ sort: value, page: null });
+  }
+
+  override onPageChange(event: TableLazyLoadEvent): void {
+    const size = event.rows ?? this.pageSize();
+    const page = Math.floor((event.first ?? 0) / size);
+    // URL pages are 1-indexed to match what the paginator UI shows; the backend stays 0-indexed.
+    this.pushStateToUrl({
+      page: page > 0 ? page + 1 : null,
+      size: size !== this.DEFAULT_PAGE_SIZE ? size : null,
+    });
+  }
+
+  protected override loadData(): void {
+    this.loadTrigger.next();
+  }
+
+  private buildUserSearchParams(): PageableParams {
     const params = this.buildPageableParams();
     const role = this.filterRole();
     if (role) {
@@ -389,11 +551,45 @@ export class UserList extends BaseTableComponent<User, UserFilterPreferences> {
         params.organizationId = orgId;
       }
     }
+    return params;
+  }
 
-    this.userService.searchUsers(params).subscribe({
-      next: (response) => this.handleLoadSuccess(response),
-      error: (error) => this.handleLoadError(error),
+  private pushStateToUrl(updates: Params): void {
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: updates,
+      queryParamsHandling: 'merge',
+      replaceUrl: true,
     });
+  }
+
+  private applyUrlToState(params: ParamMap): void {
+    const q = params.get('q') ?? '';
+    const pageParam = Number(params.get('page'));
+    const sizeParam = Number(params.get('size'));
+    const enabledParam = params.get('enabled');
+    const roleParam = params.get('role') as UserRole | null;
+    const orgParam = params.get('org');
+    const sortParam = params.get('sort');
+
+    this.searchTerm.set(q);
+    // URL page is 1-indexed (?page=2 = second page); convert to 0-indexed for backend/state.
+    this.currentPage.set(Number.isFinite(pageParam) && pageParam > 1 ? pageParam - 1 : 0);
+    this.pageSize.set(
+      Number.isFinite(sizeParam) && sizeParam > 0 ? sizeParam : this.DEFAULT_PAGE_SIZE,
+    );
+    this.filterEnabled.set(enabledParam !== 'false');
+
+    const allowedRoles = new Set(this.roleOptions.map((o) => o.value));
+    this.filterRole.set(roleParam && allowedRoles.has(roleParam) ? roleParam : null);
+
+    const orgId = orgParam ? Number(orgParam) : NaN;
+    this.filterOrganizationId.set(Number.isFinite(orgId) ? orgId : null);
+
+    this.selectedSort.set(sortParam);
+    this.filterSort.set(sortParam ? [sortParam] : []);
+
+    this.loadData();
   }
 
   protected override getDefaultFilterPreferences(): UserFilterPreferences {

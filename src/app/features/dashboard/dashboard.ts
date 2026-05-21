@@ -9,7 +9,6 @@ import { DistributerDashboard } from '../distributer-dashboard/distributer-dashb
 
 @Component({
   selector: 'app-dashboard',
-  standalone: true,
   imports: [
     RootDashboard,
     AdminDashboard,
@@ -17,7 +16,25 @@ import { DistributerDashboard } from '../distributer-dashboard/distributer-dashb
     OrgUserDashboard,
     DistributerDashboard,
   ],
-  templateUrl: './dashboard.html',
+  template: `
+    @switch (role()) {
+      @case (UserRole.ROOT) {
+        <app-root-dashboard />
+      }
+      @case (UserRole.ADMIN) {
+        <app-admin-dashboard />
+      }
+      @case (UserRole.ORGANIZER_ADMIN) {
+        <app-org-admin-dashboard />
+      }
+      @case (UserRole.ORGANIZER_USER) {
+        <app-org-user-dashboard />
+      }
+      @case (UserRole.DISTRIBUTOR) {
+        <app-distributer-dashboard />
+      }
+    }
+  `,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class Dashboard {
