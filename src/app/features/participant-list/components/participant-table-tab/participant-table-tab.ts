@@ -77,6 +77,16 @@ export class ParticipantTableTab {
   getGenderDisplay = getGenderDisplay;
   getGenderSeverity = getGenderSeverity;
 
+  // Parse backend DOB string (dd-MM-yyyy or ISO yyyy-MM-dd) into a Date so Angular's date pipe can format it.
+  parseDob(value: string | undefined): Date | null {
+    if (!value) return null;
+    const iso = /^(\d{4})-(\d{2})-(\d{2})/.exec(value);
+    if (iso) return new Date(Number(iso[1]), Number(iso[2]) - 1, Number(iso[3]));
+    const dmy = /^(\d{2})-(\d{2})-(\d{4})/.exec(value);
+    if (dmy) return new Date(Number(dmy[3]), Number(dmy[2]) - 1, Number(dmy[1]));
+    return null;
+  }
+
   // Centralized sizing
   buttonSize = BUTTON_SIZE;
   inputSize = FORM_INPUT_SIZE;

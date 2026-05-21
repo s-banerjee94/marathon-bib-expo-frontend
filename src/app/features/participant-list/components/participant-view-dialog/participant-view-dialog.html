@@ -55,7 +55,9 @@
         <div class="sm:col-span-2">
           <p class="text-xs sm:text-sm text-gray-600">Date of Birth</p>
           <p class="font-semibold text-sm sm:text-base">
-            {{ participant()!.dateOfBirth | defaultValue }}
+            {{
+              parseDob(participant()!.dateOfBirth) | date: 'dd-MMM-yyyy' | lowercase | defaultValue
+            }}
           </p>
         </div>
         <div class="sm:col-span-2">
