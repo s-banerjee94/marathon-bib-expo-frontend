@@ -11,8 +11,8 @@ import { RouterLink } from '@angular/router';
     >
       <h1>Access Denied</h1>
       <p>You do not have permission to access this page.</p>
-      <a routerLink="/login" style="color: #667eea; text-decoration: none; font-weight: 600;">
-        Return to Login
+      <a routerLink="/dashboard" style="color: #667eea; text-decoration: none; font-weight: 600;">
+        Return to Dashboard
       </a>
     </div>
   `,

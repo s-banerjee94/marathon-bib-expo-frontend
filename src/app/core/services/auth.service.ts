@@ -168,22 +168,7 @@ export class AuthService {
   // ============================================================================
 
   getDashboardRoute(): string {
-    const role = this.getCurrentRole();
-
-    switch (role) {
-      case UserRole.ROOT:
-        return '/root-dashboard';
-      case UserRole.ADMIN:
-        return '/admin-dashboard';
-      case UserRole.ORGANIZER_ADMIN:
-        return '/org-admin-dashboard';
-      case UserRole.ORGANIZER_USER:
-        return '/org-user-dashboard';
-      case UserRole.DISTRIBUTOR:
-        return '/distributer-dashboard';
-      default:
-        return '/login';
-    }
+    return this.getCurrentRole() ? '/dashboard' : '/login';
   }
 
   // ============================================================================
