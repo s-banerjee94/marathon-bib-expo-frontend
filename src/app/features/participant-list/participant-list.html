@@ -142,6 +142,7 @@
     <app-participant-form
       #participantFormComponent
       (formSubmitSuccess)="onFormSubmitSuccess()"
+      (submitDisabledChange)="onFormSubmitDisabledChange($event)"
       [dialogData]="formDialogData()!"
     ></app-participant-form>
   }
@@ -156,6 +157,7 @@
     ></p-button>
     <p-button
       (onClick)="submitFormDialog()"
+      [disabled]="formSubmitDisabled()"
       [label]="formDialogData()?.isEditMode ? 'Update' : 'Create'"
       icon="pi pi-check"
       severity="primary"

@@ -1,4 +1,14 @@
-import { Component, EventEmitter, inject, Input, OnInit, Output, signal } from '@angular/core';
+import {
+  Component,
+  computed,
+  effect,
+  EventEmitter,
+  inject,
+  Input,
+  OnInit,
+  Output,
+  signal,
+} from '@angular/core';
 import { CommonModule, Location } from '@angular/common';
 import { FormsModule, NgForm } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -10,13 +20,19 @@ import { CardModule } from 'primeng/card';
 import { SelectModule } from 'primeng/select';
 import { SkeletonModule } from 'primeng/skeleton';
 import { InputNumberModule } from 'primeng/inputnumber';
+import { DatePickerModule } from 'primeng/datepicker';
+import { DividerModule } from 'primeng/divider';
 import { DynamicDialogConfig, DynamicDialogRef } from 'primeng/dynamicdialog';
 import {
   CreateParticipantRequest,
   Participant,
   UpdateParticipantRequest,
 } from '../../core/models/participant.model';
+import { Race } from '../../core/models/race.model';
+import { Category } from '../../core/models/category.model';
 import { ParticipantService } from '../../core/services/participant.service';
+import { RaceService } from '../../core/services/race.service';
+import { CategoryService } from '../../core/services/category.service';
 import { AuthService } from '../../core/services/auth.service';
 import { ErrorHandlerService } from '../../core/services/error-handler.service';
 import { ToastService } from '../../core/services/toast.service';
@@ -41,6 +57,8 @@ import { UserRole } from '../../core/models/user.model';
     SelectModule,
     SkeletonModule,
     InputNumberModule,
+    DatePickerModule,
+    DividerModule,
     OrganizationSelector,
     EventSelector,
   ],
@@ -57,20 +75,22 @@ export class ParticipantForm implements OnInit {
   };
   // Event emitter for successful form submission (used when not in DynamicDialog mode)
   @Output() formSubmitSuccess = new EventEmitter<Participant>();
+  // Emits whenever the submit-disabled state may have changed so the parent dialog can disable its button.
+  @Output() submitDisabledChange = new EventEmitter<boolean>();
   isDialogMode = signal(false);
   // Form data as plain object for ngModel binding
   participant = {
     chipNumber: '',
     bibNumber: '',
     fullName: '',
-    raceId: '',
+    raceId: null as number | null,
     raceName: '',
-    categoryId: '',
+    categoryId: null as number | null,
     categoryName: '',
     gender: '',
     phoneNumber: '',
     email: '',
-    dateOfBirth: '',
+    dateOfBirth: null as Date | null,
     age: null as number | null,
     country: '',
     city: '',
@@ -87,12 +107,26 @@ export class ParticipantForm implements OnInit {
   // Organization/Event selection for route mode
   selectedOrganizationId = signal<number | undefined>(undefined);
   selectedEventId = signal<number | undefined>(undefined);
+  // Race / Category dropdown state
+  races = signal<Race[]>([]);
+  categories = signal<Category[]>([]);
+  isLoadingRaces = signal(false);
+  isLoadingCategories = signal(false);
+  // Most fields require a known event context (route-mode picks via selector, dialog-mode passes it in).
+  inputsDisabled = computed(() => {
+    const eventCtx = this.isDialogMode() ? this.eventId() : this.selectedEventId();
+    return !eventCtx;
+  });
   // Gender options
   genderOptions = GENDER_OPTIONS.filter((opt) => opt.value !== ''); // Remove "All Genders" option
+  // Upper bound for DOB picker — no future birthdays.
+  readonly today = new Date();
   // Form input size (controlled centrally via constant)
   readonly inputSize = FORM_INPUT_SIZE;
   shouldShowError = shouldShowError;
   private participantService = inject(ParticipantService);
+  private raceService = inject(RaceService);
+  private categoryService = inject(CategoryService);
   private authService = inject(AuthService);
   private router = inject(Router);
   private route = inject(ActivatedRoute);
@@ -101,6 +135,17 @@ export class ParticipantForm implements OnInit {
   private errorHandler = inject(ErrorHandlerService);
   // Optional injection for dialog mode (DynamicDialog)
   private injectedDialogConfig = inject(DynamicDialogConfig, { optional: true });
+
+  constructor() {
+    // Re-emit submit-disabled whenever any tracked signal changes (isSubmitting flip, event/dialog ctx changes).
+    effect(() => {
+      this.isSubmitting();
+      this.eventId();
+      this.selectedEventId();
+      this.isDialogMode();
+      this.notifySubmitState();
+    });
+  }
 
   ngOnInit(): void {
     // Check if opened in dialog mode (either via Input or DynamicDialog injection)
@@ -112,6 +157,7 @@ export class ParticipantForm implements OnInit {
       // In dialog mode, eventId is always provided
       if (dialogData.eventId) {
         this.eventId.set(dialogData.eventId);
+        this.loadRaces(dialogData.eventId);
       }
 
       if (dialogData.isEditMode && dialogData.bibNumber) {
@@ -134,6 +180,7 @@ export class ParticipantForm implements OnInit {
           this.eventId.set(id);
           this.bibNumber.set(bibNumberParam);
           this.selectedEventId.set(id);
+          this.loadRaces(id);
           this.loadParticipantData(id, bibNumberParam);
         } else {
           // Invalid ID, redirect to create mode
@@ -160,10 +207,91 @@ export class ParticipantForm implements OnInit {
   onOrganizationChange(organizationId: number | undefined): void {
     this.selectedOrganizationId.set(organizationId);
     this.selectedEventId.set(undefined);
+    this.resetRaceAndCategory();
+    this.races.set([]);
+    this.notifySubmitState();
   }
 
   onEventChange(eventId: number | undefined): void {
     this.selectedEventId.set(eventId);
+    this.resetRaceAndCategory();
+    if (eventId) {
+      this.loadRaces(eventId);
+    } else {
+      this.races.set([]);
+    }
+    this.notifySubmitState();
+  }
+
+  onRaceChange(): void {
+    const raceId = this.participant.raceId;
+    // Reset category whenever race changes
+    this.participant.categoryId = null;
+    this.participant.categoryName = '';
+    this.categories.set([]);
+
+    if (raceId === null || raceId === undefined) {
+      this.participant.raceName = '';
+      this.notifySubmitState();
+      return;
+    }
+
+    const race = this.races().find((r) => r.id === Number(raceId));
+    this.participant.raceName = race?.raceName ?? '';
+
+    const targetEventId = this.isDialogMode() ? this.eventId() : this.selectedEventId();
+    if (targetEventId && race) {
+      this.loadCategories(targetEventId, race.id);
+    }
+    this.notifySubmitState();
+  }
+
+  onCategoryChange(): void {
+    const categoryId = this.participant.categoryId;
+    if (categoryId === null || categoryId === undefined) {
+      this.participant.categoryName = '';
+      this.notifySubmitState();
+      return;
+    }
+    const category = this.categories().find((c) => c.id === Number(categoryId));
+    this.participant.categoryName = category?.categoryName ?? '';
+    this.notifySubmitState();
+  }
+
+  private resetRaceAndCategory(): void {
+    this.participant.raceId = null;
+    this.participant.raceName = '';
+    this.participant.categoryId = null;
+    this.participant.categoryName = '';
+    this.categories.set([]);
+  }
+
+  private loadRaces(eventId: number): void {
+    this.isLoadingRaces.set(true);
+    this.raceService.getRacesByEventId(eventId).subscribe({
+      next: (races) => {
+        this.races.set(races);
+        this.isLoadingRaces.set(false);
+      },
+      error: (error) => {
+        this.isLoadingRaces.set(false);
+        this.errorHandler.showError(error, 'Failed to load races');
+      },
+    });
+  }
+
+  private loadCategories(eventId: number, raceId: number): void {
+    this.isLoadingCategories.set(true);
+    this.categoryService.getCategoriesByRaceId(eventId, raceId).subscribe({
+      next: (categories) => {
+        this.categories.set(categories);
+        this.isLoadingCategories.set(false);
+      },
+      error: (error) => {
+        this.isLoadingCategories.set(false);
+        this.errorHandler.showError(error, 'Failed to load categories');
+      },
+    });
   }
 
   showOrganizationSelector(): boolean {
@@ -211,46 +339,41 @@ export class ParticipantForm implements OnInit {
     }
   }
 
+  // Parameterless so the route-mode button can bind directly and the parent dialog can read it via output.
+  isSubmitDisabled(): boolean {
+    if (this.isSubmitting()) return true;
+
+    const m = this.participant;
+    if (!m.chipNumber?.trim()) return true;
+    if (!m.bibNumber?.trim()) return true;
+    if (!m.fullName?.trim()) return true;
+    if (!m.raceId || !m.raceName) return true;
+    if (!m.categoryId || !m.categoryName) return true;
+    if (!m.gender) return true;
+    // Mirrors Angular's `email` directive — only validate when a value is present.
+    if (m.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(m.email)) return true;
+    if (!m.phoneNumber && !m.email) return true;
+    if (!m.dateOfBirth && !m.age) return true;
+
+    const eventCtx = this.isDialogMode() ? this.eventId() : this.selectedEventId();
+    if (!eventCtx) return true;
+
+    return false;
+  }
+
+  // Called from template events whenever the participant model may have changed.
+  notifySubmitState(): void {
+    this.submitDisabledChange.emit(this.isSubmitDisabled());
+  }
+
   onSubmit(form: NgForm): void {
-    if (form.invalid) {
+    // Submit button is gated by isSubmitDisabled(); these checks are defensive only.
+    if (this.isSubmitDisabled()) {
       return;
     }
 
     const model = this.participant;
-
-    // Validate required fields
-    if (
-      !model.chipNumber ||
-      !model.bibNumber ||
-      !model.fullName ||
-      !model.raceId ||
-      !model.raceName ||
-      !model.categoryId ||
-      !model.categoryName ||
-      !model.gender
-    ) {
-      this.toast.warn('Please fill in all required fields', 'Validation Error');
-      return;
-    }
-
-    // Validate conditional requirements
-    if (!model.phoneNumber && !model.email) {
-      this.toast.warn('Either phone number or email must be provided', 'Validation Error');
-      return;
-    }
-
-    if (!model.dateOfBirth && !model.age) {
-      this.toast.warn('Either date of birth or age must be provided', 'Validation Error');
-      return;
-    }
-
-    // Validate event selection for route mode
-    const targetEventId = this.isDialogMode() ? this.eventId() : this.selectedEventId();
-
-    if (!targetEventId) {
-      this.toast.error('Event is required. Please select an event.');
-      return;
-    }
+    const targetEventId = (this.isDialogMode() ? this.eventId() : this.selectedEventId())!;
 
     this.isSubmitting.set(true);
 
@@ -261,13 +384,13 @@ export class ParticipantForm implements OnInit {
         fullName: model.fullName,
         email: model.email || undefined,
         phoneNumber: model.phoneNumber || undefined,
-        dateOfBirth: model.dateOfBirth || undefined,
+        dateOfBirth: this.formatDateForWire(model.dateOfBirth),
         age: model.age || undefined,
         gender: model.gender,
         country: model.country || undefined,
         city: model.city || undefined,
-        raceId: model.raceId,
-        categoryId: model.categoryId,
+        raceId: String(model.raceId),
+        categoryId: String(model.categoryId),
         emergencyContactName: model.emergencyContactName || undefined,
         emergencyContactPhone: model.emergencyContactPhone || undefined,
         notes: model.notes || undefined,
@@ -316,7 +439,7 @@ export class ParticipantForm implements OnInit {
         gender: model.gender,
         phoneNumber: model.phoneNumber || undefined,
         email: model.email || undefined,
-        dateOfBirth: model.dateOfBirth || undefined,
+        dateOfBirth: this.formatDateForWire(model.dateOfBirth),
         age: model.age || undefined,
         country: model.country || undefined,
         city: model.city || undefined,
@@ -349,14 +472,14 @@ export class ParticipantForm implements OnInit {
                 chipNumber: '',
                 bibNumber: '',
                 fullName: '',
-                raceId: '',
+                raceId: null,
                 raceName: '',
-                categoryId: '',
+                categoryId: null,
                 categoryName: '',
                 gender: '',
                 phoneNumber: '',
                 email: '',
-                dateOfBirth: '',
+                dateOfBirth: null,
                 age: null,
                 country: '',
                 city: '',
@@ -364,6 +487,7 @@ export class ParticipantForm implements OnInit {
                 emergencyContactPhone: '',
                 notes: '',
               };
+              this.categories.set([]);
             }, 1500);
           }
         },
@@ -415,18 +539,21 @@ export class ParticipantForm implements OnInit {
   }
 
   private populateFormFromParticipant(participantData: Participant): void {
+    const raceIdNum = participantData.raceId ? Number(participantData.raceId) : null;
+    const categoryIdNum = participantData.categoryId ? Number(participantData.categoryId) : null;
+
     this.participant = {
       chipNumber: participantData.chipNumber || '',
       bibNumber: participantData.bibNumber || '',
       fullName: participantData.fullName || '',
-      raceId: participantData.raceId || '',
+      raceId: raceIdNum,
       raceName: participantData.raceName || '',
-      categoryId: participantData.categoryId || '',
+      categoryId: categoryIdNum,
       categoryName: participantData.categoryName || '',
       gender: participantData.gender || '',
       phoneNumber: participantData.phoneNumber || '',
       email: participantData.email || '',
-      dateOfBirth: participantData.dateOfBirth || '',
+      dateOfBirth: this.parseDateFromWire(participantData.dateOfBirth),
       age: participantData.age || null,
       country: participantData.country || '',
       city: participantData.city || '',
@@ -434,5 +561,35 @@ export class ParticipantForm implements OnInit {
       emergencyContactPhone: participantData.emergencyContactPhone || '',
       notes: participantData.notes || '',
     };
+
+    // Load categories for the participant's race so the category dropdown can render
+    const targetEventId = this.isDialogMode() ? this.eventId() : this.selectedEventId();
+    if (targetEventId && raceIdNum) {
+      this.loadCategories(targetEventId, raceIdNum);
+    }
+    this.notifySubmitState();
+  }
+
+  // Wire format stays "dd-MM-yyyy" (legacy contract); the picker only changes display to "10-Jan-1994".
+  private formatDateForWire(date: Date | null): string | undefined {
+    if (!date) return undefined;
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+    return `${day}-${month}-${year}`;
+  }
+
+  // Accept both legacy "dd-MM-yyyy" and ISO "yyyy-MM-dd" so old and new backend rows both load.
+  private parseDateFromWire(value: string | undefined): Date | null {
+    if (!value) return null;
+    const iso = /^(\d{4})-(\d{2})-(\d{2})/.exec(value);
+    if (iso) {
+      return new Date(Number(iso[1]), Number(iso[2]) - 1, Number(iso[3]));
+    }
+    const dmy = /^(\d{2})-(\d{2})-(\d{4})/.exec(value);
+    if (dmy) {
+      return new Date(Number(dmy[3]), Number(dmy[2]) - 1, Number(dmy[1]));
+    }
+    return null;
   }
 }

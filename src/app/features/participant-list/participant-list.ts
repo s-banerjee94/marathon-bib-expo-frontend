@@ -99,6 +99,8 @@ export class ParticipantList implements OnInit {
     bibNumber?: string;
     isEditMode: boolean;
   } | null>(null);
+  // Mirrors the form's isSubmitDisabled() so the dialog footer button can disable until validation passes.
+  formSubmitDisabled = signal<boolean>(true);
   // Export dialog state
   showExportDialog = signal(false);
   isExporting = signal(false);
@@ -272,10 +274,15 @@ export class ParticipantList implements OnInit {
     this.showViewDialog.set(true);
   }
 
+  onFormSubmitDisabledChange(disabled: boolean): void {
+    this.formSubmitDisabled.set(disabled);
+  }
+
   // Create/Edit form dialog
   openCreateDialog(): void {
     const eventId = this.selectedEventId();
     if (!eventId) return;
+    this.formSubmitDisabled.set(true);
 
     this.formDialogHeader.set('Create Participant');
     this.formDialogData.set({ eventId, isEditMode: false });
@@ -285,6 +292,7 @@ export class ParticipantList implements OnInit {
   openEditDialog(participant: Participant): void {
     const eventId = this.selectedEventId();
     if (!eventId) return;
+    this.formSubmitDisabled.set(true);
 
     this.formDialogHeader.set('Edit Participant');
     this.formDialogData.set({ eventId, bibNumber: participant.bibNumber, isEditMode: true });
