@@ -153,7 +153,7 @@ export class OrganizerDashboard implements OnInit {
   }
 
   goToCreateEvent(): void {
-    this.router.navigate(['/event-form']);
+    this.router.navigate(['/events/new']);
   }
 
   goToUsers(): void {

@@ -43,6 +43,7 @@ import { UserRole } from '../../core/models/user.model';
 import { shouldShowError } from '../../shared/utils/form.utils';
 import { FORM_INPUT_SIZE } from '../../shared/constants/form.constants';
 import { OrganizationSelector } from '../../components/organization-selector/organization-selector';
+import { EventListBus } from '../events/event-list-bus.service';
 import {
   COUNTRY_OPTIONS,
   CountryOption,
@@ -124,6 +125,7 @@ export class EventForm implements OnInit {
   private location = inject(Location);
   private toast = inject(ToastService);
   private errorHandler = inject(ErrorHandlerService);
+  private eventListBus = inject(EventListBus);
 
   ngOnInit(): void {
     // Check if opened in dialog mode
@@ -143,11 +145,17 @@ export class EventForm implements OnInit {
       }
     } else {
       // Route mode - check for ID in URL params
-      const id = this.route.snapshot.paramMap.get('id');
-      if (id) {
-        this.isEditMode.set(true);
-        this.eventId.set(Number(id));
-        this.loadEvent(Number(id));
+      const idParam = this.route.snapshot.paramMap.get('id');
+      if (idParam) {
+        const id = parseInt(idParam, 10);
+        if (!isNaN(id)) {
+          this.isEditMode.set(true);
+          this.eventId.set(id);
+          this.loadEvent(id);
+        } else {
+          // Invalid ID, redirect to create mode
+          this.router.navigate(['/events/new']);
+        }
       }
     }
 
@@ -226,6 +234,18 @@ export class EventForm implements OnInit {
     }
   }
 
+  goBack(): void {
+    this.location.back();
+  }
+
+  private dismiss(): void {
+    if (this.isDialogMode() && this.dialogRef) {
+      this.dialogRef.close();
+    } else {
+      this.router.navigate(['/events']);
+    }
+  }
+
   /**
    * Get page title based on mode
    */
@@ -254,9 +274,9 @@ export class EventForm implements OnInit {
         this.isLoading.set(false);
       },
       error: (error) => {
-        this.errorHandler.showError(error, 'Failed to load event');
+        this.errorHandler.showError(error, 'Error');
         this.isLoading.set(false);
-        this.handleCancel();
+        this.dismiss();
       },
     });
   }
@@ -331,17 +351,18 @@ export class EventForm implements OnInit {
     this.eventService.createEvent(this.buildCreateRequest()).subscribe({
       next: (createdEvent) => {
         this.isSubmitting.set(false);
+        this.eventListBus.publish({ action: 'created', event: createdEvent });
 
         if (this.isDialogMode() && this.dialogRef) {
           const successMessage = this.dialogConfig?.data?.successMessage;
           this.dialogRef.close({ event: createdEvent, message: successMessage });
         } else {
           this.toast.success('Event created successfully');
-          void this.router.navigate(['/events']);
+          setTimeout(() => this.location.back(), 1500);
         }
       },
       error: (error) => {
-        this.errorHandler.showError(error, 'Failed to create event');
+        this.errorHandler.showError(error, 'Error');
         this.isSubmitting.set(false);
       },
     });
@@ -383,17 +404,18 @@ export class EventForm implements OnInit {
     this.eventService.updateEvent(this.eventId()!, updateRequest).subscribe({
       next: (updatedEvent) => {
         this.isSubmitting.set(false);
+        this.eventListBus.publish({ action: 'updated', event: updatedEvent });
 
         if (this.isDialogMode() && this.dialogRef) {
           const successMessage = this.dialogConfig?.data?.successMessage;
           this.dialogRef.close({ event: updatedEvent, message: successMessage });
         } else {
           this.toast.success('Event updated successfully');
-          void this.router.navigate(['/events']);
+          setTimeout(() => this.location.back(), 1500);
         }
       },
       error: (error) => {
-        this.errorHandler.showError(error, 'Failed to update event');
+        this.errorHandler.showError(error, 'Error');
         this.isSubmitting.set(false);
       },
     });

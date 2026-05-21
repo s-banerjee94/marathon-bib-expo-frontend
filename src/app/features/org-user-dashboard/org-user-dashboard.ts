@@ -252,7 +252,7 @@ export class OrgUserDashboard implements OnInit {
   }
 
   goToCreateEvent(): void {
-    this.router.navigate(['/event-form']);
+    this.router.navigate(['/events/new']);
   }
 
   goToParticipants(): void {

@@ -28,32 +28,7 @@ export const routes: Routes = [
   },
   {
     path: 'events',
-    loadComponent: () => import('./features/event-list/event-list').then((m) => m.EventList),
-    canActivate: [
-      roleGuard([UserRole.ROOT, UserRole.ADMIN, UserRole.ORGANIZER_ADMIN, UserRole.ORGANIZER_USER]),
-    ],
-  },
-  {
-    path: 'event-form',
-    loadComponent: () => import('./features/event-form/event-form').then((m) => m.EventForm),
-    canActivate: [
-      roleGuard([UserRole.ROOT, UserRole.ADMIN, UserRole.ORGANIZER_ADMIN, UserRole.ORGANIZER_USER]),
-    ],
-  },
-  {
-    path: 'event-form/:id',
-    loadComponent: () => import('./features/event-form/event-form').then((m) => m.EventForm),
-    canActivate: [
-      roleGuard([UserRole.ROOT, UserRole.ADMIN, UserRole.ORGANIZER_ADMIN, UserRole.ORGANIZER_USER]),
-    ],
-  },
-  {
-    path: 'events/:id/details',
-    loadComponent: () =>
-      import('./features/event-details/event-details/event-details').then((m) => m.EventDetails),
-    canActivate: [
-      roleGuard([UserRole.ROOT, UserRole.ADMIN, UserRole.ORGANIZER_ADMIN, UserRole.ORGANIZER_USER]),
-    ],
+    loadChildren: () => import('./features/events/events.routes').then((m) => m.EVENTS_ROUTES),
   },
   {
     path: 'participants',
