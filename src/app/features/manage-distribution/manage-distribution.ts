@@ -8,10 +8,20 @@ import {
   signal,
   ViewChild,
 } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup } from '@angular/forms';
-import { ActivatedRoute, ParamMap, Params, Router } from '@angular/router';
+import {
+  ActivatedRoute,
+  NavigationEnd,
+  ParamMap,
+  Params,
+  Router,
+  RouterLink,
+  RouterLinkActive,
+  RouterOutlet,
+} from '@angular/router';
+import { filter, map, startWith } from 'rxjs/operators';
 import { CardModule } from 'primeng/card';
 import { TabsModule } from 'primeng/tabs';
 import { ButtonModule } from 'primeng/button';
@@ -30,10 +40,7 @@ import {
 import { Participant } from '../../core/models/participant.model';
 import { OrganizationSelector } from '../../components/organization-selector/organization-selector';
 import { EventSelector } from '../../components/event-selector/event-selector';
-import { BibLookupTab } from './components/bib-lookup-tab/bib-lookup-tab';
-import { PendingBibsTab } from './components/pending-bibs-tab/pending-bibs-tab';
-import { PendingGoodiesTab } from './components/pending-goodies-tab/pending-goodies-tab';
-import { ActivityLogsTab } from './components/activity-logs-tab/activity-logs-tab';
+import { DistributionDialogState } from './distribution-dialog-state.service';
 
 /** Minimal shape shared by Participant and ParticipantDistributionResponse for dialog usage */
 type DistributionTarget = Participant | ParticipantDistributionResponse;
@@ -51,23 +58,18 @@ type DistributionTarget = Participant | ParticipantDistributionResponse;
     InputTextModule,
     DialogModule,
     ConfirmDialogModule,
+    RouterOutlet,
+    RouterLink,
+    RouterLinkActive,
     OrganizationSelector,
     EventSelector,
-    BibLookupTab,
-    PendingBibsTab,
-    PendingGoodiesTab,
-    ActivityLogsTab,
   ],
-  providers: [ConfirmationService],
+  providers: [ConfirmationService, DistributionDialogState],
   templateUrl: './manage-distribution.html',
   styleUrl: './manage-distribution.css',
 })
 export class ManageDistribution implements OnInit {
   @ViewChild(EventSelector) eventSelector?: EventSelector;
-  @ViewChild(BibLookupTab) bibLookupTab?: BibLookupTab;
-  @ViewChild(PendingBibsTab) pendingBibsTab?: PendingBibsTab;
-  @ViewChild(PendingGoodiesTab) pendingGoodiesTab?: PendingGoodiesTab;
-  @ViewChild(ActivityLogsTab) activityLogsTab?: ActivityLogsTab;
 
   private authService = inject(AuthService);
   private errorHandler = inject(ErrorHandlerService);
@@ -77,12 +79,30 @@ export class ManageDistribution implements OnInit {
   private router = inject(Router);
   private route = inject(ActivatedRoute);
   private destroyRef = inject(DestroyRef);
+  private dialogState = inject(DistributionDialogState);
 
   // Selection
   selectedOrganizationId = signal<number | undefined>(undefined);
   selectedEventId = signal<number | undefined>(undefined);
   isRestrictedUser = signal(false);
-  activeTab = signal<string>('lookup');
+
+  // Active tab derived from router state — reads from deepest child route
+  activeTab = toSignal(
+    this.router.events.pipe(
+      filter((e): e is NavigationEnd => e instanceof NavigationEnd),
+      startWith(null),
+      map(() => this.getDeepestChildPath() ?? 'lookup'),
+    ),
+    { initialValue: this.route.snapshot.firstChild?.firstChild?.routeConfig?.path ?? 'lookup' },
+  );
+
+  private getDeepestChildPath(): string | undefined {
+    let snapshot = this.route.snapshot.firstChild;
+    while (snapshot?.firstChild) {
+      snapshot = snapshot.firstChild;
+    }
+    return snapshot?.routeConfig?.path;
+  }
 
   // Role permissions
   canUndoBib = computed(() =>
@@ -118,11 +138,19 @@ export class ManageDistribution implements OnInit {
     ]);
     this.isRestrictedUser.set(restricted);
 
-    // URL is the source of truth for org/event filters. queryParamMap emits synchronously
-    // on subscribe, which seeds initial state (including bookmarked deep-links).
+    // URL is the source of truth: organizationId comes from queryParam,
+    // eventId comes from either queryParam or the child path :eventId.
     this.route.queryParamMap
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((params) => this.applyUrlToState(params));
+
+    // Also react to navigation so eventId-in-path stays in sync with state.
+    this.router.events
+      .pipe(
+        filter((e): e is NavigationEnd => e instanceof NavigationEnd),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe(() => this.applyUrlToState(this.route.snapshot.queryParamMap));
 
     // If a restricted user landed without URL filters, seed the URL with their org so links stay shareable.
     if (restricted && !this.route.snapshot.queryParamMap.get('organizationId')) {
@@ -135,25 +163,23 @@ export class ManageDistribution implements OnInit {
 
   private applyUrlToState(params: ParamMap): void {
     const orgIdParam = params.get('organizationId');
-    const eventIdParam = params.get('eventId');
+    const eventIdQueryParam = params.get('eventId');
+    const eventIdPathParam = this.route.snapshot.firstChild?.paramMap.get('eventId');
 
     const orgId =
       orgIdParam && Number.isFinite(Number(orgIdParam)) ? Number(orgIdParam) : undefined;
+    // Path eventId wins over queryParam — it's what the router-outlet's tab is rendering
+    const eventIdSource = eventIdPathParam ?? eventIdQueryParam;
     const eventId =
-      eventIdParam && Number.isFinite(Number(eventIdParam)) ? Number(eventIdParam) : undefined;
+      eventIdSource && Number.isFinite(Number(eventIdSource)) ? Number(eventIdSource) : undefined;
 
     const prevOrgId = this.selectedOrganizationId();
-    const prevEventId = this.selectedEventId();
 
     this.selectedOrganizationId.set(orgId);
     this.selectedEventId.set(eventId);
 
     if (orgId !== prevOrgId) {
       this.eventSelector?.reset();
-    }
-
-    if (eventId && eventId !== prevEventId) {
-      this.activeTab.set('lookup');
     }
   }
 
@@ -167,21 +193,33 @@ export class ManageDistribution implements OnInit {
   }
 
   onOrganizationChange(organizationId: number | undefined): void {
-    this.pushStateToUrl({
-      organizationId: organizationId != null ? String(organizationId) : null,
-      eventId: null,
+    // Navigate back to base /distribution path (off the event sub-route) and reset event selection
+    this.router.navigate(['/distribution'], {
+      queryParams: {
+        organizationId: organizationId != null ? String(organizationId) : null,
+        eventId: null,
+      },
+      queryParamsHandling: 'merge',
+      replaceUrl: true,
     });
   }
 
   onEventChange(eventId: number | undefined): void {
-    this.pushStateToUrl({
-      eventId: eventId != null ? String(eventId) : null,
-    });
-  }
-
-  onTabChange(value: string | number | undefined): void {
-    if (value == null) return;
-    this.activeTab.set(String(value));
+    if (eventId != null) {
+      // Navigate to the lookup tab for the new event, preserving queryParams (and updating eventId)
+      this.router.navigate(['/distribution/event', eventId, 'lookup'], {
+        queryParams: { eventId: String(eventId) },
+        queryParamsHandling: 'merge',
+        replaceUrl: true,
+      });
+    } else {
+      // Cleared event: go back to /distribution with no eventId
+      this.router.navigate(['/distribution'], {
+        queryParams: { eventId: null },
+        queryParamsHandling: 'merge',
+        replaceUrl: true,
+      });
+    }
   }
 
   // Collect BIB dialog
@@ -226,8 +264,7 @@ export class ManageDistribution implements OnInit {
         next: () => {
           this.collectBibLoading.set(false);
           this.collectBibVisible.set(false);
-          this.bibLookupTab?.reload();
-          this.pendingBibsTab?.reload();
+          this.dialogState.triggerReload();
         },
         error: (error) => {
           this.collectBibLoading.set(false);
@@ -273,8 +310,7 @@ export class ManageDistribution implements OnInit {
         next: () => {
           this.distributeGoodiesLoading.set(false);
           this.distributeGoodiesVisible.set(false);
-          this.bibLookupTab?.reload();
-          this.pendingGoodiesTab?.reload();
+          this.dialogState.triggerReload();
         },
         error: (error) => {
           this.distributeGoodiesLoading.set(false);
@@ -295,7 +331,7 @@ export class ManageDistribution implements OnInit {
         const eventId = this.selectedEventId();
         if (!eventId) return;
         this.distributionService.undoBib(eventId, participant.bibNumber).subscribe({
-          next: () => this.bibLookupTab?.reload(),
+          next: () => this.dialogState.triggerReload(),
           error: (error) => this.errorHandler.showError(error, 'Failed to undo BIB collection'),
         });
       },

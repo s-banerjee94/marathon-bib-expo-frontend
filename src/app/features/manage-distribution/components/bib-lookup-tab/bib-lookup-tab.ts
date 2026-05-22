@@ -5,8 +5,8 @@ import {
   effect,
   inject,
   input,
-  output,
   signal,
+  untracked,
 } from '@angular/core';
 import { forkJoin } from 'rxjs';
 import { FormsModule } from '@angular/forms';
@@ -27,6 +27,8 @@ import { Race, Category } from '../../../../core/models/event.model';
 import { ParticipantService } from '../../../../core/services/participant.service';
 import { EventService } from '../../../../core/services/event.service';
 import { ErrorHandlerService } from '../../../../core/services/error-handler.service';
+import { AuthService } from '../../../../core/services/auth.service';
+import { UserRole } from '../../../../core/models/user.model';
 import { DefaultValuePipe } from '../../../../shared/pipes/default-value.pipe';
 import { LOOKUP_SEARCH_TYPES } from '../../../../shared/constants/participant-columns.constant';
 import {
@@ -34,9 +36,12 @@ import {
   FORM_INPUT_SIZE,
   PAGINATION_LIMIT,
 } from '../../../../shared/constants/form.constants';
+import { DistributionDialogState } from '../../distribution-dialog-state.service';
+import { ManageDistribution } from '../../manage-distribution';
 
 @Component({
   selector: 'app-bib-lookup-tab',
+  standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     FormsModule,
@@ -60,13 +65,20 @@ export class BibLookupTab {
   private participantService = inject(ParticipantService);
   private eventService = inject(EventService);
   private errorHandler = inject(ErrorHandlerService);
+  private authService = inject(AuthService);
+  private dialogState = inject(DistributionDialogState);
+  parent = inject(ManageDistribution);
 
-  eventId = input<number | undefined>(undefined);
-  canUndoBib = input(false);
+  eventId = input.required<number, string>({ transform: (v) => Number(v) });
 
-  collectBib = output<Participant>();
-  distributeGoodies = output<Participant>();
-  undoBib = output<Participant>();
+  canUndoBib = computed(() =>
+    this.authService.hasAnyRole([
+      UserRole.ROOT,
+      UserRole.ADMIN,
+      UserRole.ORGANIZER_ADMIN,
+      UserRole.ORGANIZER_USER,
+    ]),
+  );
 
   buttonSize = BUTTON_SIZE;
   inputSize = FORM_INPUT_SIZE;
@@ -102,16 +114,30 @@ export class BibLookupTab {
   });
 
   constructor() {
-    effect(() => {
-      const id = this.eventId();
-      this.resetState();
-      if (id) {
-        this.loadEventData(id);
-      } else {
-        this.races.set([]);
-        this.categories.set([]);
-      }
-    });
+    effect(
+      () => {
+        const id = this.eventId();
+        untracked(() => {
+          this.resetState();
+          if (id) {
+            this.loadEventData(id);
+          } else {
+            this.races.set([]);
+            this.categories.set([]);
+          }
+        });
+      },
+      { allowSignalWrites: true },
+    );
+
+    effect(
+      () => {
+        if (this.dialogState.reloadTrigger() > 0) {
+          untracked(() => this.reload());
+        }
+      },
+      { allowSignalWrites: true },
+    );
   }
 
   onSearchTypeChange(): void {

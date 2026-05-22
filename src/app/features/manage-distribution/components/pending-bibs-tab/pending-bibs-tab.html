@@ -137,7 +137,7 @@
           <td pFrozenColumn alignFrozen="right">
             <div class="flex gap-1">
               <p-button
-                (onClick)="collectBib.emit(participant)"
+                (onClick)="parent.openCollectBibDialog(participant)"
                 [rounded]="true"
                 [text]="true"
                 [size]="buttonSize"

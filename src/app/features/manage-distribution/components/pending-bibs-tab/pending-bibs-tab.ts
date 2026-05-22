@@ -2,13 +2,11 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  effect,
   inject,
-  Input,
-  OnChanges,
-  Output,
+  input,
   signal,
-  SimpleChanges,
-  EventEmitter,
+  untracked,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ButtonModule, ButtonSeverity } from 'primeng/button';
@@ -23,6 +21,8 @@ import { DistributionService } from '../../../../core/services/distribution.serv
 import { ErrorHandlerService } from '../../../../core/services/error-handler.service';
 import { DefaultValuePipe } from '../../../../shared/pipes/default-value.pipe';
 import { BUTTON_SIZE, PAGINATION_LIMIT } from '../../../../shared/constants/form.constants';
+import { DistributionDialogState } from '../../distribution-dialog-state.service';
+import { ManageDistribution } from '../../manage-distribution';
 
 @Component({
   selector: 'app-pending-bibs-tab',
@@ -41,13 +41,13 @@ import { BUTTON_SIZE, PAGINATION_LIMIT } from '../../../../shared/constants/form
   ],
   templateUrl: './pending-bibs-tab.html',
 })
-export class PendingBibsTab implements OnChanges {
+export class PendingBibsTab {
   private distributionService = inject(DistributionService);
   private errorHandler = inject(ErrorHandlerService);
+  private dialogState = inject(DistributionDialogState);
+  parent = inject(ManageDistribution);
 
-  @Input() eventId: number | undefined;
-
-  @Output() collectBib = new EventEmitter<ParticipantDistributionResponse>();
+  eventId = input.required<number, string>({ transform: (v) => Number(v) });
 
   buttonSize = BUTTON_SIZE;
   skeletonRows = Array(5).fill({});
@@ -66,10 +66,28 @@ export class PendingBibsTab implements OnChanges {
   isInitialLoading = computed(() => this.loading() && this.participants().length === 0);
   isLoadingMore = computed(() => this.loading() && this.participants().length > 0);
 
-  ngOnChanges(changes: SimpleChanges): void {
-    if (changes['eventId']) {
-      this.resetAndLoad();
-    }
+  constructor() {
+    effect(
+      () => {
+        const eid = this.eventId();
+        if (eid) {
+          untracked(() => this.resetAndLoad());
+        }
+      },
+      { allowSignalWrites: true },
+    );
+
+    effect(
+      () => {
+        // Skip the initial value (0) — only react to actual mutations from the parent.
+        // Wrap reload() in untracked() so the signals it reads (refreshing, eventId, …)
+        // don't add themselves as dependencies and cause a feedback loop.
+        if (this.dialogState.reloadTrigger() > 0) {
+          untracked(() => this.reload());
+        }
+      },
+      { allowSignalWrites: true },
+    );
   }
 
   /**
@@ -77,7 +95,7 @@ export class PendingBibsTab implements OnChanges {
    * Keeps existing rows visible while fetching — replaces data when done.
    */
   reload(): void {
-    const eventId = this.eventId;
+    const eventId = this.eventId();
     if (!eventId || this.refreshing()) return;
 
     const limit = Math.max(this.participants().length, PAGINATION_LIMIT);
@@ -113,12 +131,12 @@ export class PendingBibsTab implements OnChanges {
     this.hasMore.set(false);
     this.error.set(null);
     this.loaded.set(false);
-    if (this.eventId) this.doLoad();
+    if (this.eventId()) this.doLoad();
   }
 
   /** Used for initial load and load-more (append mode) */
   private doLoad(limit = PAGINATION_LIMIT): void {
-    const eventId = this.eventId;
+    const eventId = this.eventId();
     if (!eventId) return;
 
     this.loading.set(true);

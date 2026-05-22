@@ -209,7 +209,7 @@
               <div class="flex gap-1">
                 @if (!getBibStatus(participant)) {
                   <p-button
-                    (onClick)="collectBib.emit(participant)"
+                    (onClick)="parent.openCollectBibDialog(participant)"
                     [rounded]="true"
                     [text]="true"
                     [size]="buttonSize"
@@ -221,7 +221,7 @@
                 }
                 @if (getBibStatus(participant) && hasPendingGoodies(participant)) {
                   <p-button
-                    (onClick)="distributeGoodies.emit(participant)"
+                    (onClick)="parent.openDistributeGoodiesDialog(participant)"
                     [rounded]="true"
                     [text]="true"
                     [size]="buttonSize"
@@ -233,7 +233,7 @@
                 }
                 @if (getBibStatus(participant) && canUndoBib()) {
                   <p-button
-                    (onClick)="undoBib.emit(participant)"
+                    (onClick)="parent.confirmUndoBib(participant)"
                     [rounded]="true"
                     [text]="true"
                     [size]="buttonSize"

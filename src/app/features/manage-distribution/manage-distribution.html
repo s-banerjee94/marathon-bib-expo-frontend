@@ -55,61 +55,56 @@
     </p-card>
   }
 
-  <!-- Distribution Tabs -->
+  <!-- Distribution Tabs (routed via router-outlet) -->
   @if (selectedEventId()) {
-    <p-tabs [value]="activeTab()" (valueChange)="onTabChange($event)">
-      <p-tablist>
-        <p-tab value="lookup" class="flex items-center gap-2">
-          <i class="pi pi-search"></i> <span>BIB Lookup</span>
-        </p-tab>
-        <p-tab value="pending-bibs" class="flex items-center gap-2">
-          <i class="pi pi-id-card"></i> <span>Pending BIBs</span>
-        </p-tab>
-        <p-tab value="pending-goodies" class="flex items-center gap-2">
-          <i class="pi pi-gift"></i> <span>Pending Goodies</span>
-        </p-tab>
-        @if (canViewLogs()) {
-          <p-tab value="logs" class="flex items-center gap-2">
-            <i class="pi pi-list"></i> <span>Activity Logs</span>
+    <p-card>
+      <p-tabs [value]="activeTab()">
+        <p-tablist>
+          <p-tab
+            value="lookup"
+            [routerLink]="['/distribution/event', selectedEventId(), 'lookup']"
+            queryParamsHandling="preserve"
+            routerLinkActive
+          >
+            <i class="pi pi-search mr-2"></i>
+            BIB Lookup
           </p-tab>
-        }
-      </p-tablist>
+          <p-tab
+            value="pending-bibs"
+            [routerLink]="['/distribution/event', selectedEventId(), 'pending-bibs']"
+            queryParamsHandling="preserve"
+            routerLinkActive
+          >
+            <i class="pi pi-id-card mr-2"></i>
+            Pending BIBs
+          </p-tab>
+          <p-tab
+            value="pending-goodies"
+            [routerLink]="['/distribution/event', selectedEventId(), 'pending-goodies']"
+            queryParamsHandling="preserve"
+            routerLinkActive
+          >
+            <i class="pi pi-gift mr-2"></i>
+            Pending Goodies
+          </p-tab>
+          @if (canViewLogs()) {
+            <p-tab
+              value="logs"
+              [routerLink]="['/distribution/event', selectedEventId(), 'logs']"
+              queryParamsHandling="preserve"
+              routerLinkActive
+            >
+              <i class="pi pi-list mr-2"></i>
+              Activity Logs
+            </p-tab>
+          }
+        </p-tablist>
+      </p-tabs>
 
-      <p-tabpanels>
-        <p-tabpanel value="lookup">
-          <app-bib-lookup-tab
-            [eventId]="selectedEventId()"
-            [canUndoBib]="canUndoBib()"
-            (collectBib)="openCollectBibDialog($event)"
-            (distributeGoodies)="openDistributeGoodiesDialog($event)"
-            (undoBib)="confirmUndoBib($event)"
-          />
-        </p-tabpanel>
-
-        <p-tabpanel value="pending-bibs">
-          <app-pending-bibs-tab
-            [eventId]="selectedEventId()"
-            (collectBib)="openCollectBibDialog($event)"
-          />
-        </p-tabpanel>
-
-        <p-tabpanel value="pending-goodies">
-          <app-pending-goodies-tab
-            [eventId]="selectedEventId()"
-            (distributeGoodies)="openDistributeGoodiesDialog($event)"
-          />
-        </p-tabpanel>
-
-        @if (canViewLogs()) {
-          <p-tabpanel value="logs">
-            <app-activity-logs-tab
-              [eventId]="selectedEventId()"
-              [organizationId]="selectedOrganizationId()"
-            />
-          </p-tabpanel>
-        }
-      </p-tabpanels>
-    </p-tabs>
+      <div class="pt-4">
+        <router-outlet />
+      </div>
+    </p-card>
   }
 </div>
 

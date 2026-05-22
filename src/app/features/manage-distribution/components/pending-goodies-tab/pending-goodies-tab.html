@@ -110,7 +110,7 @@
           <td pFrozenColumn alignFrozen="right">
             <div class="flex gap-1">
               <p-button
-                (onClick)="distributeGoodies.emit(participant)"
+                (onClick)="parent.openDistributeGoodiesDialog(participant)"
                 [rounded]="true"
                 [text]="true"
                 [size]="buttonSize"

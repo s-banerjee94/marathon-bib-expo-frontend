@@ -2,11 +2,11 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  effect,
   inject,
-  Input,
-  OnChanges,
+  input,
   signal,
-  SimpleChanges,
+  untracked,
 } from '@angular/core';
 import { forkJoin } from 'rxjs';
 import { map } from 'rxjs/operators';
@@ -42,9 +42,11 @@ import {
   FORM_INPUT_SIZE,
   PAGINATION_LIMIT,
 } from '../../../../shared/constants/form.constants';
+import { DistributionDialogState } from '../../distribution-dialog-state.service';
 
 @Component({
   selector: 'app-activity-logs-tab',
+  standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     DatePipe,
@@ -65,14 +67,15 @@ import {
   ],
   templateUrl: './activity-logs-tab.html',
 })
-export class ActivityLogsTab implements OnChanges {
+export class ActivityLogsTab {
   private distributionService = inject(DistributionService);
   private userService = inject(UserService);
   private authService = inject(AuthService);
   private errorHandler = inject(ErrorHandlerService);
+  private dialogState = inject(DistributionDialogState);
 
-  @Input() eventId: number | undefined;
-  @Input() organizationId: number | undefined;
+  eventId = input.required<number, string>({ transform: (v) => Number(v) });
+  organizationId = input<number>();
 
   buttonSize = BUTTON_SIZE;
   inputSize = FORM_INPUT_SIZE;
@@ -125,17 +128,30 @@ export class ActivityLogsTab implements OnChanges {
     return option?.placeholder ?? 'Enter search value';
   });
 
-  ngOnChanges(changes: SimpleChanges): void {
-    if (changes['eventId']) {
-      this.resetAndLoad();
-    }
-    if (changes['eventId'] || changes['organizationId']) {
-      if (this.eventId) {
-        this.loadOrgUsers();
-      } else {
-        this.orgUsers.set([]);
-      }
-    }
+  constructor() {
+    effect(
+      () => {
+        const eid = this.eventId();
+        untracked(() => {
+          if (eid) {
+            this.resetAndLoad();
+            this.loadOrgUsers();
+          } else {
+            this.orgUsers.set([]);
+          }
+        });
+      },
+      { allowSignalWrites: true },
+    );
+
+    effect(
+      () => {
+        if (this.dialogState.reloadTrigger() > 0) {
+          untracked(() => this.reload());
+        }
+      },
+      { allowSignalWrites: true },
+    );
   }
 
   onSearchTypeChange(newType: LogSearchType): void {
@@ -147,7 +163,8 @@ export class ActivityLogsTab implements OnChanges {
   performSearch(): void {
     const isDropdown = this.isDropdownSearch();
     const value = isDropdown ? this.dropdownSelectedItem() : this.searchValue().trim();
-    if (!value || (!isDropdown && value.length < 2) || !this.eventId) return;
+    const eventId = this.eventId();
+    if (!value || (!isDropdown && value.length < 2) || !eventId) return;
 
     this.logs.set([]);
     this.lastEvaluatedKey.set(undefined);
@@ -166,7 +183,7 @@ export class ActivityLogsTab implements OnChanges {
     this.hasMore.set(false);
     this.error.set(null);
     this.loaded.set(false);
-    if (this.eventId) this.doFetch();
+    if (this.eventId()) this.doFetch();
   }
 
   loadMore(): void {
@@ -178,7 +195,7 @@ export class ActivityLogsTab implements OnChanges {
    * Keeps existing rows visible while fetching — replaces data when done.
    */
   reload(): void {
-    const eventId = this.eventId;
+    const eventId = this.eventId();
     if (!eventId || this.refreshing()) return;
 
     const limit = Math.max(this.logs().length, PAGINATION_LIMIT);
@@ -220,11 +237,11 @@ export class ActivityLogsTab implements OnChanges {
     this.searchValue.set('');
     this.dropdownSelectedItem.set('');
     this.selectedSearchType.set('BIB');
-    if (this.eventId) this.doFetch();
+    if (this.eventId()) this.doFetch();
   }
 
   private doFetch(limit = PAGINATION_LIMIT): void {
-    const eventId = this.eventId;
+    const eventId = this.eventId();
     if (!eventId) return;
 
     this.loading.set(true);
@@ -267,7 +284,11 @@ export class ActivityLogsTab implements OnChanges {
       ? forkJoin([
           this.userService.searchUsers({ role: UserRole.ROOT, size: 200, page: 0 }),
           this.userService.searchUsers({ role: UserRole.ADMIN, size: 200, page: 0 }),
-          this.userService.searchUsers({ organizationId: this.organizationId, size: 200, page: 0 }),
+          this.userService.searchUsers({
+            organizationId: this.organizationId(),
+            size: 200,
+            page: 0,
+          }),
         ]).pipe(
           map(([roots, admins, orgUsers]) => [
             ...roots.content,
