@@ -17,7 +17,6 @@
     <!-- Filter Section -->
     <p-card class="mb-6">
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4 p-2 md:p-4">
-        <!-- Organization Selector (only for ROOT/ADMIN) -->
         @if (!isOrganizerUser()) {
           <app-organization-selector
             (organizationIdChange)="onOrganizationChange($event)"
@@ -28,7 +27,6 @@
           ></app-organization-selector>
         }
 
-        <!-- Event Selector -->
         <app-event-selector
           (eventIdChange)="onEventChange($event)"
           [disabled]="!selectedOrganizationId()"
@@ -43,7 +41,7 @@
     </p-card>
 
     <!-- Empty State -->
-    @if (!canShowTable()) {
+    @if (!canShowTabs()) {
       <p-card class="text-center">
         <div class="p-8">
           <i class="pi pi-users text-6xl mb-4 block"></i>
@@ -59,51 +57,37 @@
       </p-card>
     }
 
-    <!-- Tabs Section -->
-    @if (canShowTable()) {
+    <!-- Participant Tabs (routed via router-outlet) -->
+    @if (canShowTabs()) {
       <p-card>
-        <p-tabs [(value)]="activeTab">
+        <p-tabs [value]="activeTab()">
           <p-tablist>
-            <p-tab value="manage">Imported Participants</p-tab>
-            <p-tab value="history">Import Errors</p-tab>
+            <p-tab
+              value="list"
+              [routerLink]="['/participants/event', selectedEventId(), 'list']"
+              queryParamsHandling="preserve"
+              routerLinkActive
+            >
+              <i class="pi pi-users mr-2"></i>
+              Imported Participants
+            </p-tab>
+            <p-tab
+              value="errors"
+              [routerLink]="['/participants/event', selectedEventId(), 'errors']"
+              queryParamsHandling="preserve"
+              routerLinkActive
+            >
+              <i class="pi pi-exclamation-triangle mr-2"></i>
+              Import Errors
+            </p-tab>
           </p-tablist>
-
-          <p-tabpanels>
-            <!-- Tab 1: Imported Participants -->
-            <p-tabpanel value="manage">
-              <app-participant-table-tab
-                (bulkDeleteParticipants)="bulkDeleteParticipants($event)"
-                (createClick)="openCreateDialog()"
-                (deleteParticipant)="deleteParticipant($event)"
-                (editParticipant)="openEditDialog($event)"
-                (exportClick)="openExportDialog()"
-                (importClick)="openImportDialog()"
-                (loadMore)="loadMore()"
-                (searchCleared)="clearSearch()"
-                (searchRequested)="performLookup($event)"
-                (viewParticipant)="openViewDialog($event)"
-                [allColumns]="allColumns"
-                [eventId]="selectedEventId()"
-                [hasMore]="hasMore()"
-                [isLoading]="isLoading()"
-                [isSearchMode]="isSearchMode()"
-                [participants]="participants()"
-                [storageKey]="'marathon_participant_table_columns'"
-                [totalCount]="totalCount()"
-              />
-            </p-tabpanel>
-
-            <!-- Tab 2: Latest Import Errors -->
-            <p-tabpanel value="history">
-              <app-import-history-tab
-                (loadMore)="loadMoreImportErrors()"
-                [errors]="importErrors()"
-                [hasMore]="hasMoreImportErrors()"
-                [isLoading]="isLoadingImportErrors()"
-              />
-            </p-tabpanel>
-          </p-tabpanels>
         </p-tabs>
+
+        <div class="pt-4">
+          @if (hasTabRoute()) {
+            <router-outlet />
+          }
+        </div>
       </p-card>
     }
   </div>

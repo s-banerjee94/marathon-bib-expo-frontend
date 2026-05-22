@@ -1,4 +1,14 @@
-import { Component, computed, effect, inject, input, output, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  effect,
+  inject,
+  input,
+  signal,
+  untracked,
+} from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { forkJoin } from 'rxjs';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -16,19 +26,39 @@ import { FloatLabelModule } from 'primeng/floatlabel';
 import { MessageModule } from 'primeng/message';
 import { PopoverModule } from 'primeng/popover';
 import { DividerModule } from 'primeng/divider';
-import { Participant, LookupSearchType } from '../../../../core/models/participant.model';
+import { ConfirmationService } from 'primeng/api';
+import { LookupSearchType, Participant } from '../../../../core/models/participant.model';
 import { Race, Category } from '../../../../core/models/event.model';
 import { EventService } from '../../../../core/services/event.service';
+import { ParticipantService } from '../../../../core/services/participant.service';
+import { ErrorHandlerService } from '../../../../core/services/error-handler.service';
+import { ToastService } from '../../../../core/services/toast.service';
+import { LocalStorageService } from '../../../../core/services/local-storage.service';
 import { DefaultValuePipe } from '../../../../shared/pipes/default-value.pipe';
 import { getGenderDisplay, getGenderSeverity } from '../../../../shared/utils/participant.utils';
-import { BUTTON_SIZE, FORM_INPUT_SIZE } from '../../../../shared/constants/form.constants';
-import { LOOKUP_SEARCH_TYPES } from '../../../../shared/constants/participant-columns.constant';
+import {
+  BUTTON_SIZE,
+  FORM_INPUT_SIZE,
+  PAGINATION_LIMIT,
+} from '../../../../shared/constants/form.constants';
+import {
+  BULK_DELETE_MAX_LIMIT,
+  LOOKUP_SEARCH_TYPES,
+  PARTICIPANT_COLUMNS,
+} from '../../../../shared/constants/participant-columns.constant';
+import { STORAGE_KEYS } from '../../../../shared/constants/storage-keys.constant';
 import { TableColumn } from '../../../../shared/models/table-config.model';
-import { LocalStorageService } from '../../../../core/services/local-storage.service';
+import {
+  ParticipantListBus,
+  ParticipantMutation,
+} from '../../../participants/participant-list-bus.service';
+import { ParticipantListState } from '../../participant-list-state.service';
+import { ParticipantList } from '../../participant-list';
 
 @Component({
   selector: 'app-participant-table-tab',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './participant-table-tab.html',
   imports: [
     CommonModule,
@@ -51,239 +81,173 @@ import { LocalStorageService } from '../../../../core/services/local-storage.ser
   ],
 })
 export class ParticipantTableTab {
+  private participantService = inject(ParticipantService);
   private eventService = inject(EventService);
+  private errorHandler = inject(ErrorHandlerService);
+  private toast = inject(ToastService);
   private storage = inject(LocalStorageService);
+  private confirmationService = inject(ConfirmationService);
+  private bus = inject(ParticipantListBus);
+  private listState = inject(ParticipantListState);
+  parent = inject(ParticipantList);
 
-  // Inputs
-  participants = input.required<Participant[]>();
-  totalCount = input<number>(0);
-  isLoading = input<boolean>(false);
-  hasMore = input<boolean>(true);
-  allColumns = input<TableColumn[]>([]);
-  isSearchMode = input<boolean>(false);
-  storageKey = input<string>(''); // localStorage key for column preferences
-  eventId = input<number | undefined>(undefined);
+  // Router-bound input — the parent route is `event/:eventId`.
+  eventId = input.required<number, string>({ transform: (v) => Number(v) });
 
-  // Outputs
-  loadMore = output<void>();
-  viewParticipant = output<Participant>();
-  editParticipant = output<Participant>();
-  deleteParticipant = output<Participant>();
-  bulkDeleteParticipants = output<Participant[]>();
-  importClick = output<void>();
-  exportClick = output<void>();
-  createClick = output<void>();
-  searchRequested = output<{ searchType: LookupSearchType; searchValue: string }>();
-  searchCleared = output<void>();
+  // Constants
+  buttonSize = BUTTON_SIZE;
+  inputSize = FORM_INPUT_SIZE;
+  allColumns: TableColumn[] = PARTICIPANT_COLUMNS;
+  lookupSearchTypes = LOOKUP_SEARCH_TYPES;
 
   getGenderDisplay = getGenderDisplay;
   getGenderSeverity = getGenderSeverity;
 
-  // Parse backend DOB string (dd-MM-yyyy or ISO yyyy-MM-dd) into a Date so Angular's date pipe can format it.
-  parseDob(value: string | undefined): Date | null {
-    if (!value) return null;
-    const iso = /^(\d{4})-(\d{2})-(\d{2})/.exec(value);
-    if (iso) return new Date(Number(iso[1]), Number(iso[2]) - 1, Number(iso[3]));
-    const dmy = /^(\d{2})-(\d{2})-(\d{4})/.exec(value);
-    if (dmy) return new Date(Number(dmy[3]), Number(dmy[2]) - 1, Number(dmy[1]));
-    return null;
-  }
+  // Data state
+  participants = signal<Participant[]>([]);
+  totalCount = signal<number>(0);
+  isLoading = signal(false);
+  hasMore = signal(true);
+  private lastEvaluatedKey?: string;
 
-  // Centralized sizing
-  buttonSize = BUTTON_SIZE;
-  inputSize = FORM_INPUT_SIZE;
-
-  // Lookup search configuration
-  lookupSearchTypes = LOOKUP_SEARCH_TYPES;
-  selectedSearchType = signal<LookupSearchType>('BIB');
+  // Search state
+  selectedSearchType = signal<LookupSearchType>('NAME');
   searchValue = signal<string>('');
   dropdownSelectedItem = signal<string>('');
+  isSearchMode = signal<boolean>(false);
 
-  // Race / Category dropdown data
+  // Race / Category dropdown data (for race/category search modes)
   races = signal<Race[]>([]);
   categories = signal<Category[]>([]);
   isRacesLoading = signal(false);
 
-  // Computed: true when current search type uses a dropdown instead of text input
   isDropdownSearch = computed(
     () => this.selectedSearchType() === 'RACE' || this.selectedSearchType() === 'CATEGORY',
   );
 
-  // Column selection state - using signal for reactive updates
-  selectedCols = signal<TableColumn[]>([]);
-
-  // Computed: get current search placeholder
   searchPlaceholder = computed(() => {
-    const searchType = this.selectedSearchType();
-    const option = this.lookupSearchTypes.find((t) => t.value === searchType);
+    const option = this.lookupSearchTypes.find((t) => t.value === this.selectedSearchType());
     return option?.placeholder || 'Enter search value';
   });
 
-  // Computed: visible columns including required columns
+  // Column selection state — persisted to localStorage
+  selectedCols = signal<TableColumn[]>([]);
+
   visibleCols = computed(() => {
     const selected = this.selectedCols();
-    const all = this.allColumns();
-    const required = all.filter((col) => col.required);
+    const required = this.allColumns.filter((col) => col.required);
     const selectedFields = new Set(selected.map((col) => col.field));
     const requiredFields = new Set(required.map((col) => col.field));
-
-    // Combine required and selected, preserving order from allColumns
-    const visible = all.filter(
+    return this.allColumns.filter(
       (col) => requiredFields.has(col.field) || selectedFields.has(col.field),
     );
-
-    return visible;
   });
 
-  // Computed: available columns for multiselect (with required columns disabled)
-  availableColumns = computed(() => {
-    return this.allColumns().map((col) => ({
-      ...col,
-      disabled: col.required, // Disable required columns so they can't be removed
-    }));
-  });
+  availableColumns = computed(() =>
+    this.allColumns.map((col) => ({ ...col, disabled: col.required })),
+  );
 
-  // Selection state (using regular variable for PrimeNG two-way binding)
+  // Selection (PrimeNG two-way binding needs a regular array)
   selectedParticipants: Participant[] = [];
 
   // Skeleton rows for initial loading state
   skeletonRows = Array(5).fill({});
 
-  // Computed: true when loading and no data yet (initial load)
   isInitialLoading = computed(() => this.isLoading() && this.participants().length === 0);
-
-  // Computed: true when loading but already have data (load more)
   isLoadingMore = computed(() => this.isLoading() && this.participants().length > 0);
 
   constructor() {
-    // Load races/categories when eventId changes
-    effect(() => {
-      const eventId = this.eventId();
-      if (eventId) {
-        this.loadEventData(eventId);
-      } else {
-        this.races.set([]);
-        this.categories.set([]);
-      }
-    });
+    // Initialize selected columns from localStorage (or all columns by default).
+    this.initializeSelectedColumns();
 
-    // Auto-initialize columns from localStorage or defaults
-    effect(() => {
-      const cols = this.allColumns();
-      const key = this.storageKey();
-
-      if (cols.length > 0 && this.selectedCols().length === 0) {
-        if (key) {
-          const savedFields = this.storage.getJSON<string[]>(key);
-          if (Array.isArray(savedFields)) {
-            const savedCols = cols.filter((col) => savedFields.includes(col.field) || col.required);
-            if (savedCols.length > 0) {
-              this.selectedCols.set(savedCols);
-              return;
-            }
+    // Effect 1: react to eventId changes — reset state and reload everything.
+    effect(
+      () => {
+        const id = this.eventId();
+        untracked(() => {
+          this.resetData();
+          if (id) {
+            this.loadEventData(id);
+            this.loadParticipants();
+            this.loadTotalCount();
+          } else {
+            this.races.set([]);
+            this.categories.set([]);
           }
+        });
+      },
+      { allowSignalWrites: true },
+    );
+
+    // Effect 2: react to cross-tab reload triggers (e.g., after import completion).
+    effect(
+      () => {
+        if (this.listState.reloadTrigger() > 0) {
+          untracked(() => this.reloadParticipants());
         }
-        // Default: select all columns
-        this.selectedCols.set([...cols]);
-      }
-    });
+      },
+      { allowSignalWrites: true },
+    );
+
+    // Apply data mutations published by the form (created/updated) without an extra HTTP fetch.
+    this.bus.mutations$
+      .pipe(takeUntilDestroyed())
+      .subscribe((mutation) => this.applyParticipantMutation(mutation));
   }
 
-  // Method: true when at least one participant is selected
-  hasSelection(): boolean {
-    return this.selectedParticipants.length > 0;
+  // ---------- Data loading ----------
+  private loadParticipants(append: boolean = false): void {
+    const eventId = this.eventId();
+    if (!eventId || this.isLoading()) return;
+
+    this.isLoading.set(true);
+
+    this.participantService
+      .getParticipants(eventId, PAGINATION_LIMIT, append ? this.lastEvaluatedKey : undefined)
+      .subscribe({
+        next: (response) => {
+          if (append) {
+            this.participants.update((current) => [...current, ...response.participants]);
+          } else {
+            this.participants.set(response.participants);
+          }
+          this.lastEvaluatedKey = response.lastEvaluatedKey;
+          this.hasMore.set(response.hasMore);
+          this.isLoading.set(false);
+        },
+        error: (error) => {
+          this.errorHandler.showError(error, 'Failed to load participants');
+          this.isLoading.set(false);
+        },
+      });
   }
 
-  isColumnVisible(field: string): boolean {
-    return this.visibleCols().some((col) => col.field === field);
-  }
-
-  onColumnSelectionChange(event: MultiSelectChangeEvent): void {
-    const newSelection = event.value as TableColumn[];
-
-    // Ensure required columns are always included
-    const required = this.allColumns().filter((col) => col.required);
-    const selectedFields = new Set(newSelection.map((col) => col.field));
-
-    // Add required columns if not already selected
-    const updatedSelection = [...newSelection];
-    for (const req of required) {
-      if (!selectedFields.has(req.field)) {
-        updatedSelection.push(req);
-      }
-    }
-
-    // Update the signal
-    this.selectedCols.set(updatedSelection);
-
-    // Auto-save via central LocalStorageService if key is provided
-    const key = this.storageKey();
-    if (key) {
-      this.storage.setJSON(
-        key,
-        updatedSelection.map((col) => col.field),
-      );
-    }
-  }
-
-  onLoadMore(): void {
-    this.loadMore.emit();
-  }
-
-  onView(participant: Participant): void {
-    this.viewParticipant.emit(participant);
-  }
-
-  onEdit(participant: Participant): void {
-    this.editParticipant.emit(participant);
-  }
-
-  onDelete(participant: Participant): void {
-    this.deleteParticipant.emit(participant);
-  }
-
-  onBulkDelete(): void {
-    if (this.selectedParticipants.length > 0) {
-      this.bulkDeleteParticipants.emit([...this.selectedParticipants]);
-    }
-  }
-
-  clearSelection(): void {
+  private reloadParticipants(): void {
+    this.participants.set([]);
+    this.hasMore.set(true);
+    this.lastEvaluatedKey = undefined;
     this.selectedParticipants = [];
+    this.loadParticipants();
+    this.loadTotalCount();
   }
 
-  onImport(): void {
-    this.importClick.emit();
-  }
+  private loadTotalCount(): void {
+    const eventId = this.eventId();
+    if (!eventId) return;
 
-  onExport(): void {
-    this.exportClick.emit();
-  }
-
-  onCreate(): void {
-    this.createClick.emit();
-  }
-
-  onSearchTypeChange(): void {
-    this.searchValue.set('');
-    this.dropdownSelectedItem.set('');
-  }
-
-  performSearch(): void {
-    const isDropdown = this.isDropdownSearch();
-    const value = isDropdown ? this.dropdownSelectedItem() : this.searchValue().trim();
-    if (!value || value.length < 2) return;
-    this.searchRequested.emit({
-      searchType: this.selectedSearchType(),
-      searchValue: value,
+    this.participantService.getParticipantCount(eventId).subscribe({
+      next: (response) => this.totalCount.set(response.count),
+      error: (error) => this.errorHandler.showError(error, 'Failed to load participant count'),
     });
   }
 
-  clearSearch(): void {
-    this.searchValue.set('');
-    this.dropdownSelectedItem.set('');
-    this.selectedSearchType.set('BIB');
-    this.searchCleared.emit();
+  private resetData(): void {
+    this.participants.set([]);
+    this.totalCount.set(0);
+    this.hasMore.set(true);
+    this.lastEvaluatedKey = undefined;
+    this.selectedParticipants = [];
+    this.resetSearch();
   }
 
   private loadEventData(eventId: number): void {
@@ -300,28 +264,257 @@ export class ParticipantTableTab {
           });
         }
       },
-      error: () => {
-        this.isRacesLoading.set(false);
+      error: () => this.isRacesLoading.set(false),
+    });
+  }
+
+  // ---------- Search ----------
+  onSearchTypeChange(): void {
+    this.searchValue.set('');
+    this.dropdownSelectedItem.set('');
+  }
+
+  performSearch(): void {
+    const eventId = this.eventId();
+    const isDropdown = this.isDropdownSearch();
+    const value = isDropdown ? this.dropdownSelectedItem() : this.searchValue().trim();
+    if (!eventId || !value || (!isDropdown && value.length < 2)) return;
+
+    this.isSearchMode.set(true);
+    this.participants.set([]);
+    this.hasMore.set(true);
+    this.lastEvaluatedKey = undefined;
+    this.isLoading.set(true);
+
+    this.participantService
+      .lookupParticipants({
+        eventId,
+        searchType: this.selectedSearchType(),
+        searchValue: value,
+        limit: PAGINATION_LIMIT,
+      })
+      .subscribe({
+        next: (response) => {
+          this.participants.set(response.participants);
+          this.lastEvaluatedKey = response.lastEvaluatedKey;
+          this.hasMore.set(response.hasMore);
+          this.isLoading.set(false);
+        },
+        error: (error) => {
+          this.errorHandler.showError(error, 'Failed to lookup participants');
+          this.isLoading.set(false);
+        },
+      });
+  }
+
+  clearSearch(): void {
+    this.resetSearch();
+    this.participants.set([]);
+    this.hasMore.set(true);
+    this.lastEvaluatedKey = undefined;
+    this.loadParticipants();
+  }
+
+  private resetSearch(): void {
+    this.searchValue.set('');
+    this.dropdownSelectedItem.set('');
+    this.selectedSearchType.set('NAME');
+    this.isSearchMode.set(false);
+  }
+
+  loadMore(): void {
+    if (!this.hasMore() || this.isLoading()) return;
+    if (this.isSearchMode()) {
+      this.loadMoreLookupResults();
+    } else {
+      this.loadParticipants(true);
+    }
+  }
+
+  private loadMoreLookupResults(): void {
+    const eventId = this.eventId();
+    const isDropdown = this.isDropdownSearch();
+    const value = isDropdown ? this.dropdownSelectedItem() : this.searchValue().trim();
+    if (!eventId || !value || !this.lastEvaluatedKey) return;
+
+    this.isLoading.set(true);
+    this.participantService
+      .lookupParticipants({
+        eventId,
+        searchType: this.selectedSearchType(),
+        searchValue: value,
+        limit: PAGINATION_LIMIT,
+        lastEvaluatedKey: this.lastEvaluatedKey,
+      })
+      .subscribe({
+        next: (response) => {
+          this.participants.update((current) => [...current, ...response.participants]);
+          this.lastEvaluatedKey = response.lastEvaluatedKey;
+          this.hasMore.set(response.hasMore);
+          this.isLoading.set(false);
+        },
+        error: (error) => {
+          this.errorHandler.showError(error, 'Failed to load more participants');
+          this.isLoading.set(false);
+        },
+      });
+  }
+
+  // ---------- Mutations from the form (via bus) ----------
+  private applyParticipantMutation(mutation: ParticipantMutation): void {
+    const current = this.participants();
+    if (mutation.action === 'created') {
+      this.participants.set([mutation.participant, ...current]);
+      this.totalCount.update((count) => count + 1);
+    } else {
+      this.participants.set(
+        current.map((p) =>
+          p.bibNumber === mutation.participant.bibNumber ? mutation.participant : p,
+        ),
+      );
+    }
+  }
+
+  // ---------- Delete (single + bulk) ----------
+  onDelete(participant: Participant): void {
+    this.confirmationService.confirm({
+      message: `Are you sure you want to delete participant ${participant.fullName} (BIB: ${participant.bibNumber})?`,
+      header: 'Confirm Delete',
+      icon: 'pi pi-exclamation-triangle',
+      acceptButtonProps: { severity: 'danger' },
+      rejectButtonProps: { severity: 'secondary', outlined: true },
+      accept: () => {
+        const eventId = this.eventId();
+        if (!eventId) return;
+
+        this.participantService.deleteParticipant(eventId, participant.bibNumber).subscribe({
+          next: () => {
+            this.toast.success('Participant deleted successfully', 'Success');
+            this.removeParticipantFromList(participant.bibNumber);
+            this.totalCount.update((count) => Math.max(0, count - 1));
+            this.selectedParticipants = [];
+          },
+          error: (error) => this.errorHandler.showError(error, 'Failed to delete participant'),
+        });
       },
     });
   }
 
-  // Goodies helper methods
-  getGoodiesCount(goodies: any): number {
+  onBulkDelete(): void {
+    if (this.selectedParticipants.length === 0) return;
+
+    const count = this.selectedParticipants.length;
+    if (count > BULK_DELETE_MAX_LIMIT) {
+      this.errorHandler.showError(
+        { message: `Maximum ${BULK_DELETE_MAX_LIMIT} participants can be deleted at once` },
+        'Too Many Participants',
+      );
+      return;
+    }
+
+    const targets = [...this.selectedParticipants];
+    this.confirmationService.confirm({
+      message: `Are you sure you want to delete ${count} participant(s)? This action cannot be undone.`,
+      header: 'Confirm Bulk Delete',
+      icon: 'pi pi-exclamation-triangle',
+      acceptButtonProps: { severity: 'danger' },
+      rejectButtonProps: { severity: 'secondary', outlined: true },
+      accept: () => {
+        const eventId = this.eventId();
+        if (!eventId) return;
+        const bibNumbers = targets.map((p) => p.bibNumber);
+
+        this.participantService.bulkDeleteParticipants(eventId, bibNumbers).subscribe({
+          next: (response) => {
+            const message =
+              response.failedCount > 0
+                ? `${response.deletedCount} participant(s) deleted, ${response.failedCount} failed`
+                : `${response.deletedCount} participant(s) deleted successfully`;
+            this.toast.success(message, 'Success');
+            this.removeParticipantsFromList(bibNumbers);
+            this.totalCount.update((current) => Math.max(0, current - response.deletedCount));
+            this.selectedParticipants = [];
+          },
+          error: (error) => this.errorHandler.showError(error, 'Failed to delete participants'),
+        });
+      },
+    });
+  }
+
+  private removeParticipantFromList(bibNumber: string): void {
+    this.participants.update((current) => current.filter((p) => p.bibNumber !== bibNumber));
+  }
+
+  private removeParticipantsFromList(bibNumbers: string[]): void {
+    const set = new Set(bibNumbers);
+    this.participants.update((current) => current.filter((p) => !set.has(p.bibNumber)));
+  }
+
+  // ---------- Column preferences ----------
+  private initializeSelectedColumns(): void {
+    const key = STORAGE_KEYS.PARTICIPANT_TABLE_COLUMNS;
+    const savedFields = this.storage.getJSON<string[]>(key);
+    if (Array.isArray(savedFields)) {
+      const savedCols = this.allColumns.filter(
+        (col) => savedFields.includes(col.field) || col.required,
+      );
+      if (savedCols.length > 0) {
+        this.selectedCols.set(savedCols);
+        return;
+      }
+    }
+    this.selectedCols.set([...this.allColumns]);
+  }
+
+  isColumnVisible(field: string): boolean {
+    return this.visibleCols().some((col) => col.field === field);
+  }
+
+  onColumnSelectionChange(event: MultiSelectChangeEvent): void {
+    const newSelection = event.value as TableColumn[];
+    const required = this.allColumns.filter((col) => col.required);
+    const selectedFields = new Set(newSelection.map((col) => col.field));
+    const updatedSelection = [...newSelection];
+    for (const req of required) {
+      if (!selectedFields.has(req.field)) {
+        updatedSelection.push(req);
+      }
+    }
+    this.selectedCols.set(updatedSelection);
+    this.storage.setJSON(
+      STORAGE_KEYS.PARTICIPANT_TABLE_COLUMNS,
+      updatedSelection.map((col) => col.field),
+    );
+  }
+
+  hasSelection(): boolean {
+    return this.selectedParticipants.length > 0;
+  }
+
+  // ---------- DOB parsing for table display ----------
+  parseDob(value: string | undefined): Date | null {
+    if (!value) return null;
+    const iso = /^(\d{4})-(\d{2})-(\d{2})/.exec(value);
+    if (iso) return new Date(Number(iso[1]), Number(iso[2]) - 1, Number(iso[3]));
+    const dmy = /^(\d{2})-(\d{2})-(\d{4})/.exec(value);
+    if (dmy) return new Date(Number(dmy[3]), Number(dmy[2]) - 1, Number(dmy[1]));
+    return null;
+  }
+
+  // ---------- Goodies display helpers ----------
+  getGoodiesCount(goodies: { [key: string]: string } | undefined | null): number {
     if (!goodies || typeof goodies !== 'object') return 0;
     return Object.keys(goodies).length;
   }
 
-  getGoodiesEntries(goodies: any): Array<{ key: string; value: string }> {
+  getGoodiesEntries(
+    goodies: { [key: string]: string } | undefined | null,
+  ): Array<{ key: string; value: string }> {
     if (!goodies || typeof goodies !== 'object') return [];
-    return Object.entries(goodies).map(([key, value]) => ({
-      key: key,
-      value: String(value),
-    }));
+    return Object.entries(goodies).map(([key, value]) => ({ key, value: String(value) }));
   }
 
   formatGoodiesKey(key: string): string {
-    // Convert "T-Shirt size" or "cap-size" to "T-Shirt Size" or "Cap Size"
     return key
       .split(/[-_\s]+/)
       .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())

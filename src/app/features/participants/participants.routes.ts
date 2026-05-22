@@ -19,11 +19,34 @@ export const PARTICIPANTS_ROUTES: Routes = [
     title: pageTitle('Participants'),
     children: [
       {
+        path: 'event/:eventId',
+        children: [
+          { path: '', redirectTo: 'list', pathMatch: 'full' },
+          {
+            path: 'list',
+            loadComponent: () =>
+              import('../participant-list/components/participant-table-tab/participant-table-tab').then(
+                (m) => m.ParticipantTableTab,
+              ),
+            title: pageTitle('Participants'),
+          },
+          {
+            path: 'errors',
+            loadComponent: () =>
+              import('../participant-list/components/import-history-tab/import-history-tab').then(
+                (m) => m.ImportHistoryTab,
+              ),
+            title: pageTitle('Import Errors'),
+          },
+        ],
+      },
+      {
         path: 'new',
         loadComponent: () =>
           import('../participant-form/participant-form').then((m) => m.ParticipantForm),
         title: pageTitle('New Participant'),
       },
+      // Keep edit route last so `:eventId/:bib/edit` cannot greedily match `event/:eventId/...`
       {
         path: ':eventId/:bib/edit',
         loadComponent: () =>

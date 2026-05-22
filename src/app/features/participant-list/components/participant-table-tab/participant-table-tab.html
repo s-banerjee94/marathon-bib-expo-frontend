@@ -102,21 +102,21 @@
   <!-- Top Row: Action Buttons -->
   <div class="flex flex-col sm:flex-row gap-2 w-full">
     <p-button
-      (onClick)="onImport()"
+      (onClick)="parent.openImportDialog()"
       [size]="buttonSize"
       icon="pi pi-upload"
       label="Import Participants"
       severity="primary"
     ></p-button>
     <p-button
-      (onClick)="onCreate()"
+      (onClick)="parent.openCreateDialog()"
       [size]="buttonSize"
       icon="pi pi-plus"
       label="Add Participant"
       severity="success"
     ></p-button>
     <p-button
-      (onClick)="onExport()"
+      (onClick)="parent.openExportDialog()"
       [outlined]="true"
       [size]="buttonSize"
       icon="pi pi-download"
@@ -598,7 +598,7 @@
           <td pFrozenColumn alignFrozen="right">
             <div class="flex gap-2">
               <p-button
-                (onClick)="onView(participant)"
+                (onClick)="parent.openViewDialog(participant)"
                 [rounded]="true"
                 [size]="buttonSize"
                 [text]="true"
@@ -608,7 +608,7 @@
                 tooltipPosition="top"
               ></p-button>
               <p-button
-                (onClick)="onEdit(participant)"
+                (onClick)="parent.openEditDialog(participant)"
                 [rounded]="true"
                 [size]="buttonSize"
                 [text]="true"
@@ -651,7 +651,7 @@
   <div class="text-center mt-4">
     @if (hasMore() && !isLoading()) {
       <p-button
-        (onClick)="onLoadMore()"
+        (onClick)="loadMore()"
         [outlined]="true"
         [size]="buttonSize"
         icon="pi pi-arrow-down"

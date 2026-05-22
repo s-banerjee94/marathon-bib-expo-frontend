@@ -1,6 +1,6 @@
 <div class="p-4">
   <!-- Loading State -->
-  @if (isLoading() && errors().length === 0) {
+  @if (isInitialLoading()) {
     <div class="text-center py-12">
       <i class="pi pi-spin pi-spinner text-6xl"></i>
       <p class="mt-4 font-medium text-lg">Loading import errors...</p>
@@ -8,7 +8,7 @@
   }
 
   <!-- Errors Table & Empty State -->
-  @if (!isLoading() || errors().length > 0) {
+  @if (!isInitialLoading()) {
     <!-- Errors Table -->
     @if (errors().length > 0) {
       <p-table [scrollable]="true" [value]="errors()" scrollHeight="420px" size="small">
@@ -42,7 +42,7 @@
       <div class="text-center mt-4">
         @if (hasMore() && !isLoading()) {
           <p-button
-            (onClick)="onLoadMore()"
+            (onClick)="loadMore()"
             [outlined]="true"
             icon="pi pi-arrow-down"
             label="Load More Errors"
