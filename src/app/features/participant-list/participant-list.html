@@ -1,109 +1,113 @@
-<div class="p-4">
-  <!-- Header -->
-  <div class="mb-6">
-    <h1 class="text-3xl font-bold">Participant Management</h1>
-    <p class="mt-2">
-      @if (isOrganizerUser()) {
-        View and manage event participants. Select an event to get started.
-      } @else {
-        View and manage event participants. Select an organization and event to get started.
-      }
-    </p>
-  </div>
-
-  <!-- Filter Section -->
-  <p-card class="mb-6">
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 p-2 md:p-4">
-      <!-- Organization Selector (only for ROOT/ADMIN) -->
-      @if (!isOrganizerUser()) {
-        <app-organization-selector
-          (organizationIdChange)="onOrganizationChange($event)"
-          [required]="true"
-          [selectedOrganizationId]="selectedOrganizationId()"
-          label="Organization"
-          placeholder="Type to search organizations..."
-        ></app-organization-selector>
-      }
-
-      <!-- Event Selector -->
-      <app-event-selector
-        (eventIdChange)="onEventChange($event)"
-        [disabled]="!selectedOrganizationId()"
-        [organizationId]="selectedOrganizationId()"
-        [required]="true"
-        [selectedEventId]="selectedEventId()"
-        label="Event"
-        placeholder="Type to search events..."
-        [class]="isOrganizerUser() ? 'md:col-span-2' : ''"
-      ></app-event-selector>
+@if (isMobile() && hasFormRoute()) {
+  <router-outlet />
+} @else {
+  <div class="p-4">
+    <!-- Header -->
+    <div class="mb-6">
+      <h1 class="text-3xl font-bold">Participant Management</h1>
+      <p class="mt-2">
+        @if (isOrganizerUser()) {
+          View and manage event participants. Select an event to get started.
+        } @else {
+          View and manage event participants. Select an organization and event to get started.
+        }
+      </p>
     </div>
-  </p-card>
 
-  <!-- Empty State -->
-  @if (!canShowTable()) {
-    <p-card class="text-center">
-      <div class="p-8">
-        <i class="pi pi-users text-6xl mb-4 block"></i>
-        <h3 class="text-xl font-semibold mb-2">No Event Selected</h3>
-        <p>
-          @if (isOrganizerUser()) {
-            Please select an event to manage participants.
-          } @else {
-            Please select an organization and event to manage participants.
-          }
-        </p>
+    <!-- Filter Section -->
+    <p-card class="mb-6">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 p-2 md:p-4">
+        <!-- Organization Selector (only for ROOT/ADMIN) -->
+        @if (!isOrganizerUser()) {
+          <app-organization-selector
+            (organizationIdChange)="onOrganizationChange($event)"
+            [required]="true"
+            [selectedOrganizationId]="selectedOrganizationId()"
+            label="Organization"
+            placeholder="Type to search organizations..."
+          ></app-organization-selector>
+        }
+
+        <!-- Event Selector -->
+        <app-event-selector
+          (eventIdChange)="onEventChange($event)"
+          [disabled]="!selectedOrganizationId()"
+          [organizationId]="selectedOrganizationId()"
+          [required]="true"
+          [selectedEventId]="selectedEventId()"
+          label="Event"
+          placeholder="Type to search events..."
+          [class]="isOrganizerUser() ? 'md:col-span-2' : ''"
+        ></app-event-selector>
       </div>
     </p-card>
-  }
 
-  <!-- Tabs Section -->
-  @if (canShowTable()) {
-    <p-card>
-      <p-tabs [(value)]="activeTab">
-        <p-tablist>
-          <p-tab value="manage">Imported Participants</p-tab>
-          <p-tab value="history">Import Errors</p-tab>
-        </p-tablist>
+    <!-- Empty State -->
+    @if (!canShowTable()) {
+      <p-card class="text-center">
+        <div class="p-8">
+          <i class="pi pi-users text-6xl mb-4 block"></i>
+          <h3 class="text-xl font-semibold mb-2">No Event Selected</h3>
+          <p>
+            @if (isOrganizerUser()) {
+              Please select an event to manage participants.
+            } @else {
+              Please select an organization and event to manage participants.
+            }
+          </p>
+        </div>
+      </p-card>
+    }
 
-        <p-tabpanels>
-          <!-- Tab 1: Imported Participants -->
-          <p-tabpanel value="manage">
-            <app-participant-table-tab
-              (bulkDeleteParticipants)="bulkDeleteParticipants($event)"
-              (createClick)="openCreateDialog()"
-              (deleteParticipant)="deleteParticipant($event)"
-              (editParticipant)="openEditDialog($event)"
-              (exportClick)="openExportDialog()"
-              (importClick)="openImportDialog()"
-              (loadMore)="loadMore()"
-              (searchCleared)="clearSearch()"
-              (searchRequested)="performLookup($event)"
-              (viewParticipant)="openViewDialog($event)"
-              [allColumns]="allColumns"
-              [eventId]="selectedEventId()"
-              [hasMore]="hasMore()"
-              [isLoading]="isLoading()"
-              [isSearchMode]="isSearchMode()"
-              [participants]="participants()"
-              [storageKey]="'marathon_participant_table_columns'"
-              [totalCount]="totalCount()"
-            />
-          </p-tabpanel>
+    <!-- Tabs Section -->
+    @if (canShowTable()) {
+      <p-card>
+        <p-tabs [(value)]="activeTab">
+          <p-tablist>
+            <p-tab value="manage">Imported Participants</p-tab>
+            <p-tab value="history">Import Errors</p-tab>
+          </p-tablist>
 
-          <!-- Tab 2: Latest Import Errors -->
-          <p-tabpanel value="history">
-            <app-import-history-tab
-              (loadMore)="loadMoreImportErrors()"
-              [errors]="importErrors()"
-              [hasMore]="hasMoreImportErrors()"
-              [isLoading]="isLoadingImportErrors()"
-            />
-          </p-tabpanel>
-        </p-tabpanels>
-      </p-tabs>
-    </p-card>
-  }
-</div>
+          <p-tabpanels>
+            <!-- Tab 1: Imported Participants -->
+            <p-tabpanel value="manage">
+              <app-participant-table-tab
+                (bulkDeleteParticipants)="bulkDeleteParticipants($event)"
+                (createClick)="openCreateDialog()"
+                (deleteParticipant)="deleteParticipant($event)"
+                (editParticipant)="openEditDialog($event)"
+                (exportClick)="openExportDialog()"
+                (importClick)="openImportDialog()"
+                (loadMore)="loadMore()"
+                (searchCleared)="clearSearch()"
+                (searchRequested)="performLookup($event)"
+                (viewParticipant)="openViewDialog($event)"
+                [allColumns]="allColumns"
+                [eventId]="selectedEventId()"
+                [hasMore]="hasMore()"
+                [isLoading]="isLoading()"
+                [isSearchMode]="isSearchMode()"
+                [participants]="participants()"
+                [storageKey]="'marathon_participant_table_columns'"
+                [totalCount]="totalCount()"
+              />
+            </p-tabpanel>
+
+            <!-- Tab 2: Latest Import Errors -->
+            <p-tabpanel value="history">
+              <app-import-history-tab
+                (loadMore)="loadMoreImportErrors()"
+                [errors]="importErrors()"
+                [hasMore]="hasMoreImportErrors()"
+                [isLoading]="isLoadingImportErrors()"
+              />
+            </p-tabpanel>
+          </p-tabpanels>
+        </p-tabs>
+      </p-card>
+    }
+  </div>
+}
 
 <!-- Confirmation Dialog -->
 <p-confirmDialog></p-confirmDialog>
@@ -128,7 +132,7 @@
   [isUploading]="isUploading()"
 />
 
-<!-- Create/Edit Participant Form Dialog -->
+<!-- Create/Edit Participant Form Dialog (desktop only — mobile uses router-outlet) -->
 <p-dialog
   (visibleChange)="onFormDialogVisibleChange($event)"
   [draggable]="false"
@@ -136,7 +140,7 @@
   [modal]="true"
   [resizable]="false"
   [style]="{ width: '95vw', maxWidth: '700px', maxHeight: '90vh' }"
-  [visible]="showFormDialog()"
+  [visible]="showFormDialog() && !isMobile()"
 >
   @if (formDialogData()) {
     <app-participant-form

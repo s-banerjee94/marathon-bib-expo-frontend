@@ -42,6 +42,7 @@ import { shouldShowError } from '../../shared/utils/form.utils';
 import { FORM_INPUT_SIZE } from '../../shared/constants/form.constants';
 import { GENDER_OPTIONS } from '../../shared/constants/participant-columns.constant';
 import { UserRole } from '../../core/models/user.model';
+import { ParticipantListBus } from '../participants/participant-list-bus.service';
 
 @Component({
   selector: 'app-participant-form',
@@ -133,6 +134,7 @@ export class ParticipantForm implements OnInit {
   private location = inject(Location);
   private toast = inject(ToastService);
   private errorHandler = inject(ErrorHandlerService);
+  private participantListBus = inject(ParticipantListBus);
   // Optional injection for dialog mode (DynamicDialog)
   private injectedDialogConfig = inject(DynamicDialogConfig, { optional: true });
 
@@ -170,21 +172,21 @@ export class ParticipantForm implements OnInit {
       this.isDialogMode.set(false);
 
       const eventIdParam = this.route.snapshot.paramMap.get('eventId');
-      const bibNumberParam = this.route.snapshot.paramMap.get('bibNumber');
+      const bibParam = this.route.snapshot.paramMap.get('bib');
 
-      if (eventIdParam && bibNumberParam) {
+      if (eventIdParam && bibParam) {
         // Edit mode
         const id = parseInt(eventIdParam, 10);
         if (!isNaN(id)) {
           this.isEditMode.set(true);
           this.eventId.set(id);
-          this.bibNumber.set(bibNumberParam);
+          this.bibNumber.set(bibParam);
           this.selectedEventId.set(id);
           this.loadRaces(id);
-          this.loadParticipantData(id, bibNumberParam);
+          this.loadParticipantData(id, bibParam);
         } else {
-          // Invalid ID, redirect to create mode
-          this.router.navigate(['/participant-form']);
+          // Invalid params, redirect to create mode
+          this.router.navigate(['/participants/new']);
         }
       } else {
         // Create mode - default state
@@ -401,8 +403,8 @@ export class ParticipantForm implements OnInit {
         .subscribe({
           next: (updatedParticipant: Participant) => {
             this.isSubmitting.set(false);
+            this.participantListBus.publish({ action: 'updated', participant: updatedParticipant });
 
-            // Close dialog or show message based on mode
             if (this.isDialogMode() && this.dialogRef) {
               // DynamicDialog mode - close with result
               const successMessage = this.injectedDialogConfig?.data?.successMessage;
@@ -414,16 +416,14 @@ export class ParticipantForm implements OnInit {
               // Regular p-dialog mode - emit event for parent
               this.formSubmitSuccess.emit(updatedParticipant);
             } else {
-              // Route mode - show toast and navigate back
+              // Route mode - navigate back after brief delay
               this.toast.success('Participant updated successfully');
-              setTimeout(() => {
-                this.location.back();
-              }, 1500);
+              setTimeout(() => this.location.back(), 1500);
             }
           },
           error: (error) => {
             this.isSubmitting.set(false);
-            this.errorHandler.showError(error, 'Error');
+            this.errorHandler.showError(error);
           },
         });
     } else {
@@ -451,8 +451,8 @@ export class ParticipantForm implements OnInit {
       this.participantService.createParticipant(targetEventId, createRequest).subscribe({
         next: (createdParticipant: Participant) => {
           this.isSubmitting.set(false);
+          this.participantListBus.publish({ action: 'created', participant: createdParticipant });
 
-          // Close dialog or reset form based on mode
           if (this.isDialogMode() && this.dialogRef) {
             // DynamicDialog mode - close with result
             const successMessage = this.injectedDialogConfig?.data?.successMessage;
@@ -464,46 +464,32 @@ export class ParticipantForm implements OnInit {
             // Regular p-dialog mode - emit event for parent
             this.formSubmitSuccess.emit(createdParticipant);
           } else {
-            // Route mode - show toast and reset form
+            // Route mode - navigate back after brief delay
             this.toast.success('Participant created successfully');
-            setTimeout(() => {
-              form.resetForm();
-              this.participant = {
-                chipNumber: '',
-                bibNumber: '',
-                fullName: '',
-                raceId: null,
-                raceName: '',
-                categoryId: null,
-                categoryName: '',
-                gender: '',
-                phoneNumber: '',
-                email: '',
-                dateOfBirth: null,
-                age: null,
-                country: '',
-                city: '',
-                emergencyContactName: '',
-                emergencyContactPhone: '',
-                notes: '',
-              };
-              this.categories.set([]);
-            }, 1500);
+            setTimeout(() => this.location.back(), 1500);
           }
         },
         error: (error) => {
           this.isSubmitting.set(false);
-          this.errorHandler.showError(error, 'Error');
+          this.errorHandler.showError(error);
         },
       });
     }
   }
 
+  goBack(): void {
+    this.location.back();
+  }
+
   onCancel(): void {
+    this.dismiss();
+  }
+
+  private dismiss(): void {
     if (this.isDialogMode() && this.dialogRef) {
       this.dialogRef.close();
     } else {
-      this.location.back();
+      this.router.navigate(['/participants']);
     }
   }
 
@@ -528,11 +514,9 @@ export class ParticipantForm implements OnInit {
       },
       error: (error) => {
         this.isLoading.set(false);
-        this.errorHandler.showError(error, 'Error', {
-          customMessage: 'Failed to load participant data. Please try again.',
-        });
+        this.errorHandler.showError(error);
         if (!this.isDialogMode()) {
-          this.router.navigate([this.authService.getDashboardRoute()]);
+          this.router.navigate(['/participants']);
         }
       },
     });

@@ -1,6 +1,5 @@
 import { Routes } from '@angular/router';
-import { authGuard, roleGuard } from './core/guards/auth.guard';
-import { UserRole } from './core/models/user.model';
+import { authGuard } from './core/guards/auth.guard';
 
 export const routes: Routes = [
   {
@@ -32,27 +31,8 @@ export const routes: Routes = [
   },
   {
     path: 'participants',
-    loadComponent: () =>
-      import('./features/participant-list/participant-list').then((m) => m.ParticipantList),
-    canActivate: [
-      roleGuard([UserRole.ROOT, UserRole.ADMIN, UserRole.ORGANIZER_ADMIN, UserRole.ORGANIZER_USER]),
-    ],
-  },
-  {
-    path: 'participant-form',
-    loadComponent: () =>
-      import('./features/participant-form/participant-form').then((m) => m.ParticipantForm),
-    canActivate: [
-      roleGuard([UserRole.ROOT, UserRole.ADMIN, UserRole.ORGANIZER_ADMIN, UserRole.ORGANIZER_USER]),
-    ],
-  },
-  {
-    path: 'participant-form/:eventId/:bibNumber',
-    loadComponent: () =>
-      import('./features/participant-form/participant-form').then((m) => m.ParticipantForm),
-    canActivate: [
-      roleGuard([UserRole.ROOT, UserRole.ADMIN, UserRole.ORGANIZER_ADMIN, UserRole.ORGANIZER_USER]),
-    ],
+    loadChildren: () =>
+      import('./features/participants/participants.routes').then((m) => m.PARTICIPANTS_ROUTES),
   },
   {
     path: 'distribution',

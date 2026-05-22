@@ -9,6 +9,15 @@ import {
   viewChild,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import {
+  ActivatedRoute,
+  NavigationEnd,
+  ParamMap,
+  Params,
+  Router,
+  RouterOutlet,
+} from '@angular/router';
+import { filter } from 'rxjs/operators';
 import { CardModule } from 'primeng/card';
 import { TabsModule } from 'primeng/tabs';
 import { DialogModule } from 'primeng/dialog';
@@ -31,6 +40,10 @@ import {
 import { PAGINATION_LIMIT } from '../../shared/constants/form.constants';
 import { LookupSearchType } from '../../core/models/participant.model';
 import { TableColumn } from '../../shared/models/table-config.model';
+import {
+  ParticipantListBus,
+  ParticipantMutation,
+} from '../participants/participant-list-bus.service';
 
 // Child components
 import { ParticipantTableTab } from './components/participant-table-tab/participant-table-tab';
@@ -59,6 +72,7 @@ import { ImportProgressService } from '../../core/services/import-progress.servi
     ParticipantViewDialog,
     ParticipantExportDialog,
     ParticipantImportDialog,
+    RouterOutlet,
   ],
   providers: [ConfirmationService],
 })
@@ -69,7 +83,7 @@ export class ParticipantList implements OnInit {
     'participantFormComponent',
   );
   private readonly participantTableTab = viewChild(ParticipantTableTab);
-  // Cascading filter signals
+  // Cascading filter signals (URL-synced)
   selectedOrganizationId = signal<number | undefined>(undefined);
   selectedEventId = signal<number | undefined>(undefined);
   // User role signals
@@ -114,12 +128,26 @@ export class ParticipantList implements OnInit {
   canShowTable = computed(
     () => this.selectedOrganizationId() !== undefined && this.selectedEventId() !== undefined,
   );
+  // Viewport tracking: on mobile the form renders full-page via <router-outlet />;
+  // on desktop the same URL opens the form in the existing p-dialog.
+  private mediaQuery = window.matchMedia('(max-width: 768px)');
+  isMobile = signal(this.mediaQuery.matches);
+  hasFormRoute = signal(false);
+  // Tracks which dialog is currently driven by the URL: null = closed, 'new' = create,
+  // 'edit:<eventId>:<bib>' = edit. Used to ignore router events that don't change dialog state.
+  private dialogKey: string | null = null;
+  // True when the dialog is being closed by syncDialogToRoute (URL change),
+  // so onFormDialogVisibleChange skips its own URL-clearing navigation.
+  private closingDialogFromRoute = false;
   private readonly participantService = inject(ParticipantService);
   private readonly authService = inject(AuthService);
   private readonly errorHandler = inject(ErrorHandlerService);
   private readonly toast = inject(ToastService);
   private readonly confirmationService = inject(ConfirmationService);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
+  private readonly participantListBus = inject(ParticipantListBus);
   private lastEvaluatedKey?: string;
   private lastEvaluatedKeyImportErrors?: string;
 
@@ -138,36 +166,93 @@ export class ParticipantList implements OnInit {
     ]);
     this.isOrganizerUser.set(isOrgUser);
 
-    if (isOrgUser) {
-      const currentUser = this.authService.currentUser();
-      if (currentUser?.organizationId) {
-        this.selectedOrganizationId.set(currentUser.organizationId);
+    // Viewport tracking — re-sync dialog state on viewport changes so a desktop dialog
+    // tears down when the user shrinks to mobile (and vice versa).
+    const onViewportChange = (event: MediaQueryListEvent) => {
+      this.isMobile.set(event.matches);
+      this.syncDialogToRoute();
+    };
+    this.mediaQuery.addEventListener('change', onViewportChange);
+    this.destroyRef.onDestroy(() => {
+      this.mediaQuery.removeEventListener('change', onViewportChange);
+    });
+
+    // React to URL changes (route segments) to open/close the form dialog.
+    this.router.events
+      .pipe(
+        filter((event): event is NavigationEnd => event instanceof NavigationEnd),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe(() => this.syncDialogToRoute());
+
+    // Apply data mutations published by the form (created/updated) without an extra HTTP fetch.
+    this.participantListBus.mutations$
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((mutation) => this.applyParticipantMutation(mutation));
+
+    // URL is the source of truth for the org/event filters. queryParamMap emits synchronously
+    // on subscribe, which seeds the initial state (including bookmarked deep-links).
+    this.route.queryParamMap
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((params) => this.applyUrlToState(params));
+
+    // If an org user landed without URL filters, seed the URL with their org so links stay shareable.
+    if (isOrgUser && !this.route.snapshot.queryParamMap.get('organizationId')) {
+      const orgId = this.authService.currentUser()?.organizationId;
+      if (orgId) {
+        this.pushStateToUrl({ organizationId: String(orgId) });
+      }
+    }
+
+    // Initial dialog sync so deep-linked /participants/new (or /:eventId/:bib/edit) opens immediately.
+    this.syncDialogToRoute();
+  }
+
+  private applyUrlToState(params: ParamMap): void {
+    const orgIdParam = params.get('organizationId');
+    const eventIdParam = params.get('eventId');
+
+    const orgId =
+      orgIdParam && Number.isFinite(Number(orgIdParam)) ? Number(orgIdParam) : undefined;
+    const eventId =
+      eventIdParam && Number.isFinite(Number(eventIdParam)) ? Number(eventIdParam) : undefined;
+
+    const prevOrgId = this.selectedOrganizationId();
+    const prevEventId = this.selectedEventId();
+
+    this.selectedOrganizationId.set(orgId);
+    this.selectedEventId.set(eventId);
+
+    if (orgId !== prevOrgId) {
+      // Reset event selector UI when organization changes.
+      this.eventSelector()?.reset();
+    }
+
+    if (eventId !== prevEventId) {
+      this.participants.set([]);
+      this.totalCount.set(0);
+      this.hasMore.set(true);
+      this.lastEvaluatedKey = undefined;
+      this.resetSearch();
+      if (eventId) {
+        this.loadParticipants();
+        this.loadLatestImportErrors();
+        this.loadTotalCount();
       }
     }
   }
 
   onOrganizationChange(organizationId: number | undefined): void {
-    this.selectedOrganizationId.set(organizationId);
-    this.eventSelector()?.reset();
-    this.selectedEventId.set(undefined);
-    this.participants.set([]);
-    this.hasMore.set(true);
-    this.lastEvaluatedKey = undefined;
+    this.pushStateToUrl({
+      organizationId: organizationId != null ? String(organizationId) : null,
+      eventId: null,
+    });
   }
 
   onEventChange(eventId: number | undefined): void {
-    this.selectedEventId.set(eventId);
-    this.participants.set([]);
-    this.totalCount.set(0);
-    this.hasMore.set(true);
-    this.lastEvaluatedKey = undefined;
-    this.resetSearch();
-
-    if (eventId) {
-      this.loadParticipants();
-      this.loadLatestImportErrors();
-      this.loadTotalCount();
-    }
+    this.pushStateToUrl({
+      eventId: eventId != null ? String(eventId) : null,
+    });
   }
 
   resetSearch(): void {
@@ -278,24 +363,39 @@ export class ParticipantList implements OnInit {
     this.formSubmitDisabled.set(disabled);
   }
 
-  // Create/Edit form dialog
+  // Create button — navigate to the create route; syncDialogToRoute opens the dialog (desktop)
+  // or the router-outlet renders the full-page form (mobile).
   openCreateDialog(): void {
     const eventId = this.selectedEventId();
     if (!eventId) return;
-    this.formSubmitDisabled.set(true);
-
-    this.formDialogHeader.set('Create Participant');
-    this.formDialogData.set({ eventId, isEditMode: false });
-    this.showFormDialog.set(true);
+    this.router.navigate(['/participants/new'], { queryParamsHandling: 'preserve' });
   }
 
   openEditDialog(participant: Participant): void {
     const eventId = this.selectedEventId();
     if (!eventId) return;
-    this.formSubmitDisabled.set(true);
+    this.router.navigate(['/participants', eventId, participant.bibNumber, 'edit'], {
+      queryParamsHandling: 'preserve',
+    });
+  }
 
+  private openCreateDialogDirect(): void {
+    const eventId = this.selectedEventId();
+    if (!eventId) {
+      // Deep-link without an event context — fall back to the list.
+      this.router.navigate(['/participants'], { queryParamsHandling: 'preserve' });
+      return;
+    }
+    this.formSubmitDisabled.set(true);
+    this.formDialogHeader.set('Create Participant');
+    this.formDialogData.set({ eventId, isEditMode: false });
+    this.showFormDialog.set(true);
+  }
+
+  private openEditDialogDirect(eventId: number, bibNumber: string): void {
+    this.formSubmitDisabled.set(true);
     this.formDialogHeader.set('Edit Participant');
-    this.formDialogData.set({ eventId, bibNumber: participant.bibNumber, isEditMode: true });
+    this.formDialogData.set({ eventId, bibNumber, isEditMode: true });
     this.showFormDialog.set(true);
   }
 
@@ -305,9 +405,16 @@ export class ParticipantList implements OnInit {
   }
 
   onFormDialogVisibleChange(visible: boolean): void {
-    if (!visible) {
-      this.closeFormDialog();
+    if (visible) return;
+    this.closeFormDialog();
+    // syncDialogToRoute initiated this close — URL is already moving, skip our own nav.
+    if (this.closingDialogFromRoute) {
+      this.closingDialogFromRoute = false;
+      return;
     }
+    // User-initiated close (X / overlay click) — clear the route segment.
+    this.dialogKey = null;
+    this.router.navigate(['/participants'], { queryParamsHandling: 'preserve' });
   }
 
   submitFormDialog(): void {
@@ -321,14 +428,76 @@ export class ParticipantList implements OnInit {
       : 'Participant created successfully';
 
     this.toast.success(message, 'Success');
-    this.closeFormDialog();
+    // List data is already updated via the bus; just clear the route segment.
+    this.router.navigate(['/participants'], { queryParamsHandling: 'preserve' });
+  }
 
-    if (!isEditMode) {
-      // Increment total count only for create, not for edit
+  private applyParticipantMutation(mutation: ParticipantMutation): void {
+    const current = this.participants();
+    if (mutation.action === 'created') {
+      this.participants.set([mutation.participant, ...current]);
       this.totalCount.update((count) => count + 1);
+    } else {
+      const updated = current.map((p) =>
+        p.bibNumber === mutation.participant.bibNumber ? mutation.participant : p,
+      );
+      this.participants.set(updated);
+    }
+  }
+
+  private syncDialogToRoute(): void {
+    const child = this.route.snapshot.firstChild;
+    const segments = child?.url ?? [];
+    let nextKey: string | null = null;
+
+    if (segments.length === 1 && segments[0].path === 'new') {
+      nextKey = 'new';
+    } else if (segments.length === 3 && segments[2].path === 'edit') {
+      // :eventId/:bib/edit
+      nextKey = `edit:${segments[0].path}:${segments[1].path}`;
     }
 
-    this.reloadParticipants();
+    this.hasFormRoute.set(nextKey !== null);
+
+    // Mobile renders the routed form via <router-outlet />; ensure any open dialog tears down.
+    if (this.isMobile()) {
+      if (this.dialogKey !== null && this.showFormDialog()) {
+        this.closingDialogFromRoute = true;
+        this.closeFormDialog();
+      }
+      this.dialogKey = null;
+      return;
+    }
+
+    if (nextKey === this.dialogKey) return;
+
+    const previousKey = this.dialogKey;
+    this.dialogKey = nextKey;
+
+    if (previousKey !== null && this.showFormDialog()) {
+      this.closingDialogFromRoute = true;
+      this.closeFormDialog();
+    }
+
+    if (nextKey === 'new') {
+      this.openCreateDialogDirect();
+    } else if (nextKey?.startsWith('edit:')) {
+      const parts = nextKey.split(':');
+      const eventId = Number(parts[1]);
+      const bib = parts[2];
+      if (Number.isFinite(eventId) && bib) {
+        this.openEditDialogDirect(eventId, bib);
+      }
+    }
+  }
+
+  private pushStateToUrl(updates: Params): void {
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: updates,
+      queryParamsHandling: 'merge',
+      replaceUrl: true,
+    });
   }
 
   deleteParticipant(participant: Participant): void {
