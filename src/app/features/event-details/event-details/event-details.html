@@ -98,56 +98,35 @@
     </p-card>
   }
 
-  <!-- Tabs -->
+  <!-- Tabs (URL-driven) -->
   @if (!isLoading() && event()) {
-    <p-tabs value="races">
+    <p-tabs [value]="activeTab()">
       <p-tablist>
-        <p-tab value="races">
+        <p-tab value="races" [routerLink]="['races']" routerLinkActive>
           <i class="pi pi-flag mr-2"></i>
           Races
         </p-tab>
-        <p-tab value="categories">
+        <p-tab value="categories" [routerLink]="['categories']" routerLinkActive>
           <i class="pi pi-tags mr-2"></i>
           Categories
         </p-tab>
-        <p-tab value="sms-templates">
+        <p-tab value="sms-templates" [routerLink]="['sms-templates']" routerLinkActive>
           <i class="pi pi-envelope mr-2"></i>
           SMS Templates
         </p-tab>
-        <p-tab value="sms-campaigns">
+        <p-tab value="sms-campaigns" [routerLink]="['sms-campaigns']" routerLinkActive>
           <i class="pi pi-send mr-2"></i>
           SMS Campaigns
         </p-tab>
-        <p-tab value="participants">
+        <p-tab value="participants" [routerLink]="['participants']" routerLinkActive>
           <i class="pi pi-users mr-2"></i>
           Participants
         </p-tab>
       </p-tablist>
-
-      <p-tabpanels>
-        <p-tabpanel value="races">
-          <app-race-section [eventId]="eventId()" (selectedRace)="onRaceSelected($event)" />
-        </p-tabpanel>
-
-        <p-tabpanel value="categories">
-          <app-category-section [eventId]="eventId()" [selectedRaceFromParent]="selectedRace()" />
-        </p-tabpanel>
-
-        <p-tabpanel value="sms-templates">
-          <app-sms-template-section [eventId]="eventId()" />
-        </p-tabpanel>
-
-        <p-tabpanel value="sms-campaigns">
-          <app-sms-campaign-section
-            [eventId]="eventId()"
-            [eventTimezone]="event()?.timezone ?? ''"
-          />
-        </p-tabpanel>
-
-        <p-tabpanel value="participants">
-          <p class="text-gray-600">Participant management coming soon...</p>
-        </p-tabpanel>
-      </p-tabpanels>
     </p-tabs>
+
+    <div class="pt-4">
+      <router-outlet />
+    </div>
   }
 </div>

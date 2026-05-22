@@ -17,6 +17,7 @@ import { CategoryService } from '../../../core/services/category.service';
 import { RaceService } from '../../../core/services/race.service';
 import { ErrorHandlerService } from '../../../core/services/error-handler.service';
 import { ToastService } from '../../../core/services/toast.service';
+import { EventDetailsState } from '../event-details-state.service';
 import { CategoryForm } from '../category-form/category-form';
 import { CreateCategoryRequest, UpdateCategoryRequest } from '../../../core/models/category.model';
 import { TableColumn } from '../../../shared/models/table-config.model';
@@ -52,8 +53,7 @@ const DEFAULT_CATEGORY_FIELDS = ['id', 'categoryName', 'createdBy', 'createdAt']
   styleUrl: './category-section.css',
 })
 export class CategorySection {
-  eventId = input.required<number>();
-  selectedRaceFromParent = input<Race | null>(null);
+  eventId = input.required<number, string>({ transform: (v) => Number(v) });
 
   private categoryService = inject(CategoryService);
   private raceService = inject(RaceService);
@@ -62,6 +62,7 @@ export class CategorySection {
   private dialogService = inject(DialogService);
   private confirmationService = inject(ConfirmationService);
   private storage = inject(LocalStorageService);
+  private state = inject(EventDetailsState);
 
   categories = signal<Category[]>([]);
   races = signal<Race[]>([]);
@@ -95,9 +96,9 @@ export class CategorySection {
 
     effect(
       () => {
-        const raceFromParent = this.selectedRaceFromParent();
-        if (raceFromParent) {
-          this.selectedRace.set(raceFromParent);
+        const raceFromState = this.state.selectedRace();
+        if (raceFromState) {
+          this.selectedRace.set(raceFromState);
         }
       },
       { allowSignalWrites: true },

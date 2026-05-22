@@ -23,6 +23,7 @@ import { SmsCampaign } from '../../../core/models/sms-campaign.model';
 import { SmsCampaignService } from '../../../core/services/sms-campaign.service';
 import { ErrorHandlerService } from '../../../core/services/error-handler.service';
 import { ToastService } from '../../../core/services/toast.service';
+import { EventDetailsState } from '../event-details-state.service';
 import { SmsCampaignForm } from '../sms-campaign-form/sms-campaign-form';
 import { SmsCampaignDetail } from '../sms-campaign-detail/sms-campaign-detail';
 import { DefaultValuePipe } from '../../../shared/pipes/default-value.pipe';
@@ -67,8 +68,7 @@ import {
   styleUrl: './sms-campaign-section.css',
 })
 export class SmsCampaignSection implements OnInit {
-  eventId = input.required<number>();
-  eventTimezone = input<string>('');
+  eventId = input.required<number, string>({ transform: (v) => Number(v) });
 
   private campaignService = inject(SmsCampaignService);
   private errorHandler = inject(ErrorHandlerService);
@@ -76,6 +76,9 @@ export class SmsCampaignSection implements OnInit {
   private dialogService = inject(DialogService);
   private confirmationService = inject(ConfirmationService);
   private storage = inject(LocalStorageService);
+  private state = inject(EventDetailsState);
+
+  protected readonly eventTimezone = computed(() => this.state.event()?.timezone ?? '');
 
   campaigns = signal<SmsCampaign[]>([]);
   isLoading = signal(true);

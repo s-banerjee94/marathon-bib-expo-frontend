@@ -1,4 +1,4 @@
-import { Component, computed, inject, input, OnInit, output, signal } from '@angular/core';
+import { Component, computed, inject, input, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TableModule } from 'primeng/table';
@@ -15,6 +15,7 @@ import { Race } from '../../../core/models/race.model';
 import { RaceService } from '../../../core/services/race.service';
 import { ErrorHandlerService } from '../../../core/services/error-handler.service';
 import { ToastService } from '../../../core/services/toast.service';
+import { EventDetailsState } from '../event-details-state.service';
 import { RaceForm } from '../race-form/race-form';
 import { DefaultValuePipe } from '../../../shared/pipes/default-value.pipe';
 import { TableRowSelectEvent } from 'primeng/table';
@@ -53,8 +54,7 @@ import {
   styleUrl: './race-section.css',
 })
 export class RaceSection implements OnInit {
-  eventId = input.required<number>();
-  selectedRace = output<Race>();
+  eventId = input.required<number, string>({ transform: (v) => Number(v) });
 
   private raceService = inject(RaceService);
   private errorHandler = inject(ErrorHandlerService);
@@ -62,6 +62,7 @@ export class RaceSection implements OnInit {
   private dialogService = inject(DialogService);
   private confirmationService = inject(ConfirmationService);
   private storage = inject(LocalStorageService);
+  private state = inject(EventDetailsState);
 
   races = signal<Race[]>([]);
   isLoading = signal(true);
@@ -159,7 +160,7 @@ export class RaceSection implements OnInit {
     const race = event.data;
     if (race && !Array.isArray(race)) {
       this.internalSelectedRace.set(race);
-      this.selectedRace.emit(race);
+      this.state.setSelectedRace(race);
     }
   }
 }

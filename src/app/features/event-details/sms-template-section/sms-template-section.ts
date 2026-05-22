@@ -59,7 +59,7 @@ import {
   styleUrl: './sms-template-section.css',
 })
 export class SmsTemplateSection implements OnInit, OnDestroy {
-  eventId = input.required<number>();
+  eventId = input.required<number, string>({ transform: (v) => Number(v) });
 
   private smsTemplateService = inject(SmsTemplateService);
   private errorHandler = inject(ErrorHandlerService);
