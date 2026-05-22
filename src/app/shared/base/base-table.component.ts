@@ -141,11 +141,6 @@ export abstract class BaseTableComponent<T, F extends TableFilterPreferences>
     return (entity as unknown as Record<string, unknown>)[fieldName];
   }
 
-  getDateValue(entity: T, fieldName: string): string | Date | null {
-    const value = this.getCellValue(entity, fieldName);
-    return value as string | Date | null;
-  }
-
   getSortIcon(fieldName: string): string {
     const currentSort = this.selectedSort();
     if (!currentSort) return '';

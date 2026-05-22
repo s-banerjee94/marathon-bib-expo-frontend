@@ -85,10 +85,10 @@
                   {{ category.eventId }}
                 }
                 @case ('createdAt') {
-                  {{ category.createdAt | date: 'dd MMM yyyy, hh:mm a' }}
+                  {{ category.createdAt | date: 'dd-MMM-yyyy, hh:mm a' }}
                 }
                 @case ('updatedAt') {
-                  {{ category.updatedAt | date: 'dd MMM yyyy, hh:mm a' }}
+                  {{ category.updatedAt | date: 'dd-MMM-yyyy, hh:mm a' }}
                 }
                 @case ('createdBy') {
                   {{ category.createdBy }}

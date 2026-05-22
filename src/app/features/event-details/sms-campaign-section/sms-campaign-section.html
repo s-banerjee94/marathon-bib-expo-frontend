@@ -102,10 +102,10 @@
                   {{ campaign.sentCount ?? 0 }}
                 }
                 @case ('createdAt') {
-                  {{ campaign.createdAt | date: 'dd MMM yyyy, hh:mm a' | defaultValue }}
+                  {{ campaign.createdAt | date: 'dd-MMM-yyyy, hh:mm a' | defaultValue }}
                 }
                 @case ('updatedAt') {
-                  {{ campaign.updatedAt | date: 'dd MMM yyyy, hh:mm a' | defaultValue }}
+                  {{ campaign.updatedAt | date: 'dd-MMM-yyyy, hh:mm a' | defaultValue }}
                 }
                 @case ('createdBy') {
                   {{ campaign.createdBy | defaultValue }}

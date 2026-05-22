@@ -446,9 +446,7 @@
           }
           @if (isColumnVisible('dateOfBirth')) {
             <td>
-              {{
-                parseDob(participant.dateOfBirth) | date: 'dd-MMM-yyyy' | lowercase | defaultValue
-              }}
+              {{ parseDob(participant.dateOfBirth) | date: 'dd-MMM-yyyy' | defaultValue }}
             </td>
           }
           @if (isColumnVisible('city')) {

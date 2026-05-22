@@ -211,8 +211,14 @@
                     [severity]="getCellValue(user, col.field) !== false ? 'success' : 'danger'"
                     [value]="getCellValue(user, col.field) !== false ? 'Yes' : 'No'"
                   />
-                } @else if (col.field === 'createdAt' || col.field === 'updatedAt') {
-                  {{ getDateValue(user, col.field) | defaultValue | date: 'dd-MM-yyyy' }}
+                } @else if (col.type === 'datetime') {
+                  {{
+                    $any(getCellValue(user, col.field))
+                      | date: 'dd-MMM-yyyy, hh:mm a'
+                      | defaultValue
+                  }}
+                } @else if (col.type === 'date') {
+                  {{ $any(getCellValue(user, col.field)) | date: 'dd-MMM-yyyy' | defaultValue }}
                 } @else {
                   {{ getCellValue(user, col.field) | defaultValue }}
                 }

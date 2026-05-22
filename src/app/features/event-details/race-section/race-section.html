@@ -71,10 +71,10 @@
                 <div class="text-center">{{ race.categoryCount }}</div>
               }
               @case ('createdAt') {
-                {{ race.createdAt | date: 'dd MMM yyyy, hh:mm a' }}
+                {{ race.createdAt | date: 'dd-MMM-yyyy, hh:mm a' }}
               }
               @case ('updatedAt') {
-                {{ race.updatedAt | date: 'dd MMM yyyy, hh:mm a' }}
+                {{ race.updatedAt | date: 'dd-MMM-yyyy, hh:mm a' }}
               }
               @case ('createdBy') {
                 {{ race.createdBy }}

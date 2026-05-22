@@ -24,8 +24,8 @@ export const EVENT_COLUMNS: TableColumn[] = [
   { field: 'organizationId', header: 'Organization ID' },
   { field: 'eventGoodies', header: 'Event Goodies' },
   { field: 'enabled', header: 'Enabled' },
-  { field: 'createdAt', header: 'Created At' },
-  { field: 'updatedAt', header: 'Updated At' },
+  { field: 'createdAt', header: 'Created At', type: 'datetime' },
+  { field: 'updatedAt', header: 'Updated At', type: 'datetime' },
   { field: 'createdBy', header: 'Created By' },
   { field: 'lastModifiedBy', header: 'Last Modified By' },
 ];

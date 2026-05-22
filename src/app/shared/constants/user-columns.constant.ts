@@ -41,8 +41,8 @@ export const USER_COLUMNS: TableColumn[] = [
     header: 'Credentials Non-Expired',
     visibleFor: [UserRole.ROOT, UserRole.ADMIN],
   },
-  { field: 'createdAt', header: 'Created At' },
-  { field: 'updatedAt', header: 'Updated At' },
+  { field: 'createdAt', header: 'Created At', type: 'datetime' },
+  { field: 'updatedAt', header: 'Updated At', type: 'datetime' },
   { field: 'createdBy', header: 'Created By' },
   { field: 'lastModifiedBy', header: 'Last Modified By' },
 ];

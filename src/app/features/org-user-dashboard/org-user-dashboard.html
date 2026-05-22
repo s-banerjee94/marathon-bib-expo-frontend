@@ -259,11 +259,11 @@
                 }
                 @if (org.subscriptionStartDate) {
                   <span class="opacity-60">Start</span>
-                  <span>{{ org.subscriptionStartDate | date: 'mediumDate' }}</span>
+                  <span>{{ org.subscriptionStartDate | date: 'dd-MMM-yyyy' }}</span>
                 }
                 @if (org.subscriptionEndDate) {
                   <span class="opacity-60">Expires</span>
-                  <span>{{ org.subscriptionEndDate | date: 'mediumDate' }}</span>
+                  <span>{{ org.subscriptionEndDate | date: 'dd-MMM-yyyy' }}</span>
                 }
               </div>
             </div>
