@@ -2,13 +2,16 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  DestroyRef,
   inject,
   OnInit,
   signal,
   ViewChild,
 } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup } from '@angular/forms';
+import { ActivatedRoute, ParamMap, Params, Router } from '@angular/router';
 import { CardModule } from 'primeng/card';
 import { TabsModule } from 'primeng/tabs';
 import { ButtonModule } from 'primeng/button';
@@ -71,6 +74,9 @@ export class ManageDistribution implements OnInit {
   private distributionService = inject(DistributionService);
   private confirmationService = inject(ConfirmationService);
   private fb = inject(FormBuilder);
+  private router = inject(Router);
+  private route = inject(ActivatedRoute);
+  private destroyRef = inject(DestroyRef);
 
   // Selection
   selectedOrganizationId = signal<number | undefined>(undefined);
@@ -111,21 +117,66 @@ export class ManageDistribution implements OnInit {
       UserRole.DISTRIBUTOR,
     ]);
     this.isRestrictedUser.set(restricted);
-    if (restricted) {
-      const user = this.authService.currentUser();
-      if (user?.organizationId) this.selectedOrganizationId.set(user.organizationId);
+
+    // URL is the source of truth for org/event filters. queryParamMap emits synchronously
+    // on subscribe, which seeds initial state (including bookmarked deep-links).
+    this.route.queryParamMap
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((params) => this.applyUrlToState(params));
+
+    // If a restricted user landed without URL filters, seed the URL with their org so links stay shareable.
+    if (restricted && !this.route.snapshot.queryParamMap.get('organizationId')) {
+      const orgId = this.authService.currentUser()?.organizationId;
+      if (orgId) {
+        this.pushStateToUrl({ organizationId: String(orgId) });
+      }
     }
   }
 
+  private applyUrlToState(params: ParamMap): void {
+    const orgIdParam = params.get('organizationId');
+    const eventIdParam = params.get('eventId');
+
+    const orgId =
+      orgIdParam && Number.isFinite(Number(orgIdParam)) ? Number(orgIdParam) : undefined;
+    const eventId =
+      eventIdParam && Number.isFinite(Number(eventIdParam)) ? Number(eventIdParam) : undefined;
+
+    const prevOrgId = this.selectedOrganizationId();
+    const prevEventId = this.selectedEventId();
+
+    this.selectedOrganizationId.set(orgId);
+    this.selectedEventId.set(eventId);
+
+    if (orgId !== prevOrgId) {
+      this.eventSelector?.reset();
+    }
+
+    if (eventId && eventId !== prevEventId) {
+      this.activeTab.set('lookup');
+    }
+  }
+
+  private pushStateToUrl(updates: Params): void {
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: updates,
+      queryParamsHandling: 'merge',
+      replaceUrl: true,
+    });
+  }
+
   onOrganizationChange(organizationId: number | undefined): void {
-    this.selectedOrganizationId.set(organizationId);
-    this.eventSelector?.reset();
-    this.selectedEventId.set(undefined);
+    this.pushStateToUrl({
+      organizationId: organizationId != null ? String(organizationId) : null,
+      eventId: null,
+    });
   }
 
   onEventChange(eventId: number | undefined): void {
-    this.selectedEventId.set(eventId);
-    if (eventId) this.activeTab.set('lookup');
+    this.pushStateToUrl({
+      eventId: eventId != null ? String(eventId) : null,
+    });
   }
 
   onTabChange(value: string | number | undefined): void {

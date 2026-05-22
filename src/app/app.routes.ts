@@ -36,11 +36,8 @@ export const routes: Routes = [
   },
   {
     path: 'distribution',
-    loadComponent: () =>
-      import('./features/manage-distribution/manage-distribution').then(
-        (m) => m.ManageDistribution,
-      ),
-    canActivate: [authGuard],
+    loadChildren: () =>
+      import('./features/distribution/distribution.routes').then((m) => m.DISTRIBUTION_ROUTES),
   },
   {
     path: 'unauthorized',
