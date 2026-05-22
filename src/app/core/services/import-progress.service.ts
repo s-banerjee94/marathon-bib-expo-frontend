@@ -4,6 +4,7 @@ import { BatchJobStatusResponse } from '../models/participant.model';
 import { ParticipantService } from './participant.service';
 import { ErrorHandlerService } from './error-handler.service';
 import { ToastService } from './toast.service';
+import { LocalStorageService } from './local-storage.service';
 import { STORAGE_KEYS } from '../../shared/constants/storage-keys.constant';
 
 interface CompletionEvent {
@@ -37,6 +38,7 @@ export class ImportProgressService {
   private readonly participantService = inject(ParticipantService);
   private readonly errorHandler = inject(ErrorHandlerService);
   private readonly toast = inject(ToastService);
+  private readonly storage = inject(LocalStorageService);
 
   private readonly jobsSignal = signal<InternalJobEntry[]>([]);
   readonly jobs = computed<ImportJobEntry[]>(() => this.jobsSignal());
@@ -136,22 +138,18 @@ export class ImportProgressService {
   }
 
   private persistActive(): void {
-    try {
-      const entries: PersistedImport[] = this.jobsSignal()
-        .filter((j) => !this.isTerminal(j.status()))
-        .map((j) => ({
-          eventId: j.eventId,
-          jobExecutionId: j.jobExecutionId,
-          startedAt: j.startedAt,
-        }));
+    const entries: PersistedImport[] = this.jobsSignal()
+      .filter((j) => !this.isTerminal(j.status()))
+      .map((j) => ({
+        eventId: j.eventId,
+        jobExecutionId: j.jobExecutionId,
+        startedAt: j.startedAt,
+      }));
 
-      if (entries.length === 0) {
-        localStorage.removeItem(STORAGE_KEYS.ACTIVE_IMPORTS);
-      } else {
-        localStorage.setItem(STORAGE_KEYS.ACTIVE_IMPORTS, JSON.stringify(entries));
-      }
-    } catch {
-      // ignore quota / unavailable storage
+    if (entries.length === 0) {
+      this.storage.remove(STORAGE_KEYS.ACTIVE_IMPORTS);
+    } else {
+      this.storage.setJSON(STORAGE_KEYS.ACTIVE_IMPORTS, entries);
     }
   }
 
@@ -166,20 +164,7 @@ export class ImportProgressService {
   }
 
   private restoreFromStorage(): void {
-    let raw: string | null = null;
-    try {
-      raw = localStorage.getItem(STORAGE_KEYS.ACTIVE_IMPORTS);
-    } catch {
-      return;
-    }
-    if (!raw) return;
-
-    let entries: unknown;
-    try {
-      entries = JSON.parse(raw);
-    } catch {
-      return;
-    }
+    const entries = this.storage.getJSON<unknown>(STORAGE_KEYS.ACTIVE_IMPORTS);
     if (!Array.isArray(entries)) return;
 
     const now = Date.now();

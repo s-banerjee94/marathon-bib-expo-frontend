@@ -2,196 +2,131 @@
 @import 'tailwindcss-primeui';
 @import 'primeicons/primeicons.css';
 
-/* ============================================================================
-   Layout Variables (Required - can't be replaced with Tailwind)
-   ============================================================================ */
+/* Tailwind dark variant — class-contains match (Sakai pattern) for flexibility */
+@custom-variant dark (&:where([class*="app-dark"], [class*="app-dark"] *));
+
+/* Semantic alias layer (Sakai pattern)
+ * Maps PrimeNG --p-* tokens to unprefixed semantic names so app CSS stays readable
+ * and decoupled from PrimeNG's CSS variable naming.
+ */
 :root {
+  /* Surfaces */
+  --surface-ground: var(--p-surface-100);
+  --surface-card: var(--p-content-background);
+  --surface-overlay: var(--p-overlay-popover-background);
+  --surface-hover: var(--p-content-hover-background);
+  --surface-border: var(--p-content-border-color);
+
+  /* Text */
+  --text-color: var(--p-text-color);
+  --text-color-secondary: var(--p-text-muted-color);
+
+  /* Primary */
+  --primary-color: var(--p-primary-color);
+  --primary-contrast-color: var(--p-primary-contrast-color);
+
+  /* Misc */
+  --content-border-radius: var(--p-content-border-radius);
+  --transition-duration: var(--p-transition-duration);
+  --layout-section-transition-duration: 0.2s;
+  --maskbg: var(--p-mask-background);
+
+  /* Layout primitives */
   --sidebar-width: 250px;
   --sidebar-width-mobile: 320px;
   --topbar-height: 56px;
 }
 
-/* ============================================================================
-   Body Scroll Lock (for mobile overlay)
-   ============================================================================ */
+:root.app-dark {
+  --surface-ground: var(--p-surface-950);
+}
+
+/* Smooth color transitions when theme/dark mode changes */
+html {
+  transition:
+    background-color 200ms ease,
+    color 200ms ease;
+}
+
+body {
+  background-color: var(--surface-ground);
+  color: var(--text-color);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
 body.blocked-scroll {
-  @apply overflow-hidden;
+  overflow: hidden;
 }
 
-/* ============================================================================
-   Topbar/Navbar Styles (PrimeNG component override)
-   ============================================================================ */
-.layout-topbar {
-  @apply fixed! top-0 left-0 right-0 z-[999] rounded-none!;
-  height: var(--topbar-height);
-  background-color: var(--be-surface-0) !important;
-  border-bottom: 1px solid var(--be-surface-200) !important;
-}
-
-.app-dark .layout-topbar {
-  background-color: var(--be-surface-900) !important;
-  border-bottom-color: var(--be-surface-700) !important;
-}
-
-/* ============================================================================
-   Layout Wrapper
-   ============================================================================ */
+/* Layout offset modifiers (drive sidebar/main coordination) */
 .layout-wrapper {
-  @apply min-h-screen;
+  min-height: 100vh;
 }
 
-/* ============================================================================
-   Sidebar Styles
-   ============================================================================ */
-.layout-sidebar {
-  @apply fixed left-0 overflow-y-auto overflow-x-hidden z-[998] p-4 shadow-none;
-  top: var(--topbar-height);
-  width: var(--sidebar-width);
-  height: calc(100vh - var(--topbar-height));
-  background-color: var(--be-surface-0);
-  border-right: 1px solid var(--be-surface-200);
-}
-
-.app-dark .layout-sidebar {
-  background-color: var(--be-surface-900);
-  border-right-color: var(--be-surface-700);
-}
-
-/* Sidebar transforms are handled by Angular animations (@sidebarSlide) */
-
-/* ============================================================================
-   Main Content Styles
-   ============================================================================ */
 .layout-main {
-  @apply ml-0;
+  margin-left: 0;
   min-height: calc(100vh - var(--topbar-height));
   padding-top: var(--topbar-height);
   transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.layout-main-container {
-  @apply p-6;
 }
 
 .layout-static .layout-main {
   margin-left: var(--sidebar-width);
 }
 
-.layout-static-inactive .layout-main {
-  @apply ml-0;
+.layout-static.layout-static-inactive .layout-main {
+  margin-left: 0;
 }
 
-/* ============================================================================
-   Menu Link Styles (Theme-dependent colors)
-   ============================================================================ */
-.menu-link {
-  color: var(--be-text-color);
-  @apply transition-colors duration-150;
-}
-
-.menu-link:hover {
-  background-color: var(--be-surface-100);
-}
-
-.app-dark .menu-link:hover {
-  background-color: var(--be-surface-800);
-}
-
-.menu-link.active-route {
-  background-color: var(--be-primary-50);
-  color: var(--be-primary-500);
-}
-
-.app-dark .menu-link.active-route {
-  background-color: color-mix(in srgb, var(--be-primary-500), transparent 85%);
-  color: var(--be-primary-400);
-}
-
-/* ============================================================================
-   Menu Badge (Theme-dependent)
-   ============================================================================ */
-.menu-badge {
-  background-color: var(--be-primary-500);
-}
-
-/* ============================================================================
-   Menu Separator (Theme-dependent)
-   ============================================================================ */
-.menu-separator {
-  background-color: var(--be-surface-200);
-}
-
-.app-dark .menu-separator {
-  background-color: var(--be-surface-700);
-}
-
-/* ============================================================================
-   Submenu Animation
-   ============================================================================ */
-.submenu {
-  @apply max-h-0 overflow-hidden transition-all duration-300 ease-in-out;
-}
-
-.submenu.submenu-visible {
-  max-height: 500px;
-}
-
-/* ============================================================================
-   Overlay Mask
-   ============================================================================ */
-.layout-mask {
-  @apply fixed left-0 right-0 bottom-0 z-[997] cursor-pointer;
+.layout-sidebar {
   top: var(--topbar-height);
-  background-color: rgba(0, 0, 0, 0.4);
-  animation: fadeIn 0.3s ease;
+  width: var(--sidebar-width);
+  height: calc(100vh - var(--topbar-height));
 }
 
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
-/* ============================================================================
-   Mobile/Tablet Styles
-   ============================================================================ */
 @media (max-width: 991px) {
   .layout-sidebar {
     width: var(--sidebar-width-mobile);
-    @apply max-w-[85vw] border-r-0;
+    max-width: 85vw;
   }
 
   .layout-mobile-active .layout-sidebar {
-    @apply shadow-xl;
+    box-shadow:
+      0 25px 50px -12px rgb(0 0 0 / 0.25),
+      0 8px 10px -6px rgb(0 0 0 / 0.1);
   }
 
-  .layout-main {
-    @apply ml-0!;
-  }
-
-  /* Touch-friendly menu items */
-  .menu-link {
-    @apply min-h-12 py-3.5 px-4;
-  }
-
-  .menu-icon {
-    @apply text-xl;
-  }
-
-  .menu-label {
-    @apply text-[0.9375rem];
-  }
-
-  .submenu .menu-link {
-    @apply min-h-11 py-3 px-4;
+  .layout-static .layout-main {
+    margin-left: 0;
   }
 }
 
 @media (max-width: 480px) {
   .layout-sidebar {
-    @apply w-[85vw] max-w-[300px];
+    width: 85vw;
+    max-width: 300px;
   }
+}
+
+/* Menu link states (Sakai pattern — uses semantic alias tokens) */
+.menu-link {
+  color: var(--text-color);
+}
+
+.menu-link:hover {
+  background-color: var(--surface-hover);
+}
+
+.menu-link.active-route {
+  color: var(--primary-color);
+  font-weight: 700;
+  background-color: color-mix(in srgb, var(--primary-color), transparent 90%);
+}
+
+/* View Transitions API — smooth crossfade when toggling dark mode (Sakai pattern) */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 250ms;
+  mix-blend-mode: normal;
 }

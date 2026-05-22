@@ -109,7 +109,7 @@ export class OrgAdminDashboard implements OnInit {
 
   get chartOptions() {
     const textColor = getComputedStyle(document.documentElement)
-      .getPropertyValue('--be-text-color')
+      .getPropertyValue('--p-text-color')
       .trim();
     return {
       plugins: { legend: { position: 'bottom' as const, labels: { color: textColor } } },
@@ -204,14 +204,14 @@ export class OrgAdminDashboard implements OnInit {
             byRole[UserRole.DISTRIBUTOR] ?? 0,
           ],
           backgroundColor: [
-            ds.getPropertyValue('--be-cyan-500').trim() || '#06b6d4',
-            ds.getPropertyValue('--be-orange-500').trim() || '#f97316',
-            ds.getPropertyValue('--be-indigo-500').trim() || '#6366f1',
+            ds.getPropertyValue('--p-cyan-500').trim() || '#06b6d4',
+            ds.getPropertyValue('--p-orange-500').trim() || '#f97316',
+            ds.getPropertyValue('--p-indigo-500').trim() || '#6366f1',
           ],
           hoverBackgroundColor: [
-            ds.getPropertyValue('--be-cyan-400').trim() || '#22d3ee',
-            ds.getPropertyValue('--be-orange-400').trim() || '#fb923c',
-            ds.getPropertyValue('--be-indigo-400').trim() || '#818cf8',
+            ds.getPropertyValue('--p-cyan-400').trim() || '#22d3ee',
+            ds.getPropertyValue('--p-orange-400').trim() || '#fb923c',
+            ds.getPropertyValue('--p-indigo-400').trim() || '#818cf8',
           ],
         },
       ],
@@ -237,16 +237,16 @@ export class OrgAdminDashboard implements OnInit {
             byStatus[EventStatus.CANCELLED] ?? 0,
           ],
           backgroundColor: [
-            ds.getPropertyValue('--be-green-500').trim() || '#22c55e',
-            ds.getPropertyValue('--be-blue-500').trim() || '#3b82f6',
-            ds.getPropertyValue('--be-gray-500').trim() || '#6b7280',
-            ds.getPropertyValue('--be-red-500').trim() || '#ef4444',
+            ds.getPropertyValue('--p-green-500').trim() || '#22c55e',
+            ds.getPropertyValue('--p-blue-500').trim() || '#3b82f6',
+            ds.getPropertyValue('--p-gray-500').trim() || '#6b7280',
+            ds.getPropertyValue('--p-red-500').trim() || '#ef4444',
           ],
           hoverBackgroundColor: [
-            ds.getPropertyValue('--be-green-400').trim() || '#4ade80',
-            ds.getPropertyValue('--be-blue-400').trim() || '#60a5fa',
-            ds.getPropertyValue('--be-gray-400').trim() || '#9ca3af',
-            ds.getPropertyValue('--be-red-400').trim() || '#f87171',
+            ds.getPropertyValue('--p-green-400').trim() || '#4ade80',
+            ds.getPropertyValue('--p-blue-400').trim() || '#60a5fa',
+            ds.getPropertyValue('--p-gray-400').trim() || '#9ca3af',
+            ds.getPropertyValue('--p-red-400').trim() || '#f87171',
           ],
         },
       ],

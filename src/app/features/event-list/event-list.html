@@ -1,7 +1,7 @@
 @if (isMobile() && hasFormRoute()) {
   <router-outlet />
 } @else {
-  <div class="p-6">
+  <div class="p-2 sm:p-3 md:p-4">
     <p-confirmpopup />
     <p-menu #statusMenu [model]="statusMenuItems()" [popup]="true" appendTo="body" />
 
@@ -180,8 +180,8 @@
                         canChangeStatus ? 'cursor-pointer hover:opacity-80 transition-opacity' : ''
                       "
                       [style]="{
-                        '--be-tag-font-size': '0.75rem',
-                        '--be-tag-padding': '0.25rem 0.5rem',
+                        '--p-tag-font-size': '0.75rem',
+                        '--p-tag-padding': '0.25rem 0.5rem',
                       }"
                       [value]="$any(getCellValue(event, col.field))"
                       tooltipPosition="top"
@@ -204,8 +204,8 @@
                         isRootOrAdmin ? 'cursor-pointer hover:opacity-80 transition-opacity' : ''
                       "
                       [style]="{
-                        '--be-tag-font-size': '0.75rem',
-                        '--be-tag-padding': '0.25rem 0.5rem',
+                        '--p-tag-font-size': '0.75rem',
+                        '--p-tag-padding': '0.25rem 0.5rem',
                       }"
                       [value]="event.enabled ? 'Enabled' : 'Disabled'"
                       tooltipPosition="top"

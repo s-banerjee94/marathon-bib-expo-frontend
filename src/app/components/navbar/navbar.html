@@ -1,4 +1,10 @@
-<p-menubar styleClass="layout-topbar">
+<p-menubar
+  styleClass="layout-topbar fixed top-0 left-0 right-0 z-[999] rounded-none border-0 border-b h-[var(--topbar-height)]"
+  [style]="{
+    'background-color': 'var(--surface-card)',
+    'border-bottom-color': 'var(--surface-border)',
+  }"
+>
   <ng-template pTemplate="start">
     <div class="flex items-center">
       @if (isAuthenticated()) {
@@ -8,6 +14,7 @@
           [text]="true"
           icon="pi pi-bars"
           pTooltip="Toggle menu"
+          ariaLabel="Toggle navigation menu"
         />
       }
       <span class="px-4 font-semibold">Marathon Bib Expo</span>
@@ -21,6 +28,7 @@
         (onClick)="layoutService.toggleDarkMode()"
         [icon]="layoutService.isDarkTheme() ? 'pi pi-moon' : 'pi pi-sun'"
         [pTooltip]="layoutService.isDarkTheme() ? 'Switch to light mode' : 'Switch to dark mode'"
+        [ariaLabel]="layoutService.isDarkTheme() ? 'Switch to light mode' : 'Switch to dark mode'"
         [rounded]="true"
         [text]="true"
       />
@@ -33,8 +41,9 @@
           [text]="true"
           icon="pi pi-palette"
           pTooltip="Theme settings"
+          ariaLabel="Open theme settings"
         />
-        <p-popover #themePopover>
+        <p-popover #themePopover appendTo="body">
           <app-theme-configurator />
         </p-popover>
 
@@ -44,6 +53,11 @@
           [rounded]="true"
           [text]="true"
           pTooltip="Notifications"
+          [ariaLabel]="
+            notificationService.unreadCount() > 0
+              ? 'Notifications, ' + notificationService.unreadCount() + ' unread'
+              : 'Notifications'
+          "
         >
           <p-overlaybadge
             [value]="
@@ -60,7 +74,7 @@
         </p-button>
 
         <!-- Notification Popover -->
-        <p-popover #notifPopover>
+        <p-popover #notifPopover appendTo="body">
           <div class="flex flex-col w-80">
             <!-- Header -->
             <div class="flex items-center justify-between px-4 pt-3 pb-2">
@@ -68,7 +82,10 @@
               @if (notificationService.unreadCount() > 0) {
                 <span
                   class="text-[11px] font-semibold px-2 py-0.5 rounded-full"
-                  style="background: var(--p-primary-50); color: var(--p-primary-color)"
+                  style="
+                    background: color-mix(in srgb, var(--primary-color), transparent 90%);
+                    color: var(--primary-color);
+                  "
                 >
                   {{ notificationService.unreadCount() }} unread
                 </span>
@@ -81,15 +98,15 @@
                 <div class="flex flex-col items-center justify-center py-10 px-4">
                   <span
                     class="w-12 h-12 rounded-full flex items-center justify-center mb-3"
-                    style="background: var(--p-surface-100)"
+                    style="background: var(--surface-hover)"
                   >
                     <i
                       class="pi pi-bell-slash text-xl"
-                      style="color: var(--p-text-muted-color)"
+                      style="color: var(--text-color-secondary)"
                     ></i>
                   </span>
                   <p class="text-sm font-medium">All caught up</p>
-                  <p class="text-xs mt-1" style="color: var(--p-text-muted-color)">
+                  <p class="text-xs mt-1" style="color: var(--text-color-secondary)">
                     No notifications yet
                   </p>
                 </div>
@@ -100,7 +117,7 @@
                     class="flex flex-col gap-1 px-3 py-2.5 rounded-lg cursor-pointer transition-all"
                     [style]="
                       !notif.read
-                        ? 'background: var(--p-primary-50); border-left: 3px solid var(--p-primary-color)'
+                        ? 'background: color-mix(in srgb, var(--primary-color), transparent 90%); border-left: 3px solid var(--primary-color)'
                         : 'border-left: 3px solid transparent'
                     "
                     style="padding-left: calc(0.75rem - 3px)"
@@ -112,14 +129,14 @@
                       @if (!notif.read) {
                         <span
                           class="w-2 h-2 rounded-full shrink-0 mt-1.5"
-                          style="background: var(--p-primary-color)"
+                          style="background: var(--primary-color)"
                         ></span>
                       }
                     </div>
-                    <p class="text-xs line-clamp-2" style="color: var(--p-text-muted-color)">
+                    <p class="text-xs line-clamp-2" style="color: var(--text-color-secondary)">
                       {{ notif.message }}
                     </p>
-                    <span class="text-[11px]" style="color: var(--p-text-muted-color)">
+                    <span class="text-[11px]" style="color: var(--text-color-secondary)">
                       {{ notif.createdAt | date: 'dd MMM, h:mm a' }}
                     </span>
                   </div>
@@ -137,6 +154,7 @@
         shape="circle"
         size="normal"
         styleClass="cursor-pointer"
+        ariaLabel="Open user menu"
       ></p-avatar>
       <p-menu #menu [model]="items" popup="true"></p-menu>
     </div>

@@ -23,6 +23,7 @@ import { TableColumn } from '../../../shared/models/table-config.model';
 import { CATEGORY_COLUMNS } from '../../../shared/constants/category-columns.constant';
 import { STORAGE_KEYS } from '../../../shared/constants/storage-keys.constant';
 import { BUTTON_SIZE, FORM_INPUT_SIZE } from '../../../shared/constants/form.constants';
+import { LocalStorageService } from '../../../core/services/local-storage.service';
 import {
   enforceRequiredColumns,
   getVisibleCols,
@@ -60,6 +61,7 @@ export class CategorySection {
   private toast = inject(ToastService);
   private dialogService = inject(DialogService);
   private confirmationService = inject(ConfirmationService);
+  private storage = inject(LocalStorageService);
 
   categories = signal<Category[]>([]);
   races = signal<Race[]>([]);
@@ -76,6 +78,7 @@ export class CategorySection {
 
   constructor() {
     initializeColumnPreferences(
+      this.storage,
       CATEGORY_COLUMNS,
       DEFAULT_CATEGORY_FIELDS,
       STORAGE_KEYS.CATEGORY_TABLE_COLUMNS,
@@ -119,7 +122,7 @@ export class CategorySection {
 
   onColumnSelectionChange(): void {
     enforceRequiredColumns(this.selectedCols, CATEGORY_COLUMNS);
-    saveColumnPreferences(this.selectedCols, STORAGE_KEYS.CATEGORY_TABLE_COLUMNS);
+    saveColumnPreferences(this.storage, this.selectedCols, STORAGE_KEYS.CATEGORY_TABLE_COLUMNS);
   }
 
   onRaceChange(race: Race): void {

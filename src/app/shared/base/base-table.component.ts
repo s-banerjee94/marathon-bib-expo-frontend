@@ -8,6 +8,7 @@ import { PageableParams, PageableResponse } from '../../core/models/api.model';
 import { ErrorHandlerService } from '../../core/services/error-handler.service';
 import { ToastService } from '../../core/services/toast.service';
 import { AuthService } from '../../core/services/auth.service';
+import { LocalStorageService } from '../../core/services/local-storage.service';
 import { FORM_INPUT_SIZE } from '../constants/form.constants';
 
 /**
@@ -42,6 +43,7 @@ export abstract class BaseTableComponent<T, F extends TableFilterPreferences>
   protected toast = inject(ToastService);
   protected errorHandler = inject(ErrorHandlerService);
   protected authService = inject(AuthService);
+  protected storage = inject(LocalStorageService);
   protected dialogRef: DynamicDialogRef | null = null;
   protected searchSubject = new Subject<string>();
   // Abstract properties - must be implemented by subclasses
@@ -197,58 +199,36 @@ export abstract class BaseTableComponent<T, F extends TableFilterPreferences>
 
   protected loadColumnPreferences(): TableColumn[] {
     const required = this.getRequiredColumns();
-    try {
-      const savedPrefs = localStorage.getItem(this.columnPreferenceKey);
-      if (savedPrefs) {
-        const savedFields = JSON.parse(savedPrefs) as string[];
-        // Map saved field names back to column objects (drops stale fields)
-        const savedColumns = savedFields
-          .map((field) => this.allColumns.find((col) => col.field === field))
-          .filter((col): col is TableColumn => col !== undefined);
+    const savedFields = this.storage.getJSON<string[]>(this.columnPreferenceKey);
+    if (Array.isArray(savedFields)) {
+      // Map saved field names back to column objects (drops stale fields)
+      const savedColumns = savedFields
+        .map((field) => this.allColumns.find((col) => col.field === field))
+        .filter((col): col is TableColumn => col !== undefined);
 
-        if (savedColumns.length > 0) {
-          // Ensure required columns are always present (handles upgrades where
-          // a column was newly marked required after the user saved prefs).
-          const missing = required.filter((r) => !savedColumns.some((c) => c.field === r.field));
-          return [...savedColumns, ...missing];
-        }
+      if (savedColumns.length > 0) {
+        // Ensure required columns are always present
+        const missing = required.filter((r) => !savedColumns.some((c) => c.field === r.field));
+        return [...savedColumns, ...missing];
       }
-    } catch (error) {
-      console.error('Failed to load column preferences:', error);
     }
-    // First-time default: required columns only
     return required;
   }
 
   protected saveColumnPreferences(columns: TableColumn[]): void {
-    try {
-      // Save only the field names to keep localStorage lean
-      const fieldNames = columns.map((col) => col.field);
-      localStorage.setItem(this.columnPreferenceKey, JSON.stringify(fieldNames));
-    } catch (error) {
-      console.error('Failed to save column preferences:', error);
-    }
+    this.storage.setJSON(
+      this.columnPreferenceKey,
+      columns.map((col) => col.field),
+    );
   }
 
   protected loadFilterPreferences(): F {
-    try {
-      const savedPrefs = localStorage.getItem(this.filterPreferenceKey);
-      if (savedPrefs) {
-        return JSON.parse(savedPrefs) as F;
-      }
-    } catch (error) {
-      console.error('Failed to load filter preferences:', error);
-    }
-    // Default filter preferences
-    return this.getDefaultFilterPreferences();
+    const saved = this.storage.getJSON<F>(this.filterPreferenceKey);
+    return saved ?? this.getDefaultFilterPreferences();
   }
 
   protected saveFilterPreferences(prefs: F): void {
-    try {
-      localStorage.setItem(this.filterPreferenceKey, JSON.stringify(prefs));
-    } catch (error) {
-      console.error('Failed to save filter preferences:', error);
-    }
+    this.storage.setJSON(this.filterPreferenceKey, prefs);
   }
 
   protected buildPageableParams(): PageableParams {

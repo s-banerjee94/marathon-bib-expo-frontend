@@ -5,14 +5,27 @@ import Aura from '@primeuix/themes/aura';
 import Lara from '@primeuix/themes/lara';
 import Material from '@primeuix/themes/material';
 import Nora from '@primeuix/themes/nora';
+import { PrimeNG } from 'primeng/config';
 import { STORAGE_KEYS } from '../../shared/constants/storage-keys.constant';
+import { LocalStorageService } from './local-storage.service';
+
+export type BorderRadiusMode = 'square' | 'default' | 'rounded';
+export type InputVariant = 'outlined' | 'filled';
+
+const CONFIG_VERSION = 3;
 
 export interface LayoutConfig {
+  version: number;
   preset: string;
   primary: string;
   surface: string | null;
   darkTheme: boolean;
   menuMode: 'static' | 'overlay';
+  fontScale: number;
+  ripple: boolean;
+  inputVariant: InputVariant;
+  borderRadius: BorderRadiusMode;
+  followSystem: boolean;
 }
 
 export interface LayoutState {
@@ -40,11 +53,17 @@ export interface SurfacePalette {
 }
 
 const DEFAULT_CONFIG: LayoutConfig = {
+  version: CONFIG_VERSION,
   preset: 'Aura',
-  primary: 'emerald',
+  primary: 'noir',
   surface: null,
   darkTheme: false,
   menuMode: 'static',
+  fontScale: 14,
+  ripple: true,
+  inputVariant: 'outlined',
+  borderRadius: 'default',
+  followSystem: false,
 };
 
 const DEFAULT_LAYOUT_STATE: LayoutState = {
@@ -62,10 +81,35 @@ const PRESETS = {
 
 type PresetKey = keyof typeof PRESETS;
 
+const BORDER_RADIUS_VALUES: Record<BorderRadiusMode, Record<string, string>> = {
+  square: { xs: '0', sm: '0', md: '0', lg: '0', xl: '0' },
+  default: {
+    xs: '2px',
+    sm: '4px',
+    md: '6px',
+    lg: '8px',
+    xl: '12px',
+  },
+  rounded: {
+    xs: '6px',
+    sm: '10px',
+    md: '14px',
+    lg: '18px',
+    xl: '24px',
+  },
+};
+
 @Injectable({
   providedIn: 'root',
 })
 export class LayoutService {
+  // Injects MUST be declared before any field that calls a method using them,
+  // since class field initializers run in declaration order. `layoutConfig`
+  // below calls `loadConfig()` which uses `this.storage`.
+  private platformId = inject(PLATFORM_ID);
+  private primengConfig = inject(PrimeNG);
+  private storage = inject(LocalStorageService);
+
   layoutConfig = signal<LayoutConfig>(this.loadConfig());
   layoutState = signal<LayoutState>(DEFAULT_LAYOUT_STATE);
   isDarkTheme = computed(() => this.layoutConfig().darkTheme);
@@ -73,16 +117,47 @@ export class LayoutService {
   selectedSurface = computed(() => this.layoutConfig().surface);
   selectedPreset = computed(() => this.layoutConfig().preset);
   menuMode = computed(() => this.layoutConfig().menuMode);
+  fontScale = computed(() => this.layoutConfig().fontScale);
+  rippleEnabled = computed(() => this.layoutConfig().ripple);
+  inputVariant = computed(() => this.layoutConfig().inputVariant);
+  borderRadius = computed(() => this.layoutConfig().borderRadius);
+  followSystem = computed(() => this.layoutConfig().followSystem);
+  isNoirActive = computed(() => this.layoutConfig().primary === 'noir');
   isSidebarActive = computed(() => {
     const state = this.layoutState();
     const config = this.layoutConfig();
 
     if (this.isDesktop()) {
-      return config.menuMode === 'static' && !state.staticMenuDesktopInactive;
+      if (config.menuMode === 'static') {
+        return !state.staticMenuDesktopInactive;
+      }
+      // overlay mode on desktop: only visible when toggled open
+      return state.overlayMenuActive;
     }
+    // mobile: shown via overlay or mobile-menu flag
     return state.overlayMenuActive || state.mobileMenuActive;
   });
   presetOptions = Object.keys(PRESETS);
+  menuModeOptions: { label: string; value: 'static' | 'overlay' }[] = [
+    { label: 'Static', value: 'static' },
+    { label: 'Overlay', value: 'overlay' },
+  ];
+  inputVariantOptions: { label: string; value: InputVariant }[] = [
+    { label: 'Outlined', value: 'outlined' },
+    { label: 'Filled', value: 'filled' },
+  ];
+  borderRadiusOptions: { label: string; value: BorderRadiusMode }[] = [
+    { label: 'Square', value: 'square' },
+    { label: 'Default', value: 'default' },
+    { label: 'Rounded', value: 'rounded' },
+  ];
+  fontScaleOptions: { label: string; value: number }[] = [
+    { label: '12', value: 12 },
+    { label: '13', value: 13 },
+    { label: '14', value: 14 },
+    { label: '15', value: 15 },
+    { label: '16', value: 16 },
+  ];
   surfaces: SurfacePalette[] = [
     {
       name: 'slate',
@@ -252,43 +327,122 @@ export class LayoutService {
 
     return palettes;
   });
-  private platformId = inject(PLATFORM_ID);
+  private mediaQueryList: MediaQueryList | null = null;
+  private mediaQueryHandler: ((e: MediaQueryListEvent) => void) | null = null;
   private initialized = false;
 
   constructor() {
     effect(() => {
       const config = this.layoutConfig();
 
-      if (!this.initialized || !config) {
+      this.applyDarkMode(config);
+      this.applyFontScale(config.fontScale);
+      this.applyRipple(config.ripple);
+      this.applyInputVariant(config.inputVariant);
+
+      if (!this.initialized) {
         this.initialized = true;
         return;
       }
 
-      this.applyDarkMode(config);
       this.saveConfig(config);
     });
-
-    if (isPlatformBrowser(this.platformId)) {
-      this.applyDarkMode(this.layoutConfig());
-    }
   }
 
   initializeTheme(): void {
-    if (isPlatformBrowser(this.platformId)) {
-      this.applyPreset(this.layoutConfig().preset);
+    if (!isPlatformBrowser(this.platformId)) return;
+
+    const config = this.layoutConfig();
+    this.applyDarkMode(config);
+    this.applyFontScale(config.fontScale);
+    this.applyRipple(config.ripple);
+    this.applyInputVariant(config.inputVariant);
+    this.applyPreset(config.preset);
+    this.applyBorderRadius(config.borderRadius);
+
+    if (config.followSystem) {
+      this.attachSystemDarkListener();
     }
   }
 
   toggleDarkMode(): void {
-    this.layoutConfig.update((state) => ({ ...state, darkTheme: !state.darkTheme }));
+    const apply = () => {
+      this.layoutConfig.update((state) => ({
+        ...state,
+        darkTheme: !state.darkTheme,
+        followSystem: false,
+      }));
+      this.detachSystemDarkListener();
+    };
+
+    if (
+      isPlatformBrowser(this.platformId) &&
+      'startViewTransition' in document &&
+      typeof (document as Document & { startViewTransition?: unknown }).startViewTransition ===
+        'function'
+    ) {
+      (
+        document as Document & { startViewTransition: (cb: () => void) => void }
+      ).startViewTransition(apply);
+    } else {
+      apply();
+    }
+  }
+
+  setMenuMode(mode: 'static' | 'overlay'): void {
+    this.layoutConfig.update((state) => ({ ...state, menuMode: mode }));
+  }
+
+  setFontScale(scale: number): void {
+    this.layoutConfig.update((state) => ({ ...state, fontScale: scale }));
+  }
+
+  setRipple(value: boolean): void {
+    this.layoutConfig.update((state) => ({ ...state, ripple: value }));
+  }
+
+  setInputVariant(variant: InputVariant): void {
+    this.layoutConfig.update((state) => ({ ...state, inputVariant: variant }));
+  }
+
+  setBorderRadius(mode: BorderRadiusMode): void {
+    this.layoutConfig.update((state) => ({ ...state, borderRadius: mode }));
+    this.applyBorderRadius(mode);
+  }
+
+  setFollowSystem(value: boolean): void {
+    this.layoutConfig.update((state) => ({ ...state, followSystem: value }));
+    if (value) {
+      this.attachSystemDarkListener();
+      this.syncFromSystem();
+    } else {
+      this.detachSystemDarkListener();
+    }
+  }
+
+  resetToDefaults(): void {
+    this.detachSystemDarkListener();
+    this.layoutConfig.set({ ...DEFAULT_CONFIG });
+    this.applyPreset(DEFAULT_CONFIG.preset);
+    this.applyBorderRadius(DEFAULT_CONFIG.borderRadius);
   }
 
   onMenuToggle(): void {
+    const mode = this.layoutConfig().menuMode;
+
     if (this.isDesktop()) {
-      this.layoutState.update((state) => ({
-        ...state,
-        staticMenuDesktopInactive: !state.staticMenuDesktopInactive,
-      }));
+      if (mode === 'static') {
+        this.layoutState.update((state) => ({
+          ...state,
+          staticMenuDesktopInactive: !state.staticMenuDesktopInactive,
+        }));
+      } else {
+        // overlay desktop: toggle the slide-in panel
+        this.layoutState.update((state) => ({
+          ...state,
+          overlayMenuActive: !state.overlayMenuActive,
+        }));
+      }
     } else {
       this.layoutState.update((state) => ({
         ...state,
@@ -303,6 +457,11 @@ export class LayoutService {
       overlayMenuActive: false,
       mobileMenuActive: false,
     }));
+  }
+
+  /** Used by external callers to ensure the mask click clears both overlays. */
+  closeOverlays(): void {
+    this.hideMenu();
   }
 
   isDesktop(): boolean {
@@ -333,26 +492,65 @@ export class LayoutService {
       .preset(this.getPresetExt())
       .surfacePalette(surfacePalette)
       .use({ useDefaultOptions: true });
+
+    this.applyBorderRadius(this.layoutConfig().borderRadius);
+  }
+
+  private applyFontScale(scale: number): void {
+    if (!isPlatformBrowser(this.platformId)) return;
+    document.documentElement.style.fontSize = `${scale}px`;
+  }
+
+  private applyRipple(value: boolean): void {
+    this.primengConfig.ripple.set(value);
+  }
+
+  private applyInputVariant(variant: InputVariant): void {
+    this.primengConfig.inputStyle.set(variant);
+  }
+
+  private applyBorderRadius(mode: BorderRadiusMode): void {
+    const radii = BORDER_RADIUS_VALUES[mode];
+    updatePreset({
+      semantic: {
+        borderRadius: radii,
+      },
+    });
+  }
+
+  private attachSystemDarkListener(): void {
+    if (!isPlatformBrowser(this.platformId) || this.mediaQueryList) return;
+    this.mediaQueryList = window.matchMedia('(prefers-color-scheme: dark)');
+    this.mediaQueryHandler = (e: MediaQueryListEvent) => {
+      this.layoutConfig.update((state) => ({ ...state, darkTheme: e.matches }));
+    };
+    this.mediaQueryList.addEventListener('change', this.mediaQueryHandler);
+  }
+
+  private detachSystemDarkListener(): void {
+    if (this.mediaQueryList && this.mediaQueryHandler) {
+      this.mediaQueryList.removeEventListener('change', this.mediaQueryHandler);
+    }
+    this.mediaQueryList = null;
+    this.mediaQueryHandler = null;
+  }
+
+  private syncFromSystem(): void {
+    if (!isPlatformBrowser(this.platformId)) return;
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    this.layoutConfig.update((state) => ({ ...state, darkTheme: prefersDark }));
   }
 
   private loadConfig(): LayoutConfig {
-    if (isPlatformBrowser(this.platformId)) {
-      const saved = localStorage.getItem(STORAGE_KEYS.LAYOUT_CONFIG);
-      if (saved) {
-        try {
-          return { ...DEFAULT_CONFIG, ...JSON.parse(saved) };
-        } catch {
-          return DEFAULT_CONFIG;
-        }
-      }
+    const parsed = this.storage.getJSON<Partial<LayoutConfig>>(STORAGE_KEYS.LAYOUT_CONFIG);
+    if (!parsed || parsed.version !== CONFIG_VERSION) {
+      return { ...DEFAULT_CONFIG };
     }
-    return DEFAULT_CONFIG;
+    return { ...DEFAULT_CONFIG, ...parsed };
   }
 
   private saveConfig(config: LayoutConfig): void {
-    if (isPlatformBrowser(this.platformId)) {
-      localStorage.setItem(STORAGE_KEYS.LAYOUT_CONFIG, JSON.stringify(config));
-    }
+    this.storage.setJSON(STORAGE_KEYS.LAYOUT_CONFIG, config);
   }
 
   private applyDarkMode(config: LayoutConfig): void {

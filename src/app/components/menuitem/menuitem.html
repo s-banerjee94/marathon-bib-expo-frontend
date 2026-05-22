@@ -1,14 +1,18 @@
 @if (item().separator) {
-  <li class="menu-separator h-px my-2"></li>
+  <li
+    class="menu-separator h-px my-2"
+    [style]="{ 'background-color': 'var(--surface-border)' }"
+  ></li>
 } @else {
   <li [ngClass]="{ 'active-menuitem': isActive() || isExpanded() }" class="mb-1">
     @if (item().routerLink && !hasSubmenu) {
       <!-- Regular menu item with router link -->
       <a
         (click)="onItemClick($event)"
-        [ngClass]="{ 'active-route': isActive() }"
         [routerLink]="item().routerLink"
-        class="menu-link flex items-center py-3 px-4 rounded-lg no-underline cursor-pointer"
+        routerLinkActive="active-route"
+        [routerLinkActiveOptions]="{ exact: false }"
+        class="menu-link flex items-center py-3 px-4 rounded-lg no-underline cursor-pointer transition-colors duration-150 max-[991px]:min-h-12 max-[991px]:py-3.5"
         pRipple
       >
         @if (item().icon) {
@@ -18,7 +22,11 @@
         @if (item().badge) {
           <span
             [ngClass]="item().badgeClass"
-            class="menu-badge ml-auto py-1 px-2 text-xs rounded text-white"
+            class="ml-auto py-1 px-2 text-xs rounded"
+            [style]="{
+              'background-color': 'var(--primary-color)',
+              color: 'var(--primary-contrast-color)',
+            }"
           >
             {{ item().badge }}
           </span>
@@ -29,7 +37,7 @@
       <a
         (click)="onItemClick($event)"
         [ngClass]="{ 'active-route': isActive() }"
-        class="menu-link flex items-center py-3 px-4 rounded-lg no-underline cursor-pointer"
+        class="menu-link flex items-center py-3 px-4 rounded-lg no-underline cursor-pointer transition-colors duration-150 max-[991px]:min-h-12 max-[991px]:py-3.5"
         pRipple
       >
         @if (item().icon) {
@@ -39,7 +47,11 @@
         @if (item().badge) {
           <span
             [ngClass]="item().badgeClass"
-            class="menu-badge ml-auto py-1 px-2 text-xs rounded text-white"
+            class="ml-auto py-1 px-2 text-xs rounded"
+            [style]="{
+              'background-color': 'var(--primary-color)',
+              color: 'var(--primary-contrast-color)',
+            }"
           >
             {{ item().badge }}
           </span>
@@ -54,7 +66,10 @@
     }
 
     @if (hasSubmenu) {
-      <ul [ngClass]="{ 'submenu-visible': isExpanded() }" class="submenu list-none p-0 m-0 pl-4">
+      <ul
+        [ngClass]="isExpanded() ? 'max-h-[500px]' : 'max-h-0'"
+        class="list-none p-0 m-0 pl-4 overflow-hidden transition-all duration-300 ease-in-out"
+      >
         @for (child of item().items; track child.label; let i = $index) {
           <app-menuitem [index]="i" [item]="child" [parentKey]="key"></app-menuitem>
         }

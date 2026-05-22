@@ -1,32 +1,49 @@
-<div class="flex flex-col gap-4 w-64">
+<div class="flex flex-col gap-4 w-80 max-h-[75vh] overflow-y-auto px-1 py-1">
+  <!-- Header -->
+  <div class="flex items-center justify-between">
+    <span class="text-sm font-semibold">Theme settings</span>
+    @if (layoutService.isNoirActive()) {
+      <span
+        class="text-[10px] font-semibold px-2 py-0.5 rounded-full uppercase tracking-wide bg-emphasis text-color"
+        >Noir</span
+      >
+    }
+  </div>
+
+  <!-- Primary -->
   <div>
-    <span class="text-sm font-semibold">Primary</span>
+    <span class="text-xs font-semibold uppercase tracking-wide">Primary</span>
     <div class="pt-2 flex gap-2 flex-wrap justify-start">
       @for (primaryColor of layoutService.primaryColors(); track primaryColor.name) {
         <button
           (click)="updateColors($event, 'primary', primaryColor)"
           [ngClass]="{
-            'outline outline-primary': primaryColor.name === layoutService.selectedPrimary(),
+            'outline-2 outline-offset-1': primaryColor.name === layoutService.selectedPrimary(),
           }"
           [style]="{
             'background-color':
               primaryColor?.name === 'noir' ? 'var(--text-color)' : primaryColor?.palette?.['500'],
+            'outline-color':
+              primaryColor?.name === 'noir' ? 'var(--text-color)' : primaryColor?.palette?.['500'],
           }"
           [title]="primaryColor.name"
-          class="cursor-pointer w-5 h-5 rounded-full flex shrink-0 items-center justify-center outline-offset-1 shadow"
+          [attr.aria-label]="'Primary color: ' + primaryColor.name"
+          class="cursor-pointer w-5 h-5 rounded-full flex shrink-0 items-center justify-center shadow"
           type="button"
         ></button>
       }
     </div>
   </div>
+
+  <!-- Surface -->
   <div>
-    <span class="text-sm font-semibold">Surface</span>
+    <span class="text-xs font-semibold uppercase tracking-wide">Surface</span>
     <div class="pt-2 flex gap-2 flex-wrap justify-start">
       @for (surface of layoutService.surfaces; track surface.name) {
         <button
           (click)="updateColors($event, 'surface', surface)"
           [ngClass]="{
-            'outline outline-primary': layoutService.selectedSurface()
+            'outline-2 outline-offset-1': layoutService.selectedSurface()
               ? layoutService.selectedSurface() === surface.name
               : layoutService.isDarkTheme()
                 ? surface.name === 'zinc'
@@ -34,16 +51,22 @@
           }"
           [style]="{
             'background-color': surface?.palette?.['500'],
+            'outline-color': surface?.palette?.['500'],
           }"
           [title]="surface.name"
-          class="cursor-pointer w-5 h-5 rounded-full flex shrink-0 items-center justify-center p-0 outline-offset-1"
+          [attr.aria-label]="'Surface palette: ' + surface.name"
+          class="cursor-pointer w-5 h-5 rounded-full flex shrink-0 items-center justify-center p-0"
           type="button"
         ></button>
       }
     </div>
   </div>
+
+  <p-divider class="my-1!" />
+
+  <!-- Presets -->
   <div class="flex flex-col gap-2">
-    <span class="text-sm font-semibold">Presets</span>
+    <span class="text-xs font-semibold uppercase tracking-wide">Preset</span>
     <p-selectbutton
       (ngModelChange)="onPresetChange($event)"
       [allowEmpty]="false"
@@ -52,4 +75,98 @@
       size="small"
     />
   </div>
+
+  <!-- Menu mode -->
+  <div class="flex flex-col gap-2">
+    <span class="text-xs font-semibold uppercase tracking-wide">Menu</span>
+    <p-selectbutton
+      (ngModelChange)="onMenuModeChange($event)"
+      [allowEmpty]="false"
+      [ngModel]="layoutService.menuMode()"
+      [options]="layoutService.menuModeOptions"
+      optionLabel="label"
+      optionValue="value"
+      size="small"
+    />
+  </div>
+
+  <!-- Border radius -->
+  <div class="flex flex-col gap-2">
+    <span class="text-xs font-semibold uppercase tracking-wide">Corners</span>
+    <p-selectbutton
+      (ngModelChange)="onBorderRadiusChange($event)"
+      [allowEmpty]="false"
+      [ngModel]="layoutService.borderRadius()"
+      [options]="layoutService.borderRadiusOptions"
+      optionLabel="label"
+      optionValue="value"
+      size="small"
+    />
+  </div>
+
+  <!-- Input variant -->
+  <div class="flex flex-col gap-2">
+    <span class="text-xs font-semibold uppercase tracking-wide">Inputs</span>
+    <p-selectbutton
+      (ngModelChange)="onInputVariantChange($event)"
+      [allowEmpty]="false"
+      [ngModel]="layoutService.inputVariant()"
+      [options]="layoutService.inputVariantOptions"
+      optionLabel="label"
+      optionValue="value"
+      size="small"
+    />
+  </div>
+
+  <!-- Font scale -->
+  <div class="flex flex-col gap-2">
+    <span class="text-xs font-semibold uppercase tracking-wide">Font scale</span>
+    <p-selectbutton
+      (ngModelChange)="onFontScaleChange($event)"
+      [allowEmpty]="false"
+      [ngModel]="layoutService.fontScale()"
+      [options]="layoutService.fontScaleOptions"
+      optionLabel="label"
+      optionValue="value"
+      size="small"
+    />
+  </div>
+
+  <p-divider class="my-1!" />
+
+  <!-- Toggles -->
+  <div class="flex items-center justify-between">
+    <div class="flex flex-col">
+      <span class="text-sm">Ripple effect</span>
+      <span class="text-xs" style="color: var(--text-color-secondary)">Button press feedback</span>
+    </div>
+    <p-toggleswitch
+      [ngModel]="layoutService.rippleEnabled()"
+      (ngModelChange)="onRippleChange($event)"
+    />
+  </div>
+
+  <div class="flex items-center justify-between">
+    <div class="flex flex-col">
+      <span class="text-sm">Follow system</span>
+      <span class="text-xs" style="color: var(--text-color-secondary)">Sync dark mode with OS</span>
+    </div>
+    <p-toggleswitch
+      [ngModel]="layoutService.followSystem()"
+      (ngModelChange)="onFollowSystemChange($event)"
+    />
+  </div>
+
+  <p-divider class="my-1!" />
+
+  <!-- Reset -->
+  <p-button
+    (onClick)="onReset()"
+    icon="pi pi-refresh"
+    label="Reset to defaults"
+    severity="secondary"
+    size="small"
+    [outlined]="true"
+    [fluid]="true"
+  />
 </div>

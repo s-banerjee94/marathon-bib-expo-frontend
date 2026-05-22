@@ -2,6 +2,7 @@ import { Component, computed, effect, inject, PLATFORM_ID } from '@angular/core'
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { RouterOutlet } from '@angular/router';
 import { ToastModule } from 'primeng/toast';
+import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { Navbar } from './components/navbar/navbar';
 import { SidebarComponent } from './components/sidebar/sidebar';
 import { LayoutService } from './core/services/layout.service';
@@ -17,6 +18,7 @@ import { ImportProgressFloating } from './components/import-progress-floating/im
     Navbar,
     SidebarComponent,
     ToastModule,
+    ConfirmDialogModule,
     ImportProgressFloating,
   ],
   templateUrl: './app.html',

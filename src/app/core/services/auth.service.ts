@@ -3,9 +3,9 @@ import { HttpClient, HttpErrorResponse, HttpHeaders } from '@angular/common/http
 import { Observable, of, Subject, throwError } from 'rxjs';
 import { catchError, finalize, switchMap, tap } from 'rxjs/operators';
 import { AuthResponse, LoginRequest, User, UserRole } from '../models/user.model';
-import { STORAGE_KEYS } from '../../shared/constants/storage-keys.constant';
 import { BASE_URI } from '../../shared/constants/api.constant';
 import { getCookie } from '../utils/cookie.util';
+import { LocalStorageService } from './local-storage.service';
 
 const CSRF_COOKIE_NAME = 'csrfToken';
 const CSRF_HEADER_NAME = 'X-CSRF-Token';
@@ -30,18 +30,15 @@ export class AuthService {
   readonly tokenRefreshed$ = this.tokenRefreshedSubject.asObservable();
 
   private readonly http = inject(HttpClient);
+  private readonly storage = inject(LocalStorageService);
   private readonly authBase = `${BASE_URI}/auth`;
   private readonly loginUrl = `${this.authBase}/login`;
   private readonly refreshUrl = `${this.authBase}/refresh`;
   private readonly logoutUrl = `${this.authBase}/logout`;
   private readonly meUrl = `${BASE_URI}/users/me`;
 
-  constructor() {
-    // Drop any legacy token persisted by the previous in-localStorage scheme.
-    if (typeof localStorage !== 'undefined') {
-      localStorage.removeItem(STORAGE_KEYS.AUTH_TOKEN);
-    }
-  }
+  // Legacy localStorage tokens (from a prior in-localStorage auth scheme) are
+  // wiped on logout via LocalStorageService.clear(); no constructor cleanup needed.
 
   // ============================================================================
   // Bootstrap / refresh
@@ -188,10 +185,9 @@ export class AuthService {
     this.currentUserSignal.set(null);
     this.isAuthenticatedSignal.set(false);
     this.accessTokenSignal.set(null);
-    if (typeof localStorage !== 'undefined') {
-      localStorage.removeItem(STORAGE_KEYS.AUTH_TOKEN);
-      localStorage.removeItem(STORAGE_KEYS.USER);
-    }
+    // Wipe ALL persisted state on logout — theme, table prefs, in-flight imports,
+    // legacy tokens. The next session starts from defaults.
+    this.storage.clear();
   }
 
   private csrfHeaders(): HttpHeaders {

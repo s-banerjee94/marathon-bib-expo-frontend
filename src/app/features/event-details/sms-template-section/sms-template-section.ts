@@ -29,6 +29,7 @@ import {
 } from '../../../shared/constants/sms-template-columns.constant';
 import { STORAGE_KEYS } from '../../../shared/constants/storage-keys.constant';
 import { BUTTON_SIZE, FORM_INPUT_SIZE } from '../../../shared/constants/form.constants';
+import { LocalStorageService } from '../../../core/services/local-storage.service';
 import {
   enforceRequiredColumns,
   getVisibleCols,
@@ -65,6 +66,7 @@ export class SmsTemplateSection implements OnInit, OnDestroy {
   private toast = inject(ToastService);
   private dialogService = inject(DialogService);
   private confirmationService = inject(ConfirmationService);
+  private storage = inject(LocalStorageService);
 
   smsTemplates = signal<SmsTemplate[]>([]);
   isLoading = signal(true);
@@ -83,6 +85,7 @@ export class SmsTemplateSection implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     initializeColumnPreferences(
+      this.storage,
       SMS_TEMPLATE_COLUMNS,
       DEFAULT_SMS_TEMPLATE_COLUMNS,
       STORAGE_KEYS.SMS_TEMPLATE_TABLE_COLUMNS,
@@ -106,7 +109,7 @@ export class SmsTemplateSection implements OnInit, OnDestroy {
 
   onColumnSelectionChange(): void {
     enforceRequiredColumns(this.selectedCols, SMS_TEMPLATE_COLUMNS);
-    saveColumnPreferences(this.selectedCols, STORAGE_KEYS.SMS_TEMPLATE_TABLE_COLUMNS);
+    saveColumnPreferences(this.storage, this.selectedCols, STORAGE_KEYS.SMS_TEMPLATE_TABLE_COLUMNS);
   }
 
   onSearchInput(value: string): void {

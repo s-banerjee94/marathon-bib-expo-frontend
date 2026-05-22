@@ -25,6 +25,7 @@ import {
 } from '../../../shared/constants/race-columns.constant';
 import { STORAGE_KEYS } from '../../../shared/constants/storage-keys.constant';
 import { BUTTON_SIZE, FORM_INPUT_SIZE } from '../../../shared/constants/form.constants';
+import { LocalStorageService } from '../../../core/services/local-storage.service';
 import {
   enforceRequiredColumns,
   getVisibleCols,
@@ -60,6 +61,7 @@ export class RaceSection implements OnInit {
   private toast = inject(ToastService);
   private dialogService = inject(DialogService);
   private confirmationService = inject(ConfirmationService);
+  private storage = inject(LocalStorageService);
 
   races = signal<Race[]>([]);
   isLoading = signal(true);
@@ -73,6 +75,7 @@ export class RaceSection implements OnInit {
 
   ngOnInit(): void {
     initializeColumnPreferences(
+      this.storage,
       RACE_COLUMNS,
       DEFAULT_RACE_COLUMNS,
       STORAGE_KEYS.RACE_TABLE_COLUMNS,
@@ -84,7 +87,7 @@ export class RaceSection implements OnInit {
 
   onColumnSelectionChange(): void {
     enforceRequiredColumns(this.selectedCols, RACE_COLUMNS);
-    saveColumnPreferences(this.selectedCols, STORAGE_KEYS.RACE_TABLE_COLUMNS);
+    saveColumnPreferences(this.storage, this.selectedCols, STORAGE_KEYS.RACE_TABLE_COLUMNS);
   }
 
   loadRaces(): void {

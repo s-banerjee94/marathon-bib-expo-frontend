@@ -24,6 +24,7 @@ import { getGenderDisplay, getGenderSeverity } from '../../../../shared/utils/pa
 import { BUTTON_SIZE, FORM_INPUT_SIZE } from '../../../../shared/constants/form.constants';
 import { LOOKUP_SEARCH_TYPES } from '../../../../shared/constants/participant-columns.constant';
 import { TableColumn } from '../../../../shared/models/table-config.model';
+import { LocalStorageService } from '../../../../core/services/local-storage.service';
 
 @Component({
   selector: 'app-participant-table-tab',
@@ -51,6 +52,7 @@ import { TableColumn } from '../../../../shared/models/table-config.model';
 })
 export class ParticipantTableTab {
   private eventService = inject(EventService);
+  private storage = inject(LocalStorageService);
 
   // Inputs
   participants = input.required<Participant[]>();
@@ -171,26 +173,16 @@ export class ParticipantTableTab {
       const key = this.storageKey();
 
       if (cols.length > 0 && this.selectedCols().length === 0) {
-        // Try to load from localStorage if key is provided
         if (key) {
-          try {
-            const saved = localStorage.getItem(key);
-            if (saved) {
-              const savedFields: string[] = JSON.parse(saved);
-              // Load saved columns + ensure required columns are included
-              const savedCols = cols.filter(
-                (col) => savedFields.includes(col.field) || col.required,
-              );
-              if (savedCols.length > 0) {
-                this.selectedCols.set(savedCols);
-                return;
-              }
+          const savedFields = this.storage.getJSON<string[]>(key);
+          if (Array.isArray(savedFields)) {
+            const savedCols = cols.filter((col) => savedFields.includes(col.field) || col.required);
+            if (savedCols.length > 0) {
+              this.selectedCols.set(savedCols);
+              return;
             }
-          } catch (e) {
-            console.warn('Failed to load column preferences from localStorage', e);
           }
         }
-
         // Default: select all columns
         this.selectedCols.set([...cols]);
       }
@@ -224,15 +216,13 @@ export class ParticipantTableTab {
     // Update the signal
     this.selectedCols.set(updatedSelection);
 
-    // Auto-save to localStorage if key is provided
+    // Auto-save via central LocalStorageService if key is provided
     const key = this.storageKey();
     if (key) {
-      try {
-        const fields = updatedSelection.map((col) => col.field);
-        localStorage.setItem(key, JSON.stringify(fields));
-      } catch (e) {
-        console.warn('Failed to save column preferences to localStorage', e);
-      }
+      this.storage.setJSON(
+        key,
+        updatedSelection.map((col) => col.field),
+      );
     }
   }
 

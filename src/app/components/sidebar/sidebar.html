@@ -2,7 +2,11 @@
   [@sidebarSlide]="animationState()"
   (click)="onSidebarClick($event)"
   aria-label="Main navigation"
-  class="layout-sidebar"
+  class="layout-sidebar fixed left-0 overflow-y-auto overflow-x-hidden z-[998] p-4 shadow-none border-r max-[991px]:border-r-0"
+  [style]="{
+    'background-color': 'var(--surface-card)',
+    'border-right-color': 'var(--surface-border)',
+  }"
   role="navigation"
 >
   <app-menu></app-menu>

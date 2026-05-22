@@ -1,11 +1,16 @@
 import { WritableSignal } from '@angular/core';
 import { TableColumn } from '../models/table-config.model';
+import { LocalStorageService } from '../../core/services/local-storage.service';
 
 /**
  * Initialize column signals from saved localStorage preferences or defaults.
  * Required columns are always included regardless of saved prefs or defaults.
+ *
+ * Callers pass their injected LocalStorageService — all storage access goes
+ * through the central service so logout-wipe stays comprehensive.
  */
 export function initializeColumnPreferences(
+  storage: LocalStorageService,
   allColumns: TableColumn[],
   defaultFields: string[],
   storageKey: string,
@@ -15,18 +20,13 @@ export function initializeColumnPreferences(
   cols.set(allColumns);
 
   const required = allColumns.filter((col) => col.required);
-  const savedColumns = localStorage.getItem(storageKey);
+  const savedFields = storage.getJSON<string[]>(storageKey);
 
-  if (savedColumns) {
-    try {
-      const savedFields = JSON.parse(savedColumns) as string[];
-      const selected = allColumns.filter((col) => savedFields.includes(col.field));
-      if (selected.length > 0) {
-        selectedCols.set(mergeRequired(selected, required));
-        return;
-      }
-    } catch {
-      // Fall through to defaults
+  if (Array.isArray(savedFields)) {
+    const selected = allColumns.filter((col) => savedFields.includes(col.field));
+    if (selected.length > 0) {
+      selectedCols.set(mergeRequired(selected, required));
+      return;
     }
   }
 
@@ -35,14 +35,15 @@ export function initializeColumnPreferences(
 }
 
 /**
- * Save column selection to localStorage.
+ * Save column selection to localStorage via the central service.
  */
 export function saveColumnPreferences(
+  storage: LocalStorageService,
   selectedCols: WritableSignal<TableColumn[]>,
   storageKey: string,
 ): void {
   const selectedFields = selectedCols().map((col) => col.field);
-  localStorage.setItem(storageKey, JSON.stringify(selectedFields));
+  storage.setJSON(storageKey, selectedFields);
 }
 
 /**

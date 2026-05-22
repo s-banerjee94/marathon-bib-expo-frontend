@@ -62,8 +62,8 @@
           "options": {
             "proxyConfig": "proxy.conf.json",
             "ssl": true,
-            "sslCert": "cert/certcert.pem",
-            "sslKey": "cert/certkey.pem"
+            "sslCert": "cert/cert.pem",
+            "sslKey": "cert/key.pem"
           },
           "configurations": {
             "production": {

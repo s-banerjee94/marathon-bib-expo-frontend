@@ -36,6 +36,7 @@ import {
 } from '../../../shared/constants/sms-campaign-columns.constant';
 import { STORAGE_KEYS } from '../../../shared/constants/storage-keys.constant';
 import { BUTTON_SIZE, FORM_INPUT_SIZE } from '../../../shared/constants/form.constants';
+import { LocalStorageService } from '../../../core/services/local-storage.service';
 import {
   enforceRequiredColumns,
   getVisibleCols,
@@ -74,6 +75,7 @@ export class SmsCampaignSection implements OnInit {
   private toast = inject(ToastService);
   private dialogService = inject(DialogService);
   private confirmationService = inject(ConfirmationService);
+  private storage = inject(LocalStorageService);
 
   campaigns = signal<SmsCampaign[]>([]);
   isLoading = signal(true);
@@ -90,6 +92,7 @@ export class SmsCampaignSection implements OnInit {
 
   ngOnInit(): void {
     initializeColumnPreferences(
+      this.storage,
       SMS_CAMPAIGN_COLUMNS,
       DEFAULT_SMS_CAMPAIGN_COLUMNS,
       STORAGE_KEYS.SMS_CAMPAIGN_TABLE_COLUMNS,
@@ -101,7 +104,7 @@ export class SmsCampaignSection implements OnInit {
 
   onColumnSelectionChange(): void {
     enforceRequiredColumns(this.selectedCols, SMS_CAMPAIGN_COLUMNS);
-    saveColumnPreferences(this.selectedCols, STORAGE_KEYS.SMS_CAMPAIGN_TABLE_COLUMNS);
+    saveColumnPreferences(this.storage, this.selectedCols, STORAGE_KEYS.SMS_CAMPAIGN_TABLE_COLUMNS);
   }
 
   loadCampaigns(): void {

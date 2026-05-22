@@ -1,17 +1,24 @@
 <p-toast />
+<p-confirmdialog />
 
 <div [ngClass]="layoutClasses()" class="layout-wrapper">
   <app-navbar></app-navbar>
 
   @if (isAuthenticated()) {
     <app-sidebar></app-sidebar>
-    @if (layoutService.layoutState().mobileMenuActive) {
-      <div (click)="onMaskClick()" class="layout-mask"></div>
+    @if (
+      layoutService.layoutState().mobileMenuActive || layoutService.layoutState().overlayMenuActive
+    ) {
+      <div
+        (click)="onMaskClick()"
+        class="fixed left-0 right-0 bottom-0 top-[var(--topbar-height)] z-[997] cursor-pointer"
+        [style]="{ 'background-color': 'var(--maskbg)' }"
+      ></div>
     }
   }
 
   <main class="layout-main">
-    <div class="layout-main-container">
+    <div class="p-3 sm:p-4 md:p-5">
       <router-outlet></router-outlet>
     </div>
   </main>
