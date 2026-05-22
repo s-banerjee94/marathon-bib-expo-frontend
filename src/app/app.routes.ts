@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 import { authGuard } from './core/guards/auth.guard';
+import { pageTitle } from './shared/constants/app.constant';
 
 export const routes: Routes = [
   {
@@ -10,11 +11,13 @@ export const routes: Routes = [
   {
     path: 'login',
     loadComponent: () => import('./features/auth/login/login').then((m) => m.Login),
+    title: pageTitle('Login'),
   },
   {
     path: 'dashboard',
     loadComponent: () => import('./features/dashboard/dashboard').then((m) => m.Dashboard),
     canActivate: [authGuard],
+    title: pageTitle('Dashboard'),
   },
   {
     path: 'organizations',
@@ -41,11 +44,12 @@ export const routes: Routes = [
   },
   {
     path: 'unauthorized',
-    loadComponent: () =>
-      import('./features/unauthorized/unauthorized.component').then((m) => m.UnauthorizedComponent),
+    loadComponent: () => import('./features/unauthorized/unauthorized').then((m) => m.Unauthorized),
+    title: pageTitle('Unauthorized'),
   },
   {
     path: '**',
-    redirectTo: '/dashboard',
+    loadComponent: () => import('./features/not-found/not-found').then((m) => m.NotFound),
+    title: pageTitle('Not Found'),
   },
 ];
