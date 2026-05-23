@@ -59,41 +59,23 @@ The application starts at **http://localhost:4200**.
 
 ## Architecture
 
-All components are **standalone** — no NgModule pattern is used anywhere in the project.
+All components are **standalone** — no NgModule pattern is used anywhere in the project. The codebase is organized by feature area; each feature owns its own routes, components, and services.
 
 ```
 src/app/
-├── core/                     # Infrastructure: auth, guards, interceptors, services
-│   ├── guards/               # Functional route guards (authGuard, rootGuard, adminGuard, …)
-│   ├── interceptors/         # authInterceptor (JWT injection), errorInterceptor (401 redirect)
-│   ├── models/               # Domain models (User, Organization, Role enums, API types)
-│   └── services/             # AuthService, UserService, OrganizationService, ErrorHandlerService
-│
-├── features/                 # Feature components (lazy-loaded via router)
-│   ├── auth/login/           # Login page
-│   ├── root-dashboard/       # ROOT role dashboard
-│   ├── admin-dashboard/      # ADMIN role dashboard
-│   ├── org-admin-dashboard/  # ORGANIZER_ADMIN dashboard
-│   ├── org-user-dashboard/   # ORGANIZER_USER dashboard
-│   ├── distributer-dashboard/# DISTRIBUTOR dashboard
-│   ├── user-list/            # User list with search, filter, pagination
-│   ├── organization-list/    # Organization list with search, filter, pagination
-│   ├── manage-user/          # User create/edit dialog
-│   └── manage-organization/  # Organization create/edit dialog
-│
-├── components/
-│   └── navbar/               # App navigation with role-aware sidebar
-│
-├── shared/                   # Reusable utilities, constants, pipes
-│   ├── base/                 # BaseTableComponent — base class for all list views
-│   ├── constants/            # Storage keys, column definitions, sort options, form sizes
-│   ├── models/               # Table config interfaces
-│   └── pipes/                # DefaultValuePipe (shows '--' for null/undefined)
-│
-├── app.ts                    # Root component
-├── app.config.ts             # DI providers (router, HttpClient, PrimeNG)
-├── app.routes.ts             # All route definitions
-└── app.html                  # Root template
+├── core/          # Guards, interceptors, singleton services, domain models
+├── layout/        # App shell: navbar, sidebar, selectors, theme switcher
+├── features/      # Lazy-loaded feature areas
+│   ├── auth/         # login
+│   ├── dashboard/    # role-aware sub-dashboards (root, admin, org-admin, …)
+│   ├── events/       # event-list, event-form, event-details (with nested tabs)
+│   ├── organizations/
+│   ├── users/
+│   ├── participants/ # list (+ tabs and dialogs), form
+│   ├── distribution/ # manage-distribution (+ tabs)
+│   └── errors/       # not-found, unauthorized
+├── shared/        # Reusable list shell, pipes, utils, constants, base classes
+└── app.ts | app.routes.ts | app.config.ts | app.html
 ```
 
 ---
