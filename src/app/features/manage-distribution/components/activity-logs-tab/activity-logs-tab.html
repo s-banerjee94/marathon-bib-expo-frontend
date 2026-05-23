@@ -1,7 +1,6 @@
 <div class="py-4">
   <!-- Search Section -->
   <div class="grid grid-cols-1 md:grid-cols-12 gap-4 mb-4">
-    <!-- Search Type -->
     <div class="md:col-span-3">
       <p-floatlabel variant="on">
         <p-select
@@ -13,12 +12,12 @@
           [size]="inputSize"
           fluid="true"
           id="logSearchType"
+          appendTo="body"
         />
         <label for="logSearchType">Search By</label>
       </p-floatlabel>
     </div>
 
-    <!-- Search Input (text) or Dropdown (action/performed-by) -->
     <div class="md:col-span-7">
       @if (!isDropdownSearch()) {
         <p-floatlabel variant="on">
@@ -53,6 +52,7 @@
             fluid="true"
             id="logSearchDropdown"
             placeholder="Select..."
+            appendTo="body"
           />
           <label for="logSearchDropdown">
             {{ selectedSearchType() === 'ACTION' ? 'Select Action' : 'Select User' }}
@@ -61,7 +61,6 @@
       }
     </div>
 
-    <!-- Buttons -->
     <div class="md:col-span-2 flex items-end gap-2">
       <p-button
         label="Search"
@@ -85,131 +84,201 @@
     </div>
   </div>
 
-  <!-- Error State -->
   @if (error() && !loading()) {
     <p-message severity="error" variant="simple" class="mb-4">
       {{ error() }}
     </p-message>
   }
 
-  <p-table
-    [dataKey]="'timestamp'"
-    [scrollable]="true"
-    [value]="isInitialLoading() ? skeletonRows : logs()"
-    scrollHeight="460px"
-    size="small"
-  >
-    <!-- Caption: title left, count + refresh right -->
-    <ng-template #caption>
-      <div class="flex items-center justify-between">
-        <h3 class="text-lg font-semibold m-0">Distribution Activity Logs</h3>
-        <div class="flex items-center gap-3">
-          @if (loaded()) {
-            <span class="text-sm text-color-secondary">{{ loadedCount() }} log entries</span>
-          }
-          <p-button
-            label="Refresh"
-            icon="pi pi-refresh"
-            severity="secondary"
-            [outlined]="true"
-            [size]="buttonSize"
-            [loading]="refreshing()"
-            (onClick)="reload()"
-          />
-        </div>
-      </div>
-    </ng-template>
-
-    <!-- Header -->
-    <ng-template pTemplate="header">
-      <tr>
-        <th pFrozenColumn style="width: 60px" class="text-center">#</th>
-        <th pFrozenColumn style="min-width: 175px">Timestamp</th>
-        <th style="min-width: 120px">BIB</th>
-        <th style="min-width: 190px">Action</th>
-        <th style="min-width: 150px">Item</th>
-        <th style="min-width: 160px">Performed By</th>
-        <th style="min-width: 160px">Collector Name</th>
-        <th style="min-width: 160px">Collector Phone</th>
-        <th style="min-width: 200px">Details</th>
-      </tr>
-    </ng-template>
-
-    <!-- Body -->
-    <ng-template let-log let-rowIndex="rowIndex" pTemplate="body">
-      <tr>
-        @if (isInitialLoading()) {
-          <td pFrozenColumn><p-skeleton /></td>
-          <td pFrozenColumn><p-skeleton /></td>
-          <td><p-skeleton /></td>
-          <td><p-skeleton /></td>
-          <td><p-skeleton /></td>
-          <td><p-skeleton /></td>
-          <td><p-skeleton /></td>
-          <td><p-skeleton /></td>
-          <td><p-skeleton /></td>
-        } @else {
-          <!-- S.No (frozen left) -->
-          <td pFrozenColumn class="text-center text-color-secondary">
-            {{ rowIndex + 1 }}
-          </td>
-
-          <!-- Timestamp (frozen left) -->
-          <td pFrozenColumn class="text-sm font-mono">
-            {{ log.timestamp | date: 'dd-MMM-yyyy, hh:mm a' }}
-          </td>
-
-          <!-- BIB -->
-          <td class="font-bold">{{ log.bibNumber | defaultValue }}</td>
-
-          <!-- Action -->
-          <td>
-            <p-tag
-              [value]="getActionLabel(log.action)"
-              [severity]="getActionSeverity(log.action)"
-              [rounded]="true"
-              size="small"
+  @if (!isMobile()) {
+    <!-- ── Desktop Table ── -->
+    <p-table
+      [dataKey]="'timestamp'"
+      [scrollable]="true"
+      [value]="isInitialLoading() ? skeletonRows : logs()"
+      scrollHeight="460px"
+      size="small"
+    >
+      <ng-template #caption>
+        <div class="flex items-center justify-between">
+          <h3 class="text-lg font-semibold m-0">Distribution Activity Logs</h3>
+          <div class="flex items-center gap-3">
+            @if (loaded()) {
+              <span class="text-sm text-color-secondary">{{ loadedCount() }} log entries</span>
+            }
+            <p-button
+              label="Refresh"
+              icon="pi pi-refresh"
+              severity="secondary"
+              [outlined]="true"
+              [size]="buttonSize"
+              [loading]="refreshing()"
+              (onClick)="reload()"
             />
-          </td>
+          </div>
+        </div>
+      </ng-template>
 
-          <!-- Item -->
-          <td>{{ log.itemNames | join }}</td>
+      <ng-template pTemplate="header">
+        <tr>
+          <th pFrozenColumn style="width: 60px" class="text-center">#</th>
+          <th pFrozenColumn style="min-width: 175px">Timestamp</th>
+          <th style="min-width: 120px">BIB</th>
+          <th style="min-width: 190px">Action</th>
+          <th style="min-width: 150px">Item</th>
+          <th style="min-width: 160px">Performed By</th>
+          <th style="min-width: 160px">Collector Name</th>
+          <th style="min-width: 160px">Collector Phone</th>
+          <th style="min-width: 200px">Details</th>
+        </tr>
+      </ng-template>
 
-          <!-- Performed By -->
-          <td>{{ getStaffUsername(log.performedBy) }}</td>
-
-          <!-- Collector Name -->
-          <td>{{ log.collectorName | defaultValue }}</td>
-
-          <!-- Collector Phone -->
-          <td>{{ log.collectorPhone | defaultValue }}</td>
-
-          <!-- Details -->
-          <td class="text-sm text-color-secondary">{{ log.details | defaultValue }}</td>
-        }
-      </tr>
-    </ng-template>
-
-    <!-- Empty State -->
-    <ng-template pTemplate="emptymessage">
-      <tr>
-        <td colspan="9" class="text-center py-10">
-          @if (!loading()) {
-            <i class="pi pi-list text-4xl mb-3 block text-color-secondary"></i>
-            <p class="text-color-secondary">
-              @if (isSearchMode()) {
-                No logs found for this search.
-              } @else {
-                No activity logs found for this event.
-              }
-            </p>
+      <ng-template let-log let-rowIndex="rowIndex" pTemplate="body">
+        <tr>
+          @if (isInitialLoading()) {
+            <td pFrozenColumn><p-skeleton /></td>
+            <td pFrozenColumn><p-skeleton /></td>
+            <td><p-skeleton /></td>
+            <td><p-skeleton /></td>
+            <td><p-skeleton /></td>
+            <td><p-skeleton /></td>
+            <td><p-skeleton /></td>
+            <td><p-skeleton /></td>
+            <td><p-skeleton /></td>
+          } @else {
+            <td pFrozenColumn class="text-center text-color-secondary">{{ rowIndex + 1 }}</td>
+            <td pFrozenColumn class="text-sm font-mono">
+              {{ log.timestamp | date: 'dd-MMM-yyyy, hh:mm a' }}
+            </td>
+            <td class="font-bold">{{ log.bibNumber | defaultValue }}</td>
+            <td>
+              <p-tag
+                [value]="getActionLabel(log.action)"
+                [severity]="getActionSeverity(log.action)"
+                [rounded]="true"
+                size="small"
+              />
+            </td>
+            <td>{{ log.itemNames | join }}</td>
+            <td>{{ getStaffUsername(log.performedBy) }}</td>
+            <td>{{ log.collectorName | defaultValue }}</td>
+            <td>{{ log.collectorPhone | defaultValue }}</td>
+            <td class="text-sm text-color-secondary">{{ log.details | defaultValue }}</td>
           }
-        </td>
-      </tr>
-    </ng-template>
-  </p-table>
+        </tr>
+      </ng-template>
 
-  <!-- Load More / Status -->
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td colspan="9" class="text-center py-10">
+            @if (!loading()) {
+              <i class="pi pi-list text-4xl mb-3 block text-color-secondary"></i>
+              <p class="text-color-secondary">
+                @if (isSearchMode()) {
+                  No logs found for this search.
+                } @else {
+                  No activity logs found for this event.
+                }
+              </p>
+            }
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+  } @else {
+    <!-- ── Mobile Cards ── -->
+    <div class="flex items-center justify-between mb-3">
+      <h3 class="text-base font-semibold m-0">
+        Activity Logs
+        @if (loaded()) {
+          <span class="font-normal text-sm opacity-60 ml-1">({{ loadedCount() }})</span>
+        }
+      </h3>
+      <p-button
+        icon="pi pi-refresh"
+        severity="secondary"
+        [outlined]="true"
+        [size]="buttonSize"
+        [loading]="refreshing()"
+        (onClick)="reload()"
+      />
+    </div>
+
+    @if (isInitialLoading()) {
+      <div class="flex flex-col gap-3">
+        @for (i of [1, 2, 3, 4, 5]; track i) {
+          <p-card>
+            <p-skeleton height="1.25rem" styleClass="mb-2" width="50%" />
+            <p-skeleton height="1rem" styleClass="mb-1" width="70%" />
+            <p-skeleton height="1rem" width="40%" />
+          </p-card>
+        }
+      </div>
+    } @else if (logs().length === 0) {
+      <div class="flex flex-col items-center justify-center py-12">
+        <i class="pi pi-list text-5xl mb-4 opacity-30"></i>
+        <p class="font-medium">
+          @if (isSearchMode()) {
+            No logs found for this search.
+          } @else {
+            No activity logs found for this event.
+          }
+        </p>
+      </div>
+    } @else {
+      <div class="flex flex-col gap-3">
+        @for (log of logs(); track log.timestamp) {
+          <p-card>
+            <div class="flex flex-col gap-2">
+              <!-- Action tag + timestamp -->
+              <div class="flex items-center justify-between gap-2">
+                <p-tag
+                  [value]="getActionLabel(log.action)"
+                  [severity]="getActionSeverity(log.action)"
+                  [rounded]="true"
+                  size="small"
+                />
+                <span class="text-xs font-mono opacity-50">
+                  {{ log.timestamp | date: 'dd-MMM-yyyy, hh:mm a' }}
+                </span>
+              </div>
+
+              <!-- BIB + items -->
+              <div class="flex flex-col gap-1 text-sm">
+                <div class="flex items-center gap-2">
+                  <span class="font-bold">BIB {{ log.bibNumber | defaultValue }}</span>
+                  @if (log.itemNames && (log.itemNames | join)) {
+                    <span class="opacity-60">· {{ log.itemNames | join }}</span>
+                  }
+                </div>
+
+                <!-- Performed by -->
+                <span class="opacity-60">By: {{ getStaffUsername(log.performedBy) }}</span>
+
+                <!-- Collector -->
+                @if (log.collectorName) {
+                  <div class="flex items-center gap-2 opacity-70">
+                    <i class="pi pi-user w-4"></i>
+                    <span>{{ log.collectorName }}</span>
+                    @if (log.collectorPhone) {
+                      <span>· {{ log.collectorPhone }}</span>
+                    }
+                  </div>
+                }
+
+                <!-- Details -->
+                @if (log.details) {
+                  <p class="text-xs opacity-50 mt-0.5">{{ log.details }}</p>
+                }
+              </div>
+            </div>
+          </p-card>
+        }
+      </div>
+    }
+  }
+
+  <!-- Load More -->
   <div class="text-center mt-4">
     @if (hasMore() && !loading()) {
       <p-button

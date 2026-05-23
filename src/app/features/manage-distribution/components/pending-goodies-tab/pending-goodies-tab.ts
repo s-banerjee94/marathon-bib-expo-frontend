@@ -2,6 +2,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  DestroyRef,
   effect,
   inject,
   input,
@@ -14,6 +15,7 @@ import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
 import { SkeletonModule } from 'primeng/skeleton';
 import { TooltipModule } from 'primeng/tooltip';
+import { CardModule } from 'primeng/card';
 import { MessageModule } from 'primeng/message';
 import { ParticipantPendingGoodies } from '../../../../core/models/distribution.model';
 import { DistributionService } from '../../../../core/services/distribution.service';
@@ -34,6 +36,7 @@ import { ManageDistribution } from '../../manage-distribution';
     TagModule,
     SkeletonModule,
     TooltipModule,
+    CardModule,
     MessageModule,
     DefaultValuePipe,
   ],
@@ -43,12 +46,14 @@ export class PendingGoodiesTab {
   private distributionService = inject(DistributionService);
   private errorHandler = inject(ErrorHandlerService);
   private dialogState = inject(DistributionDialogState);
+  private destroyRef = inject(DestroyRef);
   parent = inject(ManageDistribution);
 
   eventId = input.required<number, string>({ transform: (v) => Number(v) });
 
   buttonSize = BUTTON_SIZE;
   skeletonRows = Array(5).fill({});
+  isMobile = signal(false);
 
   participants = signal<ParticipantPendingGoodies[]>([]);
   loadedCount = signal(0);
@@ -65,6 +70,14 @@ export class PendingGoodiesTab {
   isLoadingMore = computed(() => this.loading() && this.participants().length > 0);
 
   constructor() {
+    if (typeof window !== 'undefined' && typeof window.matchMedia === 'function') {
+      const mq = window.matchMedia('(max-width: 768px)');
+      this.isMobile.set(mq.matches);
+      const handler = (e: MediaQueryListEvent) => this.isMobile.set(e.matches);
+      mq.addEventListener('change', handler);
+      this.destroyRef.onDestroy(() => mq.removeEventListener('change', handler));
+    }
+
     effect(
       () => {
         const eid = this.eventId();

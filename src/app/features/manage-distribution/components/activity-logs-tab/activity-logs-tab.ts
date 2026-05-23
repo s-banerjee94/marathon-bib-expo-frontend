@@ -2,6 +2,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  DestroyRef,
   effect,
   inject,
   input,
@@ -22,6 +23,7 @@ import { InputTextModule } from 'primeng/inputtext';
 import { IconFieldModule } from 'primeng/iconfield';
 import { InputIconModule } from 'primeng/inputicon';
 import { FloatLabelModule } from 'primeng/floatlabel';
+import { CardModule } from 'primeng/card';
 import { TooltipModule } from 'primeng/tooltip';
 import { DistributionLogResponse, LogSearchType } from '../../../../core/models/distribution.model';
 import { User, UserRole } from '../../../../core/models/user.model';
@@ -61,6 +63,7 @@ import { DistributionDialogState } from '../../distribution-dialog-state.service
     IconFieldModule,
     InputIconModule,
     FloatLabelModule,
+    CardModule,
     TooltipModule,
     DefaultValuePipe,
     JoinPipe,
@@ -73,6 +76,7 @@ export class ActivityLogsTab {
   private authService = inject(AuthService);
   private errorHandler = inject(ErrorHandlerService);
   private dialogState = inject(DistributionDialogState);
+  private destroyRef = inject(DestroyRef);
 
   eventId = input.required<number, string>({ transform: (v) => Number(v) });
   organizationId = input<number>();
@@ -80,6 +84,7 @@ export class ActivityLogsTab {
   buttonSize = BUTTON_SIZE;
   inputSize = FORM_INPUT_SIZE;
   skeletonRows = Array(8).fill({});
+  isMobile = signal(false);
 
   logSearchTypes = LOG_SEARCH_TYPES;
   selectedSearchType = signal<LogSearchType>('BIB');
@@ -129,6 +134,14 @@ export class ActivityLogsTab {
   });
 
   constructor() {
+    if (typeof window !== 'undefined' && typeof window.matchMedia === 'function') {
+      const mq = window.matchMedia('(max-width: 768px)');
+      this.isMobile.set(mq.matches);
+      const handler = (e: MediaQueryListEvent) => this.isMobile.set(e.matches);
+      mq.addEventListener('change', handler);
+      this.destroyRef.onDestroy(() => mq.removeEventListener('change', handler));
+    }
+
     effect(
       () => {
         const eid = this.eventId();

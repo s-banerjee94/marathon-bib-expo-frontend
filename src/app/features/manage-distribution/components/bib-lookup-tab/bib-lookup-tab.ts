@@ -2,6 +2,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  DestroyRef,
   effect,
   inject,
   input,
@@ -20,6 +21,7 @@ import { TooltipModule } from 'primeng/tooltip';
 import { IconFieldModule } from 'primeng/iconfield';
 import { InputIconModule } from 'primeng/inputicon';
 import { FloatLabelModule } from 'primeng/floatlabel';
+import { CardModule } from 'primeng/card';
 import { PopoverModule } from 'primeng/popover';
 import { MessageModule } from 'primeng/message';
 import { Participant, LookupSearchType } from '../../../../core/models/participant.model';
@@ -55,6 +57,7 @@ import { ManageDistribution } from '../../manage-distribution';
     IconFieldModule,
     InputIconModule,
     FloatLabelModule,
+    CardModule,
     PopoverModule,
     MessageModule,
     DefaultValuePipe,
@@ -67,6 +70,7 @@ export class BibLookupTab {
   private errorHandler = inject(ErrorHandlerService);
   private authService = inject(AuthService);
   private dialogState = inject(DistributionDialogState);
+  private destroyRef = inject(DestroyRef);
   parent = inject(ManageDistribution);
 
   eventId = input.required<number, string>({ transform: (v) => Number(v) });
@@ -82,6 +86,8 @@ export class BibLookupTab {
 
   buttonSize = BUTTON_SIZE;
   inputSize = FORM_INPUT_SIZE;
+  isMobile = signal(false);
+  expandedGoodiesBib = signal<string | null>(null);
 
   lookupSearchTypes = LOOKUP_SEARCH_TYPES;
   selectedSearchType = signal<LookupSearchType>('BIB');
@@ -114,6 +120,14 @@ export class BibLookupTab {
   });
 
   constructor() {
+    if (typeof window !== 'undefined' && typeof window.matchMedia === 'function') {
+      const mq = window.matchMedia('(max-width: 768px)');
+      this.isMobile.set(mq.matches);
+      const handler = (e: MediaQueryListEvent) => this.isMobile.set(e.matches);
+      mq.addEventListener('change', handler);
+      this.destroyRef.onDestroy(() => mq.removeEventListener('change', handler));
+    }
+
     effect(
       () => {
         const id = this.eventId();
@@ -279,6 +293,10 @@ export class BibLookupTab {
       value: goodies[key],
       distributed: !!participant.goodiesDistribution?.[key],
     }));
+  }
+
+  toggleGoodiesExpand(bibNumber: string): void {
+    this.expandedGoodiesBib.update((cur) => (cur === bibNumber ? null : bibNumber));
   }
 
   formatGoodiesKey(key: string): string {

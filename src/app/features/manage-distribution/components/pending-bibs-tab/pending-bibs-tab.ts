@@ -2,6 +2,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  DestroyRef,
   effect,
   inject,
   input,
@@ -14,6 +15,7 @@ import { TableModule } from 'primeng/table';
 import { SkeletonModule } from 'primeng/skeleton';
 import { TagModule } from 'primeng/tag';
 import { TooltipModule } from 'primeng/tooltip';
+import { CardModule } from 'primeng/card';
 import { PopoverModule } from 'primeng/popover';
 import { MessageModule } from 'primeng/message';
 import { ParticipantDistributionResponse } from '../../../../core/models/distribution.model';
@@ -35,6 +37,7 @@ import { ManageDistribution } from '../../manage-distribution';
     SkeletonModule,
     TagModule,
     TooltipModule,
+    CardModule,
     PopoverModule,
     MessageModule,
     DefaultValuePipe,
@@ -45,12 +48,15 @@ export class PendingBibsTab {
   private distributionService = inject(DistributionService);
   private errorHandler = inject(ErrorHandlerService);
   private dialogState = inject(DistributionDialogState);
+  private destroyRef = inject(DestroyRef);
   parent = inject(ManageDistribution);
 
   eventId = input.required<number, string>({ transform: (v) => Number(v) });
 
   buttonSize = BUTTON_SIZE;
   skeletonRows = Array(5).fill({});
+  isMobile = signal(false);
+  expandedGoodiesBib = signal<string | null>(null);
 
   participants = signal<ParticipantDistributionResponse[]>([]);
   loadedCount = signal(0);
@@ -67,6 +73,14 @@ export class PendingBibsTab {
   isLoadingMore = computed(() => this.loading() && this.participants().length > 0);
 
   constructor() {
+    if (typeof window !== 'undefined' && typeof window.matchMedia === 'function') {
+      const mq = window.matchMedia('(max-width: 768px)');
+      this.isMobile.set(mq.matches);
+      const handler = (e: MediaQueryListEvent) => this.isMobile.set(e.matches);
+      mq.addEventListener('change', handler);
+      this.destroyRef.onDestroy(() => mq.removeEventListener('change', handler));
+    }
+
     effect(
       () => {
         const eid = this.eventId();
@@ -186,6 +200,10 @@ export class PendingBibsTab {
       value: goodies[key],
       distributed: !!participant.goodiesDistribution?.[key],
     }));
+  }
+
+  toggleGoodiesExpand(bibNumber: string): void {
+    this.expandedGoodiesBib.update((cur) => (cur === bibNumber ? null : bibNumber));
   }
 
   formatGoodiesKey(key: string): string {
