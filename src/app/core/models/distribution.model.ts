@@ -70,6 +70,7 @@ export interface ParticipantDistributionResponse {
   fullName: string;
   email?: string;
   phoneNumber?: string;
+  gender?: string;
   raceName: string;
   categoryName: string;
   bibCollectedAt?: string;
@@ -86,6 +87,7 @@ export interface ParticipantPendingGoodies {
   fullName: string;
   email?: string;
   phoneNumber?: string;
+  gender?: string;
   raceName: string;
   categoryName: string;
   bibCollectedAt?: string;

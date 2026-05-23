@@ -15,6 +15,7 @@ import { TagModule } from 'primeng/tag';
 import { SkeletonModule } from 'primeng/skeleton';
 import { TooltipModule } from 'primeng/tooltip';
 import { CardModule } from 'primeng/card';
+import { PopoverModule } from 'primeng/popover';
 import { MessageModule } from 'primeng/message';
 import { ParticipantPendingGoodies } from '../../../../core/models/distribution.model';
 import { DistributionService } from '../../../../core/services/distribution.service';
@@ -24,6 +25,7 @@ import { BUTTON_SIZE, PAGINATION_LIMIT } from '../../../../shared/constants/form
 import { DistributionDialogState } from '../../distribution-dialog-state.service';
 import { ManageDistribution } from '../../manage-distribution';
 import { injectIsMobile } from '../../../../shared/utils/responsive.utils';
+import { ParticipantDistributionCard } from '../participant-distribution-card/participant-distribution-card';
 
 @Component({
   selector: 'app-pending-goodies-tab',
@@ -37,8 +39,10 @@ import { injectIsMobile } from '../../../../shared/utils/responsive.utils';
     SkeletonModule,
     TooltipModule,
     CardModule,
+    PopoverModule,
     MessageModule,
     DefaultValuePipe,
+    ParticipantDistributionCard,
   ],
   templateUrl: './pending-goodies-tab.html',
 })

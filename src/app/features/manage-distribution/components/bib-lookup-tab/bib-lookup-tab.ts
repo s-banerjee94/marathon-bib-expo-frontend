@@ -40,6 +40,7 @@ import {
 import { DistributionDialogState } from '../../distribution-dialog-state.service';
 import { ManageDistribution } from '../../manage-distribution';
 import { injectIsMobile } from '../../../../shared/utils/responsive.utils';
+import { ParticipantDistributionCard } from '../participant-distribution-card/participant-distribution-card';
 
 @Component({
   selector: 'app-bib-lookup-tab',
@@ -61,6 +62,7 @@ import { injectIsMobile } from '../../../../shared/utils/responsive.utils';
     PopoverModule,
     MessageModule,
     DefaultValuePipe,
+    ParticipantDistributionCard,
   ],
   templateUrl: './bib-lookup-tab.html',
 })
@@ -86,7 +88,6 @@ export class BibLookupTab {
   buttonSize = BUTTON_SIZE;
   inputSize = FORM_INPUT_SIZE;
   isMobile = injectIsMobile();
-  expandedGoodiesBib = signal<string | null>(null);
 
   lookupSearchTypes = LOOKUP_SEARCH_TYPES;
   selectedSearchType = signal<LookupSearchType>('BIB');
@@ -284,10 +285,6 @@ export class BibLookupTab {
       value: goodies[key],
       distributed: !!participant.goodiesDistribution?.[key],
     }));
-  }
-
-  toggleGoodiesExpand(bibNumber: string): void {
-    this.expandedGoodiesBib.update((cur) => (cur === bibNumber ? null : bibNumber));
   }
 
   formatGoodiesKey(key: string): string {

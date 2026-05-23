@@ -1,0 +1,56 @@
+<p-card styleClass="border-l-4" [style]="{ borderLeftColor: 'var(--primary-color)' }">
+  <div class="flex flex-col gap-1">
+    <!-- BIB + status -->
+    <div class="flex items-center justify-between gap-2">
+      <span class="flex items-center gap-1 text-base font-bold tracking-wide">
+        <span>{{ bibNumber() }}</span>
+        @if (canNavigate()) {
+          <i class="pi pi-angle-right text-base opacity-60"></i>
+        }
+      </span>
+      <ng-content select="[card-status]" />
+    </div>
+
+    <!-- Name + chip + phone + race/cat + goodies -->
+    <div class="flex flex-col gap-0.5 text-sm">
+      <span class="text-sm font-medium">
+        {{ fullName() | defaultValue }}
+        @if (gender()) {
+          <span class="font-normal opacity-60">· {{ gender() }}</span>
+        }
+      </span>
+      @if (chipNumber()) {
+        <span class="text-sm opacity-60">Chip: {{ chipNumber() }}</span>
+      }
+      @if (phoneNumber()) {
+        <a class="flex items-center gap-2 text-sm opacity-70 w-fit" href="tel:{{ phoneNumber() }}">
+          <i class="pi pi-phone w-4"></i>
+          <span>{{ phoneNumber() }}</span>
+        </a>
+      }
+      @if (email()) {
+        <a class="flex items-center gap-2 text-sm opacity-70 w-fit" href="mailto:{{ email() }}">
+          <i class="pi pi-envelope w-4"></i>
+          <span>{{ email() }}</span>
+        </a>
+      }
+      <!-- Race/Category + goodies on same line -->
+      <div class="flex items-center justify-between gap-2">
+        <span class="text-sm opacity-60">
+          {{ raceName() | defaultValue }}
+          @if (raceName() && categoryName()) {
+            ·
+          }
+          {{ categoryName() | defaultValue }}
+        </span>
+        <div class="flex items-center shrink-0">
+          <ng-content select="[card-goodies]" />
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <ng-template #footer>
+    <ng-content select="[card-footer]" />
+  </ng-template>
+</p-card>

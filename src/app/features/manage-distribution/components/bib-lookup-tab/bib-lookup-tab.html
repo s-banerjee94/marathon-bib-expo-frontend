@@ -255,137 +255,99 @@
       } @else {
         <div class="flex flex-col gap-3">
           @for (participant of results(); track participant.bibNumber) {
-            <p-card>
-              <div class="flex flex-col gap-2">
-                <!-- BIB + status -->
-                <div class="flex items-center justify-between gap-2">
-                  <span class="text-xl font-bold tracking-wide">{{ participant.bibNumber }}</span>
-                  @if (getBibStatus(participant)) {
-                    <p-tag [rounded]="true" severity="success" size="small" value="Collected" />
-                  } @else {
-                    <p-tag [rounded]="true" severity="warn" size="small" value="Pending" />
-                  }
-                </div>
+            <app-participant-distribution-card
+              [bibNumber]="participant.bibNumber"
+              [fullName]="participant.fullName"
+              [gender]="participant.gender"
+              [chipNumber]="participant.chipNumber"
+              [phoneNumber]="participant.phoneNumber"
+              [email]="participant.email"
+              [raceName]="participant.raceName"
+              [categoryName]="participant.categoryName"
+            >
+              @if (getBibStatus(participant)) {
+                <p-tag
+                  card-status
+                  [rounded]="true"
+                  severity="success"
+                  size="small"
+                  value="Collected"
+                />
+              } @else {
+                <p-tag card-status [rounded]="true" severity="warn" size="small" value="Pending" />
+              }
 
-                <!-- Name + chip + contact + race/cat -->
-                <div class="flex flex-col gap-1 text-sm">
-                  <span class="font-medium">{{ participant.fullName | defaultValue }}</span>
-                  @if (participant.chipNumber) {
-                    <span class="opacity-60">Chip: {{ participant.chipNumber }}</span>
-                  }
-                  @if (participant.phoneNumber) {
-                    <a
-                      class="flex items-center gap-2 opacity-70"
-                      href="tel:{{ participant.phoneNumber }}"
-                    >
-                      <i class="pi pi-phone w-4"></i>
-                      <span>{{ participant.phoneNumber }}</span>
-                    </a>
-                  }
-                  <span class="opacity-60">
-                    {{ participant.raceName | defaultValue }}
-                    @if (participant.raceName && participant.categoryName) {
-                      ·
-                    }
-                    {{ participant.categoryName | defaultValue }}
-                  </span>
-                </div>
-
-                <!-- Goodies inline expand -->
-                @if (getGoodiesCount(participant.goodies) > 0) {
-                  <div>
-                    <button
-                      class="flex items-center gap-2 text-sm"
-                      type="button"
-                      (click)="toggleGoodiesExpand(participant.bibNumber)"
-                    >
-                      <i class="pi pi-gift"></i>
-                      <span
-                        >Goodies: {{ getDistributedCount(participant) }}/{{
-                          getGoodiesCount(participant.goodies)
-                        }}</span
-                      >
-                      <i
-                        [class]="
-                          expandedGoodiesBib() === participant.bibNumber
-                            ? 'pi pi-chevron-up'
-                            : 'pi pi-chevron-down'
-                        "
-                        class="text-xs opacity-60"
-                      ></i>
-                    </button>
-                    @if (expandedGoodiesBib() === participant.bibNumber) {
-                      <div class="mt-2 flex flex-col gap-1 pl-1">
-                        @for (
-                          entry of getGoodiesDistributionEntries(participant);
-                          track entry.key
-                        ) {
-                          <div class="flex items-center justify-between text-sm">
-                            <span>
-                              {{ formatGoodiesKey(entry.key) }}
-                              @if (entry.value) {
-                                <span class="opacity-50">({{ entry.value }})</span>
-                              }
-                            </span>
-                            @if (entry.distributed) {
-                              <p-tag
-                                value="Done"
-                                [rounded]="true"
-                                severity="success"
-                                size="small"
-                              />
-                            } @else {
-                              <p-tag
-                                value="Pending"
-                                [rounded]="true"
-                                severity="warn"
-                                size="small"
-                              />
+              @if (getGoodiesCount(participant.goodies) > 0) {
+                <ng-container ngProjectAs="[card-goodies]">
+                  <p-button
+                    (onClick)="goodiesPopoverMobile.toggle($event)"
+                    [rounded]="true"
+                    [text]="true"
+                    [size]="buttonSize"
+                    [severity]="getGoodiesDistributionSeverity(participant)"
+                    icon="pi pi-gift"
+                    [label]="
+                      getDistributedCount(participant) + '/' + getGoodiesCount(participant.goodies)
+                    "
+                  />
+                  <p-popover #goodiesPopoverMobile appendTo="body">
+                    <div class="p-3" style="min-width: 15rem">
+                      <h4 class="font-semibold mb-2 flex items-center gap-2">
+                        <i class="pi pi-gift"></i> Goodies
+                      </h4>
+                      @for (entry of getGoodiesDistributionEntries(participant); track entry.key) {
+                        <div class="flex justify-between items-center py-1">
+                          <span class="text-sm font-medium">
+                            {{ formatGoodiesKey(entry.key) }}
+                            @if (entry.value) {
+                              <span class="text-color-secondary">({{ entry.value }})</span>
                             }
-                          </div>
-                        }
-                      </div>
-                    }
-                  </div>
+                          </span>
+                          @if (entry.distributed) {
+                            <p-tag value="Done" [rounded]="true" severity="success" size="small" />
+                          } @else {
+                            <p-tag value="Pending" [rounded]="true" severity="warn" size="small" />
+                          }
+                        </div>
+                      }
+                    </div>
+                  </p-popover>
+                </ng-container>
+              }
+
+              <div card-footer class="flex flex-col gap-2">
+                @if (!getBibStatus(participant)) {
+                  <p-button
+                    (onClick)="parent.openCollectBibDialog(participant)"
+                    [size]="buttonSize"
+                    icon="pi pi-id-card"
+                    label="Collect BIB"
+                    styleClass="w-full"
+                  />
+                }
+                @if (getBibStatus(participant) && hasPendingGoodies(participant)) {
+                  <p-button
+                    (onClick)="parent.openDistributeGoodiesDialog(participant)"
+                    [size]="buttonSize"
+                    icon="pi pi-gift"
+                    label="Distribute Goodies"
+                    severity="info"
+                    styleClass="w-full"
+                  />
+                }
+                @if (getBibStatus(participant) && canUndoBib()) {
+                  <p-button
+                    (onClick)="parent.confirmUndoBib(participant)"
+                    [outlined]="true"
+                    [size]="buttonSize"
+                    icon="pi pi-undo"
+                    label="Undo BIB"
+                    severity="danger"
+                    styleClass="w-full"
+                  />
                 }
               </div>
-
-              <ng-template #footer>
-                <div class="flex flex-col gap-2">
-                  @if (!getBibStatus(participant)) {
-                    <p-button
-                      (onClick)="parent.openCollectBibDialog(participant)"
-                      [size]="buttonSize"
-                      icon="pi pi-id-card"
-                      label="Collect BIB"
-                      severity="success"
-                      styleClass="w-full"
-                    />
-                  }
-                  @if (getBibStatus(participant) && hasPendingGoodies(participant)) {
-                    <p-button
-                      (onClick)="parent.openDistributeGoodiesDialog(participant)"
-                      [size]="buttonSize"
-                      icon="pi pi-gift"
-                      label="Distribute Goodies"
-                      severity="info"
-                      styleClass="w-full"
-                    />
-                  }
-                  @if (getBibStatus(participant) && canUndoBib()) {
-                    <p-button
-                      (onClick)="parent.confirmUndoBib(participant)"
-                      [outlined]="true"
-                      [size]="buttonSize"
-                      icon="pi pi-undo"
-                      label="Undo BIB"
-                      severity="danger"
-                      styleClass="w-full"
-                    />
-                  }
-                </div>
-              </ng-template>
-            </p-card>
+            </app-participant-distribution-card>
           }
         </div>
       }

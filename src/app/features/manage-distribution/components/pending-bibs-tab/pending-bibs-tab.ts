@@ -25,6 +25,7 @@ import { BUTTON_SIZE, PAGINATION_LIMIT } from '../../../../shared/constants/form
 import { DistributionDialogState } from '../../distribution-dialog-state.service';
 import { ManageDistribution } from '../../manage-distribution';
 import { injectIsMobile } from '../../../../shared/utils/responsive.utils';
+import { ParticipantDistributionCard } from '../participant-distribution-card/participant-distribution-card';
 
 @Component({
   selector: 'app-pending-bibs-tab',
@@ -41,6 +42,7 @@ import { injectIsMobile } from '../../../../shared/utils/responsive.utils';
     PopoverModule,
     MessageModule,
     DefaultValuePipe,
+    ParticipantDistributionCard,
   ],
   templateUrl: './pending-bibs-tab.html',
 })
@@ -55,7 +57,6 @@ export class PendingBibsTab {
   buttonSize = BUTTON_SIZE;
   skeletonRows = Array(5).fill({});
   isMobile = injectIsMobile();
-  expandedGoodiesBib = signal<string | null>(null);
 
   participants = signal<ParticipantDistributionResponse[]>([]);
   loadedCount = signal(0);
@@ -191,10 +192,6 @@ export class PendingBibsTab {
       value: goodies[key],
       distributed: !!participant.goodiesDistribution?.[key],
     }));
-  }
-
-  toggleGoodiesExpand(bibNumber: string): void {
-    this.expandedGoodiesBib.update((cur) => (cur === bibNumber ? null : bibNumber));
   }
 
   formatGoodiesKey(key: string): string {

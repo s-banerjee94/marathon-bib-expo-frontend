@@ -228,8 +228,8 @@
     } @else {
       <div class="flex flex-col gap-3">
         @for (log of logs(); track log.timestamp) {
-          <p-card>
-            <div class="flex flex-col gap-2">
+          <p-card styleClass="border-l-4" [style]="{ borderLeftColor: 'var(--primary-color)' }">
+            <div class="flex flex-col gap-1">
               <!-- Action tag + timestamp -->
               <div class="flex items-center justify-between gap-2">
                 <p-tag
@@ -238,37 +238,44 @@
                   [rounded]="true"
                   size="small"
                 />
-                <span class="text-xs font-mono opacity-50">
+                <span class="text-sm font-mono opacity-50">
                   {{ log.timestamp | date: 'dd-MMM-yyyy, hh:mm a' }}
                 </span>
               </div>
 
-              <!-- BIB + items -->
-              <div class="flex flex-col gap-1 text-sm">
+              <div class="flex flex-col gap-0.5 text-sm">
+                <!-- BIB + items -->
                 <div class="flex items-center gap-2">
-                  <span class="font-bold">BIB {{ log.bibNumber | defaultValue }}</span>
+                  <span class="text-sm font-bold">BIB {{ log.bibNumber | defaultValue }}</span>
                   @if (log.itemNames && (log.itemNames | join)) {
-                    <span class="opacity-60">· {{ log.itemNames | join }}</span>
+                    <span class="text-sm opacity-60">· {{ log.itemNames | join }}</span>
                   }
                 </div>
 
-                <!-- Performed by -->
-                <span class="opacity-60">By: {{ getStaffUsername(log.performedBy) }}</span>
-
-                <!-- Collector -->
+                <!-- Collected By -->
                 @if (log.collectorName) {
-                  <div class="flex items-center gap-2 opacity-70">
-                    <i class="pi pi-user w-4"></i>
-                    <span>{{ log.collectorName }}</span>
-                    @if (log.collectorPhone) {
-                      <span>· {{ log.collectorPhone }}</span>
-                    }
-                  </div>
+                  <span class="text-sm opacity-70">Collected By: {{ log.collectorName }}</span>
                 }
 
-                <!-- Details -->
+                <!-- Collector Phone -->
+                @if (log.collectorPhone) {
+                  <a
+                    class="flex items-center gap-2 text-sm opacity-70 w-fit"
+                    href="tel:{{ log.collectorPhone }}"
+                  >
+                    <i class="pi pi-phone w-4"></i>
+                    <span>{{ log.collectorPhone }}</span>
+                  </a>
+                }
+
+                <!-- Performed By -->
+                <span class="text-sm opacity-70">
+                  Perform By: {{ getStaffUsername(log.performedBy) }}
+                </span>
+
+                <!-- Details (left-aligned) -->
                 @if (log.details) {
-                  <p class="text-xs opacity-50 mt-0.5">{{ log.details }}</p>
+                  <p class="text-sm opacity-50 mt-0.5">Details: {{ log.details }}</p>
                 }
               </div>
             </div>

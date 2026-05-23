@@ -116,7 +116,10 @@
 
       <ng-template pTemplate="emptymessage">
         <tr>
-          <td [attr.colspan]="visibleCols().length + 2" class="text-center py-8 text-gray-500">
+          <td
+            [attr.colspan]="visibleCols().length + 2"
+            class="text-center py-8 text-color-secondary"
+          >
             No races found. Click "Create Race" to add one.
           </td>
         </tr>
