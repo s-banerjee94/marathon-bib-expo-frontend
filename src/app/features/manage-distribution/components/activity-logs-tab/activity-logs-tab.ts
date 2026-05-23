@@ -2,7 +2,6 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
-  DestroyRef,
   effect,
   inject,
   input,
@@ -45,6 +44,7 @@ import {
   PAGINATION_LIMIT,
 } from '../../../../shared/constants/form.constants';
 import { DistributionDialogState } from '../../distribution-dialog-state.service';
+import { injectIsMobile } from '../../../../shared/utils/responsive.utils';
 
 @Component({
   selector: 'app-activity-logs-tab',
@@ -76,7 +76,6 @@ export class ActivityLogsTab {
   private authService = inject(AuthService);
   private errorHandler = inject(ErrorHandlerService);
   private dialogState = inject(DistributionDialogState);
-  private destroyRef = inject(DestroyRef);
 
   eventId = input.required<number, string>({ transform: (v) => Number(v) });
   organizationId = input<number>();
@@ -84,7 +83,7 @@ export class ActivityLogsTab {
   buttonSize = BUTTON_SIZE;
   inputSize = FORM_INPUT_SIZE;
   skeletonRows = Array(8).fill({});
-  isMobile = signal(false);
+  isMobile = injectIsMobile();
 
   logSearchTypes = LOG_SEARCH_TYPES;
   selectedSearchType = signal<LogSearchType>('BIB');
@@ -134,14 +133,6 @@ export class ActivityLogsTab {
   });
 
   constructor() {
-    if (typeof window !== 'undefined' && typeof window.matchMedia === 'function') {
-      const mq = window.matchMedia('(max-width: 768px)');
-      this.isMobile.set(mq.matches);
-      const handler = (e: MediaQueryListEvent) => this.isMobile.set(e.matches);
-      mq.addEventListener('change', handler);
-      this.destroyRef.onDestroy(() => mq.removeEventListener('change', handler));
-    }
-
     effect(
       () => {
         const eid = this.eventId();

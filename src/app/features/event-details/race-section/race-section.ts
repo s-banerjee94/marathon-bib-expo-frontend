@@ -1,4 +1,4 @@
-import { Component, computed, inject, input, OnDestroy, OnInit, signal } from '@angular/core';
+import { Component, computed, inject, input, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TableModule } from 'primeng/table';
@@ -34,6 +34,7 @@ import {
   initializeColumnPreferences,
   saveColumnPreferences,
 } from '../../../shared/utils/column.utils';
+import { injectIsMobile } from '../../../shared/utils/responsive.utils';
 
 @Component({
   selector: 'app-race-section',
@@ -55,7 +56,7 @@ import {
   templateUrl: './race-section.html',
   styleUrl: './race-section.css',
 })
-export class RaceSection implements OnInit, OnDestroy {
+export class RaceSection implements OnInit {
   eventId = input.required<number, string>({ transform: (v) => Number(v) });
 
   private raceService = inject(RaceService);
@@ -69,11 +70,7 @@ export class RaceSection implements OnInit, OnDestroy {
   races = signal<Race[]>([]);
   isLoading = signal(true);
   internalSelectedRace = signal<Race | null>(null);
-  isMobile = signal(false);
-
-  private mobileMediaQuery?: MediaQueryList;
-  private mobileQueryHandler?: (e: MediaQueryListEvent) => void;
-
+  isMobile = injectIsMobile();
   cols = signal<TableColumn[]>([]);
   selectedCols = signal<TableColumn[]>([]);
   visibleCols = computed(() => getVisibleCols(RACE_COLUMNS, this.selectedCols()));
@@ -81,12 +78,6 @@ export class RaceSection implements OnInit, OnDestroy {
   readonly buttonSize = BUTTON_SIZE;
 
   ngOnInit(): void {
-    if (typeof window !== 'undefined' && typeof window.matchMedia === 'function') {
-      this.mobileMediaQuery = window.matchMedia('(max-width: 768px)');
-      this.isMobile.set(this.mobileMediaQuery.matches);
-      this.mobileQueryHandler = (e) => this.isMobile.set(e.matches);
-      this.mobileMediaQuery.addEventListener('change', this.mobileQueryHandler);
-    }
     initializeColumnPreferences(
       this.storage,
       RACE_COLUMNS,
@@ -96,12 +87,6 @@ export class RaceSection implements OnInit, OnDestroy {
       this.selectedCols,
     );
     this.loadRaces();
-  }
-
-  ngOnDestroy(): void {
-    if (this.mobileMediaQuery && this.mobileQueryHandler) {
-      this.mobileMediaQuery.removeEventListener('change', this.mobileQueryHandler);
-    }
   }
 
   onColumnSelectionChange(): void {

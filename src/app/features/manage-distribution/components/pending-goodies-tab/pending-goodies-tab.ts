@@ -2,7 +2,6 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
-  DestroyRef,
   effect,
   inject,
   input,
@@ -24,6 +23,7 @@ import { DefaultValuePipe } from '../../../../shared/pipes/default-value.pipe';
 import { BUTTON_SIZE, PAGINATION_LIMIT } from '../../../../shared/constants/form.constants';
 import { DistributionDialogState } from '../../distribution-dialog-state.service';
 import { ManageDistribution } from '../../manage-distribution';
+import { injectIsMobile } from '../../../../shared/utils/responsive.utils';
 
 @Component({
   selector: 'app-pending-goodies-tab',
@@ -46,14 +46,13 @@ export class PendingGoodiesTab {
   private distributionService = inject(DistributionService);
   private errorHandler = inject(ErrorHandlerService);
   private dialogState = inject(DistributionDialogState);
-  private destroyRef = inject(DestroyRef);
   parent = inject(ManageDistribution);
 
   eventId = input.required<number, string>({ transform: (v) => Number(v) });
 
   buttonSize = BUTTON_SIZE;
   skeletonRows = Array(5).fill({});
-  isMobile = signal(false);
+  isMobile = injectIsMobile();
 
   participants = signal<ParticipantPendingGoodies[]>([]);
   loadedCount = signal(0);
@@ -70,14 +69,6 @@ export class PendingGoodiesTab {
   isLoadingMore = computed(() => this.loading() && this.participants().length > 0);
 
   constructor() {
-    if (typeof window !== 'undefined' && typeof window.matchMedia === 'function') {
-      const mq = window.matchMedia('(max-width: 768px)');
-      this.isMobile.set(mq.matches);
-      const handler = (e: MediaQueryListEvent) => this.isMobile.set(e.matches);
-      mq.addEventListener('change', handler);
-      this.destroyRef.onDestroy(() => mq.removeEventListener('change', handler));
-    }
-
     effect(
       () => {
         const eid = this.eventId();

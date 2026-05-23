@@ -4,7 +4,6 @@ import {
   computed,
   inject,
   input,
-  OnDestroy,
   OnInit,
   signal,
 } from '@angular/core';
@@ -46,6 +45,7 @@ import {
   initializeColumnPreferences,
   saveColumnPreferences,
 } from '../../../shared/utils/column.utils';
+import { injectIsMobile } from '../../../shared/utils/responsive.utils';
 
 @Component({
   selector: 'app-sms-campaign-section',
@@ -70,7 +70,7 @@ import {
   templateUrl: './sms-campaign-section.html',
   styleUrl: './sms-campaign-section.css',
 })
-export class SmsCampaignSection implements OnInit, OnDestroy {
+export class SmsCampaignSection implements OnInit {
   eventId = input.required<number, string>({ transform: (v) => Number(v) });
 
   private campaignService = inject(SmsCampaignService);
@@ -85,10 +85,7 @@ export class SmsCampaignSection implements OnInit, OnDestroy {
 
   campaigns = signal<SmsCampaign[]>([]);
   isLoading = signal(true);
-  isMobile = signal(false);
-
-  private mobileMediaQuery?: MediaQueryList;
-  private mobileQueryHandler?: (e: MediaQueryListEvent) => void;
+  isMobile = injectIsMobile();
   cols = signal<TableColumn[]>([]);
   selectedCols = signal<TableColumn[]>([]);
   visibleCols = computed(() => getVisibleCols(SMS_CAMPAIGN_COLUMNS, this.selectedCols()));
@@ -101,12 +98,6 @@ export class SmsCampaignSection implements OnInit, OnDestroy {
   readonly buttonSize = BUTTON_SIZE;
 
   ngOnInit(): void {
-    if (typeof window !== 'undefined' && typeof window.matchMedia === 'function') {
-      this.mobileMediaQuery = window.matchMedia('(max-width: 768px)');
-      this.isMobile.set(this.mobileMediaQuery.matches);
-      this.mobileQueryHandler = (e) => this.isMobile.set(e.matches);
-      this.mobileMediaQuery.addEventListener('change', this.mobileQueryHandler);
-    }
     initializeColumnPreferences(
       this.storage,
       SMS_CAMPAIGN_COLUMNS,
@@ -121,12 +112,6 @@ export class SmsCampaignSection implements OnInit, OnDestroy {
   onColumnSelectionChange(): void {
     enforceRequiredColumns(this.selectedCols, SMS_CAMPAIGN_COLUMNS);
     saveColumnPreferences(this.storage, this.selectedCols, STORAGE_KEYS.SMS_CAMPAIGN_TABLE_COLUMNS);
-  }
-
-  ngOnDestroy(): void {
-    if (this.mobileMediaQuery && this.mobileQueryHandler) {
-      this.mobileMediaQuery.removeEventListener('change', this.mobileQueryHandler);
-    }
   }
 
   loadCampaigns(): void {

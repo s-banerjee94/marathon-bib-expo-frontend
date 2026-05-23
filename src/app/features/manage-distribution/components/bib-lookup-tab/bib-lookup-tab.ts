@@ -2,7 +2,6 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
-  DestroyRef,
   effect,
   inject,
   input,
@@ -40,6 +39,7 @@ import {
 } from '../../../../shared/constants/form.constants';
 import { DistributionDialogState } from '../../distribution-dialog-state.service';
 import { ManageDistribution } from '../../manage-distribution';
+import { injectIsMobile } from '../../../../shared/utils/responsive.utils';
 
 @Component({
   selector: 'app-bib-lookup-tab',
@@ -70,7 +70,6 @@ export class BibLookupTab {
   private errorHandler = inject(ErrorHandlerService);
   private authService = inject(AuthService);
   private dialogState = inject(DistributionDialogState);
-  private destroyRef = inject(DestroyRef);
   parent = inject(ManageDistribution);
 
   eventId = input.required<number, string>({ transform: (v) => Number(v) });
@@ -86,7 +85,7 @@ export class BibLookupTab {
 
   buttonSize = BUTTON_SIZE;
   inputSize = FORM_INPUT_SIZE;
-  isMobile = signal(false);
+  isMobile = injectIsMobile();
   expandedGoodiesBib = signal<string | null>(null);
 
   lookupSearchTypes = LOOKUP_SEARCH_TYPES;
@@ -120,14 +119,6 @@ export class BibLookupTab {
   });
 
   constructor() {
-    if (typeof window !== 'undefined' && typeof window.matchMedia === 'function') {
-      const mq = window.matchMedia('(max-width: 768px)');
-      this.isMobile.set(mq.matches);
-      const handler = (e: MediaQueryListEvent) => this.isMobile.set(e.matches);
-      mq.addEventListener('change', handler);
-      this.destroyRef.onDestroy(() => mq.removeEventListener('change', handler));
-    }
-
     effect(
       () => {
         const id = this.eventId();

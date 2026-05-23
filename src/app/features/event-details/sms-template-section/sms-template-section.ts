@@ -37,6 +37,7 @@ import {
   initializeColumnPreferences,
   saveColumnPreferences,
 } from '../../../shared/utils/column.utils';
+import { injectIsMobile } from '../../../shared/utils/responsive.utils';
 
 @Component({
   selector: 'app-sms-template-section',
@@ -72,10 +73,7 @@ export class SmsTemplateSection implements OnInit, OnDestroy {
 
   smsTemplates = signal<SmsTemplate[]>([]);
   isLoading = signal(true);
-  isMobile = signal(false);
-
-  private mobileMediaQuery?: MediaQueryList;
-  private mobileQueryHandler?: (e: MediaQueryListEvent) => void;
+  isMobile = injectIsMobile();
   cols = signal<TableColumn[]>([]);
   selectedCols = signal<TableColumn[]>([]);
   visibleCols = computed(() => getVisibleCols(SMS_TEMPLATE_COLUMNS, this.selectedCols()));
@@ -90,12 +88,6 @@ export class SmsTemplateSection implements OnInit, OnDestroy {
   private searchSubject = new Subject<string>();
 
   ngOnInit(): void {
-    if (typeof window !== 'undefined' && typeof window.matchMedia === 'function') {
-      this.mobileMediaQuery = window.matchMedia('(max-width: 768px)');
-      this.isMobile.set(this.mobileMediaQuery.matches);
-      this.mobileQueryHandler = (e) => this.isMobile.set(e.matches);
-      this.mobileMediaQuery.addEventListener('change', this.mobileQueryHandler);
-    }
     initializeColumnPreferences(
       this.storage,
       SMS_TEMPLATE_COLUMNS,
@@ -117,9 +109,6 @@ export class SmsTemplateSection implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.searchSubject.complete();
-    if (this.mobileMediaQuery && this.mobileQueryHandler) {
-      this.mobileMediaQuery.removeEventListener('change', this.mobileQueryHandler);
-    }
   }
 
   onColumnSelectionChange(): void {
