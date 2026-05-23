@@ -1,4 +1,4 @@
-import { Component, DestroyRef, inject, signal } from '@angular/core';
+import { Component, computed, DestroyRef, effect, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import {
   ActivatedRoute,
@@ -14,12 +14,9 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TableLazyLoadEvent, TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
-import { MultiSelectModule } from 'primeng/multiselect';
+import { CardModule } from 'primeng/card';
 import { TooltipModule } from 'primeng/tooltip';
 import { SkeletonModule } from 'primeng/skeleton';
-import { IconFieldModule } from 'primeng/iconfield';
-import { InputIconModule } from 'primeng/inputicon';
-import { InputTextModule } from 'primeng/inputtext';
 import { CheckboxModule } from 'primeng/checkbox';
 import { SelectModule } from 'primeng/select';
 import { ConfirmPopupModule } from 'primeng/confirmpopup';
@@ -27,6 +24,7 @@ import { ConfirmationService } from 'primeng/api';
 import { DialogService } from 'primeng/dynamicdialog';
 import { TagModule } from 'primeng/tag';
 import { FloatLabelModule } from 'primeng/floatlabel';
+import { ListShell } from '../../shared/components/list/list-shell/list-shell';
 
 import { Organization } from '../../core/models/organization.model';
 import { PageableParams, PageableResponse } from '../../core/models/api.model';
@@ -57,12 +55,9 @@ interface OrganizationFilterPreferences extends TableFilterPreferences {
     FormsModule,
     TableModule,
     ButtonModule,
-    MultiSelectModule,
+    CardModule,
     TooltipModule,
     SkeletonModule,
-    IconFieldModule,
-    InputIconModule,
-    InputTextModule,
     CheckboxModule,
     SelectModule,
     ConfirmPopupModule,
@@ -70,6 +65,7 @@ interface OrganizationFilterPreferences extends TableFilterPreferences {
     FloatLabelModule,
     DefaultValuePipe,
     RouterOutlet,
+    ListShell,
   ],
   providers: [DialogService, ConfirmationService],
   templateUrl: './organization-list.html',
@@ -100,11 +96,17 @@ export class OrganizationList extends BaseTableComponent<
   // True when the dialog is being closed by syncDialogToRoute (URL change),
   // so the onClose handler skips its own URL-clearing navigation.
   private closingDialogFromRoute = false;
-  // Viewport tracking: on mobile the form renders full-page via <router-outlet />;
-  // on desktop the same URL opens the form in an overlay dialog.
-  private mediaQuery = window.matchMedia('(max-width: 768px)');
-  isMobile = signal(this.mediaQuery.matches);
+  // isMobile is provided by BaseTableComponent; the form renders full-page via
+  // <router-outlet /> on mobile, and as an overlay dialog on desktop.
   hasFormRoute = signal(false);
+  // Drawer badge: count of filters set away from their defaults.
+  activeFilterCount = computed(() => {
+    let count = 0;
+    if (!this.filterEnabled()) count++;
+    if (this.filterDeleted()) count++;
+    if (this.selectedSort() !== null) count++;
+    return count;
+  });
   // Debounces raw search input keystrokes before pushing the next URL.
   private urlSearchSubject = new Subject<string>();
   // Single-flight load trigger; switchMap below cancels the prior HTTP request when a new emit arrives.
@@ -124,13 +126,10 @@ export class OrganizationList extends BaseTableComponent<
       )
       .subscribe(() => this.syncDialogToRoute());
 
-    const onViewportChange = (event: MediaQueryListEvent) => {
-      this.isMobile.set(event.matches);
+    // Re-sync dialog when the viewport flips between mobile and desktop.
+    effect(() => {
+      this.isMobile();
       this.syncDialogToRoute();
-    };
-    this.mediaQuery.addEventListener('change', onViewportChange);
-    this.destroyRef.onDestroy(() => {
-      this.mediaQuery.removeEventListener('change', onViewportChange);
     });
 
     // Subscribe to the load pipeline BEFORE queryParamMap — the route observable emits the

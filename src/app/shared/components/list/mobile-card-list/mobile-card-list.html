@@ -1,0 +1,36 @@
+@if (isLoading()) {
+  <div class="flex flex-col gap-3">
+    @for (row of skeletonRows; track $index) {
+      <p-card>
+        <div class="flex flex-col gap-2">
+          <p-skeleton height="1.25rem" width="60%" />
+          <p-skeleton height="1rem" width="40%" />
+          <p-skeleton height="1rem" width="80%" />
+        </div>
+      </p-card>
+    }
+  </div>
+} @else if (items().length === 0) {
+  <div class="flex flex-col items-center justify-center py-12 px-4">
+    <i [class]="emptyIcon() + ' text-6xl mb-4 opacity-30'"></i>
+    <p class="text-lg font-medium mb-1">{{ emptyMessage() }}</p>
+    <p class="text-sm opacity-60">{{ emptyHint() }}</p>
+  </div>
+} @else {
+  <div class="flex flex-col gap-3">
+    @for (item of items(); track $index) {
+      <ng-container
+        *ngTemplateOutlet="cardTemplate() ?? null; context: { $implicit: item, index: $index }"
+      />
+    }
+  </div>
+}
+
+<p-paginator
+  (onPageChange)="onPaginatorChange($event)"
+  [first]="first"
+  [rows]="pageSize()"
+  [rowsPerPageOptions]="rowsPerPageOptions()"
+  [totalRecords]="totalRecords()"
+  styleClass="mt-3"
+/>

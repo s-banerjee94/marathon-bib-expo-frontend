@@ -39,6 +39,9 @@ export abstract class BaseTableComponent<T, F extends TableFilterPreferences>
   selectedCols = signal<TableColumn[]>([]);
   // Form input size (controlled centrally via constant)
   readonly inputSize = FORM_INPUT_SIZE;
+  // Reactive viewport flag — true when viewport width <= 768px. Subclass templates branch
+  // on this to render mobile cards instead of the desktop table.
+  readonly isMobile = signal(false);
   protected dialogService = inject(DialogService);
   protected toast = inject(ToastService);
   protected errorHandler = inject(ErrorHandlerService);
@@ -46,6 +49,8 @@ export abstract class BaseTableComponent<T, F extends TableFilterPreferences>
   protected storage = inject(LocalStorageService);
   protected dialogRef: DynamicDialogRef | null = null;
   protected searchSubject = new Subject<string>();
+  private mobileMediaQuery: MediaQueryList | null = null;
+  private mobileQueryHandler: ((event: MediaQueryListEvent) => void) | null = null;
   // Abstract properties - must be implemented by subclasses
   protected abstract columnPreferenceKey: string;
   protected abstract filterPreferenceKey: string;
@@ -58,6 +63,13 @@ export abstract class BaseTableComponent<T, F extends TableFilterPreferences>
       this.saveColumnPreferences(this.selectedCols());
       this.saveFilterPreferences(this.getCurrentFilterPreferences());
     });
+
+    if (typeof window !== 'undefined' && typeof window.matchMedia === 'function') {
+      this.mobileMediaQuery = window.matchMedia('(max-width: 768px)');
+      this.isMobile.set(this.mobileMediaQuery.matches);
+      this.mobileQueryHandler = (event) => this.isMobile.set(event.matches);
+      this.mobileMediaQuery.addEventListener('change', this.mobileQueryHandler);
+    }
   }
 
   // Canonical-order visible columns: filter allColumns by required-or-selected
@@ -165,6 +177,11 @@ export abstract class BaseTableComponent<T, F extends TableFilterPreferences>
     }
     this.searchSubject.complete();
     this.preferenceSaveSubject.complete();
+    if (this.mobileMediaQuery && this.mobileQueryHandler) {
+      this.mobileMediaQuery.removeEventListener('change', this.mobileQueryHandler);
+    }
+    this.mobileMediaQuery = null;
+    this.mobileQueryHandler = null;
   }
 
   protected initializeColumns(): void {

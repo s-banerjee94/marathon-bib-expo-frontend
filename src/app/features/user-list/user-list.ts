@@ -1,4 +1,4 @@
-import { Component, DestroyRef, inject, signal, ViewChild } from '@angular/core';
+import { Component, computed, DestroyRef, effect, inject, signal, ViewChild } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import {
   ActivatedRoute,
@@ -10,20 +10,16 @@ import {
 } from '@angular/router';
 import { EMPTY, Subject } from 'rxjs';
 import { catchError, debounceTime, distinctUntilChanged, filter, switchMap } from 'rxjs/operators';
-import { TableLazyLoadEvent } from 'primeng/table';
+import { TableLazyLoadEvent, TableModule } from 'primeng/table';
 import { CommonModule } from '@angular/common';
 import { Popover, PopoverModule } from 'primeng/popover';
 import { FormsModule } from '@angular/forms';
-import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
-import { MultiSelectModule } from 'primeng/multiselect';
 import { TooltipModule } from 'primeng/tooltip';
 import { DividerModule } from 'primeng/divider';
 import { ConfirmPopupModule } from 'primeng/confirmpopup';
 import { SkeletonModule } from 'primeng/skeleton';
-import { IconFieldModule } from 'primeng/iconfield';
-import { InputIconModule } from 'primeng/inputicon';
-import { InputTextModule } from 'primeng/inputtext';
+import { CardModule } from 'primeng/card';
 import { CheckboxModule } from 'primeng/checkbox';
 import { SelectModule } from 'primeng/select';
 import { TagModule } from 'primeng/tag';
@@ -51,6 +47,7 @@ import {
 import { userCanManage } from '../../shared/utils/user-permissions.utils';
 import { ConfirmationService } from 'primeng/api';
 import { DialogService } from 'primeng/dynamicdialog';
+import { ListShell } from '../../shared/components/list/list-shell/list-shell';
 
 interface UserFilterPreferences extends TableFilterPreferences {
   enabled: boolean;
@@ -67,15 +64,12 @@ interface UserFilterPreferences extends TableFilterPreferences {
     FormsModule,
     TableModule,
     ButtonModule,
-    MultiSelectModule,
     TooltipModule,
     PopoverModule,
     DividerModule,
     ConfirmPopupModule,
     SkeletonModule,
-    IconFieldModule,
-    InputIconModule,
-    InputTextModule,
+    CardModule,
     CheckboxModule,
     SelectModule,
     TagModule,
@@ -83,6 +77,7 @@ interface UserFilterPreferences extends TableFilterPreferences {
     DefaultValuePipe,
     OrganizationSelector,
     RouterOutlet,
+    ListShell,
   ],
   providers: [DialogService, ConfirmationService],
   templateUrl: './user-list.html',
@@ -120,11 +115,16 @@ export class UserList extends BaseTableComponent<User, UserFilterPreferences> {
   // True when the dialog is being closed by syncDialogToRoute (URL change),
   // so the onClose handler skips its own URL-clearing navigation.
   private closingDialogFromRoute = false;
-  // Viewport tracking: on mobile the form renders full-page via <router-outlet />;
-  // on desktop the same URL opens the form in an overlay dialog.
-  private mediaQuery = window.matchMedia('(max-width: 768px)');
-  isMobile = signal(this.mediaQuery.matches);
   hasFormRoute = signal(false);
+  // Drawer badge: count of filters set away from their defaults.
+  activeFilterCount = computed(() => {
+    let count = 0;
+    if (!this.filterEnabled()) count++;
+    if (this.filterRole() !== null) count++;
+    if (this.filterOrganizationId() !== null) count++;
+    if (this.selectedSort() !== null) count++;
+    return count;
+  });
   // Debounces raw search input keystrokes before pushing the next URL.
   private urlSearchSubject = new Subject<string>();
   // Single-flight load trigger; switchMap below cancels the prior HTTP request when a new emit arrives.
@@ -144,13 +144,10 @@ export class UserList extends BaseTableComponent<User, UserFilterPreferences> {
       )
       .subscribe(() => this.syncDialogToRoute());
 
-    const onViewportChange = (event: MediaQueryListEvent) => {
-      this.isMobile.set(event.matches);
+    // Viewport flag now lives on the base class; re-run dialog sync whenever it flips.
+    effect(() => {
+      this.isMobile();
       this.syncDialogToRoute();
-    };
-    this.mediaQuery.addEventListener('change', onViewportChange);
-    this.destroyRef.onDestroy(() => {
-      this.mediaQuery.removeEventListener('change', onViewportChange);
     });
 
     // Subscribe to the load pipeline BEFORE queryParamMap — the route observable emits the

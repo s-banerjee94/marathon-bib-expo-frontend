@@ -1,0 +1,19 @@
+<p-iconfield class="flex-1 sm:max-w-md">
+  @if (isLoading()) {
+    <p-inputicon class="pi pi-spin pi-spinner" />
+  } @else {
+    <p-inputicon class="pi pi-search" />
+  }
+  <input
+    (input)="onInput($event.target)"
+    [pSize]="inputSize"
+    [value]="value()"
+    class="w-full"
+    pInputText
+    [placeholder]="placeholder()"
+    type="text"
+  />
+  @if (value()) {
+    <p-inputicon (click)="onClear()" class="pi pi-times cursor-pointer" />
+  }
+</p-iconfield>

@@ -1,58 +1,45 @@
 @if (isMobile() && hasFormRoute()) {
   <router-outlet />
 } @else {
-  <div class="p-2 sm:p-3 md:p-4">
-    <p-confirmpopup />
-    <p-menu #statusMenu [model]="statusMenuItems()" [popup]="true" appendTo="body" />
+  <p-confirmpopup />
+  <p-menu #statusMenu [model]="statusMenuItems()" [popup]="true" appendTo="body" />
 
-    <!-- Page Header -->
-    <div class="mb-6">
-      <h1 class="text-3xl font-bold mb-2">Events</h1>
-      @if (isRootOrAdmin) {
-        <p class="text-gray-600">View and manage all marathon events across all organizations</p>
-      } @else {
-        <p class="text-gray-600">Manage marathon and race events for your organization</p>
-      }
-    </div>
+  <app-list-shell
+    (columnSelectionChange)="onColumnSelectionChange()"
+    (pageChange)="onPageChange($event)"
+    (searchChange)="onSearchInput($event)"
+    (searchClear)="clearSearch()"
+    [(selectedColumns)]="selectedCols"
+    [activeFilterCount]="activeFilterCount()"
+    [columns]="cols()"
+    [currentPage]="currentPage()"
+    [isLoading]="isLoading()"
+    [isMobile]="isMobile()"
+    [items]="entities()"
+    [pageSize]="pageSize()"
+    [rowsPerPageOptions]="[5, 10, 50, 100]"
+    [searchTerm]="searchTerm()"
+    [totalRecords]="totalRecords()"
+    emptyIcon="pi pi-calendar"
+    emptyMessage="No events found"
+    searchPlaceholder="Search events (min 2 chars)..."
+    [subtitle]="
+      isRootOrAdmin
+        ? 'View and manage all marathon events across all organizations'
+        : 'Manage marathon and race events for your organization'
+    "
+    title="Events"
+  >
+    <ng-template #actions>
+      <p-button
+        (click)="onCreate()"
+        [size]="inputSize"
+        icon="pi pi-plus"
+        [label]="isMobile() ? '' : 'New Event'"
+      />
+    </ng-template>
 
-    <!-- Search Bar and Action Buttons -->
-    <div class="mb-4 flex flex-wrap items-center justify-between gap-4">
-      <!-- Search input with icon and loading indicator -->
-      <p-iconfield class="flex-1 max-w-md">
-        @if (isLoading()) {
-          <p-inputicon class="pi pi-spin pi-spinner" />
-        } @else {
-          <p-inputicon class="pi pi-search" />
-        }
-        <input
-          (input)="onSearchInput($any($event.target).value)"
-          [pSize]="inputSize"
-          [value]="searchTerm()"
-          class="w-full"
-          pInputText
-          placeholder="Search events (min 2 chars)..."
-          type="text"
-        />
-        <!-- Show spinner during search or clear button when search has value -->
-        @if (searchTerm()) {
-          <p-inputicon (click)="clearSearch()" class="pi pi-times cursor-pointer" />
-        }
-      </p-iconfield>
-
-      <!-- Action buttons -->
-      <div class="flex items-center gap-2">
-        <p-button
-          (click)="onCreate()"
-          [size]="inputSize"
-          icon="pi pi-plus"
-          label="New Event"
-        ></p-button>
-      </div>
-    </div>
-
-    <!-- Filter and Sort Controls -->
-    <div class="mb-4 flex flex-wrap items-center gap-6">
-      <!-- Organization Filter (only visible for ROOT/ADMIN) -->
+    <ng-template #filters>
       @if (isRootOrAdmin) {
         <app-organization-selector
           (organizationIdChange)="handleOrgFilterChange($event)"
@@ -60,11 +47,10 @@
           [size]="inputSize"
           inputId="organizationFilter"
           label="Organization"
-          styleClass="w-64"
+          styleClass="w-full md:w-64"
         />
       }
 
-      <!-- Status Filter (single select - API accepts one status value) -->
       <p-floatlabel variant="on">
         <p-select
           (ngModelChange)="filterStatus.set($event ? [$event] : []); onFilterChange()"
@@ -72,7 +58,8 @@
           [options]="statusOptions"
           [showClear]="true"
           [size]="inputSize"
-          class="w-48"
+          appendTo="body"
+          class="w-full md:w-48"
           inputId="statusFilter"
           optionLabel="label"
           optionValue="value"
@@ -80,7 +67,6 @@
         <label for="statusFilter">Status</label>
       </p-floatlabel>
 
-      <!-- Sort Dropdown -->
       <p-floatlabel variant="on">
         <p-select
           (ngModelChange)="onSortChange($event)"
@@ -88,280 +74,355 @@
           [options]="sortOptions"
           [showClear]="true"
           [size]="inputSize"
-          class="w-48"
+          appendTo="body"
+          class="w-full md:w-48"
           inputId="sortSelect"
           optionLabel="label"
           optionValue="value"
         />
         <label for="sortSelect">Sort By</label>
       </p-floatlabel>
+    </ng-template>
 
-      <!-- Column Selection -->
-      <div class="flex items-center gap-2">
-        <label for="columnSelect">Columns:</label>
-        <p-multiselect
-          (ngModelChange)="onColumnSelectionChange()"
-          [(ngModel)]="selectedCols"
-          [maxSelectedLabels]="2"
-          [options]="cols()"
-          [size]="inputSize"
-          inputId="columnSelect"
-          optionDisabled="disabled"
-          optionLabel="header"
-          placeholder="Select Columns"
-        />
-      </div>
-    </div>
-
-    <!-- Events Data Table -->
-    <p-table
-      (onLazyLoad)="onPageChange($event)"
-      [first]="currentPage() * pageSize()"
-      [lazy]="true"
-      [paginator]="true"
-      [rowsPerPageOptions]="[5, 10, 50, 100]"
-      [rows]="pageSize()"
-      [scrollable]="true"
-      [size]="inputSize"
-      [tableStyle]="{ 'min-width': '75rem' }"
-      [totalRecords]="totalRecords()"
-      [value]="displayData()"
-      scrollHeight="600px"
-    >
-      <!-- Table Header -->
-      <ng-template pTemplate="header">
-        <tr>
-          <th class="w-16 whitespace-nowrap" pFrozenColumn>Sl. No</th>
-          @for (col of visibleCols; track col.field) {
-            <th [class]="getColumnAlignment(col.field) + ' whitespace-nowrap'">
-              <span>{{ col.header }}</span>
-              <!-- Show sort indicator if column is currently sorted -->
-              @if (isSorted(col.field)) {
-                <i [class]="getSortIcon(col.field)" class="ml-2"></i>
-              }
-            </th>
-          }
-          <th class="text-center w-36 whitespace-nowrap" pFrozenColumn alignFrozen="right">
-            Actions
-          </th>
-        </tr>
-      </ng-template>
-
-      <!-- Table Body -->
-      <ng-template let-event let-rowIndex="rowIndex" pTemplate="body">
-        <tr>
-          @if (isLoading()) {
-            <td pFrozenColumn><p-skeleton /></td>
+    <ng-template #desktopBody>
+      <p-table
+        (onLazyLoad)="onPageChange($event)"
+        [first]="currentPage() * pageSize()"
+        [lazy]="true"
+        [paginator]="true"
+        [rowsPerPageOptions]="[5, 10, 50, 100]"
+        [rows]="pageSize()"
+        [scrollable]="true"
+        [size]="inputSize"
+        [tableStyle]="{ 'min-width': '75rem' }"
+        [totalRecords]="totalRecords()"
+        [value]="displayData()"
+        scrollHeight="600px"
+      >
+        <ng-template pTemplate="header">
+          <tr>
+            <th class="w-16 whitespace-nowrap" pFrozenColumn>Sl. No</th>
             @for (col of visibleCols; track col.field) {
-              <td [class]="getColumnAlignment(col.field) + ' whitespace-nowrap'">
-                <p-skeleton />
+              <th [class]="getColumnAlignment(col.field) + ' whitespace-nowrap'">
+                <span>{{ col.header }}</span>
+                @if (isSorted(col.field)) {
+                  <i [class]="getSortIcon(col.field)" class="ml-2"></i>
+                }
+              </th>
+            }
+            <th class="text-center w-36 whitespace-nowrap" pFrozenColumn alignFrozen="right">
+              Actions
+            </th>
+          </tr>
+        </ng-template>
+
+        <ng-template let-event let-rowIndex="rowIndex" pTemplate="body">
+          <tr>
+            @if (isLoading()) {
+              <td pFrozenColumn><p-skeleton /></td>
+              @for (col of visibleCols; track col.field) {
+                <td [class]="getColumnAlignment(col.field) + ' whitespace-nowrap'">
+                  <p-skeleton />
+                </td>
+              }
+              <td class="text-center whitespace-nowrap" pFrozenColumn alignFrozen="right">
+                <p-skeleton height="2rem" width="5rem" />
+              </td>
+            } @else {
+              <td class="text-color-secondary whitespace-nowrap" pFrozenColumn>
+                {{ currentPage() * pageSize() + rowIndex + 1 }}
+              </td>
+              @for (col of visibleCols; track col.field) {
+                <td [class]="getColumnAlignment(col.field) + ' whitespace-nowrap'">
+                  @if (col.field === 'status') {
+                    @if (changingStatusEventId() === event.id) {
+                      <p-skeleton height="1.5rem" width="5rem" />
+                    } @else if (getCellValue(event, col.field)) {
+                      <p-tag
+                        (click)="showStatusMenu(statusMenu, $event, event)"
+                        [pTooltip]="canChangeStatus ? 'Click to change status' : ''"
+                        [rounded]="true"
+                        [severity]="getEventStatusSeverity($any(getCellValue(event, col.field)))"
+                        [styleClass]="
+                          canChangeStatus
+                            ? 'cursor-pointer hover:opacity-80 transition-opacity'
+                            : ''
+                        "
+                        [style]="{
+                          '--p-tag-font-size': '0.75rem',
+                          '--p-tag-padding': '0.25rem 0.5rem',
+                        }"
+                        [value]="$any(getCellValue(event, col.field))"
+                        tooltipPosition="top"
+                      />
+                    } @else {
+                      {{ getCellValue(event, col.field) | defaultValue }}
+                    }
+                  } @else if (col.field === 'enabled') {
+                    @if (togglingEventId() === event.id) {
+                      <p-skeleton height="1.5rem" width="5rem" />
+                    } @else {
+                      <p-tag
+                        (click)="isRootOrAdmin ? toggleEventEnabled($event, event) : null"
+                        [pTooltip]="isRootOrAdmin ? 'Click to toggle status' : ''"
+                        [rounded]="true"
+                        [severity]="event.enabled ? 'success' : 'danger'"
+                        [styleClass]="
+                          isRootOrAdmin ? 'cursor-pointer hover:opacity-80 transition-opacity' : ''
+                        "
+                        [style]="{
+                          '--p-tag-font-size': '0.75rem',
+                          '--p-tag-padding': '0.25rem 0.5rem',
+                        }"
+                        [value]="event.enabled ? 'Enabled' : 'Disabled'"
+                        tooltipPosition="top"
+                      />
+                    }
+                  } @else if (col.field === 'eventStartDate') {
+                    <span class="whitespace-nowrap">
+                      {{
+                        event.eventStartDate
+                          | formatEventDateTime: event.eventStartTime : event.timezone
+                      }}
+                      @if (event.timezone) {
+                        ({{
+                          event.eventStartDate
+                            | formatEventDateTime: event.eventStartTime : event.timezone : 'abbr'
+                        }})
+                      }
+                    </span>
+                  } @else if (col.field === 'eventEndDate') {
+                    <span class="whitespace-nowrap">
+                      {{
+                        event.eventEndDate
+                          | formatEventDateTime: event.eventEndTime : event.timezone
+                      }}
+                      @if (event.timezone) {
+                        ({{
+                          event.eventEndDate
+                            | formatEventDateTime: event.eventEndTime : event.timezone : 'abbr'
+                        }})
+                      }
+                    </span>
+                  } @else if (col.type === 'datetime') {
+                    {{
+                      $any(getCellValue(event, col.field))
+                        | date: 'dd-MMM-yyyy, hh:mm a'
+                        | defaultValue
+                    }}
+                  } @else if (col.type === 'date') {
+                    {{ $any(getCellValue(event, col.field)) | date: 'dd-MMM-yyyy' | defaultValue }}
+                  } @else if (col.field === 'eventDescription') {
+                    <div [title]="getCellValue(event, col.field)" class="max-w-[50ch] truncate">
+                      {{ getCellValue(event, col.field) | defaultValue }}
+                    </div>
+                  } @else if (col.field === 'logoUrl') {
+                    @if (getCellValue(event, col.field)) {
+                      <a
+                        class="hover:underline text-blue-600"
+                        href="{{ getCellValue(event, col.field) }}"
+                        rel="noopener noreferrer"
+                        target="_blank"
+                      >
+                        View Logo
+                      </a>
+                    } @else {
+                      {{ getCellValue(event, col.field) | defaultValue }}
+                    }
+                  } @else if (col.field === 'city') {
+                    {{ getCellValue(event, 'city') | defaultValue }}
+                    @if (getCellValue(event, 'stateProvince')) {
+                      , {{ getCellValue(event, 'stateProvince') }}
+                    }
+                    @if (getCellValue(event, 'country')) {
+                      , {{ getCellValue(event, 'country') }}
+                    }
+                  } @else if (col.field === 'latitude' || col.field === 'longitude') {
+                    @if (getCellValue(event, col.field)) {
+                      {{ $any(getCellValue(event, col.field)) | number: '1.6-6' }}
+                    } @else {
+                      {{ getCellValue(event, col.field) | defaultValue }}
+                    }
+                  } @else if (col.field === 'organizationId' && event.organizationId) {
+                    <span
+                      (click)="openOrganizationPopover($event, event.organizationId)"
+                      class="cursor-pointer border-b border-dotted border-gray-400"
+                    >
+                      {{ getCellValue(event, col.field) | defaultValue }}
+                    </span>
+                  } @else {
+                    {{ getCellValue(event, col.field) | defaultValue }}
+                  }
+                </td>
+              }
+
+              <td class="text-center whitespace-nowrap" pFrozenColumn alignFrozen="right">
+                <div class="flex items-center justify-center gap-1">
+                  <p-button
+                    (click)="onView(event)"
+                    [rounded]="true"
+                    [size]="inputSize"
+                    [text]="true"
+                    icon="pi pi-eye"
+                    pTooltip="View Details"
+                    severity="secondary"
+                    tooltipPosition="top"
+                  />
+                  <p-button
+                    (click)="onEdit(event)"
+                    [rounded]="true"
+                    [size]="inputSize"
+                    [text]="true"
+                    icon="pi pi-pencil"
+                    pTooltip="Edit"
+                    severity="info"
+                    tooltipPosition="top"
+                  />
+                  <p-button
+                    (click)="onDelete(event, $event)"
+                    [rounded]="true"
+                    [size]="inputSize"
+                    [text]="true"
+                    icon="pi pi-trash"
+                    pTooltip="Delete"
+                    severity="danger"
+                    tooltipPosition="top"
+                  />
+                </div>
               </td>
             }
-            <td class="text-center whitespace-nowrap" pFrozenColumn alignFrozen="right">
-              <p-skeleton height="2rem" width="5rem" />
+          </tr>
+        </ng-template>
+
+        <ng-template pTemplate="emptymessage">
+          <tr>
+            <td [attr.colspan]="visibleCols.length + 2">
+              @if (!isLoading()) {
+                <div class="flex flex-col items-center justify-center py-12 px-4">
+                  <i class="pi pi-calendar text-6xl mb-4 opacity-30"></i>
+                  <p class="text-lg font-medium mb-1">No events found</p>
+                  <p class="text-sm opacity-60">Try adjusting your search or filters</p>
+                </div>
+              }
             </td>
-          } @else {
-            <td class="text-color-secondary whitespace-nowrap" pFrozenColumn>
-              {{ currentPage() * pageSize() + rowIndex + 1 }}
-            </td>
-            @for (col of visibleCols; track col.field) {
-              <td [class]="getColumnAlignment(col.field) + ' whitespace-nowrap'">
-                <!-- Event Status - show colored tag (clickable if user can change status) -->
-                @if (col.field === 'status') {
-                  @if (changingStatusEventId() === event.id) {
-                    <p-skeleton height="1.5rem" width="5rem" />
-                  } @else if (getCellValue(event, col.field)) {
-                    <p-tag
-                      (click)="showStatusMenu(statusMenu, $event, event)"
-                      [pTooltip]="canChangeStatus ? 'Click to change status' : ''"
-                      [rounded]="true"
-                      [severity]="getEventStatusSeverity($any(getCellValue(event, col.field)))"
-                      [styleClass]="
-                        canChangeStatus ? 'cursor-pointer hover:opacity-80 transition-opacity' : ''
-                      "
-                      [style]="{
-                        '--p-tag-font-size': '0.75rem',
-                        '--p-tag-padding': '0.25rem 0.5rem',
-                      }"
-                      [value]="$any(getCellValue(event, col.field))"
-                      tooltipPosition="top"
-                    />
-                  } @else {
-                    {{ getCellValue(event, col.field) | defaultValue }}
-                  }
-                }
-                <!-- Enabled Status - show colored tag (clickable for ROOT/ADMIN only) -->
-                @else if (col.field === 'enabled') {
-                  @if (togglingEventId() === event.id) {
-                    <p-skeleton height="1.5rem" width="5rem" />
-                  } @else {
-                    <p-tag
-                      (click)="isRootOrAdmin ? toggleEventEnabled($event, event) : null"
-                      [pTooltip]="isRootOrAdmin ? 'Click to toggle status' : ''"
-                      [rounded]="true"
-                      [severity]="event.enabled ? 'success' : 'danger'"
-                      [styleClass]="
-                        isRootOrAdmin ? 'cursor-pointer hover:opacity-80 transition-opacity' : ''
-                      "
-                      [style]="{
-                        '--p-tag-font-size': '0.75rem',
-                        '--p-tag-padding': '0.25rem 0.5rem',
-                      }"
-                      [value]="event.enabled ? 'Enabled' : 'Disabled'"
-                      tooltipPosition="top"
-                    />
-                  }
-                }
-                <!-- Event date fields - format with event timezone -->
-                @else if (col.field === 'eventStartDate') {
-                  <span class="whitespace-nowrap">
-                    {{
-                      event.eventStartDate
-                        | formatEventDateTime: event.eventStartTime : event.timezone
-                    }}
-                    @if (event.timezone) {
-                      ({{
+          </tr>
+        </ng-template>
+      </p-table>
+    </ng-template>
+
+    <ng-template #mobileCard let-event>
+      <p-card>
+        <div class="flex flex-col gap-1.5">
+          <div class="flex items-start justify-between gap-2">
+            <div class="flex flex-col min-w-0">
+              <span class="font-semibold text-base truncate">{{ event.eventName }}</span>
+              @if (isRootOrAdmin && event.organizationId) {
+                <span
+                  (click)="openOrganizationPopover($event, event.organizationId)"
+                  class="text-sm cursor-pointer border-b border-dotted border-gray-400 truncate w-fit"
+                >
+                  View Organization
+                </span>
+              }
+            </div>
+            @if (event.status) {
+              <p-tag
+                (click)="showStatusMenu(statusMenu, $event, event)"
+                [pTooltip]="canChangeStatus ? 'Click to change status' : ''"
+                [rounded]="true"
+                [severity]="getEventStatusSeverity(event.status)"
+                [styleClass]="
+                  canChangeStatus ? 'cursor-pointer hover:opacity-80 transition-opacity' : ''
+                "
+                [value]="event.status"
+                tooltipPosition="top"
+              />
+            }
+          </div>
+
+          <div class="flex flex-col gap-1 text-sm">
+            @if (event.eventStartDate || event.eventEndDate) {
+              <div class="flex flex-wrap items-center gap-x-4 gap-y-1">
+                @if (event.eventStartDate) {
+                  <div class="flex items-center gap-2">
+                    <i class="pi pi-calendar opacity-60 w-4"></i>
+                    <span>
+                      {{
                         event.eventStartDate
-                          | formatEventDateTime: event.eventStartTime : event.timezone : 'abbr'
-                      }})
-                    }
-                  </span>
-                } @else if (col.field === 'eventEndDate') {
-                  <span class="whitespace-nowrap">
-                    {{
-                      event.eventEndDate | formatEventDateTime: event.eventEndTime : event.timezone
-                    }}
-                    @if (event.timezone) {
-                      ({{
-                        event.eventEndDate
-                          | formatEventDateTime: event.eventEndTime : event.timezone : 'abbr'
-                      }})
-                    }
-                  </span>
-                }
-                <!-- Created/Updated date fields - format without time -->
-                @else if (col.type === 'datetime') {
-                  {{
-                    $any(getCellValue(event, col.field))
-                      | date: 'dd-MMM-yyyy, hh:mm a'
-                      | defaultValue
-                  }}
-                } @else if (col.type === 'date') {
-                  {{ $any(getCellValue(event, col.field)) | date: 'dd-MMM-yyyy' | defaultValue }}
-                }
-                <!-- Event description - truncate if too long -->
-                @else if (col.field === 'eventDescription') {
-                  <div [title]="getCellValue(event, col.field)" class="max-w-[50ch] truncate">
-                    {{ getCellValue(event, col.field) | defaultValue }}
+                          | formatEventDateTime: event.eventStartTime : event.timezone
+                      }}
+                    </span>
                   </div>
                 }
-                <!-- Logo URL - show as link if available -->
-                @else if (col.field === 'logoUrl') {
-                  @if (getCellValue(event, col.field)) {
-                    <a
-                      class="hover:underline text-blue-600"
-                      href="{{ getCellValue(event, col.field) }}"
-                      rel="noopener noreferrer"
-                      target="_blank"
-                    >
-                      View Logo
-                    </a>
-                  } @else {
-                    {{ getCellValue(event, col.field) | defaultValue }}
-                  }
+                @if (event.eventEndDate) {
+                  <div class="flex items-center gap-2">
+                    <i class="pi pi-flag opacity-60 w-4"></i>
+                    <span>
+                      {{
+                        event.eventEndDate
+                          | formatEventDateTime: event.eventEndTime : event.timezone
+                      }}
+                    </span>
+                  </div>
                 }
-                <!-- Location fields - combine city, state, country for better readability -->
-                @else if (col.field === 'city') {
-                  {{ getCellValue(event, 'city') | defaultValue }}
-                  @if (getCellValue(event, 'stateProvince')) {
-                    , {{ getCellValue(event, 'stateProvince') }}
-                  }
-                  @if (getCellValue(event, 'country')) {
-                    , {{ getCellValue(event, 'country') }}
-                  }
-                }
-                <!-- Coordinates - show with precision -->
-                @else if (col.field === 'latitude' || col.field === 'longitude') {
-                  @if (getCellValue(event, col.field)) {
-                    {{ $any(getCellValue(event, col.field)) | number: '1.6-6' }}
-                  } @else {
-                    {{ getCellValue(event, col.field) | defaultValue }}
-                  }
-                }
-                <!-- Organization ID - clickable to show details in popover -->
-                @else if (col.field === 'organizationId' && event.organizationId) {
-                  <span
-                    (click)="openOrganizationPopover($event, event.organizationId)"
-                    class="cursor-pointer border-b border-dotted border-gray-400"
-                  >
-                    {{ getCellValue(event, col.field) | defaultValue }}
-                  </span>
-                }
-                <!-- Default - show value with default pipe -->
-                @else {
-                  {{ getCellValue(event, col.field) | defaultValue }}
-                }
-              </td>
-            }
-
-            <!-- Action Column -->
-            <td class="text-center whitespace-nowrap" pFrozenColumn alignFrozen="right">
-              <div class="flex items-center justify-center gap-1">
-                <!-- View button -->
-                <p-button
-                  (click)="onView(event)"
-                  [rounded]="true"
-                  [size]="inputSize"
-                  [text]="true"
-                  icon="pi pi-eye"
-                  pTooltip="View Details"
-                  severity="secondary"
-                  tooltipPosition="top"
-                ></p-button>
-                <!-- Edit button -->
-                <p-button
-                  (click)="onEdit(event)"
-                  [rounded]="true"
-                  [size]="inputSize"
-                  [text]="true"
-                  icon="pi pi-pencil"
-                  pTooltip="Edit"
-                  severity="info"
-                  tooltipPosition="top"
-                ></p-button>
-                <!-- Delete button -->
-                <p-button
-                  (click)="onDelete(event, $event)"
-                  [rounded]="true"
-                  [size]="inputSize"
-                  [text]="true"
-                  icon="pi pi-trash"
-                  pTooltip="Delete"
-                  severity="danger"
-                  tooltipPosition="top"
-                ></p-button>
-              </div>
-            </td>
-          }
-        </tr>
-      </ng-template>
-
-      <!-- Empty State -->
-      <ng-template pTemplate="emptymessage">
-        <tr>
-          <td [attr.colspan]="visibleCols.length + 2">
-            @if (!isLoading()) {
-              <div class="flex flex-col items-center justify-center py-12 px-4">
-                <i class="pi pi-calendar text-6xl mb-4 opacity-30"></i>
-                <p class="text-lg font-medium mb-1">No events found</p>
-                <p class="text-sm opacity-60">Try adjusting your search or filters</p>
               </div>
             }
-          </td>
-        </tr>
-      </ng-template>
-    </p-table>
-  </div>
+            @if (event.venueName || event.city || event.country) {
+              <div class="flex items-center gap-2">
+                <i class="pi pi-map-marker opacity-60 w-4"></i>
+                <span class="truncate">
+                  @if (event.venueName) {
+                    {{ event.venueName }}
+                  }
+                  @if (event.venueName && (event.city || event.country)) {
+                    ,
+                  }
+                  @if (event.city) {
+                    {{ event.city }}
+                  }
+                  @if (event.city && event.country) {
+                    ,
+                  }
+                  @if (event.country) {
+                    {{ event.country }}
+                  }
+                </span>
+              </div>
+            }
+          </div>
+        </div>
+
+        <ng-template #footer>
+          <div class="flex items-center justify-end gap-1">
+            <p-button
+              (click)="onView(event)"
+              [rounded]="true"
+              [size]="inputSize"
+              [text]="true"
+              icon="pi pi-eye"
+              severity="secondary"
+            />
+            <p-button
+              (click)="onEdit(event)"
+              [rounded]="true"
+              [size]="inputSize"
+              [text]="true"
+              icon="pi pi-pencil"
+              severity="info"
+            />
+            <p-button
+              (click)="onDelete(event, $event)"
+              [rounded]="true"
+              [size]="inputSize"
+              [text]="true"
+              icon="pi pi-trash"
+              severity="danger"
+            />
+          </div>
+        </ng-template>
+      </p-card>
+    </ng-template>
+  </app-list-shell>
 }
 
 <p-popover #orgPopover (onHide)="currentOrganizationDetails.set(null)" appendTo="body">

@@ -1,0 +1,77 @@
+<div class="p-2 sm:p-3 md:p-4">
+  <div class="mb-6">
+    <h1 class="text-3xl font-bold mb-2">{{ title() }}</h1>
+    @if (subtitle()) {
+      <p class="text-gray-600">{{ subtitle() }}</p>
+    }
+  </div>
+
+  <!-- Search + Actions -->
+  <div class="mb-4 flex flex-wrap items-center justify-between gap-4">
+    <app-list-search
+      (valueChange)="searchChange.emit($event)"
+      (cleared)="searchClear.emit()"
+      [isLoading]="isLoading()"
+      [value]="searchTerm()"
+      [placeholder]="searchPlaceholder()"
+    />
+    @if (actionsTpl()) {
+      <div class="flex items-center gap-2">
+        <ng-container *ngTemplateOutlet="actionsTpl()!" />
+      </div>
+    }
+  </div>
+
+  <!-- Filters + Column Selector (right-aligned on mobile so the lone Filters button sits at the right) -->
+  <div class="mb-4 flex flex-wrap items-center gap-4" [class.justify-end]="isMobile()">
+    <app-list-filter-panel
+      [isMobile]="isMobile()"
+      [activeFilterCount]="activeFilterCount()"
+      [filtersTemplate]="filtersTpl() ?? null"
+    />
+
+    @if (showColumnSelector() && !isMobile()) {
+      <div class="flex items-center gap-2">
+        <label for="columnSelect">Columns:</label>
+        <p-multiselect
+          (ngModelChange)="selectedColumns.set($event); columnSelectionChange.emit()"
+          [ngModel]="selectedColumns()"
+          [maxSelectedLabels]="2"
+          [options]="columns()"
+          [size]="inputSize"
+          inputId="columnSelect"
+          optionDisabled="disabled"
+          optionLabel="header"
+          placeholder="Select Columns"
+        />
+      </div>
+    }
+  </div>
+
+  @if (!isMobile()) {
+    @if (desktopTpl()) {
+      <ng-container *ngTemplateOutlet="desktopTpl()!" />
+    }
+  } @else {
+    <app-mobile-card-list
+      (pageChange)="pageChange.emit($event)"
+      [currentPage]="currentPage()"
+      [emptyHint]="emptyHint()"
+      [emptyIcon]="emptyIcon()"
+      [emptyMessage]="emptyMessage()"
+      [isLoading]="isLoading()"
+      [items]="items()"
+      [pageSize]="pageSize()"
+      [rowsPerPageOptions]="rowsPerPageOptions()"
+      [totalRecords]="totalRecords()"
+    >
+      <ng-template #cardTemplate let-item let-index="index">
+        @if (mobileCardTpl()) {
+          <ng-container
+            *ngTemplateOutlet="mobileCardTpl()!; context: { $implicit: item, index: index }"
+          />
+        }
+      </ng-template>
+    </app-mobile-card-list>
+  }
+</div>

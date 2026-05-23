@@ -1,0 +1,36 @@
+@if (isMobile()) {
+  <p-button
+    (click)="openDialog()"
+    [size]="inputSize"
+    [outlined]="true"
+    icon="pi pi-filter"
+    [label]="triggerLabel()"
+  >
+    @if (hasActive()) {
+      <p-badge [value]="activeFilterCount().toString()" severity="info" class="ml-2" />
+    }
+  </p-button>
+
+  <p-dialog
+    [(visible)]="dialogVisible"
+    [header]="dialogHeader()"
+    [modal]="true"
+    [dismissableMask]="true"
+    [draggable]="false"
+    [resizable]="false"
+    [style]="{ width: '92vw', maxWidth: '32rem' }"
+    appendTo="body"
+  >
+    <div class="flex flex-col gap-4 py-2">
+      @if (filtersTemplate()) {
+        <ng-container *ngTemplateOutlet="filtersTemplate()!" />
+      }
+    </div>
+  </p-dialog>
+} @else {
+  <div class="flex flex-wrap items-center gap-6">
+    @if (filtersTemplate()) {
+      <ng-container *ngTemplateOutlet="filtersTemplate()!" />
+    }
+  </div>
+}
