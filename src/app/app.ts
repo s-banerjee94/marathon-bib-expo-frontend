@@ -3,11 +3,11 @@ import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { RouterOutlet } from '@angular/router';
 import { ToastModule } from 'primeng/toast';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
-import { Navbar } from './components/navbar/navbar';
-import { SidebarComponent } from './components/sidebar/sidebar';
+import { Navbar } from './layout/navbar/navbar';
+import { SidebarComponent } from './layout/sidebar/sidebar';
 import { LayoutService } from './core/services/layout.service';
 import { AuthService } from './core/services/auth.service';
-import { ImportProgressFloating } from './components/import-progress-floating/import-progress-floating';
+import { ImportProgressFloating } from './layout/import-progress-floating/import-progress-floating';
 
 @Component({
   selector: 'app-root',

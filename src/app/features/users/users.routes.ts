@@ -13,18 +13,18 @@ const USER_ROLES = [
 export const USERS_ROUTES: Routes = [
   {
     path: '',
-    loadComponent: () => import('../user-list/user-list').then((m) => m.UserList),
+    loadComponent: () => import('./user-list/user-list').then((m) => m.UserList),
     canActivate: [roleGuard(USER_ROLES)],
     title: pageTitle('Users'),
     children: [
       {
         path: 'new',
-        loadComponent: () => import('../user-form/user-form').then((m) => m.UserForm),
+        loadComponent: () => import('./user-form/user-form').then((m) => m.UserForm),
         title: pageTitle('New User'),
       },
       {
         path: ':id/edit',
-        loadComponent: () => import('../user-form/user-form').then((m) => m.UserForm),
+        loadComponent: () => import('./user-form/user-form').then((m) => m.UserForm),
         title: pageTitle('Edit User'),
       },
     ],

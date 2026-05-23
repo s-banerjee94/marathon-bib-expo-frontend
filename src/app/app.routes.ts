@@ -44,12 +44,13 @@ export const routes: Routes = [
   },
   {
     path: 'unauthorized',
-    loadComponent: () => import('./features/unauthorized/unauthorized').then((m) => m.Unauthorized),
+    loadComponent: () =>
+      import('./features/errors/unauthorized/unauthorized').then((m) => m.Unauthorized),
     title: pageTitle('Unauthorized'),
   },
   {
     path: '**',
-    loadComponent: () => import('./features/not-found/not-found').then((m) => m.NotFound),
+    loadComponent: () => import('./features/errors/not-found/not-found').then((m) => m.NotFound),
     title: pageTitle('Not Found'),
   },
 ];

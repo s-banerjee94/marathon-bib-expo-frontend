@@ -1,0 +1,235 @@
+import { Component, computed, effect, inject, input, signal } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { TableModule } from 'primeng/table';
+import { ButtonModule } from 'primeng/button';
+import { SelectModule } from 'primeng/select';
+import { MultiSelectModule } from 'primeng/multiselect';
+import { TagModule } from 'primeng/tag';
+import { SkeletonModule } from 'primeng/skeleton';
+import { TooltipModule } from 'primeng/tooltip';
+import { DialogService } from 'primeng/dynamicdialog';
+import { ConfirmationService } from 'primeng/api';
+import { CardModule } from 'primeng/card';
+import { ConfirmPopupModule } from 'primeng/confirmpopup';
+import { Category } from '../../../../core/models/category.model';
+import { Race } from '../../../../core/models/race.model';
+import { CategoryService } from '../../../../core/services/category.service';
+import { RaceService } from '../../../../core/services/race.service';
+import { ErrorHandlerService } from '../../../../core/services/error-handler.service';
+import { ToastService } from '../../../../core/services/toast.service';
+import { EventDetailsState } from '../event-details-state.service';
+import { CategoryForm } from '../category-form/category-form';
+import {
+  CreateCategoryRequest,
+  UpdateCategoryRequest,
+} from '../../../../core/models/category.model';
+import { TableColumn } from '../../../../shared/models/table-config.model';
+import { CATEGORY_COLUMNS } from '../../../../shared/constants/category-columns.constant';
+import { STORAGE_KEYS } from '../../../../shared/constants/storage-keys.constant';
+import { BUTTON_SIZE, FORM_INPUT_SIZE } from '../../../../shared/constants/form.constants';
+import { LocalStorageService } from '../../../../core/services/local-storage.service';
+import {
+  enforceRequiredColumns,
+  getVisibleCols,
+  initializeColumnPreferences,
+  saveColumnPreferences,
+} from '../../../../shared/utils/column.utils';
+import { injectIsMobile } from '../../../../shared/utils/responsive.utils';
+
+const DEFAULT_CATEGORY_FIELDS = ['id', 'categoryName', 'createdBy', 'createdAt'];
+
+@Component({
+  selector: 'app-category-section',
+  imports: [
+    CommonModule,
+    FormsModule,
+    TableModule,
+    ButtonModule,
+    SelectModule,
+    MultiSelectModule,
+    TagModule,
+    SkeletonModule,
+    TooltipModule,
+    ConfirmPopupModule,
+    CardModule,
+  ],
+  providers: [DialogService, ConfirmationService],
+  templateUrl: './category-section.html',
+  styleUrl: './category-section.css',
+})
+export class CategorySection {
+  eventId = input.required<number, string>({ transform: (v) => Number(v) });
+
+  private categoryService = inject(CategoryService);
+  private raceService = inject(RaceService);
+  private errorHandler = inject(ErrorHandlerService);
+  private toast = inject(ToastService);
+  private dialogService = inject(DialogService);
+  private confirmationService = inject(ConfirmationService);
+  private storage = inject(LocalStorageService);
+  private state = inject(EventDetailsState);
+
+  categories = signal<Category[]>([]);
+  races = signal<Race[]>([]);
+  isLoading = signal(false);
+  selectedRace = signal<Race | null>(null);
+  isMobile = injectIsMobile();
+  cols = signal<TableColumn[]>([]);
+  selectedCols = signal<TableColumn[]>([]);
+  visibleCols = computed(() => getVisibleCols(CATEGORY_COLUMNS, this.selectedCols()));
+  readonly inputSize = FORM_INPUT_SIZE;
+  readonly buttonSize = BUTTON_SIZE;
+
+  canLoadCategories = computed(() => !!this.selectedRace());
+
+  constructor() {
+    initializeColumnPreferences(
+      this.storage,
+      CATEGORY_COLUMNS,
+      DEFAULT_CATEGORY_FIELDS,
+      STORAGE_KEYS.CATEGORY_TABLE_COLUMNS,
+      this.cols,
+      this.selectedCols,
+    );
+
+    effect(
+      () => {
+        this.loadRaces(this.eventId());
+      },
+      { allowSignalWrites: true },
+    );
+
+    effect(
+      () => {
+        const raceFromState = this.state.selectedRace();
+        if (raceFromState) {
+          this.selectedRace.set(raceFromState);
+        }
+      },
+      { allowSignalWrites: true },
+    );
+
+    effect(
+      () => {
+        if (this.canLoadCategories()) {
+          this.loadCategories();
+        }
+      },
+      { allowSignalWrites: true },
+    );
+  }
+
+  private loadRaces(eventId: number): void {
+    this.raceService.getRacesByEventId(eventId).subscribe({
+      next: (races) => this.races.set(races),
+      error: (error: unknown) => this.errorHandler.showError(error, 'Failed to load races'),
+    });
+  }
+
+  onColumnSelectionChange(): void {
+    enforceRequiredColumns(this.selectedCols, CATEGORY_COLUMNS);
+    saveColumnPreferences(this.storage, this.selectedCols, STORAGE_KEYS.CATEGORY_TABLE_COLUMNS);
+  }
+
+  onRaceChange(race: Race): void {
+    this.selectedRace.set(race);
+  }
+
+  loadCategories(): void {
+    const race = this.selectedRace();
+    if (!race) return;
+
+    this.isLoading.set(true);
+    this.categoryService.getCategoriesByRaceId(this.eventId(), race.id).subscribe({
+      next: (categories: Category[]) => {
+        this.categories.set(categories);
+        this.isLoading.set(false);
+      },
+      error: (error: unknown) => {
+        this.errorHandler.showError(error, 'Failed to load categories');
+        this.isLoading.set(false);
+      },
+    });
+  }
+
+  onCreate(): void {
+    const race = this.selectedRace();
+    if (!race) return;
+
+    const ref = this.dialogService.open(CategoryForm, {
+      header: 'Create Category',
+      width: '500px',
+      data: { category: null },
+    });
+
+    ref?.onClose.subscribe((result: unknown) => {
+      if (result) {
+        this.isLoading.set(true);
+        const request = result as CreateCategoryRequest;
+        this.categoryService.createCategory(this.eventId(), race.id, request).subscribe({
+          next: () => {
+            this.toast.success('Category created successfully');
+            this.loadCategories();
+          },
+          error: (error: unknown) => {
+            this.errorHandler.showError(error, 'Failed to create category');
+            this.isLoading.set(false);
+          },
+        });
+      }
+    });
+  }
+
+  onEdit(category: Category): void {
+    const ref = this.dialogService.open(CategoryForm, {
+      header: 'Edit Category',
+      width: '500px',
+      data: { category },
+    });
+
+    ref?.onClose.subscribe((result: unknown) => {
+      if (result) {
+        this.isLoading.set(true);
+        const request = result as UpdateCategoryRequest;
+        this.categoryService
+          .updateCategory(this.eventId(), category.raceId, category.id, request)
+          .subscribe({
+            next: () => {
+              this.toast.success('Category updated successfully');
+              this.loadCategories();
+            },
+            error: (error: unknown) => {
+              this.errorHandler.showError(error, 'Failed to update category');
+              this.isLoading.set(false);
+            },
+          });
+      }
+    });
+  }
+
+  onDelete(category: Category, event: Event): void {
+    this.confirmationService.confirm({
+      target: event.target as EventTarget,
+      message: `Are you sure you want to delete "${category.categoryName}"?`,
+      icon: 'pi pi-exclamation-triangle',
+      acceptButtonStyleClass: 'p-button-danger p-button-sm',
+      rejectButtonStyleClass: 'p-button-sm',
+      accept: () => {
+        this.isLoading.set(true);
+        this.categoryService
+          .deleteCategory(this.eventId(), category.raceId, category.id)
+          .subscribe({
+            next: () => {
+              this.toast.success('Category deleted successfully');
+              this.loadCategories();
+            },
+            error: (error: unknown) => {
+              this.errorHandler.showError(error, 'Failed to delete category');
+              this.isLoading.set(false);
+            },
+          });
+      },
+    });
+  }
+}

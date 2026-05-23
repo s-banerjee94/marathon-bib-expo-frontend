@@ -1,0 +1,546 @@
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  effect,
+  inject,
+  input,
+  signal,
+  untracked,
+} from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { forkJoin } from 'rxjs';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { TableModule } from 'primeng/table';
+import { TagModule } from 'primeng/tag';
+import { ButtonModule, ButtonSeverity } from 'primeng/button';
+import { TooltipModule } from 'primeng/tooltip';
+import { SkeletonModule } from 'primeng/skeleton';
+import { SelectModule } from 'primeng/select';
+import { MultiSelectModule, MultiSelectChangeEvent } from 'primeng/multiselect';
+import { InputTextModule } from 'primeng/inputtext';
+import { IconFieldModule } from 'primeng/iconfield';
+import { InputIconModule } from 'primeng/inputicon';
+import { FloatLabelModule } from 'primeng/floatlabel';
+import { MessageModule } from 'primeng/message';
+import { PopoverModule } from 'primeng/popover';
+import { DividerModule } from 'primeng/divider';
+import { ConfirmationService } from 'primeng/api';
+import { LookupSearchType, Participant } from '../../../../core/models/participant.model';
+import { Race, Category } from '../../../../core/models/event.model';
+import { EventService } from '../../../../core/services/event.service';
+import { ParticipantService } from '../../../../core/services/participant.service';
+import { ErrorHandlerService } from '../../../../core/services/error-handler.service';
+import { ToastService } from '../../../../core/services/toast.service';
+import { LocalStorageService } from '../../../../core/services/local-storage.service';
+import { DefaultValuePipe } from '../../../../shared/pipes/default-value.pipe';
+import { getGenderDisplay, getGenderSeverity } from '../../../../shared/utils/participant.utils';
+import {
+  BUTTON_SIZE,
+  FORM_INPUT_SIZE,
+  PAGINATION_LIMIT,
+} from '../../../../shared/constants/form.constants';
+import {
+  BULK_DELETE_MAX_LIMIT,
+  LOOKUP_SEARCH_TYPES,
+  PARTICIPANT_COLUMNS,
+} from '../../../../shared/constants/participant-columns.constant';
+import { STORAGE_KEYS } from '../../../../shared/constants/storage-keys.constant';
+import { TableColumn } from '../../../../shared/models/table-config.model';
+import { ParticipantListBus, ParticipantMutation } from '../../participant-list-bus.service';
+import { ParticipantListState } from '../participant-list-state.service';
+import { ParticipantList } from '../participant-list';
+
+@Component({
+  selector: 'app-participant-table-tab',
+  standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  templateUrl: './participant-table-tab.html',
+  imports: [
+    CommonModule,
+    FormsModule,
+    TableModule,
+    TagModule,
+    ButtonModule,
+    TooltipModule,
+    SkeletonModule,
+    SelectModule,
+    MultiSelectModule,
+    InputTextModule,
+    IconFieldModule,
+    InputIconModule,
+    FloatLabelModule,
+    MessageModule,
+    PopoverModule,
+    DividerModule,
+    DefaultValuePipe,
+  ],
+})
+export class ParticipantTableTab {
+  private participantService = inject(ParticipantService);
+  private eventService = inject(EventService);
+  private errorHandler = inject(ErrorHandlerService);
+  private toast = inject(ToastService);
+  private storage = inject(LocalStorageService);
+  private confirmationService = inject(ConfirmationService);
+  private bus = inject(ParticipantListBus);
+  private listState = inject(ParticipantListState);
+  parent = inject(ParticipantList);
+
+  // Router-bound input — the parent route is `event/:eventId`.
+  eventId = input.required<number, string>({ transform: (v) => Number(v) });
+
+  // Constants
+  buttonSize = BUTTON_SIZE;
+  inputSize = FORM_INPUT_SIZE;
+  allColumns: TableColumn[] = PARTICIPANT_COLUMNS;
+  lookupSearchTypes = LOOKUP_SEARCH_TYPES;
+
+  getGenderDisplay = getGenderDisplay;
+  getGenderSeverity = getGenderSeverity;
+
+  // Data state
+  participants = signal<Participant[]>([]);
+  totalCount = signal<number>(0);
+  isLoading = signal(false);
+  hasMore = signal(true);
+  private lastEvaluatedKey?: string;
+
+  // Search state
+  selectedSearchType = signal<LookupSearchType>('NAME');
+  searchValue = signal<string>('');
+  dropdownSelectedItem = signal<string>('');
+  isSearchMode = signal<boolean>(false);
+
+  // Race / Category dropdown data (for race/category search modes)
+  races = signal<Race[]>([]);
+  categories = signal<Category[]>([]);
+  isRacesLoading = signal(false);
+
+  isDropdownSearch = computed(
+    () => this.selectedSearchType() === 'RACE' || this.selectedSearchType() === 'CATEGORY',
+  );
+
+  searchPlaceholder = computed(() => {
+    const option = this.lookupSearchTypes.find((t) => t.value === this.selectedSearchType());
+    return option?.placeholder || 'Enter search value';
+  });
+
+  // Column selection state — persisted to localStorage
+  selectedCols = signal<TableColumn[]>([]);
+
+  visibleCols = computed(() => {
+    const selected = this.selectedCols();
+    const required = this.allColumns.filter((col) => col.required);
+    const selectedFields = new Set(selected.map((col) => col.field));
+    const requiredFields = new Set(required.map((col) => col.field));
+    return this.allColumns.filter(
+      (col) => requiredFields.has(col.field) || selectedFields.has(col.field),
+    );
+  });
+
+  availableColumns = computed(() =>
+    this.allColumns.map((col) => ({ ...col, disabled: col.required })),
+  );
+
+  // Selection (PrimeNG two-way binding needs a regular array)
+  selectedParticipants: Participant[] = [];
+
+  // Skeleton rows for initial loading state
+  skeletonRows = Array(5).fill({});
+
+  isInitialLoading = computed(() => this.isLoading() && this.participants().length === 0);
+  isLoadingMore = computed(() => this.isLoading() && this.participants().length > 0);
+
+  constructor() {
+    // Initialize selected columns from localStorage (or all columns by default).
+    this.initializeSelectedColumns();
+
+    // Effect 1: react to eventId changes — reset state and reload everything.
+    effect(
+      () => {
+        const id = this.eventId();
+        untracked(() => {
+          this.resetData();
+          if (id) {
+            this.loadEventData(id);
+            this.loadParticipants();
+            this.loadTotalCount();
+          } else {
+            this.races.set([]);
+            this.categories.set([]);
+          }
+        });
+      },
+      { allowSignalWrites: true },
+    );
+
+    // Effect 2: react to cross-tab reload triggers (e.g., after import completion).
+    effect(
+      () => {
+        if (this.listState.reloadTrigger() > 0) {
+          untracked(() => this.reloadParticipants());
+        }
+      },
+      { allowSignalWrites: true },
+    );
+
+    // Apply data mutations published by the form (created/updated) without an extra HTTP fetch.
+    this.bus.mutations$
+      .pipe(takeUntilDestroyed())
+      .subscribe((mutation) => this.applyParticipantMutation(mutation));
+  }
+
+  // ---------- Data loading ----------
+  private loadParticipants(append: boolean = false): void {
+    const eventId = this.eventId();
+    if (!eventId || this.isLoading()) return;
+
+    this.isLoading.set(true);
+
+    this.participantService
+      .getParticipants(eventId, PAGINATION_LIMIT, append ? this.lastEvaluatedKey : undefined)
+      .subscribe({
+        next: (response) => {
+          if (append) {
+            this.participants.update((current) => [...current, ...response.participants]);
+          } else {
+            this.participants.set(response.participants);
+          }
+          this.lastEvaluatedKey = response.lastEvaluatedKey;
+          this.hasMore.set(response.hasMore);
+          this.isLoading.set(false);
+        },
+        error: (error) => {
+          this.errorHandler.showError(error, 'Failed to load participants');
+          this.isLoading.set(false);
+        },
+      });
+  }
+
+  private reloadParticipants(): void {
+    this.participants.set([]);
+    this.hasMore.set(true);
+    this.lastEvaluatedKey = undefined;
+    this.selectedParticipants = [];
+    this.loadParticipants();
+    this.loadTotalCount();
+  }
+
+  private loadTotalCount(): void {
+    const eventId = this.eventId();
+    if (!eventId) return;
+
+    this.participantService.getParticipantCount(eventId).subscribe({
+      next: (response) => this.totalCount.set(response.count),
+      error: (error) => this.errorHandler.showError(error, 'Failed to load participant count'),
+    });
+  }
+
+  private resetData(): void {
+    this.participants.set([]);
+    this.totalCount.set(0);
+    this.hasMore.set(true);
+    this.lastEvaluatedKey = undefined;
+    this.selectedParticipants = [];
+    this.resetSearch();
+  }
+
+  private loadEventData(eventId: number): void {
+    this.isRacesLoading.set(true);
+    this.eventService.getRaces(eventId).subscribe({
+      next: (races) => {
+        this.races.set(races);
+        this.isRacesLoading.set(false);
+        if (races.length > 0) {
+          const catObs = races.map((r) => this.eventService.getCategoriesByRace(eventId, r.id));
+          forkJoin(catObs).subscribe({
+            next: (results) => this.categories.set(results.flat()),
+            error: () => {},
+          });
+        }
+      },
+      error: () => this.isRacesLoading.set(false),
+    });
+  }
+
+  // ---------- Search ----------
+  onSearchTypeChange(): void {
+    this.searchValue.set('');
+    this.dropdownSelectedItem.set('');
+  }
+
+  performSearch(): void {
+    const eventId = this.eventId();
+    const isDropdown = this.isDropdownSearch();
+    const value = isDropdown ? this.dropdownSelectedItem() : this.searchValue().trim();
+    if (!eventId || !value || (!isDropdown && value.length < 2)) return;
+
+    this.isSearchMode.set(true);
+    this.participants.set([]);
+    this.hasMore.set(true);
+    this.lastEvaluatedKey = undefined;
+    this.isLoading.set(true);
+
+    this.participantService
+      .lookupParticipants({
+        eventId,
+        searchType: this.selectedSearchType(),
+        searchValue: value,
+        limit: PAGINATION_LIMIT,
+      })
+      .subscribe({
+        next: (response) => {
+          this.participants.set(response.participants);
+          this.lastEvaluatedKey = response.lastEvaluatedKey;
+          this.hasMore.set(response.hasMore);
+          this.isLoading.set(false);
+        },
+        error: (error) => {
+          this.errorHandler.showError(error, 'Failed to lookup participants');
+          this.isLoading.set(false);
+        },
+      });
+  }
+
+  clearSearch(): void {
+    this.resetSearch();
+    this.participants.set([]);
+    this.hasMore.set(true);
+    this.lastEvaluatedKey = undefined;
+    this.loadParticipants();
+  }
+
+  private resetSearch(): void {
+    this.searchValue.set('');
+    this.dropdownSelectedItem.set('');
+    this.selectedSearchType.set('NAME');
+    this.isSearchMode.set(false);
+  }
+
+  loadMore(): void {
+    if (!this.hasMore() || this.isLoading()) return;
+    if (this.isSearchMode()) {
+      this.loadMoreLookupResults();
+    } else {
+      this.loadParticipants(true);
+    }
+  }
+
+  private loadMoreLookupResults(): void {
+    const eventId = this.eventId();
+    const isDropdown = this.isDropdownSearch();
+    const value = isDropdown ? this.dropdownSelectedItem() : this.searchValue().trim();
+    if (!eventId || !value || !this.lastEvaluatedKey) return;
+
+    this.isLoading.set(true);
+    this.participantService
+      .lookupParticipants({
+        eventId,
+        searchType: this.selectedSearchType(),
+        searchValue: value,
+        limit: PAGINATION_LIMIT,
+        lastEvaluatedKey: this.lastEvaluatedKey,
+      })
+      .subscribe({
+        next: (response) => {
+          this.participants.update((current) => [...current, ...response.participants]);
+          this.lastEvaluatedKey = response.lastEvaluatedKey;
+          this.hasMore.set(response.hasMore);
+          this.isLoading.set(false);
+        },
+        error: (error) => {
+          this.errorHandler.showError(error, 'Failed to load more participants');
+          this.isLoading.set(false);
+        },
+      });
+  }
+
+  // ---------- Mutations from the form (via bus) ----------
+  private applyParticipantMutation(mutation: ParticipantMutation): void {
+    const current = this.participants();
+    if (mutation.action === 'created') {
+      this.participants.set([mutation.participant, ...current]);
+      this.totalCount.update((count) => count + 1);
+    } else {
+      this.participants.set(
+        current.map((p) =>
+          p.bibNumber === mutation.participant.bibNumber ? mutation.participant : p,
+        ),
+      );
+    }
+  }
+
+  // ---------- Delete (single + bulk) ----------
+  onDelete(participant: Participant): void {
+    this.confirmationService.confirm({
+      message: `Are you sure you want to delete participant ${participant.fullName} (BIB: ${participant.bibNumber})?`,
+      header: 'Confirm Delete',
+      icon: 'pi pi-exclamation-triangle',
+      acceptButtonProps: { severity: 'danger' },
+      rejectButtonProps: { severity: 'secondary', outlined: true },
+      accept: () => {
+        const eventId = this.eventId();
+        if (!eventId) return;
+
+        this.participantService.deleteParticipant(eventId, participant.bibNumber).subscribe({
+          next: () => {
+            this.toast.success('Participant deleted successfully', 'Success');
+            this.removeParticipantFromList(participant.bibNumber);
+            this.totalCount.update((count) => Math.max(0, count - 1));
+            this.selectedParticipants = [];
+          },
+          error: (error) => this.errorHandler.showError(error, 'Failed to delete participant'),
+        });
+      },
+    });
+  }
+
+  onBulkDelete(): void {
+    if (this.selectedParticipants.length === 0) return;
+
+    const count = this.selectedParticipants.length;
+    if (count > BULK_DELETE_MAX_LIMIT) {
+      this.errorHandler.showError(
+        { message: `Maximum ${BULK_DELETE_MAX_LIMIT} participants can be deleted at once` },
+        'Too Many Participants',
+      );
+      return;
+    }
+
+    const targets = [...this.selectedParticipants];
+    this.confirmationService.confirm({
+      message: `Are you sure you want to delete ${count} participant(s)? This action cannot be undone.`,
+      header: 'Confirm Bulk Delete',
+      icon: 'pi pi-exclamation-triangle',
+      acceptButtonProps: { severity: 'danger' },
+      rejectButtonProps: { severity: 'secondary', outlined: true },
+      accept: () => {
+        const eventId = this.eventId();
+        if (!eventId) return;
+        const bibNumbers = targets.map((p) => p.bibNumber);
+
+        this.participantService.bulkDeleteParticipants(eventId, bibNumbers).subscribe({
+          next: (response) => {
+            const message =
+              response.failedCount > 0
+                ? `${response.deletedCount} participant(s) deleted, ${response.failedCount} failed`
+                : `${response.deletedCount} participant(s) deleted successfully`;
+            this.toast.success(message, 'Success');
+            this.removeParticipantsFromList(bibNumbers);
+            this.totalCount.update((current) => Math.max(0, current - response.deletedCount));
+            this.selectedParticipants = [];
+          },
+          error: (error) => this.errorHandler.showError(error, 'Failed to delete participants'),
+        });
+      },
+    });
+  }
+
+  private removeParticipantFromList(bibNumber: string): void {
+    this.participants.update((current) => current.filter((p) => p.bibNumber !== bibNumber));
+  }
+
+  private removeParticipantsFromList(bibNumbers: string[]): void {
+    const set = new Set(bibNumbers);
+    this.participants.update((current) => current.filter((p) => !set.has(p.bibNumber)));
+  }
+
+  // ---------- Column preferences ----------
+  private initializeSelectedColumns(): void {
+    const key = STORAGE_KEYS.PARTICIPANT_TABLE_COLUMNS;
+    const savedFields = this.storage.getJSON<string[]>(key);
+    if (Array.isArray(savedFields)) {
+      const savedCols = this.allColumns.filter(
+        (col) => savedFields.includes(col.field) || col.required,
+      );
+      if (savedCols.length > 0) {
+        this.selectedCols.set(savedCols);
+        return;
+      }
+    }
+    this.selectedCols.set([...this.allColumns]);
+  }
+
+  isColumnVisible(field: string): boolean {
+    return this.visibleCols().some((col) => col.field === field);
+  }
+
+  onColumnSelectionChange(event: MultiSelectChangeEvent): void {
+    const newSelection = event.value as TableColumn[];
+    const required = this.allColumns.filter((col) => col.required);
+    const selectedFields = new Set(newSelection.map((col) => col.field));
+    const updatedSelection = [...newSelection];
+    for (const req of required) {
+      if (!selectedFields.has(req.field)) {
+        updatedSelection.push(req);
+      }
+    }
+    this.selectedCols.set(updatedSelection);
+    this.storage.setJSON(
+      STORAGE_KEYS.PARTICIPANT_TABLE_COLUMNS,
+      updatedSelection.map((col) => col.field),
+    );
+  }
+
+  hasSelection(): boolean {
+    return this.selectedParticipants.length > 0;
+  }
+
+  // ---------- DOB parsing for table display ----------
+  parseDob(value: string | undefined): Date | null {
+    if (!value) return null;
+    const iso = /^(\d{4})-(\d{2})-(\d{2})/.exec(value);
+    if (iso) return new Date(Number(iso[1]), Number(iso[2]) - 1, Number(iso[3]));
+    const dmy = /^(\d{2})-(\d{2})-(\d{4})/.exec(value);
+    if (dmy) return new Date(Number(dmy[3]), Number(dmy[2]) - 1, Number(dmy[1]));
+    return null;
+  }
+
+  // ---------- Goodies display helpers ----------
+  getGoodiesCount(goodies: { [key: string]: string } | undefined | null): number {
+    if (!goodies || typeof goodies !== 'object') return 0;
+    return Object.keys(goodies).length;
+  }
+
+  getGoodiesEntries(
+    goodies: { [key: string]: string } | undefined | null,
+  ): Array<{ key: string; value: string }> {
+    if (!goodies || typeof goodies !== 'object') return [];
+    return Object.entries(goodies).map(([key, value]) => ({ key, value: String(value) }));
+  }
+
+  formatGoodiesKey(key: string): string {
+    return key
+      .split(/[-_\s]+/)
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(' ');
+  }
+
+  getDistributedCount(participant: Participant): number {
+    const distribution = participant.goodiesDistribution;
+    if (!distribution || typeof distribution !== 'object') return 0;
+    return Object.keys(distribution).length;
+  }
+
+  getGoodiesDistributionSeverity(participant: Participant): ButtonSeverity {
+    const total = this.getGoodiesCount(participant.goodies);
+    const distributed = this.getDistributedCount(participant);
+    if (distributed === 0) return 'warn';
+    if (distributed >= total) return 'success';
+    return 'info';
+  }
+
+  getGoodiesDistributionEntries(
+    participant: Participant,
+  ): Array<{ key: string; distributed: boolean }> {
+    const goodies = participant.goodies;
+    const distribution = participant.goodiesDistribution;
+    if (!goodies || typeof goodies !== 'object') return [];
+    return Object.keys(goodies).map((key) => ({
+      key,
+      distributed: !!(distribution && distribution[key]),
+    }));
+  }
+}

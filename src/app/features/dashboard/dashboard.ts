@@ -1,11 +1,11 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { AuthService } from '../../core/services/auth.service';
 import { UserRole } from '../../core/models/user.model';
-import { RootDashboard } from '../root-dashboard/root-dashboard';
-import { AdminDashboard } from '../admin-dashboard/admin-dashboard';
-import { OrgAdminDashboard } from '../org-admin-dashboard/org-admin-dashboard';
-import { OrgUserDashboard } from '../org-user-dashboard/org-user-dashboard';
-import { DistributerDashboard } from '../distributer-dashboard/distributer-dashboard';
+import { RootDashboard } from './root/root-dashboard';
+import { AdminDashboard } from './admin/admin-dashboard';
+import { OrgAdminDashboard } from './org-admin/org-admin-dashboard';
+import { OrgUserDashboard } from './org-user/org-user-dashboard';
+import { DistributerDashboard } from './distributer/distributer-dashboard';
 
 @Component({
   selector: 'app-dashboard',

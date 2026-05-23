@@ -9,20 +9,20 @@ export const ORGANIZATIONS_ROUTES: Routes = [
   {
     path: '',
     loadComponent: () =>
-      import('../organization-list/organization-list').then((m) => m.OrganizationList),
+      import('./organization-list/organization-list').then((m) => m.OrganizationList),
     canActivate: [roleGuard(ORGANIZATION_ROLES)],
     title: pageTitle('Organizations'),
     children: [
       {
         path: 'new',
         loadComponent: () =>
-          import('../organization-form/organization-form').then((m) => m.OrganizationForm),
+          import('./organization-form/organization-form').then((m) => m.OrganizationForm),
         title: pageTitle('New Organization'),
       },
       {
         path: ':id/edit',
         loadComponent: () =>
-          import('../organization-form/organization-form').then((m) => m.OrganizationForm),
+          import('./organization-form/organization-form').then((m) => m.OrganizationForm),
         title: pageTitle('Edit Organization'),
       },
     ],

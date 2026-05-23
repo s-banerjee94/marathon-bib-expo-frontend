@@ -14,7 +14,7 @@ export const PARTICIPANTS_ROUTES: Routes = [
   {
     path: '',
     loadComponent: () =>
-      import('../participant-list/participant-list').then((m) => m.ParticipantList),
+      import('./participant-list/participant-list').then((m) => m.ParticipantList),
     canActivate: [roleGuard(PARTICIPANT_ROLES)],
     title: pageTitle('Participants'),
     children: [
@@ -25,7 +25,7 @@ export const PARTICIPANTS_ROUTES: Routes = [
           {
             path: 'list',
             loadComponent: () =>
-              import('../participant-list/components/participant-table-tab/participant-table-tab').then(
+              import('./participant-list/participant-table-tab/participant-table-tab').then(
                 (m) => m.ParticipantTableTab,
               ),
             title: pageTitle('Participants'),
@@ -33,7 +33,7 @@ export const PARTICIPANTS_ROUTES: Routes = [
           {
             path: 'errors',
             loadComponent: () =>
-              import('../participant-list/components/import-history-tab/import-history-tab').then(
+              import('./participant-list/import-history-tab/import-history-tab').then(
                 (m) => m.ImportHistoryTab,
               ),
             title: pageTitle('Import Errors'),
@@ -43,14 +43,14 @@ export const PARTICIPANTS_ROUTES: Routes = [
       {
         path: 'new',
         loadComponent: () =>
-          import('../participant-form/participant-form').then((m) => m.ParticipantForm),
+          import('./participant-form/participant-form').then((m) => m.ParticipantForm),
         title: pageTitle('New Participant'),
       },
       // Keep edit route last so `:eventId/:bib/edit` cannot greedily match `event/:eventId/...`
       {
         path: ':eventId/:bib/edit',
         loadComponent: () =>
-          import('../participant-form/participant-form').then((m) => m.ParticipantForm),
+          import('./participant-form/participant-form').then((m) => m.ParticipantForm),
         title: pageTitle('Edit Participant'),
       },
     ],

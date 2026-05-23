@@ -13,18 +13,18 @@ const EVENT_ROLES = [
 export const EVENTS_ROUTES: Routes = [
   {
     path: '',
-    loadComponent: () => import('../event-list/event-list').then((m) => m.EventList),
+    loadComponent: () => import('./event-list/event-list').then((m) => m.EventList),
     canActivate: [roleGuard(EVENT_ROLES)],
     title: pageTitle('Events'),
     children: [
       {
         path: 'new',
-        loadComponent: () => import('../event-form/event-form').then((m) => m.EventForm),
+        loadComponent: () => import('./event-form/event-form').then((m) => m.EventForm),
         title: pageTitle('New Event'),
       },
       {
         path: ':id/edit',
-        loadComponent: () => import('../event-form/event-form').then((m) => m.EventForm),
+        loadComponent: () => import('./event-form/event-form').then((m) => m.EventForm),
         title: pageTitle('Edit Event'),
       },
     ],
@@ -32,7 +32,7 @@ export const EVENTS_ROUTES: Routes = [
   {
     path: ':eventId',
     loadComponent: () =>
-      import('../event-details/event-details/event-details').then((m) => m.EventDetails),
+      import('./event-details/event-details/event-details').then((m) => m.EventDetails),
     canActivate: [roleGuard(EVENT_ROLES)],
     title: pageTitle('Event Details'),
     children: [
@@ -40,13 +40,13 @@ export const EVENTS_ROUTES: Routes = [
       {
         path: 'races',
         loadComponent: () =>
-          import('../event-details/race-section/race-section').then((m) => m.RaceSection),
+          import('./event-details/race-section/race-section').then((m) => m.RaceSection),
         title: pageTitle('Event Races'),
       },
       {
         path: 'categories',
         loadComponent: () =>
-          import('../event-details/category-section/category-section').then(
+          import('./event-details/category-section/category-section').then(
             (m) => m.CategorySection,
           ),
         title: pageTitle('Event Categories'),
@@ -54,7 +54,7 @@ export const EVENTS_ROUTES: Routes = [
       {
         path: 'sms-templates',
         loadComponent: () =>
-          import('../event-details/sms-template-section/sms-template-section').then(
+          import('./event-details/sms-template-section/sms-template-section').then(
             (m) => m.SmsTemplateSection,
           ),
         title: pageTitle('Event SMS Templates'),
@@ -62,7 +62,7 @@ export const EVENTS_ROUTES: Routes = [
       {
         path: 'sms-campaigns',
         loadComponent: () =>
-          import('../event-details/sms-campaign-section/sms-campaign-section').then(
+          import('./event-details/sms-campaign-section/sms-campaign-section').then(
             (m) => m.SmsCampaignSection,
           ),
         title: pageTitle('Event SMS Campaigns'),
@@ -70,7 +70,7 @@ export const EVENTS_ROUTES: Routes = [
       {
         path: 'participants',
         loadComponent: () =>
-          import('../event-details/participants-section/participants-section').then(
+          import('./event-details/participants-section/participants-section').then(
             (m) => m.ParticipantsSection,
           ),
         title: pageTitle('Event Participants'),
