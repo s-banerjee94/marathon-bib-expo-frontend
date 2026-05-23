@@ -1,10 +1,11 @@
-import { Component, computed, inject, input, OnInit, signal } from '@angular/core';
+import { Component, computed, inject, input, OnDestroy, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { MultiSelectModule } from 'primeng/multiselect';
+import { CardModule } from 'primeng/card';
 import { TagModule } from 'primeng/tag';
 import { SkeletonModule } from 'primeng/skeleton';
 import { TooltipModule } from 'primeng/tooltip';
@@ -47,13 +48,14 @@ import {
     SkeletonModule,
     TooltipModule,
     ConfirmPopupModule,
+    CardModule,
     DefaultValuePipe,
   ],
   providers: [DialogService, ConfirmationService],
   templateUrl: './race-section.html',
   styleUrl: './race-section.css',
 })
-export class RaceSection implements OnInit {
+export class RaceSection implements OnInit, OnDestroy {
   eventId = input.required<number, string>({ transform: (v) => Number(v) });
 
   private raceService = inject(RaceService);
@@ -67,6 +69,10 @@ export class RaceSection implements OnInit {
   races = signal<Race[]>([]);
   isLoading = signal(true);
   internalSelectedRace = signal<Race | null>(null);
+  isMobile = signal(false);
+
+  private mobileMediaQuery?: MediaQueryList;
+  private mobileQueryHandler?: (e: MediaQueryListEvent) => void;
 
   cols = signal<TableColumn[]>([]);
   selectedCols = signal<TableColumn[]>([]);
@@ -75,6 +81,12 @@ export class RaceSection implements OnInit {
   readonly buttonSize = BUTTON_SIZE;
 
   ngOnInit(): void {
+    if (typeof window !== 'undefined' && typeof window.matchMedia === 'function') {
+      this.mobileMediaQuery = window.matchMedia('(max-width: 768px)');
+      this.isMobile.set(this.mobileMediaQuery.matches);
+      this.mobileQueryHandler = (e) => this.isMobile.set(e.matches);
+      this.mobileMediaQuery.addEventListener('change', this.mobileQueryHandler);
+    }
     initializeColumnPreferences(
       this.storage,
       RACE_COLUMNS,
@@ -84,6 +96,12 @@ export class RaceSection implements OnInit {
       this.selectedCols,
     );
     this.loadRaces();
+  }
+
+  ngOnDestroy(): void {
+    if (this.mobileMediaQuery && this.mobileQueryHandler) {
+      this.mobileMediaQuery.removeEventListener('change', this.mobileQueryHandler);
+    }
   }
 
   onColumnSelectionChange(): void {

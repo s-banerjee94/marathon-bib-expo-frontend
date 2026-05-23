@@ -1,4 +1,4 @@
-import { Component, computed, effect, inject, input, signal } from '@angular/core';
+import { Component, computed, effect, inject, input, OnDestroy, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TableModule } from 'primeng/table';
@@ -10,6 +10,7 @@ import { SkeletonModule } from 'primeng/skeleton';
 import { TooltipModule } from 'primeng/tooltip';
 import { DialogService } from 'primeng/dynamicdialog';
 import { ConfirmationService } from 'primeng/api';
+import { CardModule } from 'primeng/card';
 import { ConfirmPopupModule } from 'primeng/confirmpopup';
 import { Category } from '../../../core/models/category.model';
 import { Race } from '../../../core/models/race.model';
@@ -47,12 +48,13 @@ const DEFAULT_CATEGORY_FIELDS = ['id', 'categoryName', 'createdBy', 'createdAt']
     SkeletonModule,
     TooltipModule,
     ConfirmPopupModule,
+    CardModule,
   ],
   providers: [DialogService, ConfirmationService],
   templateUrl: './category-section.html',
   styleUrl: './category-section.css',
 })
-export class CategorySection {
+export class CategorySection implements OnDestroy {
   eventId = input.required<number, string>({ transform: (v) => Number(v) });
 
   private categoryService = inject(CategoryService);
@@ -68,6 +70,10 @@ export class CategorySection {
   races = signal<Race[]>([]);
   isLoading = signal(false);
   selectedRace = signal<Race | null>(null);
+  isMobile = signal(false);
+
+  private mobileMediaQuery?: MediaQueryList;
+  private mobileQueryHandler?: (e: MediaQueryListEvent) => void;
 
   cols = signal<TableColumn[]>([]);
   selectedCols = signal<TableColumn[]>([]);
@@ -78,6 +84,12 @@ export class CategorySection {
   canLoadCategories = computed(() => !!this.selectedRace());
 
   constructor() {
+    if (typeof window !== 'undefined' && typeof window.matchMedia === 'function') {
+      this.mobileMediaQuery = window.matchMedia('(max-width: 768px)');
+      this.isMobile.set(this.mobileMediaQuery.matches);
+      this.mobileQueryHandler = (e) => this.isMobile.set(e.matches);
+      this.mobileMediaQuery.addEventListener('change', this.mobileQueryHandler);
+    }
     initializeColumnPreferences(
       this.storage,
       CATEGORY_COLUMNS,
@@ -112,6 +124,12 @@ export class CategorySection {
       },
       { allowSignalWrites: true },
     );
+  }
+
+  ngOnDestroy(): void {
+    if (this.mobileMediaQuery && this.mobileQueryHandler) {
+      this.mobileMediaQuery.removeEventListener('change', this.mobileQueryHandler);
+    }
   }
 
   private loadRaces(eventId: number): void {

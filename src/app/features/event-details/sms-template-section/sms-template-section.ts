@@ -13,6 +13,7 @@ import { SkeletonModule } from 'primeng/skeleton';
 import { TooltipModule } from 'primeng/tooltip';
 import { DialogService } from 'primeng/dynamicdialog';
 import { ConfirmationService } from 'primeng/api';
+import { CardModule } from 'primeng/card';
 import { ConfirmPopupModule } from 'primeng/confirmpopup';
 import { SmsTemplate } from '../../../core/models/sms-template.model';
 import { SmsTemplateService } from '../../../core/services/sms-template.service';
@@ -51,6 +52,7 @@ import {
     SkeletonModule,
     TooltipModule,
     ConfirmPopupModule,
+    CardModule,
     DefaultValuePipe,
     TruncatePipe,
   ],
@@ -70,6 +72,10 @@ export class SmsTemplateSection implements OnInit, OnDestroy {
 
   smsTemplates = signal<SmsTemplate[]>([]);
   isLoading = signal(true);
+  isMobile = signal(false);
+
+  private mobileMediaQuery?: MediaQueryList;
+  private mobileQueryHandler?: (e: MediaQueryListEvent) => void;
   cols = signal<TableColumn[]>([]);
   selectedCols = signal<TableColumn[]>([]);
   visibleCols = computed(() => getVisibleCols(SMS_TEMPLATE_COLUMNS, this.selectedCols()));
@@ -84,6 +90,12 @@ export class SmsTemplateSection implements OnInit, OnDestroy {
   private searchSubject = new Subject<string>();
 
   ngOnInit(): void {
+    if (typeof window !== 'undefined' && typeof window.matchMedia === 'function') {
+      this.mobileMediaQuery = window.matchMedia('(max-width: 768px)');
+      this.isMobile.set(this.mobileMediaQuery.matches);
+      this.mobileQueryHandler = (e) => this.isMobile.set(e.matches);
+      this.mobileMediaQuery.addEventListener('change', this.mobileQueryHandler);
+    }
     initializeColumnPreferences(
       this.storage,
       SMS_TEMPLATE_COLUMNS,
@@ -105,6 +117,9 @@ export class SmsTemplateSection implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.searchSubject.complete();
+    if (this.mobileMediaQuery && this.mobileQueryHandler) {
+      this.mobileMediaQuery.removeEventListener('change', this.mobileQueryHandler);
+    }
   }
 
   onColumnSelectionChange(): void {
