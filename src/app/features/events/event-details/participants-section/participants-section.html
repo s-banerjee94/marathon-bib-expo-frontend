@@ -1,0 +1,27 @@
+@if (eventId(); as id) {
+  <app-participant-table-tab
+    [eventId]="id"
+    [showActionToolbar]="false"
+    [showSelectionColumn]="true"
+    (detailsRequested)="onDetails($event)"
+  />
+}
+
+<p-confirmDialog />
+
+<p-dialog
+  (visibleChange)="$event || closeDetailsDialog()"
+  [draggable]="false"
+  header="Participant Details"
+  [modal]="true"
+  [resizable]="false"
+  [style]="detailsStyle()"
+  [contentStyle]="{ overflow: 'auto' }"
+  [visible]="showDetailsDialog()"
+>
+  @if (eventId(); as id) {
+    @if (detailsBibNumber(); as bib) {
+      <app-participant-details [eventId]="id" [bibNumber]="bib" [editable]="true" />
+    }
+  }
+</p-dialog>

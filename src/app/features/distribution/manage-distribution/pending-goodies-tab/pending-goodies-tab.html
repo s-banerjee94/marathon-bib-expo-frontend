@@ -158,6 +158,7 @@
             [email]="participant.email"
             [raceName]="participant.raceName"
             [categoryName]="participant.categoryName"
+            (detailsRequested)="parent.openDetailsDialog(participant.bibNumber)"
           >
             <p-tag card-status [rounded]="true" severity="success" size="small" value="Collected" />
 

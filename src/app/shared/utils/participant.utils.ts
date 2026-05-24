@@ -67,3 +67,25 @@ export function getImportStatusSeverity(status: string): TagSeverity {
 export function getGoodiesKeys(goodies: { [key: string]: string } | undefined): string[] {
   return goodies ? Object.keys(goodies) : [];
 }
+
+/**
+ * Parse a date-of-birth string in either ISO (yyyy-MM-dd) or dd-MM-yyyy form.
+ */
+export function parseDob(value: string | null | undefined): Date | null {
+  if (!value) return null;
+  const iso = /^(\d{4})-(\d{2})-(\d{2})/.exec(value);
+  if (iso) return new Date(Number(iso[1]), Number(iso[2]) - 1, Number(iso[3]));
+  const dmy = /^(\d{2})-(\d{2})-(\d{4})/.exec(value);
+  if (dmy) return new Date(Number(dmy[3]), Number(dmy[2]) - 1, Number(dmy[1]));
+  return null;
+}
+
+/**
+ * Humanize a goodies key, e.g. "t_shirt-size" → "T Shirt Size".
+ */
+export function formatGoodiesKey(key: string): string {
+  return key
+    .split(/[-_\s]+/)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(' ');
+}

@@ -28,6 +28,11 @@ export const PARTICIPANTS_ROUTES: Routes = [
               import('./participant-list/participant-table-tab/participant-table-tab').then(
                 (m) => m.ParticipantTableTab,
               ),
+            // withComponentInputBinding sets any input without a matching route value
+            // to undefined, overriding its default — so we MUST pass every flag the
+            // table-tab needs. Import/Export/Add live in the page shell (toolbar off),
+            // and the selection column stays on so bulk delete works here too.
+            data: { showActionToolbar: false, showSelectionColumn: true },
             title: pageTitle('Participants'),
           },
           {
@@ -46,12 +51,15 @@ export const PARTICIPANTS_ROUTES: Routes = [
           import('./participant-form/participant-form').then((m) => m.ParticipantForm),
         title: pageTitle('New Participant'),
       },
-      // Keep edit route last so `:eventId/:bib/edit` cannot greedily match `event/:eventId/...`
+      // Details (view + per-field inline edit). Replaces the legacy `:eventId/:bib/edit` form route.
+      // Keep last so `:eventId/:bibNumber/details` cannot greedily match `event/:eventId/...`.
       {
-        path: ':eventId/:bib/edit',
+        path: ':eventId/:bibNumber/details',
         loadComponent: () =>
-          import('./participant-form/participant-form').then((m) => m.ParticipantForm),
-        title: pageTitle('Edit Participant'),
+          import('./participant-details/participant-details-route').then(
+            (m) => m.ParticipantDetailsRoute,
+          ),
+        title: pageTitle('Participant Details'),
       },
     ],
   },

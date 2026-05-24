@@ -41,6 +41,8 @@ import { Participant } from '../../../core/models/participant.model';
 import { OrganizationSelector } from '../../../layout/organization-selector/organization-selector';
 import { EventSelector } from '../../../layout/event-selector/event-selector';
 import { DistributionDialogState } from './distribution-dialog-state.service';
+import { ParticipantDetails } from '../../participants/participant-details/participant-details';
+import { injectIsMobile } from '../../../shared/utils/responsive.utils';
 
 /** Minimal shape shared by Participant and ParticipantDistributionResponse for dialog usage */
 type DistributionTarget = Participant | ParticipantDistributionResponse;
@@ -63,6 +65,7 @@ type DistributionTarget = Participant | ParticipantDistributionResponse;
     RouterLinkActive,
     OrganizationSelector,
     EventSelector,
+    ParticipantDetails,
   ],
   providers: [ConfirmationService, DistributionDialogState],
   templateUrl: './manage-distribution.html',
@@ -85,6 +88,23 @@ export class ManageDistribution implements OnInit {
   selectedOrganizationId = signal<number | undefined>(undefined);
   selectedEventId = signal<number | undefined>(undefined);
   isRestrictedUser = signal(false);
+
+  // Read-only participant details dialog (opened from any tab's card click).
+  readonly isMobile = injectIsMobile();
+  detailsBibNumber = signal<string | null>(null);
+  detailsDialogStyle = computed(() =>
+    this.isMobile()
+      ? { width: '100vw', height: '100vh', maxHeight: '100vh' }
+      : { width: '95vw', maxWidth: '1100px', height: '90vh' },
+  );
+
+  openDetailsDialog(bibNumber: string): void {
+    this.detailsBibNumber.set(bibNumber);
+  }
+
+  closeDetailsDialog(): void {
+    this.detailsBibNumber.set(null);
+  }
 
   // Active tab derived from router state — reads from deepest child route
   activeTab = toSignal(

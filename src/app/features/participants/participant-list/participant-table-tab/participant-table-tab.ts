@@ -5,11 +5,13 @@ import {
   effect,
   inject,
   input,
+  output,
   signal,
   untracked,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { forkJoin } from 'rxjs';
+import { forkJoin, of } from 'rxjs';
+import { catchError, map } from 'rxjs/operators';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TableModule } from 'primeng/table';
@@ -23,7 +25,6 @@ import { InputTextModule } from 'primeng/inputtext';
 import { IconFieldModule } from 'primeng/iconfield';
 import { InputIconModule } from 'primeng/inputicon';
 import { FloatLabelModule } from 'primeng/floatlabel';
-import { MessageModule } from 'primeng/message';
 import { PopoverModule } from 'primeng/popover';
 import { DividerModule } from 'primeng/divider';
 import { ConfirmationService } from 'primeng/api';
@@ -35,7 +36,12 @@ import { ErrorHandlerService } from '../../../../core/services/error-handler.ser
 import { ToastService } from '../../../../core/services/toast.service';
 import { LocalStorageService } from '../../../../core/services/local-storage.service';
 import { DefaultValuePipe } from '../../../../shared/pipes/default-value.pipe';
-import { getGenderDisplay, getGenderSeverity } from '../../../../shared/utils/participant.utils';
+import {
+  formatGoodiesKey,
+  getGenderDisplay,
+  getGenderSeverity,
+  parseDob,
+} from '../../../../shared/utils/participant.utils';
 import {
   BUTTON_SIZE,
   FORM_INPUT_SIZE,
@@ -50,7 +56,6 @@ import { STORAGE_KEYS } from '../../../../shared/constants/storage-keys.constant
 import { TableColumn } from '../../../../shared/models/table-config.model';
 import { ParticipantListBus, ParticipantMutation } from '../../participant-list-bus.service';
 import { ParticipantListState } from '../participant-list-state.service';
-import { ParticipantList } from '../participant-list';
 
 @Component({
   selector: 'app-participant-table-tab',
@@ -71,7 +76,6 @@ import { ParticipantList } from '../participant-list';
     IconFieldModule,
     InputIconModule,
     FloatLabelModule,
-    MessageModule,
     PopoverModule,
     DividerModule,
     DefaultValuePipe,
@@ -86,10 +90,23 @@ export class ParticipantTableTab {
   private confirmationService = inject(ConfirmationService);
   private bus = inject(ParticipantListBus);
   private listState = inject(ParticipantListState);
-  parent = inject(ParticipantList);
 
-  // Router-bound input — the parent route is `event/:eventId`.
-  eventId = input.required<number, string>({ transform: (v) => Number(v) });
+  // Router-bound input — the parent route is `event/:eventId`. Accepts string (from
+  // router path params) or number (when bound directly by a host component).
+  eventId = input.required<number, number | string>({ transform: (v) => Number(v) });
+
+  // Feature flags — hosts can hide the action toolbar and/or selection column.
+  showActionToolbar = input<boolean>(true);
+  showSelectionColumn = input<boolean>(true);
+
+  // Outputs replace the previous `parent.openX()` coupling so the table-tab
+  // can be hosted anywhere (standalone /participants page, event-details tab, etc.).
+  importRequested = output<void>();
+  createRequested = output<void>();
+  exportRequested = output<void>();
+  // Row action: view + edit are unified into a single Details action. The host
+  // decides whether the details view is editable based on the route context.
+  detailsRequested = output<Participant>();
 
   // Constants
   buttonSize = BUTTON_SIZE;
@@ -99,6 +116,8 @@ export class ParticipantTableTab {
 
   getGenderDisplay = getGenderDisplay;
   getGenderSeverity = getGenderSeverity;
+  parseDob = parseDob;
+  formatGoodiesKey = formatGoodiesKey;
 
   // Data state
   participants = signal<Participant[]>([]);
@@ -400,16 +419,9 @@ export class ParticipantTableTab {
   onBulkDelete(): void {
     if (this.selectedParticipants.length === 0) return;
 
-    const count = this.selectedParticipants.length;
-    if (count > BULK_DELETE_MAX_LIMIT) {
-      this.errorHandler.showError(
-        { message: `Maximum ${BULK_DELETE_MAX_LIMIT} participants can be deleted at once` },
-        'Too Many Participants',
-      );
-      return;
-    }
-
     const targets = [...this.selectedParticipants];
+    const count = targets.length;
+
     this.confirmationService.confirm({
       message: `Are you sure you want to delete ${count} participant(s)? This action cannot be undone.`,
       header: 'Confirm Bulk Delete',
@@ -421,18 +433,44 @@ export class ParticipantTableTab {
         if (!eventId) return;
         const bibNumbers = targets.map((p) => p.bibNumber);
 
-        this.participantService.bulkDeleteParticipants(eventId, bibNumbers).subscribe({
-          next: (response) => {
+        // The API accepts at most BULK_DELETE_MAX_LIMIT (25) bib numbers per request,
+        // so split into chunks and delete them in parallel. Each chunk is independent:
+        // a succeeded chunk removes its rows from the local list; a failed chunk leaves
+        // its rows in place. No full backend reload — the local list is updated directly.
+        const chunks: string[][] = [];
+        for (let i = 0; i < bibNumbers.length; i += BULK_DELETE_MAX_LIMIT) {
+          chunks.push(bibNumbers.slice(i, i + BULK_DELETE_MAX_LIMIT));
+        }
+
+        forkJoin(
+          chunks.map((chunk) =>
+            this.participantService.bulkDeleteParticipants(eventId, chunk).pipe(
+              map(() => chunk),
+              catchError(() => of<string[]>([])),
+            ),
+          ),
+        ).subscribe((deletedChunks) => {
+          const removedBibs = deletedChunks.flat();
+          const failedCount = bibNumbers.length - removedBibs.length;
+
+          if (removedBibs.length > 0) {
+            this.removeParticipantsFromList(removedBibs);
+            this.totalCount.update((current) => Math.max(0, current - removedBibs.length));
+          }
+          this.selectedParticipants = [];
+
+          if (removedBibs.length === 0) {
+            this.errorHandler.showError(
+              { message: 'No participants could be deleted' },
+              'Delete failed',
+            );
+          } else {
             const message =
-              response.failedCount > 0
-                ? `${response.deletedCount} participant(s) deleted, ${response.failedCount} failed`
-                : `${response.deletedCount} participant(s) deleted successfully`;
+              failedCount > 0
+                ? `${removedBibs.length} participant(s) deleted, ${failedCount} failed`
+                : `${removedBibs.length} participant(s) deleted successfully`;
             this.toast.success(message, 'Success');
-            this.removeParticipantsFromList(bibNumbers);
-            this.totalCount.update((current) => Math.max(0, current - response.deletedCount));
-            this.selectedParticipants = [];
-          },
-          error: (error) => this.errorHandler.showError(error, 'Failed to delete participants'),
+          }
         });
       },
     });
@@ -488,16 +526,6 @@ export class ParticipantTableTab {
     return this.selectedParticipants.length > 0;
   }
 
-  // ---------- DOB parsing for table display ----------
-  parseDob(value: string | undefined): Date | null {
-    if (!value) return null;
-    const iso = /^(\d{4})-(\d{2})-(\d{2})/.exec(value);
-    if (iso) return new Date(Number(iso[1]), Number(iso[2]) - 1, Number(iso[3]));
-    const dmy = /^(\d{2})-(\d{2})-(\d{4})/.exec(value);
-    if (dmy) return new Date(Number(dmy[3]), Number(dmy[2]) - 1, Number(dmy[1]));
-    return null;
-  }
-
   // ---------- Goodies display helpers ----------
   getGoodiesCount(goodies: { [key: string]: string } | undefined | null): number {
     if (!goodies || typeof goodies !== 'object') return 0;
@@ -509,13 +537,6 @@ export class ParticipantTableTab {
   ): Array<{ key: string; value: string }> {
     if (!goodies || typeof goodies !== 'object') return [];
     return Object.entries(goodies).map(([key, value]) => ({ key, value: String(value) }));
-  }
-
-  formatGoodiesKey(key: string): string {
-    return key
-      .split(/[-_\s]+/)
-      .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-      .join(' ');
   }
 
   getDistributedCount(participant: Participant): number {

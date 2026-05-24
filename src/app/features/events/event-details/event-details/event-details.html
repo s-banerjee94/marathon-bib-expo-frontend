@@ -1,4 +1,4 @@
-<div class="p-2 sm:p-3 md:p-4 max-w-7xl mx-auto">
+<div class="p-2 sm:p-3 md:p-4">
   <!-- Confirmation Popup and Status Menu -->
   <p-confirmpopup />
   <p-menu #statusMenu [model]="statusMenuItems()" [popup]="true" appendTo="body" />
@@ -102,6 +102,14 @@
   @if (!isLoading() && event()) {
     <p-tabs [value]="activeTab()">
       <p-tablist>
+        <p-tab value="dashboard" [routerLink]="['dashboard']" routerLinkActive>
+          <i class="pi pi-chart-bar mr-2"></i>
+          Dashboard
+        </p-tab>
+        <p-tab value="participants" [routerLink]="['participants']" routerLinkActive>
+          <i class="pi pi-users mr-2"></i>
+          Participant List
+        </p-tab>
         <p-tab value="races" [routerLink]="['races']" routerLinkActive>
           <i class="pi pi-flag mr-2"></i>
           Races
@@ -117,10 +125,6 @@
         <p-tab value="sms-campaigns" [routerLink]="['sms-campaigns']" routerLinkActive>
           <i class="pi pi-send mr-2"></i>
           SMS Campaigns
-        </p-tab>
-        <p-tab value="participants" [routerLink]="['participants']" routerLinkActive>
-          <i class="pi pi-users mr-2"></i>
-          Participants
         </p-tab>
       </p-tablist>
     </p-tabs>

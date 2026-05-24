@@ -284,3 +284,21 @@
     </div>
   </ng-template>
 </p-dialog>
+
+<!-- Participant Details Dialog (view-only — distribution role) -->
+<p-dialog
+  header="Participant Details"
+  [visible]="!!detailsBibNumber()"
+  (visibleChange)="$event || closeDetailsDialog()"
+  [modal]="true"
+  [draggable]="false"
+  [resizable]="false"
+  [style]="detailsDialogStyle()"
+  [contentStyle]="{ overflow: 'auto' }"
+>
+  @if (selectedEventId(); as eid) {
+    @if (detailsBibNumber(); as bib) {
+      <app-participant-details [eventId]="eid" [bibNumber]="bib" [editable]="false" />
+    }
+  }
+</p-dialog>

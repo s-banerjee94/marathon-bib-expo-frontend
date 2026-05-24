@@ -1,4 +1,4 @@
-@if (isMobile() && hasFormRoute()) {
+@if (isMobile() && hasRoutedOverlay()) {
   <router-outlet />
 } @else {
   <div class="p-2 sm:p-3 md:p-4">
@@ -60,6 +60,31 @@
     <!-- Participant Tabs (routed via router-outlet) -->
     @if (canShowTabs()) {
       <p-card>
+        <!-- Page-level actions (outside the tabbed content) -->
+        <div class="flex flex-col sm:flex-row gap-2 mb-4">
+          <p-button
+            (onClick)="openImportDialog()"
+            [size]="buttonSize"
+            icon="pi pi-upload"
+            label="Import Participants"
+            severity="primary"
+          ></p-button>
+          <p-button
+            (onClick)="openCreateDialog()"
+            [size]="buttonSize"
+            icon="pi pi-plus"
+            label="Add Participant"
+            severity="success"
+          ></p-button>
+          <p-button
+            (onClick)="openExportDialog()"
+            [outlined]="true"
+            [size]="buttonSize"
+            icon="pi pi-download"
+            label="Export CSV"
+          ></p-button>
+        </div>
+
         <p-tabs [value]="activeTab()">
           <p-tablist>
             <p-tab
@@ -85,7 +110,7 @@
 
         <div class="pt-4">
           @if (hasTabRoute()) {
-            <router-outlet />
+            <router-outlet (activate)="onTabActivated($event)" />
           }
         </div>
       </p-card>
@@ -95,9 +120,6 @@
 
 <!-- Confirmation Dialog -->
 <p-confirmDialog></p-confirmDialog>
-
-<!-- View Participant Dialog -->
-<app-participant-view-dialog [(visible)]="showViewDialog" [participant]="viewParticipant()" />
 
 <!-- Export Dialog -->
 <app-participant-export-dialog
@@ -116,22 +138,22 @@
   [isUploading]="isUploading()"
 />
 
-<!-- Create/Edit Participant Form Dialog (desktop only — mobile uses router-outlet) -->
+<!-- Create Participant Form Dialog (desktop only — mobile uses router-outlet) -->
 <p-dialog
   (visibleChange)="onFormDialogVisibleChange($event)"
   [draggable]="false"
-  [header]="formDialogHeader()"
+  header="Create Participant"
   [modal]="true"
   [resizable]="false"
   [style]="{ width: '95vw', maxWidth: '700px', maxHeight: '90vh' }"
   [visible]="showFormDialog() && !isMobile()"
 >
-  @if (formDialogData()) {
+  @if (formDialogData(); as data) {
     <app-participant-form
       #participantFormComponent
       (formSubmitSuccess)="onFormSubmitSuccess()"
       (submitDisabledChange)="onFormSubmitDisabledChange($event)"
-      [dialogData]="formDialogData()!"
+      [dialogData]="{ eventId: data.eventId, isEditMode: false }"
     ></app-participant-form>
   }
 
@@ -146,9 +168,29 @@
     <p-button
       (onClick)="submitFormDialog()"
       [disabled]="formSubmitDisabled()"
-      [label]="formDialogData()?.isEditMode ? 'Update' : 'Create'"
+      label="Create"
       icon="pi pi-check"
       severity="primary"
     ></p-button>
   </ng-template>
+</p-dialog>
+
+<!-- Participant Details Dialog (desktop only — mobile uses router-outlet) -->
+<p-dialog
+  (visibleChange)="onDetailsDialogVisibleChange($event)"
+  [draggable]="false"
+  header="Participant Details"
+  [modal]="true"
+  [resizable]="false"
+  [style]="{ width: '95vw', maxWidth: '1100px', height: '90vh' }"
+  [contentStyle]="{ overflow: 'auto' }"
+  [visible]="showDetailsDialog() && !isMobile()"
+>
+  @if (detailsContext(); as ctx) {
+    <app-participant-details
+      [eventId]="ctx.eventId"
+      [bibNumber]="ctx.bibNumber"
+      [editable]="true"
+    />
+  }
 </p-dialog>

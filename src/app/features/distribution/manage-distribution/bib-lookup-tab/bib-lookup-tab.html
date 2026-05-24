@@ -261,6 +261,7 @@
               [gender]="participant.gender"
               [chipNumber]="participant.chipNumber"
               [phoneNumber]="participant.phoneNumber"
+              (detailsRequested)="parent.openDetailsDialog(participant.bibNumber)"
               [email]="participant.email"
               [raceName]="participant.raceName"
               [categoryName]="participant.categoryName"

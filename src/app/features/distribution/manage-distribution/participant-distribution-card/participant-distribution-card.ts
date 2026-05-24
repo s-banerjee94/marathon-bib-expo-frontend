@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input, output } from '@angular/core';
 import { CardModule } from 'primeng/card';
 import { AuthService } from '../../../../core/services/auth.service';
 import { UserRole } from '../../../../core/models/user.model';
@@ -24,6 +24,10 @@ export class ParticipantDistributionCard {
   raceName = input<string | undefined>(undefined);
   categoryName = input<string | undefined>(undefined);
 
+  // Emitted when the BIB row is clicked (read-only details). Hosts decide whether
+  // to act on it based on the surrounding context.
+  detailsRequested = output<void>();
+
   canNavigate = computed(() =>
     this.authService.hasAnyRole([
       UserRole.ROOT,
@@ -32,4 +36,10 @@ export class ParticipantDistributionCard {
       UserRole.ORGANIZER_USER,
     ]),
   );
+
+  onBibClick(): void {
+    if (this.canNavigate()) {
+      this.detailsRequested.emit();
+    }
+  }
 }

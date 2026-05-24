@@ -2,7 +2,15 @@
   <div class="flex flex-col gap-1">
     <!-- BIB + status -->
     <div class="flex items-center justify-between gap-2">
-      <span class="flex items-center gap-1 text-base font-bold tracking-wide">
+      <span
+        class="flex items-center gap-1 text-base font-bold tracking-wide"
+        [class.cursor-pointer]="canNavigate()"
+        [class.hover:opacity-80]="canNavigate()"
+        (click)="onBibClick()"
+        role="button"
+        tabindex="0"
+        (keyup.enter)="onBibClick()"
+      >
         <span>{{ bibNumber() }}</span>
         @if (canNavigate()) {
           <i class="pi pi-angle-right text-base opacity-60"></i>

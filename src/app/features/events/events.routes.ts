@@ -36,7 +36,23 @@ export const EVENTS_ROUTES: Routes = [
     canActivate: [roleGuard(EVENT_ROLES)],
     title: pageTitle('Event Details'),
     children: [
-      { path: '', redirectTo: 'races', pathMatch: 'full' },
+      { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
+      {
+        path: 'dashboard',
+        loadComponent: () =>
+          import('./event-details/event-dashboard-section/event-dashboard-section').then(
+            (m) => m.EventDashboardSection,
+          ),
+        title: pageTitle('Event Dashboard'),
+      },
+      {
+        path: 'participants',
+        loadComponent: () =>
+          import('./event-details/participants-section/participants-section').then(
+            (m) => m.ParticipantsSection,
+          ),
+        title: pageTitle('Event Participants'),
+      },
       {
         path: 'races',
         loadComponent: () =>
@@ -66,14 +82,6 @@ export const EVENTS_ROUTES: Routes = [
             (m) => m.SmsCampaignSection,
           ),
         title: pageTitle('Event SMS Campaigns'),
-      },
-      {
-        path: 'participants',
-        loadComponent: () =>
-          import('./event-details/participants-section/participants-section').then(
-            (m) => m.ParticipantsSection,
-          ),
-        title: pageTitle('Event Participants'),
       },
     ],
   },

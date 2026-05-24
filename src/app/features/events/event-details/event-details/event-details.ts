@@ -32,7 +32,7 @@ import {
 import { EventForm } from '../../event-form/event-form';
 import { BUTTON_SIZE } from '../../../../shared/constants/form.constants';
 
-const DEFAULT_TAB = 'races';
+const DEFAULT_TAB = 'dashboard';
 
 @Component({
   selector: 'app-event-details',
