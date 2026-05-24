@@ -86,7 +86,6 @@ export interface ParticipantStatisticsResponse {
   raceBreakdown: RaceStatistics[];
   categoryBreakdown: CategoryStatistics[];
   genderBreakdown: GenderStatistics;
-  status?: string;
 }
 
 export interface RaceStatistics {
@@ -204,7 +203,6 @@ export interface ImportJobListResponse {
 export interface BatchImportResponse {
   jobExecutionId: number;
   status: string;
-  deletedCount?: number;
 }
 
 export interface BatchJobStatusResponse {

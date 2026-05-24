@@ -18,10 +18,12 @@ export interface ImportJobEntry {
   readonly jobExecutionId: number;
   readonly startedAt: number;
   readonly status: Signal<BatchJobStatusResponse | null>;
+  readonly isStopping: Signal<boolean>;
 }
 
 interface InternalJobEntry extends ImportJobEntry {
   readonly status: WritableSignal<BatchJobStatusResponse | null>;
+  readonly isStopping: WritableSignal<boolean>;
 }
 
 interface PersistedImport {
@@ -66,6 +68,23 @@ export class ImportProgressService {
     this.persistActive();
   }
 
+  stop(jobExecutionId: number): void {
+    const entry = this.jobsSignal().find((j) => j.jobExecutionId === jobExecutionId);
+    if (!entry || entry.isStopping()) return;
+
+    entry.isStopping.set(true);
+    this.participantService.stopBatchImport(entry.eventId, jobExecutionId).subscribe({
+      next: (status) => {
+        entry.status.set(status);
+        this.toast.success(`Stop signal sent for import #${jobExecutionId}`, 'Stopping import');
+      },
+      error: (error: unknown) => {
+        entry.isStopping.set(false);
+        this.errorHandler.showError(error, 'Failed to stop import');
+      },
+    });
+  }
+
   private addJob(eventId: number, jobExecutionId: number, startedAt: number): void {
     if (this.jobsSignal().some((j) => j.jobExecutionId === jobExecutionId)) return;
 
@@ -74,6 +93,7 @@ export class ImportProgressService {
       jobExecutionId,
       startedAt,
       status: signal<BatchJobStatusResponse | null>(null),
+      isStopping: signal<boolean>(false),
     };
 
     this.jobsSignal.update((arr) => [entry, ...arr]);
@@ -100,6 +120,7 @@ export class ImportProgressService {
 
         if (terminal) {
           this.stopPolling(jobExecutionId);
+          current.isStopping.set(false);
           this.persistActive();
           if (status.status === 'COMPLETED') {
             this.toast.success(
