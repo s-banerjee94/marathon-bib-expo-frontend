@@ -9,6 +9,7 @@ export interface AppMenuItem {
   separator?: boolean;
   badge?: string;
   badgeClass?: string;
+  mobileOnly?: boolean;
 }
 
 export interface AppMenuItemCommand {

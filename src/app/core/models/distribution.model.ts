@@ -1,3 +1,7 @@
+export interface ScanQrRequest {
+  code: string;
+}
+
 export interface CollectBibRequest {
   collectorName?: string;
   collectorPhone?: string;

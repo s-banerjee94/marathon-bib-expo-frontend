@@ -16,6 +16,7 @@ import {
   ParticipantDistributionResponse,
   PendingBibListResponse,
   PendingGoodiesListResponse,
+  ScanQrRequest,
   UndoDistributionResponse,
 } from '../models/distribution.model';
 
@@ -23,6 +24,13 @@ import {
 export class DistributionService {
   private http = inject(HttpClient);
   private apiUrl = `${BASE_URI}/events`;
+
+  scanQr(eventId: number, request: ScanQrRequest): Observable<ParticipantDistributionResponse> {
+    return this.http.post<ParticipantDistributionResponse>(
+      `${this.apiUrl}/${eventId}/participant-access/scan`,
+      request,
+    );
+  }
 
   getDistributionStatus(
     eventId: number,
