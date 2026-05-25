@@ -1,5 +1,8 @@
 import { computed, effect, inject, Injectable, PLATFORM_ID, signal } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { isPlatformBrowser } from '@angular/common';
+import { NavigationEnd, Router } from '@angular/router';
+import { filter, map } from 'rxjs';
 import { $t, updatePreset, updateSurfacePalette } from '@primeuix/themes';
 import Aura from '@primeuix/themes/aura';
 import Lara from '@primeuix/themes/lara';
@@ -109,10 +112,26 @@ export class LayoutService {
   private platformId = inject(PLATFORM_ID);
   private primengConfig = inject(PrimeNG);
   private storage = inject(LocalStorageService);
+  private router = inject(Router);
 
   layoutConfig = signal<LayoutConfig>(this.loadConfig());
   layoutState = signal<LayoutState>(DEFAULT_LAYOUT_STATE);
   isDarkTheme = computed(() => this.layoutConfig().darkTheme);
+
+  // Tracks the active URL so the shell/navbar can adapt to the public landing
+  // (root path) vs. the authenticated app pages.
+  private currentUrl = toSignal(
+    this.router.events.pipe(
+      filter((e): e is NavigationEnd => e instanceof NavigationEnd),
+      map((e) => e.urlAfterRedirects),
+    ),
+    { initialValue: this.router.url },
+  );
+  /** True while the public marketing landing (root path) is showing. */
+  isLandingRoute = computed(() => {
+    const url = (this.currentUrl() ?? '/').split(/[?#]/)[0];
+    return url === '/' || url === '';
+  });
   selectedPrimary = computed(() => this.layoutConfig().primary);
   selectedSurface = computed(() => this.layoutConfig().surface);
   selectedPreset = computed(() => this.layoutConfig().preset);

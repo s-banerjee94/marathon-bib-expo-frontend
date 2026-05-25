@@ -4,7 +4,7 @@
 <div [ngClass]="layoutClasses()" class="layout-wrapper">
   <app-navbar></app-navbar>
 
-  @if (isAuthenticated()) {
+  @if (showSidebar()) {
     <app-sidebar></app-sidebar>
     @if (
       layoutService.layoutState().mobileMenuActive || layoutService.layoutState().overlayMenuActive
@@ -18,7 +18,7 @@
   }
 
   <main class="layout-main">
-    <div class="p-3 sm:p-4 md:p-5">
+    <div [class]="contentClass()">
       <router-outlet></router-outlet>
     </div>
   </main>

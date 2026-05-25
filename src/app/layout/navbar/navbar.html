@@ -7,7 +7,7 @@
 >
   <ng-template pTemplate="start">
     <div class="flex items-center">
-      @if (isAuthenticated()) {
+      @if (isAuthenticated() && !isLandingRoute()) {
         <p-button
           (onClick)="onMenuToggle($event)"
           [rounded]="true"
@@ -17,13 +17,46 @@
           ariaLabel="Toggle navigation menu"
         />
       }
-      <span class="px-4 font-semibold">Marathon Bib Expo</span>
+      <a routerLink="/" class="px-4 font-semibold text-[var(--text-color)] no-underline"
+        >Marathon Bib Expo</a
+      >
+
+      <!-- Landing in-page navigation — only on the public root route -->
+      @if (isLandingRoute()) {
+        <nav class="ml-4 hidden items-center gap-[22px] text-sm min-[900px]:flex">
+          <a
+            href="#features"
+            class="font-medium text-[var(--text-color-secondary)] no-underline transition-colors hover:text-[var(--text-color)]"
+            >Features</a
+          >
+          <a
+            href="#how"
+            class="font-medium text-[var(--text-color-secondary)] no-underline transition-colors hover:text-[var(--text-color)]"
+            >How it works</a
+          >
+          <a
+            href="#roles"
+            class="font-medium text-[var(--text-color-secondary)] no-underline transition-colors hover:text-[var(--text-color)]"
+            >Roles</a
+          >
+          <a
+            href="#pricing"
+            class="font-medium text-[var(--text-color-secondary)] no-underline transition-colors hover:text-[var(--text-color)]"
+            >Pricing</a
+          >
+          <a
+            href="#faq"
+            class="font-medium text-[var(--text-color-secondary)] no-underline transition-colors hover:text-[var(--text-color)]"
+            >FAQ</a
+          >
+        </nav>
+      }
     </div>
   </ng-template>
 
   <ng-template pTemplate="end">
     <div class="flex items-center gap-2 pr-4">
-      <!-- Dark Mode Toggle -->
+      <!-- Dark Mode Toggle — available to everyone -->
       <p-button
         (onClick)="layoutService.toggleDarkMode()"
         [icon]="layoutService.isDarkTheme() ? 'pi pi-moon' : 'pi pi-sun'"
@@ -33,20 +66,41 @@
         [text]="true"
       />
 
-      @if (isAuthenticated()) {
-        <!-- Theme Configurator -->
-        <p-button
-          (onClick)="themePopover.toggle($event)"
-          [rounded]="true"
-          [text]="true"
-          icon="pi pi-palette"
-          pTooltip="Theme settings"
-          ariaLabel="Open theme settings"
-        />
-        <p-popover #themePopover appendTo="body">
-          <app-theme-configurator />
-        </p-popover>
+      <!-- Theme Configurator — open to everyone -->
+      <p-button
+        (onClick)="themePopover.toggle($event)"
+        [rounded]="true"
+        [text]="true"
+        icon="pi pi-palette"
+        pTooltip="Theme settings"
+        ariaLabel="Open theme settings"
+      />
+      <p-popover #themePopover appendTo="body">
+        <app-theme-configurator />
+      </p-popover>
 
+      @if (isLandingRoute()) {
+        <!-- Landing CTAs: signed-in users get a Dashboard shortcut instead of auth buttons -->
+        @if (isAuthenticated()) {
+          <a
+            pButton
+            routerLink="/dashboard"
+            label="Dashboard"
+            icon="pi pi-th-large"
+            size="small"
+          ></a>
+        } @else {
+          <a
+            pButton
+            routerLink="/login"
+            label="Sign in"
+            severity="contrast"
+            [text]="true"
+            size="small"
+          ></a>
+          <a pButton href="#demo" label="Book a demo" size="small"></a>
+        }
+      } @else if (isAuthenticated()) {
         <!-- Notification Bell -->
         <p-button
           (onClick)="notifPopover.toggle($event)"
@@ -145,18 +199,18 @@
             </div>
           </div>
         </p-popover>
-      }
 
-      <!-- User Avatar Menu -->
-      <p-avatar
-        (click)="menu.toggle($event)"
-        [label]="avatarLabel()"
-        shape="circle"
-        size="normal"
-        styleClass="cursor-pointer"
-        ariaLabel="Open user menu"
-      ></p-avatar>
-      <p-menu #menu [model]="items" popup="true"></p-menu>
+        <!-- User Avatar Menu -->
+        <p-avatar
+          (click)="menu.toggle($event)"
+          [label]="avatarLabel()"
+          shape="circle"
+          size="normal"
+          styleClass="cursor-pointer"
+          ariaLabel="Open user menu"
+        ></p-avatar>
+        <p-menu #menu [model]="items" popup="true"></p-menu>
+      }
     </div>
   </ng-template>
 </p-menubar>

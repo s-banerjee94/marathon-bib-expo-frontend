@@ -28,7 +28,19 @@ export class App {
   layoutService = inject(LayoutService);
   authService = inject(AuthService);
   isAuthenticated = this.authService.isAuthenticated;
+  isLanding = this.layoutService.isLandingRoute;
+
+  // Sidebar + static-menu offsets only belong to the authenticated app pages,
+  // never the public landing (which an authenticated user may also view).
+  showSidebar = computed(() => this.isAuthenticated() && !this.isLanding());
+  // The landing is full-bleed; app pages get the standard content padding.
+  contentClass = computed(() => (this.isLanding() ? '' : 'p-3 sm:p-4 md:p-5'));
+
   layoutClasses = computed(() => {
+    if (this.isLanding()) {
+      return {};
+    }
+
     const config = this.layoutService.layoutConfig();
     const state = this.layoutService.layoutState();
 

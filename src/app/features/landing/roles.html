@@ -1,0 +1,111 @@
+<section id="roles" class="scroll-mt-[var(--topbar-height)] py-24">
+  <div class="mx-auto max-w-[1200px] px-7">
+    <div class="mb-14 max-w-[720px]">
+      <span
+        class="inline-flex items-center gap-2.5 text-xs font-bold tracking-[0.12em] text-[var(--text-color-secondary)] uppercase before:h-px before:w-6 before:bg-current before:content-['']"
+        >Three roles, three jobs</span
+      >
+      <h2
+        class="my-4 text-[clamp(36px,4.5vw,56px)] leading-[1.05] font-extrabold tracking-[-0.03em] text-[var(--text-color)]"
+      >
+        The right screen for the right hands.
+      </h2>
+      <p class="max-w-[620px] text-lg leading-[1.55] text-[var(--text-color-secondary)]">
+        Every login lands on a role-aware dashboard. Volunteers don't see admin controls. Admins
+        don't waste time on lookup screens. Your team sits comfortably in between.
+      </p>
+    </div>
+
+    <div class="grid grid-cols-1 gap-6 min-[900px]:grid-cols-3">
+      @for (r of roles; track r.tag) {
+        <div
+          class="relative flex min-h-[280px] flex-col gap-4 rounded-xl border border-[var(--surface-border)] bg-[var(--surface-card)] p-8"
+        >
+          <span
+            class="inline-flex items-center gap-1.5 self-start rounded-full bg-[var(--surface-hover)] px-2.5 py-[3px] font-['Geist_Mono',_monospace] text-[11px] font-bold tracking-[0.06em] text-[var(--text-color)] uppercase"
+            >{{ r.tag }}</span
+          >
+          <h3 class="text-[22px] font-bold tracking-[-0.02em]">{{ r.title }}</h3>
+          <p class="text-sm leading-[1.55] text-[var(--text-color-secondary)]">{{ r.body }}</p>
+          <ul class="m-0 flex list-none flex-col gap-2 p-0">
+            @for (c of r.caps; track c) {
+              <li class="flex items-center gap-2 text-[13px] text-[var(--text-color)]">
+                <i class="pi pi-check text-xs text-[#16a34a]"></i> {{ c }}
+              </li>
+            }
+          </ul>
+        </div>
+      }
+    </div>
+
+    <!-- A peek at the admin view -->
+    <div class="mt-12 grid grid-cols-1 items-center gap-6 min-[900px]:grid-cols-2">
+      <div>
+        <span
+          class="inline-flex items-center gap-2.5 text-xs font-bold tracking-[0.12em] text-[var(--text-color-secondary)] uppercase before:h-px before:w-6 before:bg-current before:content-['']"
+          >A peek at the admin view</span
+        >
+        <h3
+          class="mt-3.5 mb-2 text-[28px] font-extrabold tracking-[-0.025em] text-[var(--text-color)]"
+        >
+          One dashboard. Every race.
+        </h3>
+        <p class="max-w-[420px] text-[15px] leading-[1.6] text-[var(--text-color-secondary)]">
+          Live stats, recent organizations, upcoming events, and a doughnut chart for every
+          dimension you might ask. Refreshes on demand or on a schedule.
+        </p>
+      </div>
+      <div
+        class="overflow-hidden rounded-[10px] border border-[var(--surface-border)] bg-[var(--surface-card)] shadow-[0_20px_40px_-20px_rgba(0,0,0,0.3)]"
+      >
+        <div
+          class="flex items-center gap-1 border-b border-[var(--surface-border)] bg-[var(--surface-ground)] px-2.5 py-2"
+        >
+          <span class="h-2 w-2 rounded-full bg-[#ef4444]"></span>
+          <span class="h-2 w-2 rounded-full bg-[#eab308]"></span>
+          <span class="h-2 w-2 rounded-full bg-[#22c55e]"></span>
+          <span
+            class="ml-3 font-['Geist_Mono',_monospace] text-[10px] text-[var(--text-color-secondary)]"
+            >bibexpo.run/dashboard</span
+          >
+        </div>
+        <div class="flex flex-col gap-2.5 px-4 py-3.5">
+          <div class="text-[13px] font-bold">Bay Marathon 2026</div>
+          <div class="grid grid-cols-3 gap-1.5">
+            <div class="rounded-md border border-[var(--surface-border)] px-2.5 py-2">
+              <div class="text-base leading-none font-extrabold tabular-nums">1,284</div>
+              <div
+                class="mt-1 text-[9px] font-bold tracking-[0.08em] text-[var(--text-color-secondary)] uppercase"
+              >
+                TOTAL
+              </div>
+            </div>
+            <div class="rounded-md border border-[var(--surface-border)] px-2.5 py-2">
+              <div class="text-base leading-none font-extrabold tabular-nums">847</div>
+              <div
+                class="mt-1 text-[9px] font-bold tracking-[0.08em] text-[var(--text-color-secondary)] uppercase"
+              >
+                COLLECTED
+              </div>
+            </div>
+            <div class="rounded-md border border-[var(--surface-border)] px-2.5 py-2">
+              <div class="text-base leading-none font-extrabold tabular-nums">437</div>
+              <div
+                class="mt-1 text-[9px] font-bold tracking-[0.08em] text-[var(--text-color-secondary)] uppercase"
+              >
+                PENDING
+              </div>
+            </div>
+          </div>
+          <div class="h-1.5 overflow-hidden rounded-[3px] bg-[var(--surface-ground)]">
+            <div class="h-full w-[66%] bg-[#16a34a]"></div>
+          </div>
+          <div class="flex justify-between text-[10px] text-[var(--text-color-secondary)]">
+            <span>Bib collection progress</span>
+            <span class="font-['Geist_Mono',_monospace]">66%</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

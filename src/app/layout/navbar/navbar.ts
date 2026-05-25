@@ -7,7 +7,7 @@ import {
   OnDestroy,
 } from '@angular/core';
 import { DatePipe } from '@angular/common';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { AvatarModule } from 'primeng/avatar';
 import { ButtonModule } from 'primeng/button';
 import { MenuModule } from 'primeng/menu';
@@ -27,6 +27,7 @@ import { ThemeConfigurator } from '../theme-configurator/theme-configurator';
   templateUrl: './navbar.html',
   imports: [
     DatePipe,
+    RouterLink,
     AvatarModule,
     ButtonModule,
     MenubarModule,
@@ -40,6 +41,8 @@ import { ThemeConfigurator } from '../theme-configurator/theme-configurator';
 export class Navbar implements OnDestroy {
   layoutService = inject(LayoutService);
   notificationService = inject(NotificationService);
+  // Drives the landing vs. app-shell variants of the topbar.
+  isLandingRoute = this.layoutService.isLandingRoute;
 
   items: MenuItem[] = [
     { label: 'Profile', command: () => this.onProfile() },

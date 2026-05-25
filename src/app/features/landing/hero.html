@@ -1,0 +1,198 @@
+<section id="top" class="relative scroll-mt-[var(--topbar-height)] overflow-hidden pt-16 pb-24">
+  <div
+    class="pointer-events-none absolute inset-0 z-0 bg-[repeating-linear-gradient(-8deg,transparent_0,transparent_38px,color-mix(in_srgb,var(--text-color),transparent_96%)_38px,color-mix(in_srgb,var(--text-color),transparent_96%)_39px)] [mask:linear-gradient(180deg,black_0%,transparent_80%)] [-webkit-mask:linear-gradient(180deg,black_0%,transparent_80%)]"
+  ></div>
+  <div class="relative z-[1] mx-auto max-w-[1200px] px-7">
+    <div
+      class="grid grid-cols-1 items-center gap-12 min-[900px]:grid-cols-[1.1fr_0.9fr] min-[900px]:gap-16"
+    >
+      <div>
+        <span
+          class="inline-flex items-center gap-2.5 text-xs font-bold tracking-[0.12em] text-[var(--text-color-secondary)] uppercase before:h-px before:w-6 before:bg-current before:content-['']"
+          >Bib expo platform · race-day ready</span
+        >
+        <h1
+          class="mt-4 text-[clamp(48px,7vw,96px)] leading-[0.96] font-extrabold tracking-[-0.04em] text-[var(--text-color)]"
+        >
+          Bib distribution<br />
+          that doesn't
+          <span
+            class="font-medium text-[var(--text-color-secondary)] line-through decoration-[#16a34a] decoration-[4px]"
+            >melt down</span
+          ><br />
+          on race day.
+        </h1>
+        <p
+          class="mt-6 mb-8 max-w-[520px] text-[19px] leading-[1.55] text-[var(--text-color-secondary)]"
+        >
+          From CSV import to chip-on-bib handout — Marathon Bib Expo runs the entire participant ops
+          backend for races big and small. Built by race directors who got tired of spreadsheets.
+        </p>
+        <div class="flex flex-wrap gap-3">
+          <a
+            pButton
+            href="#demo"
+            label="Book a demo"
+            icon="pi pi-arrow-right"
+            iconPos="right"
+            size="large"
+          ></a>
+          <a pButton routerLink="/login" label="Sign in" [outlined]="true" size="large"></a>
+        </div>
+        <div
+          class="mt-8 flex flex-wrap items-center gap-6 text-[13px] text-[var(--text-color-secondary)]"
+        >
+          <div class="flex items-center gap-2">
+            <i class="pi pi-check-circle text-[#16a34a]"></i> Free up to 200 participants
+          </div>
+          <div class="h-3.5 w-px bg-[var(--surface-border)]"></div>
+          <div class="flex items-center gap-2">
+            <i class="pi pi-bolt text-[#16a34a]"></i> Live in under 10 minutes
+          </div>
+          <div class="h-3.5 w-px bg-[var(--surface-border)]"></div>
+          <div class="flex items-center gap-2">
+            <i class="pi pi-mobile text-[#16a34a]"></i> Works on any device
+          </div>
+        </div>
+      </div>
+      <div class="flex justify-center">
+        <svg
+          viewBox="0 0 400 480"
+          width="100%"
+          class="block w-full max-w-[460px]"
+          aria-hidden="true"
+        >
+          <defs>
+            <pattern id="bib-perf" width="14" height="14" patternUnits="userSpaceOnUse">
+              <circle cx="7" cy="7" r="2.4" fill="var(--surface-card)" />
+            </pattern>
+            <linearGradient id="bib-shade" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="var(--surface-card)" />
+              <stop offset="1" stop-color="var(--surface-ground)" />
+            </linearGradient>
+          </defs>
+
+          <!-- Bib body -->
+          <g>
+            <rect
+              x="20"
+              y="40"
+              width="360"
+              height="400"
+              rx="8"
+              fill="url(#bib-shade)"
+              stroke="var(--text-color)"
+              stroke-width="3"
+            />
+            <!-- Top safety-pin holes -->
+            <circle
+              cx="60"
+              cy="74"
+              r="6"
+              fill="var(--surface-card)"
+              stroke="var(--text-color)"
+              stroke-width="2"
+            />
+            <circle
+              cx="340"
+              cy="74"
+              r="6"
+              fill="var(--surface-card)"
+              stroke="var(--text-color)"
+              stroke-width="2"
+            />
+            <circle
+              cx="60"
+              cy="410"
+              r="6"
+              fill="var(--surface-card)"
+              stroke="var(--text-color)"
+              stroke-width="2"
+            />
+            <circle
+              cx="340"
+              cy="410"
+              r="6"
+              fill="var(--surface-card)"
+              stroke="var(--text-color)"
+              stroke-width="2"
+            />
+            <!-- Event name -->
+            <text
+              x="200"
+              y="118"
+              text-anchor="middle"
+              font-family="var(--font-sans)"
+              font-size="18"
+              font-weight="700"
+              letter-spacing="6"
+              fill="var(--text-color)"
+            >
+              BAY MARATHON
+            </text>
+            <!-- Divider line -->
+            <line
+              x1="60"
+              y1="138"
+              x2="340"
+              y2="138"
+              stroke="var(--text-color)"
+              stroke-opacity="0.2"
+              stroke-width="2"
+            />
+            <!-- Big number — constrained to fit within the bib width -->
+            <text
+              x="200"
+              y="290"
+              text-anchor="middle"
+              font-family="var(--font-sans)"
+              font-size="148"
+              font-weight="800"
+              letter-spacing="-6"
+              fill="var(--text-color)"
+              textLength="300"
+              lengthAdjust="spacingAndGlyphs"
+              class="tabular-nums"
+            >
+              12044
+            </text>
+            <!-- Category footer -->
+            <line
+              x1="60"
+              y1="330"
+              x2="340"
+              y2="330"
+              stroke="var(--text-color)"
+              stroke-opacity="0.2"
+              stroke-width="2"
+            />
+            <text
+              x="200"
+              y="362"
+              text-anchor="middle"
+              font-family="var(--font-mono)"
+              font-size="14"
+              font-weight="600"
+              letter-spacing="3"
+              fill="var(--text-color-secondary)"
+            >
+              M 30–34
+            </text>
+            <!-- Chip strip -->
+            <rect x="80" y="378" width="240" height="14" rx="2" fill="currentColor" opacity="0.9" />
+            <rect x="80" y="378" width="240" height="14" rx="2" fill="url(#bib-perf)" />
+          </g>
+
+          <!-- Floating speed line accents -->
+          <g opacity="0.5" stroke="var(--text-color)" stroke-width="2" stroke-linecap="round">
+            <line x1="0" y1="60" x2="-15" y2="60" />
+            <line x1="0" y1="200" x2="-25" y2="200" />
+            <line x1="0" y1="380" x2="-15" y2="380" />
+            <line x1="400" y1="120" x2="420" y2="120" />
+            <line x1="400" y1="280" x2="425" y2="280" />
+          </g>
+        </svg>
+      </div>
+    </div>
+  </div>
+</section>

@@ -1,0 +1,33 @@
+<section id="how" class="scroll-mt-[var(--topbar-height)] bg-[var(--surface-ground)] py-16">
+  <div class="mx-auto max-w-[1200px] px-7">
+    <div class="mb-14 max-w-[720px]">
+      <span
+        class="inline-flex items-center gap-2.5 text-xs font-bold tracking-[0.12em] text-[var(--text-color-secondary)] uppercase before:h-px before:w-6 before:bg-current before:content-['']"
+        >How it works</span
+      >
+      <h2
+        class="my-4 text-[clamp(36px,4.5vw,56px)] leading-[1.05] font-extrabold tracking-[-0.03em] text-[var(--text-color)]"
+      >
+        Race day is the demo.
+      </h2>
+      <p class="max-w-[620px] text-lg leading-[1.55] text-[var(--text-color-secondary)]">
+        Four stages, every event. The system is opinionated about the flow because race directors
+        are opinionated about the flow.
+      </p>
+    </div>
+    <div class="grid grid-cols-2 gap-6 min-[900px]:grid-cols-4">
+      @for (s of steps; track s.num) {
+        <div class="relative pt-6">
+          <span class="absolute top-0 right-0 left-0 h-[3px] bg-[#16a34a]"></span>
+          <div
+            class="mb-3.5 font-['Geist_Mono',_monospace] text-sm font-bold tracking-[0.04em] text-[#16a34a] tabular-nums"
+          >
+            {{ s.num }}
+          </div>
+          <h3 class="mb-2 text-xl font-bold tracking-[-0.02em]">{{ s.title }}</h3>
+          <p class="text-sm leading-[1.55] text-[var(--text-color-secondary)]">{{ s.body }}</p>
+        </div>
+      }
+    </div>
+  </div>
+</section>
