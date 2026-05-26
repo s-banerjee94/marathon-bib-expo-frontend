@@ -1,6 +1,8 @@
 import { Component, computed, effect, inject, PLATFORM_ID } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
-import { RouterOutlet } from '@angular/router';
+import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { filter, map } from 'rxjs';
 import { ToastModule } from 'primeng/toast';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { Navbar } from './layout/navbar/navbar';
@@ -27,7 +29,22 @@ import { ImportProgressFloating } from './layout/import-progress-floating/import
 export class App {
   layoutService = inject(LayoutService);
   authService = inject(AuthService);
+  private router = inject(Router);
   isAuthenticated = this.authService.isAuthenticated;
+
+  // Public routes (e.g. /s/:shortCode) render bare — no navbar, sidebar, or layout chrome.
+  private currentUrl = toSignal(
+    this.router.events.pipe(
+      filter((e): e is NavigationEnd => e instanceof NavigationEnd),
+      map((e) => e.urlAfterRedirects),
+    ),
+    { initialValue: this.router.url },
+  );
+  isPublicRoute = computed(() => {
+    const url = this.currentUrl().split('?')[0];
+    return url === '/s' || url.startsWith('/s/');
+  });
+
   layoutClasses = computed(() => {
     const config = this.layoutService.layoutConfig();
     const state = this.layoutService.layoutState();

@@ -43,6 +43,15 @@ export const routes: Routes = [
       import('./features/distribution/distribution.routes').then((m) => m.DISTRIBUTION_ROUTES),
   },
   {
+    // Public participant verification short link (no auth, no app shell).
+    path: 's/:shortCode',
+    loadComponent: () =>
+      import('./features/public-verification/public-verification').then(
+        (m) => m.PublicVerification,
+      ),
+    title: pageTitle('Verify Registration'),
+  },
+  {
     path: 'unauthorized',
     loadComponent: () =>
       import('./features/errors/unauthorized/unauthorized').then((m) => m.Unauthorized),

@@ -1,0 +1,120 @@
+<p-dialog
+  [(visible)]="visible"
+  [closable]="!isBusy()"
+  [closeOnEscape]="!isBusy()"
+  [dismissableMask]="!isBusy()"
+  [draggable]="false"
+  [modal]="true"
+  [resizable]="false"
+  [style]="{ width: '95vw', maxWidth: '620px' }"
+  header="Download Expo Card"
+>
+  <div class="flex flex-col items-center gap-4 py-1">
+    <span
+      class="self-start text-[10px] font-semibold uppercase tracking-[0.13em] text-(--text-color-secondary)"
+    >
+      Preview · ID-1 card ratio (85.6 × 54 mm)
+    </span>
+
+    <!-- fixed-size card; centered in the dialog, CSS-scaled down on small screens (capture forces full res) -->
+    <div class="flex w-full justify-center">
+      <div class="h-85 w-135 max-[620px]:h-50 max-[620px]:w-79.5">
+        <app-expo-card
+          #card
+          class="origin-top-left max-[620px]:scale-[0.589]"
+          [bibNumber]="data().bibNumber"
+          [categoryName]="data().categoryName"
+          [chipNumber]="data().chipNumber"
+          [dateLine]="dateLine()"
+          [eventName]="data().eventName"
+          [fullName]="data().fullName"
+          [gender]="data().gender"
+          [photoSrc]="photoSrc()"
+          [qrSrc]="qrSrc()"
+          [raceName]="data().raceName"
+        />
+      </div>
+    </div>
+
+    <div
+      class="flex w-135 max-w-full items-center gap-2.5 rounded-[10px] border border-dashed border-(--surface-border) bg-[var(--surface-ground)] px-[14px] py-3 max-[620px]:w-full max-[620px]:flex-wrap"
+    >
+      <i class="pi pi-camera text-[18px] text-(--text-color-secondary)"></i>
+      <div class="min-w-0 flex-1">
+        <b class="text-[13px] font-semibold text-(--text-color)">Add your photo</b>
+        <p class="text-[11.5px] text-(--text-color-secondary)">
+          Optional — personalize the card before downloading.
+        </p>
+      </div>
+      <div class="flex gap-2">
+        @if (photoSrc()) {
+          <p-button
+            (onClick)="removePhoto()"
+            [text]="true"
+            icon="pi pi-trash"
+            label="Remove"
+            severity="secondary"
+            size="small"
+          />
+        } @else {
+          <p-button
+            (onClick)="selfieInput.click()"
+            [outlined]="true"
+            icon="pi pi-camera"
+            label="Selfie"
+            size="small"
+          />
+          <p-button
+            (onClick)="uploadInput.click()"
+            [outlined]="true"
+            icon="pi pi-upload"
+            label="Upload"
+            size="small"
+          />
+        }
+      </div>
+    </div>
+
+    <input
+      #selfieInput
+      (change)="onPhotoSelected($event)"
+      accept="image/*"
+      capture="user"
+      class="hidden"
+      type="file"
+    />
+    <input
+      #uploadInput
+      (change)="onPhotoSelected($event)"
+      accept="image/*"
+      class="hidden"
+      type="file"
+    />
+  </div>
+
+  <ng-template pTemplate="footer">
+    <p-button
+      (onClick)="close()"
+      [disabled]="isBusy()"
+      [outlined]="true"
+      icon="pi pi-times"
+      label="Close"
+      severity="secondary"
+    />
+    @if (canShare) {
+      <p-button
+        (onClick)="share()"
+        [disabled]="isBusy()"
+        [outlined]="true"
+        icon="pi pi-share-alt"
+        label="Share"
+      />
+    }
+    <p-button
+      (onClick)="download()"
+      [disabled]="isBusy()"
+      [icon]="isBusy() ? 'pi pi-spin pi-spinner' : 'pi pi-download'"
+      label="Download PNG"
+    />
+  </ng-template>
+</p-dialog>
