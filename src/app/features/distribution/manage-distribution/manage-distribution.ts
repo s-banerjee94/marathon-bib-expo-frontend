@@ -43,6 +43,7 @@ import { EventSelector } from '../../../layout/event-selector/event-selector';
 import { DistributionDialogState } from './distribution-dialog-state.service';
 import { ParticipantDetails } from '../../participants/participant-details/participant-details';
 import { injectIsMobile } from '../../../shared/utils/responsive.utils';
+import { MobileTabBar, TabItem } from '../../../shared/components/mobile-tab-bar/mobile-tab-bar';
 
 /** Minimal shape shared by Participant and ParticipantDistributionResponse for dialog usage */
 type DistributionTarget = Participant | ParticipantDistributionResponse;
@@ -66,6 +67,7 @@ type DistributionTarget = Participant | ParticipantDistributionResponse;
     OrganizationSelector,
     EventSelector,
     ParticipantDetails,
+    MobileTabBar,
   ],
   providers: [ConfirmationService, DistributionDialogState],
   templateUrl: './manage-distribution.html',
@@ -136,6 +138,31 @@ export class ManageDistribution implements OnInit {
   canViewLogs = computed(() =>
     this.authService.hasAnyRole([UserRole.ROOT, UserRole.ADMIN, UserRole.ORGANIZER_ADMIN]),
   );
+
+  // Mobile bottom tab bar — ids match the child route paths and mirror the desktop
+  // tab strip. The Activity Logs tab is appended only when the user can view logs,
+  // matching the @if (canViewLogs()) guard on the desktop strip.
+  protected readonly distributionTabs = computed<TabItem[]>(() => {
+    const tabs: TabItem[] = [
+      { id: 'lookup', label: 'BIB Lookup', icon: 'pi-search' },
+      { id: 'pending-bibs', label: 'Pending BIBs', icon: 'pi-id-card' },
+      { id: 'pending-goodies', label: 'Pending Goodies', icon: 'pi-gift' },
+    ];
+    if (this.canViewLogs()) {
+      tabs.push({ id: 'logs', label: 'Activity Logs', icon: 'pi-list' });
+    }
+    return tabs;
+  });
+
+  // Mobile tab bar selection — navigate to the sibling tab route, same as the
+  // desktop tab strip's routerLinks (preserving query params for org/event filters).
+  onTabChange(tabId: string): void {
+    const eventId = this.selectedEventId();
+    if (!eventId) return;
+    this.router.navigate(['/distribution/event', eventId, tabId], {
+      queryParamsHandling: 'preserve',
+    });
+  }
 
   // Collect BIB dialog
   collectBibVisible = signal(false);

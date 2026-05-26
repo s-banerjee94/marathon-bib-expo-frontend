@@ -58,53 +58,65 @@
   <!-- Distribution Tabs (routed via router-outlet) -->
   @if (selectedEventId()) {
     <p-card>
-      <p-tabs [value]="activeTab()">
-        <p-tablist>
-          <p-tab
-            value="lookup"
-            [routerLink]="['/distribution/event', selectedEventId(), 'lookup']"
-            queryParamsHandling="preserve"
-            routerLinkActive
-          >
-            <i class="pi pi-search mr-2"></i>
-            BIB Lookup
-          </p-tab>
-          <p-tab
-            value="pending-bibs"
-            [routerLink]="['/distribution/event', selectedEventId(), 'pending-bibs']"
-            queryParamsHandling="preserve"
-            routerLinkActive
-          >
-            <i class="pi pi-id-card mr-2"></i>
-            Pending BIBs
-          </p-tab>
-          <p-tab
-            value="pending-goodies"
-            [routerLink]="['/distribution/event', selectedEventId(), 'pending-goodies']"
-            queryParamsHandling="preserve"
-            routerLinkActive
-          >
-            <i class="pi pi-gift mr-2"></i>
-            Pending Goodies
-          </p-tab>
-          @if (canViewLogs()) {
+      <!-- Desktop tab strip hides on mobile; the bottom tab bar replaces it. -->
+      <div class="hidden md:block">
+        <p-tabs [value]="activeTab()">
+          <p-tablist>
             <p-tab
-              value="logs"
-              [routerLink]="['/distribution/event', selectedEventId(), 'logs']"
+              value="lookup"
+              [routerLink]="['/distribution/event', selectedEventId(), 'lookup']"
               queryParamsHandling="preserve"
               routerLinkActive
             >
-              <i class="pi pi-list mr-2"></i>
-              Activity Logs
+              <i class="pi pi-search mr-2"></i>
+              BIB Lookup
             </p-tab>
-          }
-        </p-tablist>
-      </p-tabs>
+            <p-tab
+              value="pending-bibs"
+              [routerLink]="['/distribution/event', selectedEventId(), 'pending-bibs']"
+              queryParamsHandling="preserve"
+              routerLinkActive
+            >
+              <i class="pi pi-id-card mr-2"></i>
+              Pending BIBs
+            </p-tab>
+            <p-tab
+              value="pending-goodies"
+              [routerLink]="['/distribution/event', selectedEventId(), 'pending-goodies']"
+              queryParamsHandling="preserve"
+              routerLinkActive
+            >
+              <i class="pi pi-gift mr-2"></i>
+              Pending Goodies
+            </p-tab>
+            @if (canViewLogs()) {
+              <p-tab
+                value="logs"
+                [routerLink]="['/distribution/event', selectedEventId(), 'logs']"
+                queryParamsHandling="preserve"
+                routerLinkActive
+              >
+                <i class="pi pi-list mr-2"></i>
+                Activity Logs
+              </p-tab>
+            }
+          </p-tablist>
+        </p-tabs>
+      </div>
 
       <div class="pt-4">
         <router-outlet />
       </div>
     </p-card>
+
+    <!-- Mobile-only bottom tab bar (self-hides at md+); spacer clears the fixed bar. -->
+    <app-mobile-tab-bar
+      class="md:hidden"
+      [tabs]="distributionTabs()"
+      [activeId]="activeTab()"
+      (tabChange)="onTabChange($event)"
+    />
+    <div class="h-20 md:hidden" aria-hidden="true"></div>
   }
 </div>
 
