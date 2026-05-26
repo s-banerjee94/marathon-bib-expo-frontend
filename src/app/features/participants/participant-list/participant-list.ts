@@ -39,6 +39,7 @@ import { ParticipantDetails } from '../participant-details/participant-details';
 import { PARTICIPANT_COLUMNS } from '../../../shared/constants/participant-columns.constant';
 import { BUTTON_SIZE } from '../../../shared/constants/form.constants';
 import { TableColumn } from '../../../shared/models/table-config.model';
+import { MobileTabBar, TabItem } from '../../../shared/components/mobile-tab-bar/mobile-tab-bar';
 
 // Child components
 import { ParticipantExportDialog } from './participant-export-dialog/participant-export-dialog';
@@ -67,6 +68,7 @@ import { ParticipantListState } from './participant-list-state.service';
     RouterOutlet,
     RouterLink,
     RouterLinkActive,
+    MobileTabBar,
   ],
   providers: [ConfirmationService, ParticipantListState],
 })
@@ -115,6 +117,13 @@ export class ParticipantList implements OnInit {
 
   // Button sizing for the page-level action toolbar
   protected readonly buttonSize = BUTTON_SIZE;
+
+  // Mobile bottom tab bar — ids match the child route paths (list / errors) and
+  // mirror the desktop tab strip. Labels show in the expanded grid sheet.
+  protected readonly participantTabs: TabItem[] = [
+    { id: 'list', label: 'Imported Participants', icon: 'pi-users' },
+    { id: 'errors', label: 'Import Errors', icon: 'pi-exclamation-triangle' },
+  ];
 
   // Computed: Show tab section only when organization and event are selected
   canShowTabs = computed(
@@ -299,6 +308,16 @@ export class ParticipantList implements OnInit {
 
   onFormSubmitDisabledChange(disabled: boolean): void {
     this.formSubmitDisabled.set(disabled);
+  }
+
+  // Mobile tab bar selection — navigate to the sibling tab route, same as the
+  // desktop tab strip's routerLinks (preserving query params for org/event filters).
+  onTabChange(tabId: string): void {
+    const eventId = this.selectedEventId();
+    if (!eventId) return;
+    this.router.navigate(['/participants/event', eventId, tabId], {
+      queryParamsHandling: 'preserve',
+    });
   }
 
   private openCreateDialogDirect(): void {

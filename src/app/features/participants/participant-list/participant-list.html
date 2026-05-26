@@ -85,28 +85,31 @@
           ></p-button>
         </div>
 
-        <p-tabs [value]="activeTab()">
-          <p-tablist>
-            <p-tab
-              value="list"
-              [routerLink]="['/participants/event', selectedEventId(), 'list']"
-              queryParamsHandling="preserve"
-              routerLinkActive
-            >
-              <i class="pi pi-users mr-2"></i>
-              Imported Participants
-            </p-tab>
-            <p-tab
-              value="errors"
-              [routerLink]="['/participants/event', selectedEventId(), 'errors']"
-              queryParamsHandling="preserve"
-              routerLinkActive
-            >
-              <i class="pi pi-exclamation-triangle mr-2"></i>
-              Import Errors
-            </p-tab>
-          </p-tablist>
-        </p-tabs>
+        <!-- Desktop tab strip hides on mobile; the bottom tab bar replaces it. -->
+        <div class="hidden md:block">
+          <p-tabs [value]="activeTab()">
+            <p-tablist>
+              <p-tab
+                value="list"
+                [routerLink]="['/participants/event', selectedEventId(), 'list']"
+                queryParamsHandling="preserve"
+                routerLinkActive
+              >
+                <i class="pi pi-users mr-2"></i>
+                Imported Participants
+              </p-tab>
+              <p-tab
+                value="errors"
+                [routerLink]="['/participants/event', selectedEventId(), 'errors']"
+                queryParamsHandling="preserve"
+                routerLinkActive
+              >
+                <i class="pi pi-exclamation-triangle mr-2"></i>
+                Import Errors
+              </p-tab>
+            </p-tablist>
+          </p-tabs>
+        </div>
 
         <div class="pt-4">
           @if (hasTabRoute()) {
@@ -114,6 +117,15 @@
           }
         </div>
       </p-card>
+
+      <!-- Mobile-only bottom tab bar (self-hides at md+); spacer clears the fixed bar. -->
+      <app-mobile-tab-bar
+        class="md:hidden"
+        [tabs]="participantTabs"
+        [activeId]="activeTab()"
+        (tabChange)="onTabChange($event)"
+      />
+      <div class="h-20 md:hidden" aria-hidden="true"></div>
     }
   </div>
 }
