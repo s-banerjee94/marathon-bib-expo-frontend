@@ -30,6 +30,17 @@
           <p-tag [value]="event()!.status" [severity]="getStatusSeverity(event()!.status)" />
         </div>
         <div class="flex gap-2">
+          <!-- Generate Short URLs Button -->
+          <p-button
+            icon="pi pi-link"
+            label="Generate Short URLs"
+            severity="secondary"
+            [outlined]="true"
+            [size]="buttonSize"
+            [loading]="generatingShortUrls()"
+            (onClick)="onGenerateShortUrls()"
+          />
+
           <!-- Edit Event Button -->
           <p-button
             icon="pi pi-pencil"

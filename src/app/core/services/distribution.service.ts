@@ -32,6 +32,11 @@ export class DistributionService {
     );
   }
 
+  // Returns 202 with no body — generation runs asynchronously in the background.
+  generateShortUrls(eventId: number): Observable<void> {
+    return this.http.post<void>(`${this.apiUrl}/${eventId}/participant-access/short-urls`, {});
+  }
+
   getDistributionStatus(
     eventId: number,
     bibNumber: string,

@@ -21,6 +21,7 @@ import { ConfirmationService, MenuItem } from 'primeng/api';
 import { DialogService } from 'primeng/dynamicdialog';
 import { Event, EventStatus } from '../../../../core/models/event.model';
 import { EventService } from '../../../../core/services/event.service';
+import { DistributionService } from '../../../../core/services/distribution.service';
 import { ErrorHandlerService } from '../../../../core/services/error-handler.service';
 import { ToastService } from '../../../../core/services/toast.service';
 import { EventDetailsState } from '../event-details-state.service';
@@ -60,6 +61,7 @@ export class EventDetails implements OnInit {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private eventService = inject(EventService);
+  private distributionService = inject(DistributionService);
   private errorHandler = inject(ErrorHandlerService);
   private toast = inject(ToastService);
   private dialogService = inject(DialogService);
@@ -71,6 +73,7 @@ export class EventDetails implements OnInit {
   isLoading = signal(true);
   statusMenuItems = signal<MenuItem[]>([]);
   changingStatus = signal(false);
+  generatingShortUrls = signal(false);
   lastClickTarget: EventTarget | null = null;
 
   activeTab = toSignal(
@@ -136,6 +139,27 @@ export class EventDetails implements OnInit {
         this.toast.success(result.message || 'Event updated successfully');
       }
     });
+  }
+
+  onGenerateShortUrls(): void {
+    this.generatingShortUrls.set(true);
+    this.distributionService
+      .generateShortUrls(this.eventId())
+      .pipe(
+        takeUntilDestroyed(this.destroyRef),
+        finalize(() => this.generatingShortUrls.set(false)),
+      )
+      .subscribe({
+        next: () => {
+          this.toast.info(
+            'Links are being generated in the background and will be ready shortly — you can keep working.',
+            'Generating verification links',
+          );
+        },
+        error: (error) => {
+          this.errorHandler.showError(error, 'Failed to start short URL generation');
+        },
+      });
   }
 
   private buildStatusMenuItems(currentStatus: EventStatus): void {
