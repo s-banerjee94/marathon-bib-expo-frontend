@@ -59,12 +59,6 @@
         },
         "serve": {
           "builder": "@angular/build:dev-server",
-          "options": {
-            "proxyConfig": "proxy.conf.json",
-            "ssl": true,
-            "sslCert": "cert/cert.pem",
-            "sslKey": "cert/key.pem"
-          },
           "configurations": {
             "production": {
               "buildTarget": "marathon-bib-expo-frontend:build:production"
