@@ -32,6 +32,7 @@ import {
 } from '../../../../shared/utils/event-status.utils';
 import { EventForm } from '../../event-form/event-form';
 import { BUTTON_SIZE } from '../../../../shared/constants/form.constants';
+import { MobileTabBar, TabItem } from '../../../../shared/components/mobile-tab-bar/mobile-tab-bar';
 
 const DEFAULT_TAB = 'dashboard';
 
@@ -50,6 +51,7 @@ const DEFAULT_TAB = 'dashboard';
     RouterLink,
     RouterLinkActive,
     FormatEventDateTimePipe,
+    MobileTabBar,
   ],
   providers: [DialogService, ConfirmationService, EventDetailsState],
   templateUrl: './event-details.html',
@@ -89,6 +91,17 @@ export class EventDetails implements OnInit {
   protected readonly getStatusLabel = getEventStatusLabel;
   protected readonly buttonSize = BUTTON_SIZE;
 
+  // Mobile bottom tab bar — ids match the child route paths below; icons mirror the
+  // desktop tab strip. Labels show in the expanded grid sheet and as icon-row aria-labels.
+  protected readonly eventTabs: TabItem[] = [
+    { id: 'dashboard', label: 'Dashboard', icon: 'pi-chart-bar' },
+    { id: 'participants', label: 'Participants', icon: 'pi-users' },
+    { id: 'races', label: 'Races', icon: 'pi-flag' },
+    { id: 'categories', label: 'Categories', icon: 'pi-tags' },
+    { id: 'sms-templates', label: 'SMS Templates', icon: 'pi-envelope' },
+    { id: 'sms-campaigns', label: 'SMS Campaigns', icon: 'pi-send' },
+  ];
+
   ngOnInit(): void {
     if (!Number.isFinite(this.eventId()) || this.eventId() <= 0) {
       this.router.navigate(['/events']);
@@ -119,6 +132,10 @@ export class EventDetails implements OnInit {
 
   onBack(): void {
     this.router.navigate(['/events']);
+  }
+
+  onTabChange(tabId: string): void {
+    this.router.navigate([tabId], { relativeTo: this.route });
   }
 
   onEditEvent(): void {

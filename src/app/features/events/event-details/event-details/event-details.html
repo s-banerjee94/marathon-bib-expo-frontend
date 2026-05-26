@@ -109,39 +109,50 @@
     </p-card>
   }
 
-  <!-- Tabs (URL-driven) -->
+  <!-- Tabs (URL-driven). Desktop strip hides on mobile; the bottom tab bar replaces it. -->
   @if (!isLoading() && event()) {
-    <p-tabs [value]="activeTab()">
-      <p-tablist>
-        <p-tab value="dashboard" [routerLink]="['dashboard']" routerLinkActive>
-          <i class="pi pi-chart-bar mr-2"></i>
-          Dashboard
-        </p-tab>
-        <p-tab value="participants" [routerLink]="['participants']" routerLinkActive>
-          <i class="pi pi-users mr-2"></i>
-          Participant List
-        </p-tab>
-        <p-tab value="races" [routerLink]="['races']" routerLinkActive>
-          <i class="pi pi-flag mr-2"></i>
-          Races
-        </p-tab>
-        <p-tab value="categories" [routerLink]="['categories']" routerLinkActive>
-          <i class="pi pi-tags mr-2"></i>
-          Categories
-        </p-tab>
-        <p-tab value="sms-templates" [routerLink]="['sms-templates']" routerLinkActive>
-          <i class="pi pi-envelope mr-2"></i>
-          SMS Templates
-        </p-tab>
-        <p-tab value="sms-campaigns" [routerLink]="['sms-campaigns']" routerLinkActive>
-          <i class="pi pi-send mr-2"></i>
-          SMS Campaigns
-        </p-tab>
-      </p-tablist>
-    </p-tabs>
+    <div class="hidden md:block">
+      <p-tabs [value]="activeTab()">
+        <p-tablist>
+          <p-tab value="dashboard" [routerLink]="['dashboard']" routerLinkActive>
+            <i class="pi pi-chart-bar mr-2"></i>
+            Dashboard
+          </p-tab>
+          <p-tab value="participants" [routerLink]="['participants']" routerLinkActive>
+            <i class="pi pi-users mr-2"></i>
+            Participant List
+          </p-tab>
+          <p-tab value="races" [routerLink]="['races']" routerLinkActive>
+            <i class="pi pi-flag mr-2"></i>
+            Races
+          </p-tab>
+          <p-tab value="categories" [routerLink]="['categories']" routerLinkActive>
+            <i class="pi pi-tags mr-2"></i>
+            Categories
+          </p-tab>
+          <p-tab value="sms-templates" [routerLink]="['sms-templates']" routerLinkActive>
+            <i class="pi pi-envelope mr-2"></i>
+            SMS Templates
+          </p-tab>
+          <p-tab value="sms-campaigns" [routerLink]="['sms-campaigns']" routerLinkActive>
+            <i class="pi pi-send mr-2"></i>
+            SMS Campaigns
+          </p-tab>
+        </p-tablist>
+      </p-tabs>
+    </div>
 
     <div class="pt-4">
       <router-outlet />
     </div>
+
+    <!-- Mobile-only bottom tab bar (self-hides at md+); spacer clears the fixed bar. -->
+    <app-mobile-tab-bar
+      class="md:hidden"
+      [tabs]="eventTabs"
+      [activeId]="activeTab()"
+      (tabChange)="onTabChange($event)"
+    />
+    <div class="h-20 md:hidden" aria-hidden="true"></div>
   }
 </div>

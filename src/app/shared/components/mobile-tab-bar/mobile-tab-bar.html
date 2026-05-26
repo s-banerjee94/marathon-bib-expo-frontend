@@ -1,0 +1,92 @@
+<!-- Backdrop dims the page while the sheet is open; tapping it closes the sheet. -->
+@if (isOpen()) {
+  <div
+    class="fixed inset-0 z-[995] bg-[var(--maskbg)] opacity-100 transition-opacity duration-200 ease-out starting:opacity-0 md:hidden"
+    (click)="close()"
+  ></div>
+}
+
+<!-- The whole bar is one container that slides up to reveal the grid sheet. -->
+<nav
+  role="tablist"
+  aria-label="Event sections"
+  class="fixed inset-x-0 bottom-0 z-[996] border-t border-[var(--surface-border)] bg-[var(--surface-card)] pb-[env(safe-area-inset-bottom)] transition-transform duration-[280ms] ease-[cubic-bezier(0.4,0,0.2,1)] md:hidden"
+  [class]="
+    isOpen()
+      ? 'translate-y-0 rounded-t-[18px] shadow-[0_-10px_30px_-10px_rgba(0,0,0,0.18)]'
+      : 'translate-y-[calc(100%_-_4rem)]'
+  "
+>
+  <!-- Scrollable icon row + pinned chevron -->
+  <div class="flex h-16 items-center px-1">
+    <div
+      #scrollRow
+      class="flex min-w-0 flex-1 items-center divide-x divide-[var(--surface-border)] overflow-x-auto overflow-y-hidden [-webkit-overflow-scrolling:touch] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+    >
+      @for (tab of tabs(); track tab.id) {
+        <button
+          type="button"
+          role="tab"
+          [attr.aria-selected]="tab.id === activeId()"
+          [attr.aria-label]="tab.label"
+          (click)="select(tab)"
+          class="relative flex h-14 min-w-14 flex-1 cursor-pointer items-center justify-center bg-transparent transition-colors duration-150"
+          [class]="
+            tab.id === activeId()
+              ? 'text-[var(--primary-color)]'
+              : 'text-[var(--text-color-secondary)]'
+          "
+        >
+          <i class="pi {{ tab.icon }} text-[20px]" aria-hidden="true"></i>
+          <span
+            class="absolute bottom-2 left-1/2 h-[2px] -translate-x-1/2 rounded-[2px] bg-[var(--primary-color)] transition-[width] duration-200 ease-[cubic-bezier(0.4,0,0.2,1)]"
+            [class]="tab.id === activeId() ? 'w-[14px]' : 'w-0'"
+          ></span>
+        </button>
+      }
+    </div>
+
+    <!-- Pinned chevron; the arrow never scrolls and reads as a final segment. -->
+    <div class="shrink-0">
+      <button
+        type="button"
+        [attr.aria-expanded]="isOpen()"
+        aria-controls="mtb-grid"
+        [attr.aria-label]="isOpen() ? 'Close tab menu' : 'Show all tabs'"
+        (click)="toggle()"
+        class="flex h-14 w-[52px] cursor-pointer items-center justify-center border-l border-[var(--surface-border)] bg-transparent text-[var(--text-color)]"
+      >
+        <i
+          class="pi text-[20px]"
+          [class]="isOpen() ? 'pi-chevron-down' : 'pi-chevron-up'"
+          aria-hidden="true"
+        ></i>
+      </button>
+    </div>
+  </div>
+
+  <!-- Sheet: full grid of every tab -->
+  <div
+    id="mtb-grid"
+    [attr.aria-hidden]="!isOpen()"
+    class="grid grid-cols-4 gap-1 px-4 pt-1 pb-[22px]"
+  >
+    @for (tab of tabs(); track tab.id) {
+      <button
+        type="button"
+        role="tab"
+        [attr.aria-selected]="tab.id === activeId()"
+        (click)="select(tab)"
+        class="flex min-h-16 cursor-pointer flex-col items-center justify-center gap-1.5 rounded-[10px] border border-transparent px-1.5 py-[14px] text-center text-[11px] leading-tight"
+        [class]="
+          tab.id === activeId()
+            ? 'bg-[color-mix(in_srgb,var(--primary-color),transparent_90%)] font-semibold text-[var(--primary-color)]'
+            : 'bg-transparent font-medium text-[var(--text-color)]'
+        "
+      >
+        <i class="pi {{ tab.icon }} text-[20px]" aria-hidden="true"></i>
+        <span>{{ tab.label }}</span>
+      </button>
+    }
+  </div>
+</nav>
