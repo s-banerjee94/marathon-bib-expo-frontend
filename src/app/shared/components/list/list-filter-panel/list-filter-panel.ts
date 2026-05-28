@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, computed, input, signal, TemplateRef } from '@angular/core';
+import { Component, computed, input, output, signal, TemplateRef } from '@angular/core';
 import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
 import { BadgeModule } from 'primeng/badge';
@@ -18,6 +18,13 @@ export class ListFilterPanel {
   triggerLabel = input<string>('Filters');
   filtersTemplate = input<TemplateRef<unknown> | null>(null);
 
+  // Opt-in Apply button: when true, the dialog renders an Apply button in its
+  // footer instead of auto-applying every change. Lets the consumer batch a
+  // user's filter edits until they explicitly commit. Emits `applied` on click,
+  // and closes the dialog.
+  showApply = input<boolean>(false);
+  applied = output<void>();
+
   readonly inputSize = FORM_INPUT_SIZE;
   protected dialogVisible = signal(false);
 
@@ -29,5 +36,10 @@ export class ListFilterPanel {
 
   closeDialog(): void {
     this.dialogVisible.set(false);
+  }
+
+  onApply(): void {
+    this.applied.emit();
+    this.closeDialog();
   }
 }

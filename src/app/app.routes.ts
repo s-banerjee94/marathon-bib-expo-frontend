@@ -43,6 +43,11 @@ export const routes: Routes = [
       import('./features/distribution/distribution.routes').then((m) => m.DISTRIBUTION_ROUTES),
   },
   {
+    path: 'audit-logs',
+    loadChildren: () =>
+      import('./features/audit-logs/audit-logs.routes').then((m) => m.AUDIT_LOGS_ROUTES),
+  },
+  {
     // Public participant verification short link (no auth, no app shell).
     path: 's/:shortCode',
     loadComponent: () =>

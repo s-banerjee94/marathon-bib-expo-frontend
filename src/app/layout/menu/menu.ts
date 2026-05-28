@@ -58,6 +58,12 @@ export class MenuComponent {
       icon: 'pi pi-box',
       routerLink: '/distribution',
     },
+    {
+      label: 'Audit Logs',
+      icon: 'pi pi-history',
+      routerLink: '/audit-logs',
+      roles: [UserRole.ROOT, UserRole.ADMIN, UserRole.ORGANIZER_ADMIN, UserRole.ORGANIZER_USER],
+    },
   ];
 
   filteredMenu = computed(() => {
