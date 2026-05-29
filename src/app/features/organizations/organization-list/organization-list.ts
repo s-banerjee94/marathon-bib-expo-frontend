@@ -1,4 +1,4 @@
-import { Component, computed, DestroyRef, effect, inject, signal } from '@angular/core';
+import { Component, computed, DestroyRef, effect, inject, signal, ViewChild } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import {
   ActivatedRoute,
@@ -22,6 +22,7 @@ import { SelectModule } from 'primeng/select';
 import { ConfirmPopupModule } from 'primeng/confirmpopup';
 import { ConfirmationService } from 'primeng/api';
 import { DialogService } from 'primeng/dynamicdialog';
+import { Popover, PopoverModule } from 'primeng/popover';
 import { TagModule } from 'primeng/tag';
 import { FloatLabelModule } from 'primeng/floatlabel';
 import { ListShell } from '../../../shared/components/list/list-shell/list-shell';
@@ -35,6 +36,7 @@ import { ORGANIZATION_SORT_OPTIONS } from '../../../shared/constants/sort-option
 import { OrganizationForm } from '../organization-form/organization-form';
 import { OrganizationListBus, OrganizationMutation } from '../organization-list-bus.service';
 import { DefaultValuePipe } from '../../../shared/pipes/default-value.pipe';
+import { UserQuotaPipe } from '../../../shared/pipes/user-quota-pipe';
 import { BaseTableComponent } from '../../../shared/base/base-table.component';
 import { TableFilterPreferences } from '../../../shared/models/table-config.model';
 
@@ -61,6 +63,8 @@ interface OrganizationFilterPreferences extends TableFilterPreferences {
     TagModule,
     FloatLabelModule,
     DefaultValuePipe,
+    UserQuotaPipe,
+    PopoverModule,
     RouterOutlet,
     ListShell,
   ],
@@ -72,6 +76,14 @@ export class OrganizationList extends BaseTableComponent<
   Organization,
   OrganizationFilterPreferences
 > {
+  @ViewChild('quotaPopover') quotaPopover!: Popover;
+  quotaOrg = signal<Organization | null>(null);
+
+  showQuotaPopover(event: Event, org: Organization): void {
+    this.quotaOrg.set(org);
+    this.quotaPopover.toggle(event);
+  }
+
   // Organization-specific filter
   filterDeleted = signal(false);
   // Organization-specific sort options

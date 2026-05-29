@@ -1,8 +1,5 @@
 import { User } from './user.model';
 
-/**
- * Subscription Tier Enum
- */
 export enum SubscriptionTier {
   FREE = 'FREE',
   BASIC = 'BASIC',
@@ -10,9 +7,27 @@ export enum SubscriptionTier {
   ENTERPRISE = 'ENTERPRISE',
 }
 
-/**
- * Organization model matching backend OrganizationResponse
- */
+export interface RoleQuotaRequest {
+  max?: number | null;
+}
+
+export interface UserQuotaRequest {
+  admins?: RoleQuotaRequest;
+  organizerUsers?: RoleQuotaRequest;
+  distributors?: RoleQuotaRequest;
+}
+
+export interface RoleQuota {
+  max?: number;
+  used?: number;
+}
+
+export interface UserQuotaDto {
+  admins?: RoleQuota;
+  organizerUsers?: RoleQuota;
+  distributors?: RoleQuota;
+}
+
 export interface Organization {
   id: number;
   organizerName: string;
@@ -27,8 +42,7 @@ export interface Organization {
   country?: string;
   taxId?: string;
   registrationNumber?: string;
-  maxOrganizerUsers?: number;
-  maxDistributors?: number;
+  userQuota?: UserQuotaDto;
   subscriptionTier?: string;
   subscriptionStatus?: string;
   subscriptionStartDate?: Date;
@@ -39,11 +53,10 @@ export interface Organization {
   deleted?: boolean;
   createdAt?: Date;
   updatedAt?: Date;
+  createdBy?: string;
+  lastModifiedBy?: string;
 }
 
-/**
- * Create Organization Request DTO
- */
 export interface CreateOrganizationRequest {
   organizerName: string;
   email: string;
@@ -57,15 +70,11 @@ export interface CreateOrganizationRequest {
   country?: string;
   taxId?: string;
   registrationNumber?: string;
-  maxOrganizerUsers?: number;
-  maxDistributors?: number;
+  userQuota?: UserQuotaRequest;
   subscriptionTier?: SubscriptionTier;
   billingEmail?: string;
 }
 
-/**
- * Update Organization Request DTO (all fields optional for PATCH)
- */
 export interface UpdateOrganizationRequest {
   organizerName?: string;
   email?: string;
@@ -79,8 +88,7 @@ export interface UpdateOrganizationRequest {
   country?: string;
   taxId?: string;
   registrationNumber?: string;
-  maxOrganizerUsers?: number;
-  maxDistributors?: number;
+  userQuota?: UserQuotaRequest;
   subscriptionTier?: SubscriptionTier;
   billingEmail?: string;
 }

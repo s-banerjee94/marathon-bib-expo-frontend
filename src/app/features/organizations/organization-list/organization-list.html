@@ -192,6 +192,13 @@
                       }"
                       [value]="org.deleted ? 'Deleted' : 'Active'"
                     />
+                  } @else if (col.field === 'userQuota') {
+                    <span
+                      class="font-mono text-xs whitespace-nowrap cursor-pointer hover:underline"
+                      (click)="showQuotaPopover($event, org)"
+                    >
+                      {{ org.userQuota | userQuota }}
+                    </span>
                   } @else if (col.type === 'datetime') {
                     {{
                       $any(getCellValue(org, col.field))
@@ -349,4 +356,34 @@
       </p-card>
     </ng-template>
   </app-list-shell>
+
+  <p-popover #quotaPopover (onHide)="quotaOrg.set(null)">
+    @if (quotaOrg(); as org) {
+      <div class="flex flex-col gap-3 min-w-40">
+        <span class="font-semibold text-sm">User Quotas</span>
+        <div class="flex flex-col gap-2 text-sm">
+          <div class="flex justify-between gap-6">
+            <span class="opacity-70">Admins</span>
+            <span class="font-medium">
+              {{ org.userQuota?.admins?.used ?? 0 }} / {{ org.userQuota?.admins?.max ?? '∞' }}
+            </span>
+          </div>
+          <div class="flex justify-between gap-6">
+            <span class="opacity-70">Organizer Users</span>
+            <span class="font-medium">
+              {{ org.userQuota?.organizerUsers?.used ?? 0 }} /
+              {{ org.userQuota?.organizerUsers?.max ?? '∞' }}
+            </span>
+          </div>
+          <div class="flex justify-between gap-6">
+            <span class="opacity-70">Distributors</span>
+            <span class="font-medium">
+              {{ org.userQuota?.distributors?.used ?? 0 }} /
+              {{ org.userQuota?.distributors?.max ?? '∞' }}
+            </span>
+          </div>
+        </div>
+      </div>
+    }
+  </p-popover>
 }

@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { CommonModule, Location } from '@angular/common';
 import { FormsModule, NgForm } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -60,16 +60,26 @@ export class OrganizationForm implements OnInit {
     country: '',
     taxId: '',
     registrationNumber: '',
-    maxOrganizerUsers: 5,
-    maxDistributors: 30,
+    userQuota: {
+      admins: { max: 1 },
+      organizerUsers: { max: 1 },
+      distributors: { max: 3 },
+    },
     subscriptionTier: SubscriptionTier.FREE,
     billingEmail: '',
   };
-  // Component state as signals
   isSubmitting = signal(false);
   isEditMode = signal(false);
   organizationId = signal<number | null>(null);
   isLoading = signal(false);
+
+  readonly title = computed(() =>
+    this.isEditMode() ? 'Edit Organization' : 'Create Organization',
+  );
+  readonly submitButtonText = computed(() => {
+    if (this.isSubmitting()) return this.isEditMode() ? 'Updating...' : 'Creating...';
+    return this.isEditMode() ? 'Update Organization' : 'Create Organization';
+  });
   // Form input size (controlled centrally via constant)
   readonly inputSize = FORM_INPUT_SIZE;
   readonly subscriptionTiers = SUBSCRIPTION_TIER_OPTIONS;
@@ -171,17 +181,6 @@ export class OrganizationForm implements OnInit {
     this.location.back();
   }
 
-  getTitle(): string {
-    return this.isEditMode() ? 'Edit Organization' : 'Create Organization';
-  }
-
-  getSubmitButtonText(): string {
-    if (this.isSubmitting()) {
-      return this.isEditMode() ? 'Updating...' : 'Creating...';
-    }
-    return this.isEditMode() ? 'Update Organization' : 'Create Organization';
-  }
-
   private loadOrganizationData(id: number): void {
     this.isLoading.set(true);
 
@@ -220,8 +219,11 @@ export class OrganizationForm implements OnInit {
       country: org.country,
       taxId: org.taxId,
       registrationNumber: org.registrationNumber,
-      maxOrganizerUsers: org.maxOrganizerUsers,
-      maxDistributors: org.maxDistributors,
+      userQuota: {
+        admins: { max: org.userQuota?.admins?.max },
+        organizerUsers: { max: org.userQuota?.organizerUsers?.max },
+        distributors: { max: org.userQuota?.distributors?.max },
+      },
       subscriptionTier: org.subscriptionTier as SubscriptionTier | undefined,
       billingEmail: org.billingEmail,
     };

@@ -55,12 +55,12 @@ export class OrganizerDashboard implements OnInit {
 
   // Computed properties
   userCapacityPercentage = computed(() => {
-    const max = this.organization()?.maxOrganizerUsers || 1;
+    const max = this.organization()?.userQuota?.organizerUsers?.max || 1;
     return Math.round((this.totalOrgUsers() / max) * 100);
   });
 
   distributorCapacityPercentage = computed(() => {
-    const max = this.organization()?.maxDistributors || 1;
+    const max = this.organization()?.userQuota?.distributors?.max || 1;
     return Math.round((this.totalDistributors() / max) * 100);
   });
 
