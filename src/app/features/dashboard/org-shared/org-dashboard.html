@@ -1,0 +1,530 @@
+<div class="p-4 md:p-6 space-y-4 md:space-y-6">
+  <!-- ── Header ── -->
+  <div class="flex flex-wrap items-center justify-between gap-3">
+    <div>
+      <h1 class="text-xl md:text-2xl font-bold tracking-tight">Dashboard</h1>
+      <p class="text-sm text-color-secondary mt-0.5">
+        Welcome back,
+        <span class="font-semibold text-color">{{ user()?.fullName || user()?.username }}</span>
+        @if (organization(); as org) {
+          &nbsp;&mdash;&nbsp;<span class="font-medium text-color">{{ org.organizerName }}</span>
+        }
+      </p>
+    </div>
+    <div class="flex items-center gap-2">
+      @if (refreshedAt()) {
+        <span class="text-xs text-color-secondary hidden sm:block">
+          Updated {{ refreshedAt() | date: 'shortTime' }}
+        </span>
+      }
+      <p-button
+        icon="pi pi-refresh"
+        [outlined]="true"
+        size="small"
+        [loading]="isRefreshing()"
+        [disabled]="isLoading()"
+        (onClick)="refresh()"
+        pTooltip="Refresh dashboard"
+        tooltipPosition="bottom"
+        ariaLabel="Refresh dashboard"
+      />
+      <p-button label="Create Event" icon="pi pi-plus" size="small" (onClick)="goToCreateEvent()" />
+    </div>
+  </div>
+
+  <!-- ── Org profile + stat cards ── -->
+  <section class="grid grid-cols-2 md:grid-cols-6 gap-4">
+    <!-- Organization profile (2× width) -->
+    <p-card class="col-span-2">
+      @if (isLoading()) {
+        <div class="flex items-center gap-3">
+          <p-skeleton shape="circle" size="3.5rem" />
+          <div class="flex-1 space-y-1.5">
+            <p-skeleton width="55%" height="1.25rem" />
+            <p-skeleton width="80%" height="0.8rem" />
+            <p-skeleton width="50%" height="0.8rem" />
+            <p-skeleton width="45%" height="1rem" />
+          </div>
+        </div>
+      } @else if (organization(); as org) {
+        <div class="flex items-center gap-3 h-full">
+          <p-avatar
+            [label]="orgInitials()"
+            shape="square"
+            size="large"
+            styleClass="shrink-0 !w-14 !h-14 !text-lg !rounded-xl"
+          />
+          <div class="min-w-0 flex-1 space-y-1">
+            <div class="flex items-center gap-2 min-w-0">
+              <h2 class="text-lg font-bold tracking-tight truncate">{{ org.organizerName }}</h2>
+              <p-tag
+                [value]="orgStatusLabel()"
+                [severity]="orgIsActive() ? 'success' : 'danger'"
+                styleClass="shrink-0"
+              />
+            </div>
+            <p class="flex items-center gap-1.5 text-xs text-color-secondary min-w-0">
+              <i class="pi pi-envelope shrink-0 text-primary"></i>
+              <span class="truncate">{{ org.email }}</span>
+              <span class="opacity-40 shrink-0">·</span>
+              <i class="pi pi-phone shrink-0 text-primary"></i>
+              <span class="shrink-0">{{ org.phoneNumber | defaultValue }}</span>
+            </p>
+            <p class="flex items-center gap-1.5 text-xs text-color-secondary min-w-0">
+              <i class="pi pi-map-marker shrink-0 text-primary"></i>
+              <span class="truncate">{{ orgLocation() | defaultValue }}</span>
+            </p>
+            <div class="flex items-center gap-2 flex-wrap pt-0.5">
+              <p-tag icon="pi pi-star-fill" [value]="planLabel()" severity="warn" />
+              @if (memberSince(); as since) {
+                <span class="text-xs text-color-secondary">
+                  Member since {{ since | date: 'dd MMM yyyy' }}
+                </span>
+              }
+            </div>
+          </div>
+        </div>
+      }
+    </p-card>
+
+    @for (card of statCards(); track card.label) {
+      <p-card>
+        @if (isLoading()) {
+          <div class="flex items-center gap-2.5">
+            <p-skeleton shape="circle" size="2.25rem" />
+            <div class="flex-1">
+              <p-skeleton width="60%" height="0.7rem" styleClass="mb-1.5" />
+              <p-skeleton width="45%" height="1.25rem" />
+            </div>
+          </div>
+          <p-skeleton height="1.75rem" styleClass="mt-2" />
+        } @else {
+          <div class="flex items-center gap-2.5">
+            <div
+              class="w-9 h-9 rounded-lg flex items-center justify-center bg-surface-100 dark:bg-surface-800 shrink-0"
+            >
+              <i [class]="card.icon + ' text-base text-primary'"></i>
+            </div>
+            <div class="min-w-0">
+              <p class="text-[11px] uppercase tracking-wide text-color-secondary truncate">
+                {{ card.label }}
+              </p>
+              <p class="text-xl font-bold leading-none mt-0.5">{{ card.value | number }}</p>
+            </div>
+          </div>
+          @if (sparklines()[card.sparkKey]; as spark) {
+            <div class="mt-2">
+              <p-chart type="line" [data]="spark" [options]="sparklineOptions" height="28px" />
+            </div>
+          }
+          <p-button
+            [label]="card.linkLabel"
+            icon="pi pi-arrow-right"
+            iconPos="right"
+            [text]="true"
+            severity="secondary"
+            size="small"
+            styleClass="!px-0 !text-[11px] mt-1"
+            (onClick)="card.action()"
+          />
+        }
+      </p-card>
+    }
+  </section>
+
+  <!-- ── Events by Status · Events by City · Active Events ── -->
+  <section class="grid grid-cols-1 xl:grid-cols-3 gap-4">
+    <!-- Events by Status -->
+    <p-card>
+      <ng-template pTemplate="header">
+        <div class="flex items-center justify-between px-5 pt-4">
+          <span class="font-semibold">Events by Status</span>
+          <p-select
+            [ngModel]="statusRange()"
+            (ngModelChange)="onStatusRangeChange($event)"
+            [options]="timeRangeOptions"
+            optionLabel="label"
+            optionValue="value"
+            [size]="inputSize"
+            [disabled]="isLoading() || isRefreshing()"
+          />
+        </div>
+      </ng-template>
+      @if (isLoading()) {
+        <div class="flex items-center gap-4">
+          <p-skeleton shape="circle" size="9.5rem" />
+          <div class="flex-1 space-y-2">
+            @for (i of [1, 2, 3, 4]; track i) {
+              <p-skeleton height="1rem" />
+            }
+          </div>
+        </div>
+      } @else {
+        <div class="flex items-center gap-4">
+          <div class="relative shrink-0" style="width: 150px; height: 150px">
+            <p-chart
+              type="doughnut"
+              [data]="eventStatusChart()!"
+              [options]="doughnutOptions"
+              width="150px"
+              height="150px"
+            />
+            <div
+              class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none"
+            >
+              <span class="text-2xl font-bold leading-none">{{ eventStatusTotal() | number }}</span>
+              <span class="text-[11px] text-color-secondary">Total</span>
+            </div>
+          </div>
+          <ul class="flex-1 space-y-2 min-w-0">
+            @for (item of eventStatusLegend(); track item.label) {
+              <li class="flex items-center gap-2 text-sm">
+                <span
+                  class="w-2.5 h-2.5 rounded-sm shrink-0"
+                  [style.background-color]="item.color"
+                ></span>
+                <span class="flex-1 truncate">{{ item.label }}</span>
+                <span class="font-semibold">{{ item.value }}</span>
+                <span class="text-color-secondary text-xs">
+                  ({{ item.percent | number: '1.0-1' }}%)
+                </span>
+              </li>
+            }
+          </ul>
+        </div>
+      }
+    </p-card>
+
+    <!-- Events by City -->
+    <p-card>
+      <ng-template pTemplate="header">
+        <div class="flex items-center justify-between px-5 pt-4">
+          <span class="font-semibold">Events by City</span>
+          <p-select
+            [ngModel]="citiesRange()"
+            (ngModelChange)="onCitiesRangeChange($event)"
+            [options]="timeRangeOptions"
+            optionLabel="label"
+            optionValue="value"
+            [size]="inputSize"
+            [disabled]="isLoading() || isRefreshing()"
+          />
+        </div>
+      </ng-template>
+      @if (isLoading()) {
+        <p-skeleton height="11rem" />
+      } @else if (eventsByCityChart(); as chart) {
+        <div>
+          <p-chart type="bar" [data]="chart" [options]="barOptions()" height="176px" />
+        </div>
+      } @else {
+        <div class="flex flex-col items-center justify-center py-10 gap-2 text-color-secondary">
+          <i class="pi pi-map-marker text-3xl opacity-40 text-primary"></i>
+          <p class="text-sm">No city data</p>
+        </div>
+      }
+    </p-card>
+
+    <!-- Active Events -->
+    <p-card>
+      <ng-template pTemplate="header">
+        <div class="flex items-center justify-between px-5 pt-4">
+          <span class="font-semibold">Active Events</span>
+          <p-button
+            label="View all"
+            [text]="true"
+            severity="secondary"
+            size="small"
+            styleClass="!text-xs"
+            (onClick)="goToEvents()"
+          />
+        </div>
+      </ng-template>
+      @if (isLoading()) {
+        <div class="space-y-3">
+          @for (i of [1, 2, 3]; track i) {
+            <p-skeleton height="3rem" />
+          }
+        </div>
+      } @else if (activeEvents().length) {
+        <ul class="space-y-3">
+          @for (event of activeEvents(); track event.id) {
+            <li class="flex items-center gap-3 cursor-pointer" (click)="goToEventDetails(event)">
+              <p-avatar [image]="event.logoUrl" icon="pi pi-flag" shape="circle" />
+              <div class="min-w-0 flex-1">
+                <p class="font-medium truncate">{{ event.eventName }}</p>
+                <p class="text-xs text-color-secondary truncate">
+                  {{
+                    event.eventStartDate
+                      | formatEventDateTime: event.eventStartTime : event.timezone
+                  }}
+                  @if (event.timezone) {
+                    ({{
+                      event.eventStartDate
+                        | formatEventDateTime: event.eventStartTime : event.timezone : 'abbr'
+                    }})
+                  }
+                  · {{ event.city | defaultValue }}
+                </p>
+              </div>
+              <p-tag
+                [value]="statusLabel(event.status)"
+                [severity]="statusSeverity(event.status)"
+                styleClass="shrink-0 ml-auto"
+              />
+            </li>
+          }
+        </ul>
+      } @else {
+        <div class="flex flex-col items-center justify-center py-10 gap-2 text-color-secondary">
+          <i class="pi pi-calendar text-3xl opacity-40 text-primary"></i>
+          <p class="text-sm">No active events</p>
+        </div>
+      }
+    </p-card>
+  </section>
+
+  <!-- ── Recent Events · Quick Actions ── -->
+  <section class="grid grid-cols-1 xl:grid-cols-3 gap-4">
+    <!-- Recent Events -->
+    <p-card class="xl:col-span-2">
+      <ng-template pTemplate="header">
+        <div class="flex items-center justify-between px-5 pt-4">
+          <span class="font-semibold">Recent Events</span>
+          <p-button
+            label="View all events"
+            icon="pi pi-arrow-right"
+            iconPos="right"
+            [text]="true"
+            severity="secondary"
+            size="small"
+            styleClass="!text-xs"
+            (onClick)="goToEvents()"
+          />
+        </div>
+      </ng-template>
+      @if (isLoading()) {
+        <div class="space-y-3">
+          @for (i of [1, 2, 3, 4, 5]; track i) {
+            <p-skeleton height="2.5rem" />
+          }
+        </div>
+      } @else {
+        <p-table
+          [value]="recentEvents()"
+          [paginator]="recentEvents().length > 5"
+          [rows]="5"
+          [scrollable]="true"
+          [tableStyle]="{ 'min-width': '36rem' }"
+        >
+          <ng-template pTemplate="header">
+            <tr>
+              <th>Event Name</th>
+              <th>Start Date</th>
+              <th>Status</th>
+              <th class="text-center">Actions</th>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="body" let-event>
+            <tr>
+              <td>
+                <div class="flex items-center gap-2 min-w-0">
+                  <span class="shrink-0">
+                    <p-avatar [image]="event.logoUrl" icon="pi pi-flag" shape="circle" />
+                  </span>
+                  <span class="font-medium truncate max-w-[50ch]" [title]="event.eventName">
+                    {{ event.eventName }}
+                  </span>
+                </div>
+              </td>
+              <td>
+                <span class="whitespace-nowrap">
+                  {{
+                    event.eventStartDate
+                      | formatEventDateTime: event.eventStartTime : event.timezone
+                  }}
+                  @if (event.timezone) {
+                    ({{
+                      event.eventStartDate
+                        | formatEventDateTime: event.eventStartTime : event.timezone : 'abbr'
+                    }})
+                  }
+                </span>
+              </td>
+              <td>
+                <p-tag
+                  [value]="statusLabel(event.status)"
+                  [severity]="statusSeverity(event.status)"
+                />
+              </td>
+              <td class="text-center">
+                <p-button
+                  label="View"
+                  [text]="true"
+                  size="small"
+                  (onClick)="goToEventDetails(event)"
+                />
+              </td>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="emptymessage">
+            <tr>
+              <td colspan="4" class="text-center py-6 text-color-secondary">No events found.</td>
+            </tr>
+          </ng-template>
+        </p-table>
+      }
+    </p-card>
+
+    <!-- Quick Actions -->
+    <p-card header="Quick Actions">
+      <div class="grid grid-cols-2 gap-3">
+        @for (qa of quickActions; track qa.label) {
+          <button
+            type="button"
+            (click)="qa.action()"
+            class="flex flex-col items-center justify-center gap-2 py-5 px-2 rounded-lg border border-surface-200 dark:border-surface-700 hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors"
+          >
+            <i [class]="qa.icon + ' text-xl text-primary'"></i>
+            <span class="text-xs font-medium text-center">{{ qa.label }}</span>
+          </button>
+        }
+      </div>
+    </p-card>
+  </section>
+
+  <!-- ── User Role Summary · Recent Activity ── -->
+  <section class="grid grid-cols-1 xl:grid-cols-2 gap-4">
+    <!-- User Role Summary -->
+    <p-card>
+      <ng-template pTemplate="header">
+        <div class="flex items-center justify-between px-5 pt-4">
+          <span class="font-semibold">User Role Summary</span>
+          <p-button
+            label="View all users"
+            [text]="true"
+            severity="secondary"
+            size="small"
+            styleClass=" !text-xs"
+            (onClick)="goToUsers()"
+          />
+        </div>
+      </ng-template>
+      @if (isLoading()) {
+        <div class="flex items-center gap-4">
+          <p-skeleton shape="circle" size="9.5rem" />
+          <div class="flex-1 space-y-2">
+            @for (i of [1, 2, 3]; track i) {
+              <p-skeleton height="1rem" />
+            }
+          </div>
+        </div>
+      } @else {
+        <div class="flex items-center gap-4">
+          <div class="relative shrink-0" style="width: 150px; height: 150px">
+            <p-chart
+              type="doughnut"
+              [data]="userRoleChart()!"
+              [options]="doughnutOptions"
+              width="150px"
+              height="150px"
+            />
+            <div
+              class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none"
+            >
+              <span class="text-2xl font-bold leading-none">{{ roleTotal() | number }}</span>
+              <span class="text-[11px] text-color-secondary">Total</span>
+            </div>
+          </div>
+          <ul class="flex-1 space-y-2 min-w-0">
+            @for (item of roleLegend(); track item.label) {
+              <li class="flex items-center gap-2 text-sm">
+                <span
+                  class="w-2.5 h-2.5 rounded-sm shrink-0"
+                  [style.background-color]="item.color"
+                ></span>
+                <span class="flex-1 truncate">{{ item.label }}</span>
+                <span class="font-semibold">{{ item.value }}</span>
+                <span class="text-color-secondary text-xs">
+                  ({{ item.percent | number: '1.0-1' }}%)
+                </span>
+              </li>
+            }
+          </ul>
+        </div>
+      }
+    </p-card>
+
+    <!-- Recent Activity -->
+    <p-card>
+      <ng-template pTemplate="header">
+        <div class="flex items-center justify-between px-5 pt-4">
+          <span class="font-semibold">Recent Activity</span>
+          <div class="flex items-center gap-1">
+            <p-button
+              icon="pi pi-refresh"
+              [text]="true"
+              [rounded]="true"
+              size="small"
+              [loading]="isRefreshingActivity()"
+              [disabled]="isLoadingActivity()"
+              (onClick)="refreshActivity()"
+              pTooltip="Refresh activity"
+              tooltipPosition="bottom"
+              ariaLabel="Refresh activity"
+            />
+            <p-button
+              label="View all"
+              icon="pi pi-arrow-right"
+              iconPos="right"
+              [text]="true"
+              severity="secondary"
+              size="small"
+              styleClass="!text-xs"
+              (onClick)="goToAuditLogs()"
+            />
+          </div>
+        </div>
+      </ng-template>
+      @if (isLoadingActivity()) {
+        <div class="space-y-4">
+          @for (i of [1, 2, 3, 4]; track i) {
+            <div class="flex items-start gap-3">
+              <p-skeleton shape="circle" size="2rem" />
+              <div class="flex-1 space-y-1.5">
+                <p-skeleton width="80%" height="0.8rem" />
+                <p-skeleton width="40%" height="0.7rem" />
+              </div>
+            </div>
+          }
+        </div>
+      } @else if (recentActivity().length) {
+        <ul class="space-y-4">
+          @for (item of recentActivity(); track item.id) {
+            <li class="flex items-start gap-3">
+              <div
+                class="w-8 h-8 rounded-full flex items-center justify-center bg-surface-100 dark:bg-surface-800 shrink-0"
+              >
+                <i [class]="item.icon + ' text-sm text-primary'"></i>
+              </div>
+              <div class="min-w-0 flex-1">
+                <p class="text-sm leading-snug truncate" [title]="item.description">
+                  {{ item.description }}
+                </p>
+                <p class="text-xs text-color-secondary">by {{ item.actorName }}</p>
+              </div>
+              <span class="text-[11px] text-color-secondary whitespace-nowrap shrink-0">
+                {{ item.createdAt | date: 'dd-MMM-yyyy, hh:mm a' }}
+              </span>
+            </li>
+          }
+        </ul>
+      } @else {
+        <div class="flex flex-col items-center justify-center py-10 gap-2 text-color-secondary">
+          <i class="pi pi-history text-3xl opacity-40 text-primary"></i>
+          <p class="text-sm">No recent activity</p>
+        </div>
+      }
+    </p-card>
+  </section>
+</div>

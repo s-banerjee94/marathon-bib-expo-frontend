@@ -32,6 +32,9 @@ export class AuditLogService {
     if (query.to) {
       params = params.set('to', query.to);
     }
+    if (query.limit !== undefined) {
+      params = params.set('limit', query.limit.toString());
+    }
     if (query.lastEvaluatedKey) {
       params = params.set('lastEvaluatedKey', query.lastEvaluatedKey);
     }

@@ -30,5 +30,6 @@ export interface AuditLogQuery {
   action?: string;
   entityType?: string;
   username?: string;
+  limit?: number;
   lastEvaluatedKey?: string;
 }
