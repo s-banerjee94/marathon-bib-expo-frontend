@@ -24,12 +24,14 @@ import { CardModule } from 'primeng/card';
 import { TabsModule } from 'primeng/tabs';
 import { DialogModule } from 'primeng/dialog';
 import { ButtonModule } from 'primeng/button';
+import { TooltipModule } from 'primeng/tooltip';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { ConfirmationService } from 'primeng/api';
 import { Participant } from '../../../core/models/participant.model';
 import { ParticipantService } from '../../../core/services/participant.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { UserRole } from '../../../core/models/user.model';
+import { EventStatus } from '../../../core/models/event.model';
 import { ErrorHandlerService } from '../../../core/services/error-handler.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { OrganizationSelector } from '../../../layout/organization-selector/organization-selector';
@@ -43,7 +45,6 @@ import { MobileTabBar, TabItem } from '../../../shared/components/mobile-tab-bar
 
 // Child components
 import { ParticipantExportDialog } from './participant-export-dialog/participant-export-dialog';
-import { ParticipantImportDialog } from './participant-import-dialog/participant-import-dialog';
 import { ParticipantTableTab } from './participant-table-tab/participant-table-tab';
 import { ImportProgressService } from '../../../core/services/import-progress.service';
 import { ParticipantListState } from './participant-list-state.service';
@@ -58,13 +59,13 @@ import { ParticipantListState } from './participant-list-state.service';
     TabsModule,
     DialogModule,
     ButtonModule,
+    TooltipModule,
     ConfirmDialogModule,
     OrganizationSelector,
     EventSelector,
     ParticipantForm,
     ParticipantDetails,
     ParticipantExportDialog,
-    ParticipantImportDialog,
     RouterOutlet,
     RouterLink,
     RouterLinkActive,
@@ -93,10 +94,6 @@ export class ParticipantList implements OnInit {
 
   // User role signals
   isOrganizerUser = signal(false);
-
-  // Import dialog state
-  showImportDialog = signal(false);
-  isUploading = signal(false);
 
   // Create form dialog state (edit goes through the Details dialog now)
   showFormDialog = signal(false);
@@ -130,6 +127,15 @@ export class ParticipantList implements OnInit {
     () => this.selectedOrganizationId() !== undefined && this.selectedEventId() !== undefined,
   );
 
+  // The currently selected event (with status), read from the event selector.
+  protected readonly selectedEvent = computed(() => this.eventSelector()?.selectedEvent() ?? null);
+
+  // Import is a full-replace and the backend only allows it for DRAFT events,
+  // so the entry point is disabled otherwise (mirrors the mapper's own gating).
+  protected readonly canImport = computed(
+    () => this.selectedEventId() != null && this.selectedEvent()?.status === EventStatus.DRAFT,
+  );
+
   // Active tab derived from router state — reads the deepest child route path
   activeTab = toSignal(
     this.router.events.pipe(
@@ -152,33 +158,23 @@ export class ParticipantList implements OnInit {
     return this.route.snapshot.firstChild?.firstChild?.routeConfig?.path;
   }
 
-  // Tracks the current route type so the template can decide where (or whether) to render <router-outlet>.
-  // - 'tab' → inside the tabs card (list / errors)
-  // - 'form' → at root on mobile, dialog on desktop (/new)
-  // - 'details' → at root on mobile, dialog on desktop (/:eventId/:bibNumber/details)
-  // - 'none' → no child route active (bare /participants)
-  routeKind = signal<'tab' | 'form' | 'details' | 'none'>('none');
-
-  // Viewport tracking: on mobile the form renders full-page via <router-outlet />;
-  // on desktop the same URL opens the form in the existing p-dialog.
+  // Viewport tracking — drives dialog sizing (full-screen on mobile, modal on desktop).
   private mediaQuery = window.matchMedia('(max-width: 768px)');
   isMobile = signal(this.mediaQuery.matches);
 
-  // Convenience computeds for template clarity.
-  hasFormRoute = computed(() => this.routeKind() === 'form');
-  hasDetailsRoute = computed(() => this.routeKind() === 'details');
-  hasTabRoute = computed(() => this.routeKind() === 'tab');
-  hasRoutedOverlay = computed(() => this.hasFormRoute() || this.hasDetailsRoute());
-
-  // Tracks which dialog is currently driven by the URL:
-  //   null              → no dialog
-  //   'new'             → create form
-  //   'details:<id>:<bib>' → details (view + inline edit)
-  // Used to ignore router events that don't change dialog state.
-  private dialogKey: string | null = null;
-  // True when a dialog is being closed by syncDialogToRoute (URL change),
-  // so visibility-change handlers skip their own URL-clearing navigation.
-  private closingDialogFromRoute = false;
+  // Dialogs are signal-driven overlays (not routes): opening/closing one never
+  // unmounts the participant table behind it, so closing is instant — no re-render,
+  // no refetch. Full-screen on mobile, centered modal on desktop.
+  protected readonly detailsDialogStyle = computed(() =>
+    this.isMobile()
+      ? { width: '100vw', height: '100vh', maxHeight: '100vh' }
+      : { width: '95vw', maxWidth: '1100px', height: '90vh' },
+  );
+  protected readonly formDialogStyle = computed(() =>
+    this.isMobile()
+      ? { width: '100vw', height: '100vh', maxHeight: '100vh' }
+      : { width: '95vw', maxWidth: '700px', maxHeight: '90vh' },
+  );
 
   ngOnInit(): void {
     // Import completion notifies tabs (table + errors) to refresh in place.
@@ -195,28 +191,23 @@ export class ParticipantList implements OnInit {
     ]);
     this.isOrganizerUser.set(isOrgUser);
 
-    // Viewport tracking — re-sync dialog state on viewport changes so a desktop dialog
-    // tears down when the user shrinks to mobile (and vice versa).
+    // Viewport tracking — keeps dialog sizing (mobile full-screen vs desktop modal) current.
     const onViewportChange = (event: MediaQueryListEvent) => {
       this.isMobile.set(event.matches);
-      this.syncDialogToRoute();
     };
     this.mediaQuery.addEventListener('change', onViewportChange);
     this.destroyRef.onDestroy(() => {
       this.mediaQuery.removeEventListener('change', onViewportChange);
     });
 
-    // React to URL changes (route segments) to open/close the form dialog
-    // and to keep selectedEventId in sync with the :eventId path param.
+    // Keep selectedOrganizationId / selectedEventId in sync with the URL (org/event
+    // filters live in query params; the active event also comes from the :eventId path).
     this.router.events
       .pipe(
         filter((event): event is NavigationEnd => event instanceof NavigationEnd),
         takeUntilDestroyed(this.destroyRef),
       )
-      .subscribe(() => {
-        this.syncDialogToRoute();
-        this.applyUrlToState(this.route.snapshot.queryParamMap);
-      });
+      .subscribe(() => this.applyUrlToState(this.route.snapshot.queryParamMap));
 
     // URL is the source of truth for org filter and (fallback) event filter.
     // queryParamMap emits synchronously on subscribe, which seeds the initial state.
@@ -231,9 +222,6 @@ export class ParticipantList implements OnInit {
         this.pushStateToUrl({ organizationId: String(orgId) });
       }
     }
-
-    // Initial dialog sync so deep-linked /participants/new (or /:eventId/:bib/edit) opens immediately.
-    this.syncDialogToRoute();
   }
 
   private applyUrlToState(params: ParamMap): void {
@@ -254,7 +242,7 @@ export class ParticipantList implements OnInit {
     this.selectedOrganizationId.set(orgId);
     this.selectedEventId.set(eventId);
 
-    if (orgId !== prevOrgId) {
+    if (prevOrgId !== undefined && orgId !== prevOrgId) {
       // Reset event selector UI when organization changes.
       this.eventSelector()?.reset();
     }
@@ -290,20 +278,76 @@ export class ParticipantList implements OnInit {
     }
   }
 
-  // ---------- Create dialog (URL-driven) ----------
+  // ---------- Create dialog (signal-driven overlay) ----------
   openCreateDialog(): void {
     const eventId = this.selectedEventId();
     if (!eventId) return;
-    this.router.navigate(['/participants/new'], { queryParamsHandling: 'preserve' });
+    this.formSubmitDisabled.set(true);
+    this.formDialogData.set({ eventId });
+    this.showFormDialog.set(true);
   }
 
-  // ---------- Details dialog (URL-driven, view + inline edit) ----------
+  // ---------- Details dialog (signal-driven overlay, view + inline edit) ----------
   openDetailsDialog(participant: Participant): void {
     const eventId = this.selectedEventId();
     if (!eventId) return;
-    this.router.navigate(['/participants', eventId, participant.bibNumber, 'details'], {
-      queryParamsHandling: 'preserve',
-    });
+    this.detailsContext.set({ eventId, bibNumber: participant.bibNumber });
+    this.showDetailsDialog.set(true);
+  }
+
+  /** Absolute URL of the open participant's shareable standalone details page. */
+  private detailsShareUrl(): string | null {
+    const ctx = this.detailsContext();
+    if (!ctx) return null;
+    const tree = this.router.createUrlTree(
+      ['/participants', ctx.eventId, ctx.bibNumber, 'details'],
+      {
+        queryParams: {
+          organizationId: this.selectedOrganizationId() ?? null,
+          eventId: ctx.eventId,
+        },
+      },
+    );
+    return new URL(this.router.serializeUrl(tree), window.location.origin).toString();
+  }
+
+  /**
+   * Share the participant's link (the dialog header "share" icon). On devices that
+   * support the Web Share API (mostly mobile) this opens the native share sheet;
+   * elsewhere (most desktops) it falls back to copying the link to the clipboard.
+   */
+  protected async shareDetails(): Promise<void> {
+    const url = this.detailsShareUrl();
+    if (!url) return;
+
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: 'Participant details', url });
+        return;
+      } catch (err) {
+        // The user dismissed the share sheet — leave it at that, don't also copy.
+        if (err instanceof DOMException && err.name === 'AbortError') return;
+        // Any other failure falls through to the clipboard copy below.
+      }
+    }
+
+    try {
+      await navigator.clipboard.writeText(url);
+      this.toast.success('Shareable link copied to clipboard');
+    } catch {
+      this.toast.error('Could not copy the link');
+    }
+  }
+
+  /** Open the same participant's standalone page in a new browser tab. */
+  protected openDetailsInNewTab(): void {
+    const url = this.detailsShareUrl();
+    if (!url) return;
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.target = '_blank';
+    anchor.rel = 'noopener';
+    anchor.click();
   }
 
   onFormSubmitDisabledChange(disabled: boolean): void {
@@ -320,23 +364,6 @@ export class ParticipantList implements OnInit {
     });
   }
 
-  private openCreateDialogDirect(): void {
-    const eventId = this.selectedEventId();
-    if (!eventId) {
-      // Deep-link without an event context — fall back to the list.
-      this.router.navigate(['/participants'], { queryParamsHandling: 'preserve' });
-      return;
-    }
-    this.formSubmitDisabled.set(true);
-    this.formDialogData.set({ eventId });
-    this.showFormDialog.set(true);
-  }
-
-  private openDetailsDialogDirect(eventId: number, bibNumber: string): void {
-    this.detailsContext.set({ eventId, bibNumber });
-    this.showDetailsDialog.set(true);
-  }
-
   closeFormDialog(): void {
     this.showFormDialog.set(false);
     this.formDialogData.set(null);
@@ -348,25 +375,11 @@ export class ParticipantList implements OnInit {
   }
 
   onFormDialogVisibleChange(visible: boolean): void {
-    if (visible) return;
-    this.closeFormDialog();
-    if (this.closingDialogFromRoute) {
-      this.closingDialogFromRoute = false;
-      return;
-    }
-    this.dialogKey = null;
-    this.navigateBackToTab();
+    if (!visible) this.closeFormDialog();
   }
 
   onDetailsDialogVisibleChange(visible: boolean): void {
-    if (visible) return;
-    this.closeDetailsDialog();
-    if (this.closingDialogFromRoute) {
-      this.closingDialogFromRoute = false;
-      return;
-    }
-    this.dialogKey = null;
-    this.navigateBackToTab();
+    if (!visible) this.closeDetailsDialog();
   }
 
   submitFormDialog(): void {
@@ -375,73 +388,8 @@ export class ParticipantList implements OnInit {
 
   onFormSubmitSuccess(): void {
     this.toast.success('Participant created successfully', 'Success');
-    // List data is already updated via ParticipantListBus; just clear the form route.
-    this.navigateBackToTab();
-  }
-
-  private navigateBackToTab(): void {
-    const eventId = this.selectedEventId();
-    if (eventId) {
-      this.router.navigate(['/participants/event', eventId, 'list'], {
-        queryParamsHandling: 'preserve',
-      });
-    } else {
-      this.router.navigate(['/participants'], { queryParamsHandling: 'preserve' });
-    }
-  }
-
-  private syncDialogToRoute(): void {
-    const child = this.route.snapshot.firstChild;
-    const segments = child?.url ?? [];
-    let nextKey: string | null = null;
-    let kind: 'tab' | 'form' | 'details' | 'none' = 'none';
-
-    if (segments.length === 1 && segments[0].path === 'new') {
-      nextKey = 'new';
-      kind = 'form';
-    } else if (segments.length === 3 && segments[2].path === 'details') {
-      // :eventId/:bibNumber/details
-      nextKey = `details:${segments[0].path}:${segments[1].path}`;
-      kind = 'details';
-    } else if (segments.length >= 1 && segments[0].path === 'event') {
-      kind = 'tab';
-    }
-
-    this.routeKind.set(kind);
-
-    // Mobile renders the routed overlay via <router-outlet />; ensure any open dialog tears down.
-    if (this.isMobile()) {
-      if (this.dialogKey !== null) {
-        this.closingDialogFromRoute = true;
-        if (this.showFormDialog()) this.closeFormDialog();
-        if (this.showDetailsDialog()) this.closeDetailsDialog();
-      }
-      this.dialogKey = null;
-      return;
-    }
-
-    if (nextKey === this.dialogKey) return;
-
-    const previousKey = this.dialogKey;
-    this.dialogKey = nextKey;
-
-    // Tear down whichever dialog was previously open.
-    if (previousKey !== null) {
-      this.closingDialogFromRoute = true;
-      if (this.showFormDialog()) this.closeFormDialog();
-      if (this.showDetailsDialog()) this.closeDetailsDialog();
-    }
-
-    if (nextKey === 'new') {
-      this.openCreateDialogDirect();
-    } else if (nextKey?.startsWith('details:')) {
-      const parts = nextKey.split(':');
-      const eventId = Number(parts[1]);
-      const bib = parts[2];
-      if (Number.isFinite(eventId) && bib) {
-        this.openDetailsDialogDirect(eventId, bib);
-      }
-    }
+    // The new row is already in the list via ParticipantListBus — just close the dialog.
+    this.closeFormDialog();
   }
 
   private pushStateToUrl(updates: Params): void {
@@ -451,6 +399,13 @@ export class ParticipantList implements OnInit {
       queryParamsHandling: 'merge',
       replaceUrl: true,
     });
+  }
+
+  // ---------- Refresh ----------
+  // Explicit, user-triggered reload of the list (not an auto-refresh) — for when the
+  // data may have changed elsewhere. The table tab reloads via the reloadTrigger.
+  refreshList(): void {
+    this.listState.triggerReload();
   }
 
   // ---------- Export ----------
@@ -486,38 +441,21 @@ export class ParticipantList implements OnInit {
   }
 
   // ---------- Import ----------
-  openImportDialog(): void {
-    this.showImportDialog.set(true);
-  }
-
-  handleBatchImport(file: File): void {
+  // Opens the column-mapping importer for the selected event. The mapper owns the
+  // upload → map → confirm → launch flow and reports progress via ImportProgressService.
+  startImport(): void {
     const eventId = this.selectedEventId();
-    if (!eventId || !file) return;
-
-    this.isUploading.set(true);
-
-    this.participantService.launchBatchImport(eventId, file).subscribe({
-      next: (response) => {
-        this.isUploading.set(false);
-        this.showImportDialog.set(false);
-        this.importProgress.start(eventId, response.jobExecutionId);
-      },
-      error: (error) => {
-        this.isUploading.set(false);
-        this.errorHandler.showError(error, 'Failed to launch import job');
-      },
+    if (eventId == null || !this.canImport()) return;
+    this.router.navigate(['/participants/import-map'], {
+      queryParams: { eventId: String(eventId) },
     });
-  }
-
-  onImportDialogClosed(): void {
-    // Polling is owned by the global progress service; nothing to tear down here.
   }
 
   // Wire ParticipantTableTab outputs when it activates inside the router-outlet.
   // Subscriptions live with the activated component instance and tear down on deactivate.
   onTabActivated(component: unknown): void {
     if (!(component instanceof ParticipantTableTab)) return;
-    component.importRequested.subscribe(() => this.openImportDialog());
+    component.importRequested.subscribe(() => this.startImport());
     component.createRequested.subscribe(() => this.openCreateDialog());
     component.exportRequested.subscribe(() => this.openExportDialog());
     component.detailsRequested.subscribe((p) => this.openDetailsDialog(p));

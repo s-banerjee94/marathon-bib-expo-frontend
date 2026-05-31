@@ -1,134 +1,148 @@
-@if (isMobile() && hasRoutedOverlay()) {
-  <router-outlet />
-} @else {
-  <div class="p-2 sm:p-3 md:p-4">
-    <!-- Header -->
-    <div class="mb-6">
-      <h1 class="text-3xl font-bold">Participant Management</h1>
-      <p class="mt-2">
-        @if (isOrganizerUser()) {
-          View and manage event participants. Select an event to get started.
-        } @else {
-          View and manage event participants. Select an organization and event to get started.
-        }
-      </p>
-    </div>
+<div class="p-2 sm:p-3 md:p-4">
+  <!-- Header -->
+  <div class="mb-6">
+    <h1 class="text-3xl font-bold">Participant Management</h1>
+    <p class="mt-2">
+      @if (isOrganizerUser()) {
+        View and manage event participants. Select an event to get started.
+      } @else {
+        View and manage event participants. Select an organization and event to get started.
+      }
+    </p>
+  </div>
 
-    <!-- Filter Section -->
-    <p-card class="mb-6">
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 p-2 md:p-4">
-        @if (!isOrganizerUser()) {
-          <app-organization-selector
-            (organizationIdChange)="onOrganizationChange($event)"
-            [required]="true"
-            [selectedOrganizationId]="selectedOrganizationId()"
-            label="Organization"
-            placeholder="Type to search organizations..."
-          ></app-organization-selector>
-        }
-
-        <app-event-selector
-          (eventIdChange)="onEventChange($event)"
-          [disabled]="!selectedOrganizationId()"
-          [organizationId]="selectedOrganizationId()"
+  <!-- Filter Section -->
+  <p-card class="mb-6">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 p-2 md:p-4">
+      @if (!isOrganizerUser()) {
+        <app-organization-selector
+          (organizationIdChange)="onOrganizationChange($event)"
           [required]="true"
-          [selectedEventId]="selectedEventId()"
-          label="Event"
-          placeholder="Type to search events..."
-          [class]="isOrganizerUser() ? 'md:col-span-2' : ''"
-        ></app-event-selector>
+          [selectedOrganizationId]="selectedOrganizationId()"
+          label="Organization"
+          placeholder="Type to search organizations..."
+        ></app-organization-selector>
+      }
+
+      <app-event-selector
+        (eventIdChange)="onEventChange($event)"
+        [disabled]="!selectedOrganizationId()"
+        [organizationId]="selectedOrganizationId()"
+        [required]="true"
+        [selectedEventId]="selectedEventId()"
+        label="Event"
+        placeholder="Type to search events..."
+        [class]="isOrganizerUser() ? 'md:col-span-2' : ''"
+      ></app-event-selector>
+    </div>
+  </p-card>
+
+  <!-- Empty State -->
+  @if (!canShowTabs()) {
+    <p-card class="text-center">
+      <div class="p-8">
+        <i class="pi pi-users text-6xl mb-4 block"></i>
+        <h3 class="text-xl font-semibold mb-2">No Event Selected</h3>
+        <p>
+          @if (isOrganizerUser()) {
+            Please select an event to manage participants.
+          } @else {
+            Please select an organization and event to manage participants.
+          }
+        </p>
+      </div>
+    </p-card>
+  }
+
+  <!-- Participant Tabs (routed via router-outlet) -->
+  @if (canShowTabs()) {
+    <p-card>
+      <!-- Page-level actions (outside the tabbed content) -->
+      <div class="flex flex-col sm:flex-row gap-2 mb-4">
+        <p-button
+          (onClick)="startImport()"
+          [disabled]="!canImport()"
+          [size]="buttonSize"
+          icon="pi pi-upload"
+          label="Import Participants"
+          severity="primary"
+        ></p-button>
+        <p-button
+          (onClick)="openCreateDialog()"
+          [size]="buttonSize"
+          icon="pi pi-plus"
+          label="Add Participant"
+          severity="success"
+        ></p-button>
+        <p-button
+          (onClick)="openExportDialog()"
+          [outlined]="true"
+          [size]="buttonSize"
+          icon="pi pi-download"
+          label="Export CSV"
+        ></p-button>
+      </div>
+
+      @if (selectedEvent() && !canImport()) {
+        <p class="mb-4 -mt-2 text-sm text-muted-color">
+          <i class="pi pi-info-circle"></i>
+          Import is only available for events in <strong>draft</strong> status. This event is
+          {{ selectedEvent()?.status }}.
+        </p>
+      }
+
+      <!-- Desktop tab strip hides on mobile; the bottom tab bar replaces it. -->
+      <div class="hidden md:block">
+        <p-tabs [value]="activeTab()">
+          <p-tablist>
+            <p-tab
+              value="list"
+              [routerLink]="['/participants/event', selectedEventId(), 'list']"
+              queryParamsHandling="preserve"
+              routerLinkActive
+            >
+              <i class="pi pi-users mr-2"></i>
+              Imported Participants
+            </p-tab>
+            <p-tab
+              value="errors"
+              [routerLink]="['/participants/event', selectedEventId(), 'errors']"
+              queryParamsHandling="preserve"
+              routerLinkActive
+            >
+              <i class="pi pi-exclamation-triangle mr-2"></i>
+              Import Errors
+            </p-tab>
+          </p-tablist>
+        </p-tabs>
+      </div>
+
+      <div class="pt-4">
+        <!-- Refresh sits with the table (under the tabs); reloads the active tab's data. -->
+        <div class="flex justify-end mb-3">
+          <p-button
+            (onClick)="refreshList()"
+            [outlined]="true"
+            [size]="buttonSize"
+            icon="pi pi-refresh"
+            label="Refresh"
+            severity="secondary"
+          ></p-button>
+        </div>
+        <router-outlet (activate)="onTabActivated($event)" />
       </div>
     </p-card>
 
-    <!-- Empty State -->
-    @if (!canShowTabs()) {
-      <p-card class="text-center">
-        <div class="p-8">
-          <i class="pi pi-users text-6xl mb-4 block"></i>
-          <h3 class="text-xl font-semibold mb-2">No Event Selected</h3>
-          <p>
-            @if (isOrganizerUser()) {
-              Please select an event to manage participants.
-            } @else {
-              Please select an organization and event to manage participants.
-            }
-          </p>
-        </div>
-      </p-card>
-    }
-
-    <!-- Participant Tabs (routed via router-outlet) -->
-    @if (canShowTabs()) {
-      <p-card>
-        <!-- Page-level actions (outside the tabbed content) -->
-        <div class="flex flex-col sm:flex-row gap-2 mb-4">
-          <p-button
-            (onClick)="openImportDialog()"
-            [size]="buttonSize"
-            icon="pi pi-upload"
-            label="Import Participants"
-            severity="primary"
-          ></p-button>
-          <p-button
-            (onClick)="openCreateDialog()"
-            [size]="buttonSize"
-            icon="pi pi-plus"
-            label="Add Participant"
-            severity="success"
-          ></p-button>
-          <p-button
-            (onClick)="openExportDialog()"
-            [outlined]="true"
-            [size]="buttonSize"
-            icon="pi pi-download"
-            label="Export CSV"
-          ></p-button>
-        </div>
-
-        <!-- Desktop tab strip hides on mobile; the bottom tab bar replaces it. -->
-        <div class="hidden md:block">
-          <p-tabs [value]="activeTab()">
-            <p-tablist>
-              <p-tab
-                value="list"
-                [routerLink]="['/participants/event', selectedEventId(), 'list']"
-                queryParamsHandling="preserve"
-                routerLinkActive
-              >
-                <i class="pi pi-users mr-2"></i>
-                Imported Participants
-              </p-tab>
-              <p-tab
-                value="errors"
-                [routerLink]="['/participants/event', selectedEventId(), 'errors']"
-                queryParamsHandling="preserve"
-                routerLinkActive
-              >
-                <i class="pi pi-exclamation-triangle mr-2"></i>
-                Import Errors
-              </p-tab>
-            </p-tablist>
-          </p-tabs>
-        </div>
-
-        <div class="pt-4">
-          @if (hasTabRoute()) {
-            <router-outlet (activate)="onTabActivated($event)" />
-          }
-        </div>
-      </p-card>
-
-      <!-- Mobile-only bottom tab bar (self-hides at md+); spacer clears the fixed bar. -->
-      <app-mobile-tab-bar
-        class="md:hidden"
-        [tabs]="participantTabs"
-        [activeId]="activeTab()"
-        (tabChange)="onTabChange($event)"
-      />
-      <div class="h-20 md:hidden" aria-hidden="true"></div>
-    }
-  </div>
-}
+    <!-- Mobile-only bottom tab bar (self-hides at md+); spacer clears the fixed bar. -->
+    <app-mobile-tab-bar
+      class="md:hidden"
+      [tabs]="participantTabs"
+      [activeId]="activeTab()"
+      (tabChange)="onTabChange($event)"
+    />
+    <div class="h-20 md:hidden" aria-hidden="true"></div>
+  }
+</div>
 
 <!-- Confirmation Dialog -->
 <p-confirmDialog></p-confirmDialog>
@@ -141,24 +155,15 @@
   [isExporting]="isExporting()"
 />
 
-<!-- Import Dialog -->
-<app-participant-import-dialog
-  (closed)="onImportDialogClosed()"
-  (importRequested)="handleBatchImport($event)"
-  [(visible)]="showImportDialog"
-  [eventId]="selectedEventId()"
-  [isUploading]="isUploading()"
-/>
-
-<!-- Create Participant Form Dialog (desktop only — mobile uses router-outlet) -->
+<!-- Create Participant Form Dialog (signal-driven overlay; full-screen on mobile) -->
 <p-dialog
   (visibleChange)="onFormDialogVisibleChange($event)"
   [draggable]="false"
   header="Create Participant"
   [modal]="true"
   [resizable]="false"
-  [style]="{ width: '95vw', maxWidth: '700px', maxHeight: '90vh' }"
-  [visible]="showFormDialog() && !isMobile()"
+  [style]="formDialogStyle()"
+  [visible]="showFormDialog()"
 >
   @if (formDialogData(); as data) {
     <app-participant-form
@@ -187,17 +192,45 @@
   </ng-template>
 </p-dialog>
 
-<!-- Participant Details Dialog (desktop only — mobile uses router-outlet) -->
+<!-- Participant Details Dialog (signal-driven overlay; full-screen on mobile) -->
 <p-dialog
   (visibleChange)="onDetailsDialogVisibleChange($event)"
   [draggable]="false"
-  header="Participant Details"
   [modal]="true"
   [resizable]="false"
-  [style]="{ width: '95vw', maxWidth: '1100px', height: '90vh' }"
+  [style]="detailsDialogStyle()"
   [contentStyle]="{ overflow: 'auto' }"
-  [visible]="showDetailsDialog() && !isMobile()"
+  [visible]="showDetailsDialog()"
 >
+  <!-- Title + share / open-in-tab actions; the built-in close icon stays to the right. -->
+  <ng-template pTemplate="header">
+    <div class="flex items-center justify-between w-full gap-2">
+      <span class="font-semibold text-base">Participant Details</span>
+      <div class="flex items-center gap-1">
+        <p-button
+          (onClick)="shareDetails()"
+          [rounded]="true"
+          [text]="true"
+          icon="pi pi-share-alt"
+          pTooltip="Copy shareable link"
+          severity="secondary"
+          size="small"
+          tooltipPosition="bottom"
+        />
+        <p-button
+          (onClick)="openDetailsInNewTab()"
+          [rounded]="true"
+          [text]="true"
+          icon="pi pi-external-link"
+          pTooltip="Open in new tab"
+          severity="secondary"
+          size="small"
+          tooltipPosition="bottom"
+        />
+      </div>
+    </div>
+  </ng-template>
+
   @if (detailsContext(); as ctx) {
     <app-participant-details
       [eventId]="ctx.eventId"

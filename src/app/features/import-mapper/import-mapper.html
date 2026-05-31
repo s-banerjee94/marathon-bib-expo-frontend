@@ -1,0 +1,338 @@
+<div class="p-2 sm:p-3 md:p-4">
+  <div class="mb-5">
+    <h1 class="text-3xl font-bold">Import Participants</h1>
+    <p class="mt-2">
+      Choose an event, upload a CSV, map its columns to participant fields by dragging, then run the
+      import.
+    </p>
+  </div>
+
+  <!-- Step header -->
+  <div class="mb-5 flex items-center">
+    @for (s of steps; track s.n; let last = $last) {
+      <div class="flex items-center gap-2">
+        <span
+          class="flex h-8 w-8 items-center justify-center rounded-full border-2 text-sm font-medium transition-colors"
+          [class.bg-primary]="activeStep() >= s.n"
+          [class.text-primary-contrast]="activeStep() >= s.n"
+          [class.border-primary]="activeStep() >= s.n"
+          [class.border-surface]="activeStep() < s.n"
+          [class.text-muted-color]="activeStep() < s.n"
+          >{{ s.n }}</span
+        >
+        <span
+          class="whitespace-nowrap text-sm"
+          [class.font-semibold]="activeStep() === s.n"
+          [class.text-muted-color]="activeStep() !== s.n"
+          >{{ s.label }}</span
+        >
+      </div>
+      @if (!last) {
+        <div
+          class="mx-3 h-0.5 flex-1 rounded transition-colors"
+          [class.bg-primary]="activeStep() > s.n"
+          [class.bg-surface-300]="activeStep() <= s.n"
+          [class.dark:bg-surface-700]="activeStep() <= s.n"
+        ></div>
+      }
+    }
+  </div>
+
+  <!-- Step 1 — Upload -->
+  @switch (activeStep()) {
+    @case (1) {
+      <div class="w-full min-w-0 space-y-4">
+        <p-message severity="info">
+          Importing into <strong>{{ selectedEventName() }}</strong
+          >. Upload a CSV with a header row — you'll map its columns to fields by dragging in the
+          next step, so no fixed column order is required.
+        </p-message>
+
+        @if (fieldsLoading()) {
+          <div class="flex items-center gap-2 text-sm text-muted-color">
+            <p-progressSpinner [style]="{ width: '1rem', height: '1rem' }" strokeWidth="6" />
+            <span>Loading target fields…</span>
+          </div>
+        }
+
+        <div>
+          <p-fileUpload
+            (onSelect)="onFileSelect($event)"
+            [auto]="false"
+            [maxFileSize]="20000000"
+            accept=".csv"
+            chooseIcon="pi pi-file"
+            chooseLabel="Choose CSV File"
+            mode="basic"
+          ></p-fileUpload>
+        </div>
+
+        @if (parseError(); as err) {
+          <p-message severity="error">{{ err }}</p-message>
+        }
+
+        @if (hasFile()) {
+          <div class="w-full min-w-0 space-y-2">
+            <div class="flex flex-wrap items-center gap-2 text-sm text-muted-color">
+              <i class="pi pi-check-circle text-primary"></i>
+              <span class="font-medium text-color">{{ fileName() }}</span>
+              <span>· {{ csvColumns().length }} columns · {{ totalRows() }} rows</span>
+            </div>
+            <p class="text-sm font-medium">Preview (first {{ previewRows().length }} rows)</p>
+            <div class="min-w-0 overflow-hidden rounded-lg border border-surface">
+              <p-table
+                [value]="previewRows()"
+                [columns]="csvColumns()"
+                [scrollable]="true"
+                scrollHeight="16rem"
+                [tableStyle]="{ 'min-width': '60rem' }"
+              >
+                <ng-template pTemplate="header" let-columns>
+                  <tr>
+                    @for (col of columns; track col) {
+                      <th class="whitespace-nowrap">{{ col }}</th>
+                    }
+                  </tr>
+                </ng-template>
+                <ng-template pTemplate="body" let-row let-columns="columns">
+                  <tr>
+                    @for (col of columns; track col) {
+                      <td class="whitespace-nowrap">{{ row[col] }}</td>
+                    }
+                  </tr>
+                </ng-template>
+              </p-table>
+            </div>
+          </div>
+        }
+
+        <div class="flex justify-end pt-2">
+          <p-button
+            (onClick)="activeStep.set(2)"
+            [disabled]="!canStartMapping()"
+            icon="pi pi-arrow-right"
+            iconPos="right"
+            label="Next"
+          ></p-button>
+        </div>
+      </div>
+    }
+
+    @case (2) {
+      <!-- Step 2 — Map (single screen) -->
+      <div class="flex h-[calc(100dvh-16rem)] w-full min-w-0 flex-col gap-3">
+        <!-- legend -->
+        <div class="flex shrink-0 flex-wrap items-center gap-x-6 gap-y-1 text-sm text-muted-color">
+          <span class="flex items-center gap-2">
+            <span class="h-3 w-3 rounded-full bg-primary"></span> Mapped
+          </span>
+          <span class="flex items-center gap-2">
+            <span class="h-3 w-3 rounded-full border-2 border-surface"></span> Not mapped
+          </span>
+          <span>Drag a dot onto a field on the other side. Click a line or chip to remove.</span>
+        </div>
+
+        <!-- mapper + summary fill the remaining height -->
+        <div class="flex min-h-0 flex-1 gap-6">
+          <div class="min-w-0 flex-1 overflow-y-auto pr-1">
+            <app-column-mapper
+              [csvColumns]="csvColumns()"
+              [targetFields]="targetFields()"
+              [connections]="connections()"
+              (connectionsChange)="connections.set($event)"
+            ></app-column-mapper>
+          </div>
+
+          <!-- Validation summary — two cards (matches the design) -->
+          <aside class="hidden w-72 shrink-0 space-y-4 overflow-y-auto lg:block">
+            <!-- Required Fields Status -->
+            <div class="rounded-lg border border-surface p-4">
+              <h3 class="mb-3 font-semibold">Required Fields Status</h3>
+              <ul class="space-y-2 text-sm">
+                @for (r of requiredStatus(); track r.label) {
+                  <li class="flex items-center justify-between gap-2">
+                    <span class="flex items-center gap-2">
+                      @if (r.mapped) {
+                        <i class="pi pi-check-circle text-primary"></i>
+                      } @else {
+                        <i class="pi pi-circle text-muted-color"></i>
+                      }
+                      <span>{{ r.label }}</span>
+                    </span>
+                    @if (r.mapped) {
+                      <p-tag value="Mapped" severity="success"></p-tag>
+                    } @else {
+                      <p-tag value="Required" severity="warn"></p-tag>
+                    }
+                  </li>
+                }
+              </ul>
+              @if (canProceed()) {
+                <div
+                  class="mt-3 flex items-center gap-2 rounded-md bg-surface-100 p-2 text-sm text-primary dark:bg-surface-800"
+                >
+                  <i class="pi pi-check-circle"></i>
+                  <span>All required fields are mapped. You can continue.</span>
+                </div>
+              }
+            </div>
+
+            <!-- Mapping Summary -->
+            <div class="rounded-lg border border-surface p-4">
+              <h3 class="mb-3 font-semibold">Mapping Summary</h3>
+              <ul class="space-y-2 text-sm">
+                <li class="flex items-center justify-between">
+                  <span class="text-muted-color">Total Columns</span>
+                  <span class="font-medium">{{ summary().totalColumns }}</span>
+                </li>
+                <li class="flex items-center justify-between">
+                  <span class="text-muted-color">Mapped Fields</span>
+                  <span class="font-medium">{{ summary().mappedFields }}</span>
+                </li>
+                <li class="flex items-center justify-between">
+                  <span class="text-muted-color">Extra Columns</span>
+                  <span class="font-medium">{{ summary().extraColumns }}</span>
+                </li>
+                <li class="flex items-center justify-between">
+                  <span class="text-muted-color">Unmapped Required</span>
+                  <span class="font-medium">{{ summary().unmappedRequired }}</span>
+                </li>
+              </ul>
+            </div>
+          </aside>
+        </div>
+
+        <!-- actions — three buttons (Back · Reset Mapping · Preview & Continue) -->
+        <div class="flex shrink-0 items-center justify-between border-t border-surface pt-3">
+          <p-button
+            (onClick)="activeStep.set(1)"
+            icon="pi pi-arrow-left"
+            label="Back"
+            severity="secondary"
+          ></p-button>
+          <div class="flex gap-2">
+            <p-button
+              (onClick)="resetMapping()"
+              [disabled]="connections().length === 0"
+              [outlined]="true"
+              icon="pi pi-refresh"
+              label="Reset Mapping"
+              severity="secondary"
+            ></p-button>
+            <p-button
+              (onClick)="activeStep.set(3)"
+              [disabled]="!canProceed()"
+              icon="pi pi-arrow-right"
+              iconPos="right"
+              label="Preview & Continue"
+            ></p-button>
+          </div>
+        </div>
+      </div>
+    }
+
+    @case (3) {
+      <!-- Step 3 — Review & Import -->
+      <div class="w-full min-w-0 space-y-4">
+        <!-- summary chips -->
+        <div class="flex flex-wrap items-center gap-2">
+          <p-tag [value]="selectedEventName()" severity="contrast"></p-tag>
+          <p-tag [value]="mappingConfig().mappings.length + ' mapped'" severity="success"></p-tag>
+          <p-tag [value]="mappingConfig().goodies.length + ' goodies'" severity="info"></p-tag>
+          <p-tag [value]="mappingConfig().other.length + ' other'" severity="info"></p-tag>
+          @if (ignoredColumns().length) {
+            <p-tag [value]="ignoredColumns().length + ' ignored'" severity="secondary"></p-tag>
+          }
+        </div>
+
+        <p class="text-sm text-muted-color">
+          Confirm each CSV column lines up with the right participant field. To change anything, go
+          <strong>Back</strong> to the mapping step.
+        </p>
+
+        <!-- read-only one-to-one confirmation — one bar per mapping -->
+        <div class="min-w-0 space-y-2 overflow-y-auto max-h-[calc(100dvh-30rem)]">
+          <div
+            class="flex items-center gap-3 px-4 text-xs font-medium uppercase tracking-wide text-muted-color"
+          >
+            <span class="flex-1">CSV column</span>
+            <span class="shrink-0 text-center">→</span>
+            <span class="flex-1 text-right">Participant field</span>
+          </div>
+          @for (row of confirmRows(); track row.csvColumn) {
+            <div
+              class="flex items-center gap-3 rounded-xl border border-surface bg-surface-0 px-4 py-3 dark:bg-surface-900"
+            >
+              <span class="min-w-0 flex-1 truncate font-medium">{{ row.csvColumn }}</span>
+              <span class="flex shrink-0 items-center" aria-hidden="true">
+                <span class="h-0.5 w-6 rounded-full bg-surface-300 dark:bg-surface-700"></span>
+                <span class="h-5 w-5 rounded-full border-2 border-surface bg-primary shadow"></span>
+                <span class="h-0.5 w-6 rounded-full bg-surface-300 dark:bg-surface-700"></span>
+              </span>
+              <span class="min-w-0 flex-1 truncate text-right font-medium">{{
+                row.fieldLabel
+              }}</span>
+            </div>
+          }
+        </div>
+
+        @if (ignoredColumns().length) {
+          <p class="text-sm text-muted-color">
+            <i class="pi pi-info-circle"></i>
+            Ignored (not imported): {{ ignoredColumns().join(', ') }}
+          </p>
+        }
+
+        <p-message severity="warn">
+          Importing deletes <strong>all existing participants</strong> for
+          {{ selectedEventName() }} and replaces them with the {{ totalRows() }} rows in this file.
+        </p-message>
+
+        <!-- raw JSON kept, collapsed -->
+        <p-panel header="Raw mapping JSON" [toggleable]="true" [collapsed]="true">
+          <div class="mb-2 flex justify-end gap-2">
+            <p-button
+              (onClick)="copyJson()"
+              [outlined]="true"
+              icon="pi pi-copy"
+              label="Copy"
+              severity="secondary"
+              size="small"
+            ></p-button>
+            <p-button
+              (onClick)="downloadJson()"
+              [outlined]="true"
+              icon="pi pi-download"
+              label="Download"
+              severity="secondary"
+              size="small"
+            ></p-button>
+          </div>
+          <pre
+            class="max-h-96 w-full min-w-0 overflow-auto rounded-lg border border-surface bg-surface-50 p-4 text-xs dark:bg-surface-950"
+            >{{ mappingConfigJson() }}</pre
+          >
+        </p-panel>
+
+        <div class="flex items-center justify-between pt-2">
+          <p-button
+            (onClick)="activeStep.set(2)"
+            [disabled]="isImporting()"
+            icon="pi pi-arrow-left"
+            label="Back"
+            severity="secondary"
+          ></p-button>
+          <p-button
+            (onClick)="launchImport()"
+            [disabled]="!canProceed()"
+            [loading]="isImporting()"
+            icon="pi pi-upload"
+            iconPos="right"
+            label="Import Participants"
+            severity="danger"
+          ></p-button>
+        </div>
+      </div>
+    }
+  }
+</div>

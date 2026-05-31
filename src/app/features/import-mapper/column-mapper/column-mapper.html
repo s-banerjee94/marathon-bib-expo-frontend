@@ -1,0 +1,143 @@
+<div
+  #host
+  class="relative flex select-none justify-between gap-8"
+  (pointermove)="onPointerMove($event)"
+  (pointerup)="onPointerUp($event)"
+  (pointercancel)="onPointerUp($event)"
+>
+  <!-- CSV columns (left) — narrower than the fields column -->
+  <div class="flex w-[24.33rem] shrink-0 flex-col gap-2.5">
+    @for (col of csvColumns(); track col) {
+      <div
+        [attr.data-anchor]="csvAnchor(col)"
+        class="flex min-h-11 items-center justify-between gap-2 rounded-lg border border-surface bg-surface-0 px-3 transition dark:bg-surface-900"
+        [class.border-primary]="isSource('csv', col) || draggingSide() === 'field'"
+      >
+        <span class="min-w-0 truncate py-2 font-medium">{{ col }}</span>
+        <div class="flex shrink-0 items-center gap-2">
+          @if (mappedField(col); as f) {
+            <button
+              type="button"
+              (click)="removeByColumn(col)"
+              class="inline-flex items-center gap-1 rounded-full bg-surface-100 px-2 py-0.5 text-xs dark:bg-surface-800"
+            >
+              <span class="h-2 w-2 rounded-full" [style.background-color]="colorFor(col)"></span>
+              <i class="pi pi-lock text-[10px]"></i>
+              <i class="pi pi-times text-[10px]"></i>
+            </button>
+          }
+          <span
+            [attr.data-anchor]="csvAnchor(col)"
+            (pointerdown)="startDrag($event, 'csv', col)"
+            class="h-4 w-4 shrink-0 cursor-grab touch-none rounded-full border-2 border-surface transition hover:ring-2 hover:ring-primary active:cursor-grabbing"
+            [style.background-color]="mappedField(col) ? colorFor(col) : ''"
+            [style.border-color]="mappedField(col) ? colorFor(col) : ''"
+          ></span>
+        </div>
+      </div>
+    }
+  </div>
+
+  <!-- Target fields (right) — same card width as the CSV column -->
+  <div class="flex w-[24.33rem] shrink-0 flex-col gap-2.5">
+    @for (field of targetFields(); track field.key) {
+      <div
+        [attr.data-anchor]="fieldAnchor(field.key)"
+        class="flex min-h-11 items-start gap-3 rounded-lg border border-surface bg-surface-0 px-3 py-2 transition dark:bg-surface-900"
+        [class.border-primary]="isSource('field', field.key) || draggingSide() === 'csv'"
+      >
+        <span
+          [attr.data-anchor]="fieldAnchor(field.key)"
+          (pointerdown)="startDrag($event, 'field', field.key)"
+          class="mt-1 h-4 w-4 shrink-0 cursor-grab touch-none rounded-full border-2 border-surface transition hover:ring-2 hover:ring-primary active:cursor-grabbing"
+          [style.background-color]="fieldColor(field.key)"
+          [style.border-color]="fieldColor(field.key)"
+        ></span>
+        <div class="min-w-0 flex-1">
+          <div class="flex flex-wrap items-center gap-2">
+            <span class="font-medium">{{ field.label }}</span>
+            @switch (field.kind) {
+              @case ('required') {
+                <span class="text-xs text-primary">required</span>
+              }
+              @case ('bucket') {
+                <span class="text-xs text-muted-color">multi</span>
+              }
+            }
+            @if (mappedColumns(field.key).length > 0) {
+              <span
+                class="ml-auto inline-flex items-center gap-1 rounded-full bg-surface-100 px-2 py-0.5 text-[10px] dark:bg-surface-800"
+              >
+                <i class="pi pi-lock"></i>{{ field.multi ? 'Extra · ' : '' }}Mapped
+              </span>
+            }
+          </div>
+          @if (field.hint) {
+            <div class="text-xs text-muted-color">{{ field.hint }}</div>
+          }
+          @if (mappedColumns(field.key).length) {
+            <div class="mt-1 flex flex-wrap gap-1">
+              @for (name of mappedColumns(field.key); track name) {
+                <button
+                  type="button"
+                  (click)="removeByColumn(name)"
+                  class="inline-flex items-center gap-1 rounded-full bg-surface-100 px-2 py-0.5 text-xs dark:bg-surface-800"
+                >
+                  <span
+                    class="h-2 w-2 rounded-full"
+                    [style.background-color]="colorFor(name)"
+                  ></span>
+                  <span class="max-w-28 truncate">{{ name }}</span>
+                  <i class="pi pi-times text-[10px]"></i>
+                </button>
+              }
+            </div>
+          }
+        </div>
+      </div>
+    }
+  </div>
+
+  <!-- connector overlay -->
+  <svg class="pointer-events-none absolute inset-0 h-full w-full overflow-visible">
+    <defs>
+      <filter id="conn-glow" x="-50%" y="-50%" width="200%" height="200%">
+        <feGaussianBlur stdDeviation="2.5" result="blur"></feGaussianBlur>
+        <feMerge>
+          <feMergeNode in="blur"></feMergeNode>
+          <feMergeNode in="blur"></feMergeNode>
+          <feMergeNode in="SourceGraphic"></feMergeNode>
+        </feMerge>
+      </filter>
+    </defs>
+    @for (item of connectionPaths(); track item.conn.csvColumn + '>' + item.conn.targetField) {
+      <path
+        [attr.d]="item.d"
+        [attr.stroke]="item.color"
+        fill="none"
+        stroke-width="2.5"
+        stroke-linecap="round"
+        filter="url(#conn-glow)"
+      ></path>
+      <path
+        [attr.d]="item.d"
+        fill="none"
+        stroke="transparent"
+        stroke-width="16"
+        class="pointer-events-auto cursor-pointer"
+        (click)="removeConnection(item.conn)"
+      ></path>
+    }
+    @if (dragPath(); as d) {
+      <path
+        [attr.d]="d"
+        [attr.stroke]="dragColor()"
+        fill="none"
+        stroke-width="2.5"
+        stroke-linecap="round"
+        stroke-dasharray="6 6"
+        filter="url(#conn-glow)"
+      ></path>
+    }
+  </svg>
+</div>

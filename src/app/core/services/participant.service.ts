@@ -7,6 +7,7 @@ import {
   CreateParticipantRequest,
   DeleteParticipantsResponse,
   ImportErrorListResponse,
+  ImportFieldResponse,
   ImportJobListResponse,
   ImportParticipantsResponse,
   Participant,
@@ -168,12 +169,31 @@ export class ParticipantService {
   }
 
   /**
-   * Launch async CSV import via Spring Batch (returns 202 immediately)
-   * Use getBatchImportStatus to poll progress
+   * Target fields a CSV column can be mapped to for the given event.
+   * Used to build the batch-import column mapping at runtime.
    */
-  launchBatchImport(eventId: number, file: File): Observable<BatchImportResponse> {
+  getImportFields(eventId: number): Observable<ImportFieldResponse[]> {
+    return this.http.get<ImportFieldResponse[]>(
+      `${this.apiUrl}/${eventId}/participants/import-fields`,
+    );
+  }
+
+  /**
+   * Launch async CSV import via Spring Batch (returns 202 immediately).
+   * The backend matches columns by zero-based position, so `mapping`
+   * (an ImportMappingRequest JSON string) is required for the dynamic-mapping
+   * flow. Use getBatchImportStatus to poll progress.
+   */
+  launchBatchImport(
+    eventId: number,
+    file: File,
+    mapping?: string,
+  ): Observable<BatchImportResponse> {
     const formData = new FormData();
     formData.append('file', file);
+    if (mapping) {
+      formData.append('mapping', mapping);
+    }
     return this.http.post<BatchImportResponse>(
       `${this.apiUrl}/${eventId}/participants/batch-import`,
       formData,

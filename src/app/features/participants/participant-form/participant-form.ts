@@ -1,14 +1,4 @@
-import {
-  Component,
-  computed,
-  effect,
-  EventEmitter,
-  inject,
-  Input,
-  OnInit,
-  Output,
-  signal,
-} from '@angular/core';
+import { Component, computed, effect, inject, input, OnInit, output, signal } from '@angular/core';
 import { CommonModule, Location } from '@angular/common';
 import { FormsModule, NgForm } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -68,16 +58,12 @@ import { ParticipantListBus } from '../participant-list-bus.service';
 })
 export class ParticipantForm implements OnInit {
   public dialogRef = inject(DynamicDialogRef, { optional: true });
-  // Input for dialog mode (regular p-dialog) - pass data directly
-  @Input() dialogData?: {
-    eventId: number;
-    bibNumber?: string;
-    isEditMode: boolean;
-  };
-  // Event emitter for successful form submission (used when not in DynamicDialog mode)
-  @Output() formSubmitSuccess = new EventEmitter<Participant>();
+  // Signal input for dialog mode (regular p-dialog) — pass data directly
+  readonly dialogData = input<{ eventId: number; bibNumber?: string; isEditMode: boolean }>();
+  // Emitted on successful form submission (used when not in DynamicDialog mode)
+  readonly formSubmitSuccess = output<Participant>();
   // Emits whenever the submit-disabled state may have changed so the parent dialog can disable its button.
-  @Output() submitDisabledChange = new EventEmitter<boolean>();
+  readonly submitDisabledChange = output<boolean>();
   isDialogMode = signal(false);
   // Form data as plain object for ngModel binding
   participant = {
@@ -99,6 +85,10 @@ export class ParticipantForm implements OnInit {
     emergencyContactPhone: '',
     notes: '',
   };
+  // Dynamic goodies rows (key=goodie name, value=size or value)
+  goodieEntries: { key: string; value: string }[] = [];
+  // Dynamic additional field rows (free-form key-value pairs)
+  additionalFieldEntries: { key: string; value: string }[] = [];
   // Component state as signals
   isSubmitting = signal(false);
   isEditMode = signal(false);
@@ -151,7 +141,7 @@ export class ParticipantForm implements OnInit {
 
   ngOnInit(): void {
     // Check if opened in dialog mode (either via Input or DynamicDialog injection)
-    const dialogData = this.dialogData || this.injectedDialogConfig?.data;
+    const dialogData = this.dialogData() ?? this.injectedDialogConfig?.data;
 
     if (dialogData) {
       this.isDialogMode.set(true);
@@ -368,7 +358,7 @@ export class ParticipantForm implements OnInit {
     this.submitDisabledChange.emit(this.isSubmitDisabled());
   }
 
-  onSubmit(form: NgForm): void {
+  onSubmit(_form: NgForm): void {
     // Submit button is gated by isSubmitDisabled(); these checks are defensive only.
     if (this.isSubmitDisabled()) {
       return;
@@ -446,6 +436,8 @@ export class ParticipantForm implements OnInit {
         emergencyContactName: model.emergencyContactName || undefined,
         emergencyContactPhone: model.emergencyContactPhone || undefined,
         notes: model.notes || undefined,
+        goodies: this.buildGoodiesMap(),
+        additionalFields: this.buildAdditionalFieldsMap(),
       };
 
       this.participantService.createParticipant(targetEventId, createRequest).subscribe({
@@ -475,6 +467,23 @@ export class ParticipantForm implements OnInit {
         },
       });
     }
+  }
+
+  addGoodie(): void {
+    this.goodieEntries = [...this.goodieEntries, { key: '', value: '' }];
+  }
+
+  removeGoodie(index: number): void {
+    this.goodieEntries = this.goodieEntries.filter((_, i) => i !== index);
+  }
+
+  addAdditionalField(): void {
+    if (this.additionalFieldEntries.length >= 10) return;
+    this.additionalFieldEntries = [...this.additionalFieldEntries, { key: '', value: '' }];
+  }
+
+  removeAdditionalField(index: number): void {
+    this.additionalFieldEntries = this.additionalFieldEntries.filter((_, i) => i !== index);
   }
 
   goBack(): void {
@@ -546,12 +555,34 @@ export class ParticipantForm implements OnInit {
       notes: participantData.notes || '',
     };
 
+    // Load existing goodies into editable entries
+    this.goodieEntries = participantData.goodies
+      ? Object.entries(participantData.goodies).map(([key, value]) => ({ key, value }))
+      : [];
+
+    // Load existing additional fields into editable entries
+    this.additionalFieldEntries = participantData.additionalFields
+      ? Object.entries(participantData.additionalFields).map(([key, value]) => ({ key, value }))
+      : [];
+
     // Load categories for the participant's race so the category dropdown can render
     const targetEventId = this.isDialogMode() ? this.eventId() : this.selectedEventId();
     if (targetEventId && raceIdNum) {
       this.loadCategories(targetEventId, raceIdNum);
     }
     this.notifySubmitState();
+  }
+
+  private buildGoodiesMap(): { [key: string]: string } | undefined {
+    const filled = this.goodieEntries.filter((e) => e.key.trim());
+    if (filled.length === 0) return undefined;
+    return Object.fromEntries(filled.map((e) => [e.key.trim(), e.value.trim()]));
+  }
+
+  private buildAdditionalFieldsMap(): { [key: string]: string } | undefined {
+    const filled = this.additionalFieldEntries.filter((e) => e.key.trim());
+    if (filled.length === 0) return undefined;
+    return Object.fromEntries(filled.map((e) => [e.key.trim(), e.value.trim()]));
   }
 
   // Wire format stays "dd-MM-yyyy" (legacy contract); the picker only changes display to "10-Jan-1994".

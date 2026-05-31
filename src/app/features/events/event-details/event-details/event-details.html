@@ -17,52 +17,129 @@
   <!-- Event Header Card -->
   @if (isLoading()) {
     <p-card class="mb-4">
-      <p-skeleton width="30%" height="2rem" styleClass="mb-3" />
-      <p-skeleton width="100%" height="1rem" styleClass="mb-2" />
+      <div class="flex gap-4 mb-3">
+        <p-skeleton width="5rem" height="5rem" styleClass="rounded-xl flex-shrink-0" />
+        <div class="flex-1">
+          <p-skeleton width="50%" height="2rem" styleClass="mb-3" />
+          <p-skeleton width="20%" height="1.5rem" />
+        </div>
+      </div>
       <p-skeleton width="100%" height="1rem" styleClass="mb-2" />
       <p-skeleton width="80%" height="1rem" />
     </p-card>
   } @else if (event()) {
     <p-card class="mb-4">
-      <div class="flex justify-between items-start mb-3">
-        <div>
-          <h1 class="text-3xl font-bold mb-2">{{ event()!.eventName }}</h1>
-          <p-tag [value]="event()!.status" [severity]="getStatusSeverity(event()!.status)" />
+      <!-- Logo + title + action buttons -->
+      <div class="flex gap-4 items-start mb-3">
+        <!-- Logo avatar: file picker trigger + preview -->
+        <div class="flex flex-col items-center gap-2 flex-shrink-0">
+          <!-- Hidden file input — triggered by the camera button -->
+          <input
+            #logoFileInput
+            type="file"
+            accept="image/*"
+            class="hidden"
+            (change)="onLogoFileSelected($event)"
+          />
+
+          <div class="relative">
+            <div
+              class="w-20 h-20 rounded-xl overflow-hidden border flex items-center justify-center"
+            >
+              @if (logoPreviewUrl()) {
+                <img [src]="logoPreviewUrl()" alt="Preview" class="w-full h-full object-cover" />
+              } @else if (event()!.logoUrl && !logoLoadError()) {
+                <img
+                  [src]="event()!.logoUrl"
+                  [alt]="event()!.eventName"
+                  class="w-full h-full object-cover"
+                  (error)="onLogoError()"
+                />
+              } @else {
+                <span class="text-3xl font-bold">{{
+                  event()!.eventName.charAt(0).toUpperCase()
+                }}</span>
+              }
+            </div>
+            @if (!logoPreviewUrl()) {
+              <div class="absolute -bottom-2 -right-2">
+                <p-button
+                  icon="pi pi-camera"
+                  [rounded]="true"
+                  size="small"
+                  severity="secondary"
+                  pTooltip="Change logo"
+                  tooltipPosition="bottom"
+                  (onClick)="logoFileInput.click()"
+                />
+              </div>
+            }
+          </div>
+
+          <!-- Confirm / cancel row — appears once a file is picked -->
+          @if (logoPreviewUrl()) {
+            <div class="flex gap-1">
+              <p-button
+                icon="pi pi-cloud-upload"
+                size="small"
+                [loading]="uploadingLogo()"
+                pTooltip="Upload"
+                tooltipPosition="bottom"
+                (onClick)="uploadLogo()"
+              />
+              <p-button
+                icon="pi pi-times"
+                severity="secondary"
+                [outlined]="true"
+                size="small"
+                [disabled]="uploadingLogo()"
+                pTooltip="Cancel"
+                tooltipPosition="bottom"
+                (onClick)="cancelLogoUpload()"
+              />
+            </div>
+          }
         </div>
-        <div class="flex gap-2">
-          <!-- Generate Short URLs Button -->
-          <p-button
-            icon="pi pi-link"
-            label="Generate Short URLs"
-            severity="secondary"
-            [outlined]="true"
-            [size]="buttonSize"
-            [loading]="generatingShortUrls()"
-            (onClick)="onGenerateShortUrls()"
-          />
 
-          <!-- Edit Event Button -->
-          <p-button
-            icon="pi pi-pencil"
-            label="Edit Event"
-            severity="secondary"
-            [size]="buttonSize"
-            (onClick)="onEditEvent()"
-          />
-
-          <!-- Change Status Button -->
-          <p-button
-            icon="pi pi-sync"
-            label="Change Status"
-            severity="secondary"
-            [outlined]="true"
-            [size]="buttonSize"
-            [loading]="changingStatus()"
-            (onClick)="showStatusMenu(statusMenu, $event)"
-          />
+        <!-- Name, status tag, and action buttons -->
+        <div class="flex-1 min-w-0">
+          <div class="flex justify-between items-start">
+            <div class="min-w-0 mr-4">
+              <h1 class="text-3xl font-bold mb-2">{{ event()!.eventName }}</h1>
+              <p-tag [value]="event()!.status" [severity]="getStatusSeverity(event()!.status)" />
+            </div>
+            <div class="flex gap-2 flex-shrink-0">
+              <p-button
+                icon="pi pi-link"
+                label="Generate Short URLs"
+                severity="secondary"
+                [outlined]="true"
+                [size]="buttonSize"
+                [loading]="generatingShortUrls()"
+                (onClick)="onGenerateShortUrls()"
+              />
+              <p-button
+                icon="pi pi-pencil"
+                label="Edit Event"
+                severity="secondary"
+                [size]="buttonSize"
+                (onClick)="onEditEvent()"
+              />
+              <p-button
+                icon="pi pi-sync"
+                label="Change Status"
+                severity="secondary"
+                [outlined]="true"
+                [size]="buttonSize"
+                [loading]="changingStatus()"
+                (onClick)="showStatusMenu(statusMenu, $event)"
+              />
+            </div>
+          </div>
         </div>
       </div>
 
+      <!-- Info grid -->
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
         <div>
           <p class="text-sm text-gray-600 mb-1">Event Dates</p>
@@ -90,11 +167,14 @@
           <div>
             <p class="text-sm text-gray-600 mb-1">Venue</p>
             <p class="font-medium">{{ event()!.venueName }}</p>
-            @if (event()!.city || event()!.country) {
-              <p class="text-sm text-gray-600">
-                {{ event()!.city }}{{ event()!.city && event()!.country ? ', ' : ''
-                }}{{ event()!.country }}
-              </p>
+            @if (event()!.addressLine1) {
+              <p class="text-sm">{{ event()!.addressLine1 }}</p>
+            }
+            @if (event()!.addressLine2) {
+              <p class="text-sm">{{ event()!.addressLine2 }}</p>
+            }
+            @if (formatAddress(event())) {
+              <p class="text-sm text-gray-600">{{ formatAddress(event()) }}</p>
             }
           </div>
         }
@@ -121,6 +201,10 @@
           <p-tab value="participants" [routerLink]="['participants']" routerLinkActive>
             <i class="pi pi-users mr-2"></i>
             Participant List
+          </p-tab>
+          <p-tab value="goodies" [routerLink]="['goodies']" routerLinkActive>
+            <i class="pi pi-gift mr-2"></i>
+            Goodies
           </p-tab>
           <p-tab value="races" [routerLink]="['races']" routerLinkActive>
             <i class="pi pi-flag mr-2"></i>

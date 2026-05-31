@@ -9,7 +9,6 @@ import {
   signal,
   untracked,
 } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { forkJoin, of } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
 import { CommonModule } from '@angular/common';
@@ -28,8 +27,7 @@ import { FloatLabelModule } from 'primeng/floatlabel';
 import { PopoverModule } from 'primeng/popover';
 import { DividerModule } from 'primeng/divider';
 import { ConfirmationService } from 'primeng/api';
-import { LookupSearchType, Participant } from '../../../../core/models/participant.model';
-import { Race, Category } from '../../../../core/models/event.model';
+import { Participant } from '../../../../core/models/participant.model';
 import { EventService } from '../../../../core/services/event.service';
 import { ParticipantService } from '../../../../core/services/participant.service';
 import { ErrorHandlerService } from '../../../../core/services/error-handler.service';
@@ -54,7 +52,6 @@ import {
 } from '../../../../shared/constants/participant-columns.constant';
 import { STORAGE_KEYS } from '../../../../shared/constants/storage-keys.constant';
 import { TableColumn } from '../../../../shared/models/table-config.model';
-import { ParticipantListBus, ParticipantMutation } from '../../participant-list-bus.service';
 import { ParticipantListState } from '../participant-list-state.service';
 
 @Component({
@@ -88,7 +85,6 @@ export class ParticipantTableTab {
   private toast = inject(ToastService);
   private storage = inject(LocalStorageService);
   private confirmationService = inject(ConfirmationService);
-  private bus = inject(ParticipantListBus);
   private listState = inject(ParticipantListState);
 
   // Router-bound input — the parent route is `event/:eventId`. Accepts string (from
@@ -119,22 +115,29 @@ export class ParticipantTableTab {
   parseDob = parseDob;
   formatGoodiesKey = formatGoodiesKey;
 
-  // Data state
-  participants = signal<Participant[]>([]);
-  totalCount = signal<number>(0);
+  // Data state — backed by the host-scoped cache so it survives this tab being
+  // destroyed/re-created while a details/create dialog is open (no reload on close).
+  participants = this.listState.participants;
+  totalCount = this.listState.totalCount;
   isLoading = signal(false);
-  hasMore = signal(true);
-  private lastEvaluatedKey?: string;
+  hasMore = this.listState.hasMore;
+  // Pagination cursor proxied to the shared cache (survives tab re-creation).
+  private get lastEvaluatedKey(): string | undefined {
+    return this.listState.lastEvaluatedKey;
+  }
+  private set lastEvaluatedKey(value: string | undefined) {
+    this.listState.lastEvaluatedKey = value;
+  }
 
-  // Search state
-  selectedSearchType = signal<LookupSearchType>('NAME');
-  searchValue = signal<string>('');
-  dropdownSelectedItem = signal<string>('');
-  isSearchMode = signal<boolean>(false);
+  // Search state (cached so a filtered view is preserved across dialog open/close)
+  selectedSearchType = this.listState.selectedSearchType;
+  searchValue = this.listState.searchValue;
+  dropdownSelectedItem = this.listState.dropdownSelectedItem;
+  isSearchMode = this.listState.isSearchMode;
 
   // Race / Category dropdown data (for race/category search modes)
-  races = signal<Race[]>([]);
-  categories = signal<Category[]>([]);
+  races = this.listState.races;
+  categories = this.listState.categories;
   isRacesLoading = signal(false);
 
   isDropdownSearch = computed(
@@ -176,39 +179,33 @@ export class ParticipantTableTab {
     // Initialize selected columns from localStorage (or all columns by default).
     this.initializeSelectedColumns();
 
-    // Effect 1: react to eventId changes — reset state and reload everything.
-    effect(
-      () => {
-        const id = this.eventId();
-        untracked(() => {
-          this.resetData();
-          if (id) {
-            this.loadEventData(id);
-            this.loadParticipants();
-            this.loadTotalCount();
-          } else {
-            this.races.set([]);
-            this.categories.set([]);
-          }
-        });
-      },
-      { allowSignalWrites: true },
-    );
+    // Effect 1: react to eventId changes — load on a genuine event switch, but
+    // restore from the cache when this tab is simply re-created for the same event
+    // (e.g., a details/create dialog closed), so the list never re-fetches.
+    effect(() => {
+      const id = this.eventId();
+      untracked(() => {
+        if (id && this.listState.isCachedFor(id)) return;
+
+        this.resetData();
+        if (id) {
+          this.listState.markLoaded(id);
+          this.loadEventData(id);
+          this.loadParticipants();
+          this.loadTotalCount();
+        } else {
+          this.races.set([]);
+          this.categories.set([]);
+        }
+      });
+    });
 
     // Effect 2: react to cross-tab reload triggers (e.g., after import completion).
-    effect(
-      () => {
-        if (this.listState.reloadTrigger() > 0) {
-          untracked(() => this.reloadParticipants());
-        }
-      },
-      { allowSignalWrites: true },
-    );
-
-    // Apply data mutations published by the form (created/updated) without an extra HTTP fetch.
-    this.bus.mutations$
-      .pipe(takeUntilDestroyed())
-      .subscribe((mutation) => this.applyParticipantMutation(mutation));
+    effect(() => {
+      if (this.listState.reloadTrigger() > 0) {
+        untracked(() => this.reloadParticipants());
+      }
+    });
   }
 
   // ---------- Data loading ----------
@@ -258,12 +255,8 @@ export class ParticipantTableTab {
   }
 
   private resetData(): void {
-    this.participants.set([]);
-    this.totalCount.set(0);
-    this.hasMore.set(true);
-    this.lastEvaluatedKey = undefined;
+    this.listState.resetCache();
     this.selectedParticipants = [];
-    this.resetSearch();
   }
 
   private loadEventData(eventId: number): void {
@@ -374,21 +367,6 @@ export class ParticipantTableTab {
           this.isLoading.set(false);
         },
       });
-  }
-
-  // ---------- Mutations from the form (via bus) ----------
-  private applyParticipantMutation(mutation: ParticipantMutation): void {
-    const current = this.participants();
-    if (mutation.action === 'created') {
-      this.participants.set([mutation.participant, ...current]);
-      this.totalCount.update((count) => count + 1);
-    } else {
-      this.participants.set(
-        current.map((p) =>
-          p.bibNumber === mutation.participant.bibNumber ? mutation.participant : p,
-        ),
-      );
-    }
   }
 
   // ---------- Delete (single + bulk) ----------

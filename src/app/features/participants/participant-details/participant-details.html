@@ -1,5 +1,5 @@
 @if (isLoading()) {
-  <div class="grid grid-cols-2 lg:grid-cols-3 gap-3">
+  <div class="grid grid-cols-2 lg:grid-cols-3 gap-2">
     <p-skeleton height="10rem" />
     <p-skeleton height="10rem" />
     <p-skeleton height="10rem" />
@@ -10,7 +10,7 @@
 } @else if (participant(); as p) {
   <!-- Header strip with primary identifiers -->
   <div
-    class="flex flex-wrap items-center gap-3 mb-4 pb-3 border-b border-surface-200 dark:border-surface-700"
+    class="flex flex-wrap items-center gap-2 mb-2.5 pb-2 border-b border-surface-200 dark:border-surface-700"
   >
     <div class="flex-1 min-w-0">
       <p class="text-xs uppercase tracking-wide text-gray-500">BIB Number</p>
@@ -35,11 +35,11 @@
   </div>
 
   <!-- 9 sections: 2-col mobile, 3-col desktop -->
-  <div class="grid grid-cols-2 lg:grid-cols-3 gap-3">
+  <div class="grid grid-cols-2 lg:grid-cols-3 gap-2">
     <!-- 1. Personal -->
     <p-card>
       <ng-template pTemplate="header">
-        <div class="px-4 pt-4 flex items-center gap-2">
+        <div class="px-4 pt-2.5 flex items-center gap-2">
           <i class="pi pi-user text-base"></i>
           <h3 class="font-semibold text-sm">Personal</h3>
         </div>
@@ -138,7 +138,7 @@
     <!-- 2. Contact -->
     <p-card>
       <ng-template pTemplate="header">
-        <div class="px-4 pt-4 flex items-center gap-2">
+        <div class="px-4 pt-2.5 flex items-center gap-2">
           <i class="pi pi-envelope text-base"></i>
           <h3 class="font-semibold text-sm">Contact</h3>
         </div>
@@ -192,7 +192,7 @@
     <!-- 3. Location -->
     <p-card>
       <ng-template pTemplate="header">
-        <div class="px-4 pt-4 flex items-center gap-2">
+        <div class="px-4 pt-2.5 flex items-center gap-2">
           <i class="pi pi-map-marker text-base"></i>
           <h3 class="font-semibold text-sm">Location</h3>
         </div>
@@ -244,7 +244,7 @@
     <!-- 4. Race & Category -->
     <p-card>
       <ng-template pTemplate="header">
-        <div class="px-4 pt-4 flex items-center gap-2">
+        <div class="px-4 pt-2.5 flex items-center gap-2">
           <i class="pi pi-flag text-base"></i>
           <h3 class="font-semibold text-sm">Race &amp; Category</h3>
         </div>
@@ -320,7 +320,7 @@
     <!-- 5. BIB & Chip -->
     <p-card>
       <ng-template pTemplate="header">
-        <div class="px-4 pt-4 flex items-center gap-2">
+        <div class="px-4 pt-2.5 flex items-center gap-2">
           <i class="pi pi-id-card text-base"></i>
           <h3 class="font-semibold text-sm">BIB &amp; Chip</h3>
         </div>
@@ -359,7 +359,7 @@
     <!-- 6. Collection (read-only) -->
     <p-card>
       <ng-template pTemplate="header">
-        <div class="px-4 pt-4 flex items-center gap-2">
+        <div class="px-4 pt-2.5 flex items-center gap-2">
           <i class="pi pi-check-circle text-base"></i>
           <h3 class="font-semibold text-sm">Collection</h3>
         </div>
@@ -367,7 +367,7 @@
 
       <app-editable-field-row
         label="Collected At"
-        [displayValue]="p.bibCollectedAt"
+        [displayValue]="p.bibCollectedAt | date: 'dd-MMM-yyyy, hh:mm a'"
         [editable]="false"
         [editing]="false"
         [saving]="false"
@@ -398,7 +398,7 @@
     <!-- 7. Goodies (read-only) -->
     <p-card>
       <ng-template pTemplate="header">
-        <div class="px-4 pt-4 flex items-center gap-2">
+        <div class="px-4 pt-2.5 flex items-center gap-2">
           <i class="pi pi-gift text-base"></i>
           <h3 class="font-semibold text-sm">Goodies</h3>
         </div>
@@ -407,7 +407,7 @@
       @if (goodiesEntries().length === 0) {
         <p class="text-sm text-gray-500">--</p>
       } @else {
-        <div class="space-y-2">
+        <div class="space-y-1.5">
           @for (entry of distributionEntries(); track entry.key) {
             <div class="flex items-center justify-between gap-2">
               <span class="text-sm font-medium truncate">
@@ -427,7 +427,7 @@
     <!-- 8. Emergency -->
     <p-card>
       <ng-template pTemplate="header">
-        <div class="px-4 pt-4 flex items-center gap-2">
+        <div class="px-4 pt-2.5 flex items-center gap-2">
           <i class="pi pi-phone text-base"></i>
           <h3 class="font-semibold text-sm">Emergency</h3>
         </div>
@@ -477,49 +477,203 @@
       </app-editable-field-row>
     </p-card>
 
-    <!-- 9. Audit (read-only) -->
-    <p-card>
+    <!-- Additional Information — full width, editable via PATCH merge semantics -->
+    @if (additionalFieldsEntries().length > 0 || editable()) {
+      <p-card styleClass="col-span-2 lg:col-span-3">
+        <ng-template pTemplate="header">
+          <div class="px-4 pt-2.5 flex items-center justify-between gap-2">
+            <div class="flex items-center gap-2">
+              <i class="pi pi-list text-base"></i>
+              <h3 class="font-semibold text-sm">Additional Information</h3>
+            </div>
+            @if (editable() && additionalFieldsEntries().length < 10 && editingAddlKey() === null) {
+              <p-button
+                (onClick)="startAddAddlField()"
+                [disabled]="savingAddlField()"
+                [rounded]="true"
+                [text]="true"
+                icon="pi pi-plus"
+                pTooltip="Add field"
+                severity="secondary"
+                size="small"
+                tooltipPosition="top"
+              />
+            }
+          </div>
+        </ng-template>
+
+        @if (additionalFieldsEntries().length === 0 && editingAddlKey() !== 'new') {
+          <p class="text-sm text-gray-500 py-1">No additional fields.</p>
+        }
+
+        <div class="divide-y divide-surface-200 dark:divide-surface-700">
+          @for (entry of additionalFieldsEntries(); track entry.key) {
+            @if (editingAddlKey() === entry.key) {
+              <div class="flex gap-2 items-center py-2">
+                <input
+                  [(ngModel)]="workingAddlKey"
+                  [pSize]="inputSize"
+                  class="flex-1"
+                  pInputText
+                  placeholder="Field name"
+                />
+                <input
+                  [(ngModel)]="workingAddlValue"
+                  [pSize]="inputSize"
+                  class="flex-1"
+                  pInputText
+                  placeholder="Value"
+                />
+                <p-button
+                  (onClick)="commitAddlField()"
+                  [disabled]="!workingAddlKey.trim() || savingAddlField()"
+                  [loading]="savingAddlField()"
+                  [rounded]="true"
+                  [text]="true"
+                  icon="pi pi-check"
+                  pTooltip="Save"
+                  severity="success"
+                  size="small"
+                  tooltipPosition="top"
+                />
+                <p-button
+                  (onClick)="cancelAddlEdit()"
+                  [disabled]="savingAddlField()"
+                  [rounded]="true"
+                  [text]="true"
+                  icon="pi pi-times"
+                  pTooltip="Cancel"
+                  severity="secondary"
+                  size="small"
+                  tooltipPosition="top"
+                />
+              </div>
+            } @else {
+              <div class="flex items-center justify-between gap-2 py-1.5">
+                <div class="min-w-0 flex-1">
+                  <p class="text-xs uppercase tracking-wide text-gray-500 truncate">
+                    {{ entry.key }}
+                  </p>
+                  <p class="text-sm font-medium break-words">{{ entry.value | defaultValue }}</p>
+                </div>
+                @if (editable() && editingAddlKey() === null && !savingAddlField()) {
+                  <div class="flex gap-1 flex-shrink-0">
+                    <p-button
+                      (onClick)="startEditAddlField(entry.key, entry.value)"
+                      [rounded]="true"
+                      [text]="true"
+                      icon="pi pi-pencil"
+                      pTooltip="Edit"
+                      severity="secondary"
+                      size="small"
+                      tooltipPosition="top"
+                    />
+                    <p-button
+                      (onClick)="deleteAddlField(entry.key)"
+                      [rounded]="true"
+                      [text]="true"
+                      icon="pi pi-trash"
+                      pTooltip="Delete"
+                      severity="danger"
+                      size="small"
+                      tooltipPosition="top"
+                    />
+                  </div>
+                }
+              </div>
+            }
+          }
+
+          @if (editingAddlKey() === 'new') {
+            <div class="flex gap-2 items-center py-2">
+              <input
+                [(ngModel)]="workingAddlKey"
+                [pSize]="inputSize"
+                class="flex-1"
+                pInputText
+                placeholder="Field name"
+              />
+              <input
+                [(ngModel)]="workingAddlValue"
+                [pSize]="inputSize"
+                class="flex-1"
+                pInputText
+                placeholder="Value"
+              />
+              <p-button
+                (onClick)="commitAddlField()"
+                [disabled]="!workingAddlKey.trim() || savingAddlField()"
+                [loading]="savingAddlField()"
+                [rounded]="true"
+                [text]="true"
+                icon="pi pi-check"
+                pTooltip="Save"
+                severity="success"
+                size="small"
+                tooltipPosition="top"
+              />
+              <p-button
+                (onClick)="cancelAddlEdit()"
+                [disabled]="savingAddlField()"
+                [rounded]="true"
+                [text]="true"
+                icon="pi pi-times"
+                pTooltip="Cancel"
+                severity="secondary"
+                size="small"
+                tooltipPosition="top"
+              />
+            </div>
+          }
+        </div>
+      </p-card>
+    }
+
+    <!-- Audit (read-only) — full width, after Additional Information -->
+    <p-card styleClass="col-span-2 lg:col-span-3">
       <ng-template pTemplate="header">
-        <div class="px-4 pt-4 flex items-center gap-2">
+        <div class="px-4 pt-2.5 flex items-center gap-2">
           <i class="pi pi-history text-base"></i>
           <h3 class="font-semibold text-sm">Audit</h3>
         </div>
       </ng-template>
 
-      <app-editable-field-row
-        label="Created"
-        [displayValue]="p.createdAt"
-        [editable]="false"
-        [editing]="false"
-        [saving]="false"
-      />
-      <app-editable-field-row
-        label="Created By"
-        [displayValue]="p.createdBy"
-        [editable]="false"
-        [editing]="false"
-        [saving]="false"
-      />
-      <app-editable-field-row
-        label="Updated"
-        [displayValue]="p.updatedAt"
-        [editable]="false"
-        [editing]="false"
-        [saving]="false"
-      />
-      <app-editable-field-row
-        label="Updated By"
-        [displayValue]="p.updatedBy"
-        [editable]="false"
-        [editing]="false"
-        [saving]="false"
-      />
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-x-3 gap-y-2">
+        <app-editable-field-row
+          label="Created"
+          [displayValue]="p.createdAt | date: 'dd-MMM-yyyy, hh:mm a'"
+          [editable]="false"
+          [editing]="false"
+          [saving]="false"
+        />
+        <app-editable-field-row
+          label="Created By"
+          [displayValue]="p.createdBy"
+          [editable]="false"
+          [editing]="false"
+          [saving]="false"
+        />
+        <app-editable-field-row
+          label="Updated"
+          [displayValue]="p.updatedAt | date: 'dd-MMM-yyyy, hh:mm a'"
+          [editable]="false"
+          [editing]="false"
+          [saving]="false"
+        />
+        <app-editable-field-row
+          label="Updated By"
+          [displayValue]="p.updatedBy"
+          [editable]="false"
+          [editing]="false"
+          [saving]="false"
+        />
+      </div>
     </p-card>
 
     <!-- Notes — full width -->
     <p-card styleClass="col-span-2 lg:col-span-3">
       <ng-template pTemplate="header">
-        <div class="px-4 pt-4 flex items-center gap-2">
+        <div class="px-4 pt-2.5 flex items-center gap-2">
           <i class="pi pi-pencil text-base"></i>
           <h3 class="font-semibold text-sm">Notes</h3>
         </div>

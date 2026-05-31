@@ -15,6 +15,8 @@ export interface Participant {
   categoryId: string;
   categoryName: string;
   goodies?: { [key: string]: string };
+  /** Unmatched CSV columns funnelled into the "other" bucket at import time (header → value). */
+  additionalFields?: { [key: string]: string };
   bibCollectedAt?: string;
   bibCollectedByName?: string;
   bibCollectedByPhone?: string;
@@ -124,6 +126,7 @@ export interface CreateParticipantRequest {
   city?: string;
   bibCollectedAt?: string;
   goodies?: { [key: string]: string };
+  additionalFields?: { [key: string]: string };
   emergencyContactName?: string;
   emergencyContactPhone?: string;
   notes?: string;
@@ -146,6 +149,8 @@ export interface UpdateParticipantRequest {
   emergencyContactPhone?: string;
   notes?: string;
   bibCollectedAt?: string;
+  /** Merge patch: non-empty string adds/overwrites a key, null removes it, omitted keys are unchanged. */
+  additionalFields?: { [key: string]: string | null };
 }
 
 export type ImportErrorType =
@@ -203,6 +208,17 @@ export interface ImportJobListResponse {
 export interface BatchImportResponse {
   jobExecutionId: number;
   status: string;
+}
+
+/**
+ * A participant field a CSV column can be mapped to during import.
+ * Returned by GET /events/{eventId}/participants/import-fields; `key` is sent
+ * back as the `targetField` in the batch-import mapping.
+ */
+export interface ImportFieldResponse {
+  key: string;
+  label: string;
+  required: boolean;
 }
 
 export interface BatchJobStatusResponse {

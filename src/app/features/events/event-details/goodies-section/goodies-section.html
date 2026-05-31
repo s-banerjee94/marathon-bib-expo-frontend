@@ -1,0 +1,60 @@
+<div class="p-2">
+  @if (!event()) {
+    <!-- Skeleton grid while event context loads -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+      @for (_ of [1, 2, 3]; track $index) {
+        <p-card>
+          <p-skeleton width="3rem" height="3rem" styleClass="mb-4 rounded-xl" />
+          <p-skeleton width="70%" height="1.25rem" styleClass="mb-2" />
+          <p-skeleton width="40%" height="1rem" />
+        </p-card>
+      }
+    </div>
+  } @else if (goodiesArray().length === 0) {
+    <!-- Empty state -->
+    <div class="flex flex-col items-center justify-center py-20 gap-4">
+      <i class="pi pi-gift text-6xl"></i>
+      <p class="text-lg font-medium">No goodies defined</p>
+      <p class="text-sm text-center max-w-sm">
+        Add goodies to this event from the event header above. They will appear here as cards.
+      </p>
+    </div>
+  } @else {
+    <!-- Goodie cards -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+      @for (goodie of goodiesArray(); track goodie) {
+        <p-card styleClass="h-full">
+          <div class="flex flex-col gap-3">
+            <!-- Icon -->
+            <div class="w-12 h-12 rounded-xl flex items-center justify-center border">
+              <i class="pi pi-gift text-2xl"></i>
+            </div>
+
+            <!-- Name -->
+            <div>
+              <p class="font-semibold text-base leading-snug">{{ goodie }}</p>
+              <p class="text-xs mt-1">Goodie item</p>
+            </div>
+
+            <!-- Stats placeholder — filled once the backend exposes per-goodie stats -->
+            <div class="flex flex-wrap gap-2 mt-auto pt-2 border-t">
+              <p-tag
+                icon="pi pi-users"
+                value="—"
+                severity="secondary"
+                pTooltip="Total participants"
+              />
+              <p-tag
+                icon="pi pi-check-circle"
+                value="—"
+                severity="success"
+                pTooltip="Distributed"
+              />
+              <p-tag icon="pi pi-clock" value="—" severity="warn" pTooltip="Pending" />
+            </div>
+          </div>
+        </p-card>
+      }
+    </div>
+  }
+</div>

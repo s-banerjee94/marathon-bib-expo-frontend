@@ -34,6 +34,9 @@ export const AUDIT_ACTION_SEVERITY: Record<string, AuditTagSeverity> = {
   GENERATE: 'success',
   UPDATE: 'info',
   STATUS_CHANGE: 'info',
+  // A bulk CSV import is a heavyweight operational load (delete-all + reload),
+  // distinct from a single-record CREATE — blue keeps it visually apart.
+  IMPORT: 'info',
   DELETE: 'danger',
   LOGIN: 'secondary',
 };
@@ -47,6 +50,7 @@ export enum AuditAction {
   STATUS_CHANGE = 'STATUS_CHANGE',
   LOGIN = 'LOGIN',
   GENERATE = 'GENERATE',
+  IMPORT = 'IMPORT',
 }
 
 export enum AuditEntityType {
@@ -58,6 +62,7 @@ export enum AuditEntityType {
   SMS_TEMPLATE = 'SMS_TEMPLATE',
   SMS_CAMPAIGN = 'SMS_CAMPAIGN',
   VERIFICATION_LINK = 'VERIFICATION_LINK',
+  PARTICIPANT = 'PARTICIPANT',
 }
 
 export interface AuditOption {
@@ -73,6 +78,7 @@ export const AUDIT_ACTION_OPTIONS: AuditOption[] = [
   { value: AuditAction.STATUS_CHANGE, label: 'Status Change' },
   { value: AuditAction.LOGIN, label: 'Login' },
   { value: AuditAction.GENERATE, label: 'Generate' },
+  { value: AuditAction.IMPORT, label: 'Import' },
 ];
 
 export const AUDIT_ENTITY_TYPE_OPTIONS: AuditOption[] = [
@@ -84,6 +90,7 @@ export const AUDIT_ENTITY_TYPE_OPTIONS: AuditOption[] = [
   { value: AuditEntityType.SMS_TEMPLATE, label: 'SMS Template' },
   { value: AuditEntityType.SMS_CAMPAIGN, label: 'SMS Campaign' },
   { value: AuditEntityType.VERIFICATION_LINK, label: 'Verification Link' },
+  { value: AuditEntityType.PARTICIPANT, label: 'Participant' },
 ];
 
 // Lookup tables for rendering the raw enum on existing log rows.
@@ -107,6 +114,7 @@ const AUDIT_ENTITY_ICON: Record<string, string> = {
   [AuditEntityType.SMS_TEMPLATE]: 'pi pi-comment',
   [AuditEntityType.SMS_CAMPAIGN]: 'pi pi-send',
   [AuditEntityType.VERIFICATION_LINK]: 'pi pi-link',
+  [AuditEntityType.PARTICIPANT]: 'pi pi-users',
 };
 
 const AUDIT_ACTION_ICON: Record<string, string> = {
@@ -116,6 +124,7 @@ const AUDIT_ACTION_ICON: Record<string, string> = {
   [AuditAction.STATUS_CHANGE]: 'pi pi-refresh',
   [AuditAction.LOGIN]: 'pi pi-sign-in',
   [AuditAction.GENERATE]: 'pi pi-bolt',
+  [AuditAction.IMPORT]: 'pi pi-upload',
 };
 
 const AUDIT_ACTIVITY_ICON_OVERRIDE: Record<string, string> = {
@@ -123,6 +132,9 @@ const AUDIT_ACTIVITY_ICON_OVERRIDE: Record<string, string> = {
   [`${AuditAction.DELETE}:${AuditEntityType.EVENT}`]: 'pi pi-calendar-minus',
   [`${AuditAction.CREATE}:${AuditEntityType.USER}`]: 'pi pi-user-plus',
   [`${AuditAction.DELETE}:${AuditEntityType.USER}`]: 'pi pi-user-minus',
+  // IMPORT always targets PARTICIPANT — prefer the upload glyph over the generic
+  // participant icon so a bulk import reads as an import in the activity feed.
+  [`${AuditAction.IMPORT}:${AuditEntityType.PARTICIPANT}`]: 'pi pi-upload',
 };
 
 export function resolveAuditActivityIcon(action: string, entityType: string): string {

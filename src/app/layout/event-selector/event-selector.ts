@@ -81,6 +81,7 @@ export class EventSelector implements OnInit {
   private eventService = inject(EventService);
   private authService = inject(AuthService);
   private errorHandler = inject(ErrorHandlerService);
+  private failedLogoIds = new Set<number>();
   // Internal state
   private hasLoadedInitialEvents = false;
 
@@ -167,6 +168,14 @@ export class EventSelector implements OnInit {
     this.eventIdChange.emit(undefined);
   }
 
+  hasLogoImage(event: Event): boolean {
+    return !!event.logoUrl && !this.failedLogoIds.has(event.id);
+  }
+
+  onLogoError(eventId: number): void {
+    this.failedLogoIds.add(eventId);
+  }
+
   /**
    * Get tag severity based on event status
    */
@@ -195,7 +204,7 @@ export class EventSelector implements OnInit {
     if (words.length === 1) {
       return words[0].substring(0, 2).toUpperCase();
     }
-    return (words[0][0] + words[words.length - 1][0]).toUpperCase();
+    return (words[0][0] + words[1][0]).toUpperCase();
   }
 
   /**

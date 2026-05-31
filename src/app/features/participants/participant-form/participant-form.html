@@ -380,6 +380,126 @@
       </div>
     </div>
 
+    <!-- Goodies Section (create only — PATCH endpoint does not accept goodies) -->
+    @if (!isEditMode()) {
+      <p-divider align="left" class="!my-2">
+        <span class="font-semibold text-sm">Goodies</span>
+      </p-divider>
+      <div class="flex flex-col gap-2">
+        @for (entry of goodieEntries; track $index; let i = $index) {
+          <div class="flex gap-2 items-center">
+            <p-floatlabel variant="on" class="flex-1">
+              <input
+                [(ngModel)]="entry.key"
+                [disabled]="inputsDisabled()"
+                [id]="'goodie_key_' + i"
+                [name]="'goodie_key_' + i"
+                [pSize]="inputSize"
+                autocomplete="off"
+                fluid="true"
+                pInputText
+              />
+              <label [for]="'goodie_key_' + i">Goodie Name</label>
+            </p-floatlabel>
+            <p-floatlabel variant="on" class="flex-1">
+              <input
+                [(ngModel)]="entry.value"
+                [disabled]="inputsDisabled()"
+                [id]="'goodie_value_' + i"
+                [name]="'goodie_value_' + i"
+                [pSize]="inputSize"
+                autocomplete="off"
+                fluid="true"
+                pInputText
+              />
+              <label [for]="'goodie_value_' + i">Size / Value</label>
+            </p-floatlabel>
+            <button
+              (click)="removeGoodie(i)"
+              [disabled]="inputsDisabled()"
+              icon="pi pi-trash"
+              pButton
+              severity="danger"
+              text="true"
+              type="button"
+            ></button>
+          </div>
+        }
+        <div class="flex justify-end">
+          <button
+            (click)="addGoodie()"
+            [disabled]="inputsDisabled()"
+            icon="pi pi-plus"
+            label="Add Goodie"
+            outlined="true"
+            pButton
+            severity="secondary"
+            type="button"
+          ></button>
+        </div>
+      </div>
+    }
+
+    <!-- Additional Fields Section (create only — PATCH endpoint does not accept additionalFields) -->
+    @if (!isEditMode()) {
+      <p-divider align="left" class="!my-2">
+        <span class="font-semibold text-sm">Additional Fields</span>
+      </p-divider>
+      <div class="flex flex-col gap-2">
+        @for (entry of additionalFieldEntries; track $index; let i = $index) {
+          <div class="flex gap-2 items-center">
+            <p-floatlabel variant="on" class="flex-1">
+              <input
+                [(ngModel)]="entry.key"
+                [disabled]="inputsDisabled()"
+                [id]="'addl_key_' + i"
+                [name]="'addl_key_' + i"
+                [pSize]="inputSize"
+                autocomplete="off"
+                fluid="true"
+                pInputText
+              />
+              <label [for]="'addl_key_' + i">Field Name</label>
+            </p-floatlabel>
+            <p-floatlabel variant="on" class="flex-1">
+              <input
+                [(ngModel)]="entry.value"
+                [disabled]="inputsDisabled()"
+                [id]="'addl_value_' + i"
+                [name]="'addl_value_' + i"
+                [pSize]="inputSize"
+                autocomplete="off"
+                fluid="true"
+                pInputText
+              />
+              <label [for]="'addl_value_' + i">Value</label>
+            </p-floatlabel>
+            <button
+              (click)="removeAdditionalField(i)"
+              [disabled]="inputsDisabled()"
+              icon="pi pi-trash"
+              pButton
+              severity="danger"
+              text="true"
+              type="button"
+            ></button>
+          </div>
+        }
+        <div class="flex justify-end">
+          <button
+            (click)="addAdditionalField()"
+            [disabled]="inputsDisabled() || additionalFieldEntries.length >= 10"
+            icon="pi pi-plus"
+            label="Add Field"
+            outlined="true"
+            pButton
+            severity="secondary"
+            type="button"
+          ></button>
+        </div>
+      </div>
+    }
+
     <!-- Notes Section -->
     <p-divider align="left" class="!my-2">
       <span class="font-semibold text-sm">Notes</span>

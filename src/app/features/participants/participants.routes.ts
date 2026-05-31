@@ -12,6 +12,27 @@ const PARTICIPANT_ROLES = [
 
 export const PARTICIPANTS_ROUTES: Routes = [
   {
+    // Temporary CSV → participant column-mapping route (produces the mapping JSON contract).
+    // Standalone full page — kept as a sibling so it does not render inside the list shell.
+    path: 'import-map',
+    loadComponent: () => import('../import-mapper/import-mapper').then((m) => m.ImportMapper),
+    canActivate: [roleGuard(PARTICIPANT_ROLES)],
+    title: pageTitle('Import Mapper'),
+  },
+  {
+    // Shareable, standalone participant view+edit page. Sibling of the list shell
+    // (not a child) so a shared/opened link loads just this participant — the list
+    // dialog stays signal-driven and is only ever navigated here in a new tab.
+    // Listed before '' so its literal `details` 3rd segment matches first.
+    path: ':eventId/:bibNumber/details',
+    loadComponent: () =>
+      import('./participant-details/participant-details-route').then(
+        (m) => m.ParticipantDetailsRoute,
+      ),
+    canActivate: [roleGuard(PARTICIPANT_ROLES)],
+    title: pageTitle('Participant Details'),
+  },
+  {
     path: '',
     loadComponent: () =>
       import('./participant-list/participant-list').then((m) => m.ParticipantList),
@@ -45,22 +66,9 @@ export const PARTICIPANTS_ROUTES: Routes = [
           },
         ],
       },
-      {
-        path: 'new',
-        loadComponent: () =>
-          import('./participant-form/participant-form').then((m) => m.ParticipantForm),
-        title: pageTitle('New Participant'),
-      },
-      // Details (view + per-field inline edit). Replaces the legacy `:eventId/:bib/edit` form route.
-      // Keep last so `:eventId/:bibNumber/details` cannot greedily match `event/:eventId/...`.
-      {
-        path: ':eventId/:bibNumber/details',
-        loadComponent: () =>
-          import('./participant-details/participant-details-route').then(
-            (m) => m.ParticipantDetailsRoute,
-          ),
-        title: pageTitle('Participant Details'),
-      },
+      // The create form and participant details are signal-driven dialogs in
+      // ParticipantList (not routes), so opening/closing one never unmounts the
+      // table behind it — closing is instant, with no re-render or refetch.
     ],
   },
 ];

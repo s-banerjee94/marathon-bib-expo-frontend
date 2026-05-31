@@ -54,6 +54,12 @@ export const EVENTS_ROUTES: Routes = [
         title: pageTitle('Event Participants'),
       },
       {
+        path: 'goodies',
+        loadComponent: () =>
+          import('./event-details/goodies-section/goodies-section').then((m) => m.GoodiesSection),
+        title: pageTitle('Event Goodies'),
+      },
+      {
         path: 'races',
         loadComponent: () =>
           import('./event-details/race-section/race-section').then((m) => m.RaceSection),

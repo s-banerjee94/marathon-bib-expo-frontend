@@ -17,6 +17,7 @@ import { TagModule } from 'primeng/tag';
 import { SkeletonModule } from 'primeng/skeleton';
 import { Menu } from 'primeng/menu';
 import { ConfirmPopupModule } from 'primeng/confirmpopup';
+import { TooltipModule } from 'primeng/tooltip';
 import { ConfirmationService, MenuItem } from 'primeng/api';
 import { DialogService } from 'primeng/dynamicdialog';
 import { Event, EventStatus } from '../../../../core/models/event.model';
@@ -47,6 +48,7 @@ const DEFAULT_TAB = 'dashboard';
     SkeletonModule,
     Menu,
     ConfirmPopupModule,
+    TooltipModule,
     RouterOutlet,
     RouterLink,
     RouterLinkActive,
@@ -78,6 +80,12 @@ export class EventDetails implements OnInit {
   generatingShortUrls = signal(false);
   lastClickTarget: EventTarget | null = null;
 
+  // Logo — file-pick + presigned-URL upload flow (backend endpoint TBD)
+  protected readonly logoLoadError = signal(false);
+  protected readonly logoPreviewUrl = signal<string | null>(null);
+  protected readonly uploadingLogo = signal(false);
+  protected selectedLogoFile: File | null = null;
+
   activeTab = toSignal(
     this.router.events.pipe(
       filter((e): e is NavigationEnd => e instanceof NavigationEnd),
@@ -91,11 +99,10 @@ export class EventDetails implements OnInit {
   protected readonly getStatusLabel = getEventStatusLabel;
   protected readonly buttonSize = BUTTON_SIZE;
 
-  // Mobile bottom tab bar — ids match the child route paths below; icons mirror the
-  // desktop tab strip. Labels show in the expanded grid sheet and as icon-row aria-labels.
   protected readonly eventTabs: TabItem[] = [
     { id: 'dashboard', label: 'Dashboard', icon: 'pi-chart-bar' },
     { id: 'participants', label: 'Participants', icon: 'pi-users' },
+    { id: 'goodies', label: 'Goodies', icon: 'pi-gift' },
     { id: 'races', label: 'Races', icon: 'pi-flag' },
     { id: 'categories', label: 'Categories', icon: 'pi-tags' },
     { id: 'sms-templates', label: 'SMS Templates', icon: 'pi-envelope' },
@@ -112,6 +119,8 @@ export class EventDetails implements OnInit {
 
   loadEventDetails(): void {
     this.isLoading.set(true);
+    this.logoLoadError.set(false);
+    this.cancelLogoUpload();
     this.eventService
       .getEventById(this.eventId())
       .pipe(takeUntilDestroyed(this.destroyRef))
@@ -177,6 +186,45 @@ export class EventDetails implements OnInit {
           this.errorHandler.showError(error, 'Failed to start short URL generation');
         },
       });
+  }
+
+  // ---------- Logo ----------
+  protected onLogoError(): void {
+    this.logoLoadError.set(true);
+  }
+
+  protected onLogoFileSelected(e: globalThis.Event): void {
+    const input = e.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) return;
+    this.selectedLogoFile = file;
+    // Revoke any existing preview object URL to avoid memory leaks.
+    const prev = this.logoPreviewUrl();
+    if (prev) URL.revokeObjectURL(prev);
+    this.logoPreviewUrl.set(URL.createObjectURL(file));
+  }
+
+  protected cancelLogoUpload(): void {
+    const prev = this.logoPreviewUrl();
+    if (prev) URL.revokeObjectURL(prev);
+    this.logoPreviewUrl.set(null);
+    this.selectedLogoFile = null;
+  }
+
+  protected uploadLogo(): void {
+    if (!this.selectedLogoFile || this.uploadingLogo()) return;
+    // TODO: wire up when the backend provides the presigned-URL endpoint.
+    // Flow:
+    //   1. POST /api/events/{id}/logo/upload-url → { presignedUrl: string; logoUrl: string }
+    //   2. PUT presignedUrl with selectedLogoFile (Content-Type: file.type, NO auth header — direct S3)
+    //   3. Backend auto-saves logoUrl → reload event or patch signal with returned logoUrl
+    this.uploadingLogo.set(true);
+  }
+
+  // ---------- Address helper ----------
+  protected formatAddress(e: Event | null): string {
+    if (!e) return '';
+    return [e.city, e.stateProvince, e.postalCode, e.country].filter(Boolean).join(', ');
   }
 
   private buildStatusMenuItems(currentStatus: EventStatus): void {

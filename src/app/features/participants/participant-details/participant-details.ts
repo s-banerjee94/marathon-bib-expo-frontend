@@ -1,7 +1,6 @@
 import {
   ChangeDetectionStrategy,
   Component,
-  HostListener,
   computed,
   effect,
   inject,
@@ -59,6 +58,7 @@ type FieldKey =
   selector: 'app-participant-details',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: { '(document:keydown.escape)': 'onEscape()' },
   templateUrl: './participant-details.html',
   imports: [
     CommonModule,
@@ -133,6 +133,19 @@ export class ParticipantDetails {
     return Object.entries(g).map(([key, value]) => ({ key, value: String(value) }));
   });
 
+  /** Additional free-form columns — editable via PATCH merge semantics. */
+  protected readonly additionalFieldsEntries = computed(() => {
+    const f = this.participant()?.additionalFields;
+    if (!f) return [];
+    return Object.entries(f).map(([key, value]) => ({ key, value: String(value) }));
+  });
+
+  // Inline-edit state for additional fields
+  protected readonly editingAddlKey = signal<string | 'new' | null>(null);
+  protected readonly savingAddlField = signal(false);
+  protected workingAddlKey = '';
+  protected workingAddlValue = '';
+
   protected readonly distributionEntries = computed(() => {
     const p = this.participant();
     const goodies = p?.goodies;
@@ -154,7 +167,6 @@ export class ParticipantDetails {
     });
   }
 
-  @HostListener('document:keydown.escape')
   protected onEscape(): void {
     if (this.editingField() && !this.savingField()) {
       this.cancelEdit();
@@ -168,6 +180,12 @@ export class ParticipantDetails {
       next: (p) => {
         this.participant.set(p);
         this.isLoading.set(false);
+        // Reconcile the list row with this freshly-loaded record, so the table
+        // reflects changes made elsewhere (e.g. via a shared link) without a
+        // manual refresh. The list-state patches in place only when the row is
+        // present and actually differs; on the standalone page there is no list
+        // subscribed, so this is a harmless no-op.
+        this.bus.publish({ action: 'updated', participant: p });
       },
       error: (err) => {
         this.isLoading.set(false);
@@ -371,6 +389,80 @@ export class ParticipantDetails {
     const month = String(d.getMonth() + 1).padStart(2, '0');
     const year = d.getFullYear();
     return `${day}-${month}-${year}`;
+  }
+
+  // ---------- Additional fields CRUD (merge semantics) ----------
+  protected startEditAddlField(key: string, value: string): void {
+    if (!this.editable() || this.savingAddlField()) return;
+    this.editingField.set(null);
+    this.editingAddlKey.set(key);
+    this.workingAddlKey = key;
+    this.workingAddlValue = value;
+  }
+
+  protected startAddAddlField(): void {
+    if (!this.editable() || this.savingAddlField()) return;
+    const count = Object.keys(this.participant()?.additionalFields ?? {}).length;
+    if (count >= 10) return;
+    this.editingField.set(null);
+    this.editingAddlKey.set('new');
+    this.workingAddlKey = '';
+    this.workingAddlValue = '';
+  }
+
+  protected cancelAddlEdit(): void {
+    this.editingAddlKey.set(null);
+    this.workingAddlKey = '';
+    this.workingAddlValue = '';
+  }
+
+  protected commitAddlField(): void {
+    const newKey = this.workingAddlKey.trim();
+    if (!newKey) return;
+
+    const originalKey = this.editingAddlKey();
+    // Build a minimal merge patch — only the keys that actually change.
+    const patch: { [key: string]: string | null } = {};
+
+    if (originalKey === 'new') {
+      patch[newKey] = this.workingAddlValue.trim();
+    } else if (originalKey !== null && originalKey !== newKey) {
+      // Key renamed: null removes old, new key adds value.
+      patch[originalKey] = null;
+      patch[newKey] = this.workingAddlValue.trim();
+    } else if (originalKey !== null) {
+      patch[newKey] = this.workingAddlValue.trim();
+    }
+
+    this.patchAddlFields(patch);
+  }
+
+  protected deleteAddlField(key: string): void {
+    this.patchAddlFields({ [key]: null });
+  }
+
+  private patchAddlFields(patch: { [key: string]: string | null }): void {
+    const id = this.eventId();
+    const bib = this.bibNumber();
+    if (!id || !bib) return;
+
+    this.savingAddlField.set(true);
+    this.participantService.updateParticipant(id, bib, { additionalFields: patch }).subscribe({
+      next: (updated) => {
+        this.participant.set(updated);
+        this.savingAddlField.set(false);
+        this.editingAddlKey.set(null);
+        this.workingAddlKey = '';
+        this.workingAddlValue = '';
+        this.bus.publish({ action: 'updated', participant: updated });
+        this.participantUpdated.emit(updated);
+        this.toast.success('Saved');
+      },
+      error: (err) => {
+        this.savingAddlField.set(false);
+        this.errorHandler.showError(err, 'Failed to save');
+      },
+    });
   }
 
   protected close(): void {
