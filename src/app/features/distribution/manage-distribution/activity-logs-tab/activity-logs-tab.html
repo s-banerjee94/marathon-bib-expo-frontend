@@ -160,7 +160,7 @@
               />
             </td>
             <td>{{ log.itemNames | join }}</td>
-            <td>{{ getStaffUsername(log.performedBy) }}</td>
+            <td>{{ log.performedBy | userName }}</td>
             <td>{{ log.collectorName | defaultValue }}</td>
             <td>{{ log.collectorPhone | defaultValue }}</td>
             <td class="text-sm text-color-secondary">{{ log.details | defaultValue }}</td>
@@ -270,7 +270,7 @@
 
                 <!-- Performed By -->
                 <span class="text-sm opacity-70">
-                  Perform By: {{ getStaffUsername(log.performedBy) }}
+                  Perform By: {{ log.performedBy | userName }}
                 </span>
 
                 <!-- Details (left-aligned) -->

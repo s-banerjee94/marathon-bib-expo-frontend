@@ -37,23 +37,51 @@
           </p-iconfield>
           <label for="searchValue">Search Value</label>
         </p-floatlabel>
-      } @else {
+      } @else if (selectedSearchType() === 'RACE') {
         <p-floatlabel variant="on">
           <p-select
             [(ngModel)]="dropdownSelectedItem"
             [loading]="isRacesLoading()"
-            [options]="selectedSearchType() === 'RACE' ? races() : categories()"
-            [optionLabel]="selectedSearchType() === 'RACE' ? 'raceName' : 'categoryName'"
-            [optionValue]="selectedSearchType() === 'RACE' ? 'raceName' : 'categoryName'"
+            [options]="raceOptions()"
+            optionLabel="label"
+            optionValue="value"
             [size]="inputSize"
             fluid="true"
             id="searchDropdown"
-            placeholder="Select..."
           />
-          <label for="searchDropdown">
-            {{ selectedSearchType() === 'RACE' ? 'Select Race' : 'Select Category' }}
-          </label>
+          <label for="searchDropdown">Select Race</label>
         </p-floatlabel>
+      } @else {
+        <!-- CATEGORY: pick the race first, then a category scoped to that race -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <p-floatlabel variant="on">
+            <p-select
+              [(ngModel)]="categoryRaceId"
+              (onChange)="onCategoryRaceChange()"
+              [loading]="isRacesLoading()"
+              [options]="races()"
+              optionLabel="raceName"
+              optionValue="id"
+              [size]="inputSize"
+              fluid="true"
+              id="categoryRaceFilter"
+            />
+            <label for="categoryRaceFilter">Select Race</label>
+          </p-floatlabel>
+          <p-floatlabel variant="on">
+            <p-select
+              [(ngModel)]="dropdownSelectedItem"
+              [options]="categoryOptions()"
+              [disabled]="!categoryRaceId()"
+              optionLabel="label"
+              optionValue="value"
+              [size]="inputSize"
+              fluid="true"
+              id="categoryDropdown"
+            />
+            <label for="categoryDropdown">Select Category</label>
+          </p-floatlabel>
+        </div>
       }
     </div>
 
@@ -210,12 +238,14 @@
           <th pFrozenColumn style="width: 250px">BIB Number</th>
         }
 
+        <!-- Frozen Left: Full Name -->
+        @if (isColumnVisible('fullName')) {
+          <th pFrozenColumn style="min-width: 200px">Full Name</th>
+        }
+
         <!-- Scrollable Columns -->
         @if (isColumnVisible('chipNumber')) {
           <th style="min-width: 120px">Chip Number</th>
-        }
-        @if (isColumnVisible('fullName')) {
-          <th style="min-width: 200px">Full Name</th>
         }
         @if (isColumnVisible('raceName')) {
           <th style="min-width: 150px">Race</th>
@@ -271,6 +301,9 @@
         @if (isColumnVisible('createdAt')) {
           <th style="min-width: 160px">Created At</th>
         }
+        @if (isColumnVisible('updatedAt')) {
+          <th style="min-width: 160px">Updated At</th>
+        }
 
         <!-- Frozen Right: Actions (Always Visible) -->
         <th pFrozenColumn alignFrozen="right" style="width: 200px">Actions</th>
@@ -295,13 +328,15 @@
             </td>
           }
 
-          <!-- Scrollable Columns Skeletons -->
-          @if (isColumnVisible('chipNumber')) {
-            <td>
+          <!-- Frozen Left: Full Name Skeleton -->
+          @if (isColumnVisible('fullName')) {
+            <td pFrozenColumn>
               <p-skeleton />
             </td>
           }
-          @if (isColumnVisible('fullName')) {
+
+          <!-- Scrollable Columns Skeletons -->
+          @if (isColumnVisible('chipNumber')) {
             <td>
               <p-skeleton />
             </td>
@@ -396,6 +431,11 @@
               <p-skeleton />
             </td>
           }
+          @if (isColumnVisible('updatedAt')) {
+            <td>
+              <p-skeleton />
+            </td>
+          }
 
           <!-- Frozen Right: Actions Skeleton (Always Visible) -->
           <td pFrozenColumn alignFrozen="right">
@@ -416,15 +456,17 @@
             </td>
           }
 
+          <!-- Frozen Left: Full Name -->
+          @if (isColumnVisible('fullName')) {
+            <td pFrozenColumn>
+              {{ participant.fullName | defaultValue }}
+            </td>
+          }
+
           <!-- Scrollable Columns -->
           @if (isColumnVisible('chipNumber')) {
             <td>
               {{ participant.chipNumber | defaultValue }}
-            </td>
-          }
-          @if (isColumnVisible('fullName')) {
-            <td>
-              {{ participant.fullName | defaultValue }}
             </td>
           }
           @if (isColumnVisible('raceName')) {
@@ -606,7 +648,12 @@
           }
           @if (isColumnVisible('createdAt')) {
             <td>
-              {{ participant.createdAt | defaultValue }}
+              {{ participant.createdAt | date: 'dd-MMM-yyyy, hh:mm a' | defaultValue }}
+            </td>
+          }
+          @if (isColumnVisible('updatedAt')) {
+            <td>
+              {{ participant.updatedAt | date: 'dd-MMM-yyyy, hh:mm a' | defaultValue }}
             </td>
           }
 

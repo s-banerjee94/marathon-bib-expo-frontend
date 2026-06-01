@@ -388,7 +388,7 @@
       />
       <app-editable-field-row
         label="Distributed By"
-        [displayValue]="p.bibDistributedBy"
+        [displayValue]="p.bibDistributedBy | userName"
         [editable]="false"
         [editing]="false"
         [saving]="false"
@@ -648,7 +648,7 @@
         />
         <app-editable-field-row
           label="Created By"
-          [displayValue]="p.createdBy"
+          [displayValue]="p.createdBy | userName"
           [editable]="false"
           [editing]="false"
           [saving]="false"
@@ -662,7 +662,7 @@
         />
         <app-editable-field-row
           label="Updated By"
-          [displayValue]="p.updatedBy"
+          [displayValue]="p.updatedBy | userName"
           [editable]="false"
           [editing]="false"
           [saving]="false"

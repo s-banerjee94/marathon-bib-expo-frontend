@@ -2,8 +2,8 @@ import { TableColumn } from '../models/table-config.model';
 
 export const PARTICIPANT_COLUMNS: TableColumn[] = [
   { field: 'bibNumber', header: 'BIB Number', required: true, disabled: false },
-  { field: 'chipNumber', header: 'Chip Number', required: true, disabled: false },
   { field: 'fullName', header: 'Full Name', required: true, disabled: false },
+  { field: 'chipNumber', header: 'Chip Number', required: true, disabled: false },
   { field: 'email', header: 'Email' },
   { field: 'phoneNumber', header: 'Phone' },
   { field: 'raceName', header: 'Race' },
@@ -22,6 +22,7 @@ export const PARTICIPANT_COLUMNS: TableColumn[] = [
   { field: 'emergencyContactPhone', header: 'Emergency Phone' },
   { field: 'notes', header: 'Notes' },
   { field: 'createdAt', header: 'Created At' },
+  { field: 'updatedAt', header: 'Updated At' },
 ];
 
 export const PARTICIPANT_SORT_OPTIONS = [

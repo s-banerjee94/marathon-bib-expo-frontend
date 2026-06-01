@@ -32,6 +32,7 @@ import { AuthService } from '../../../../core/services/auth.service';
 import { ErrorHandlerService } from '../../../../core/services/error-handler.service';
 import { DefaultValuePipe } from '../../../../shared/pipes/default-value.pipe';
 import { JoinPipe } from '../../../../shared/pipes/join.pipe';
+import { UserNamePipe } from '../../../../shared/pipes/user-name-pipe';
 import {
   LOG_ACTION_OPTIONS,
   LOG_SEARCH_TYPES,
@@ -67,6 +68,7 @@ import { injectIsMobile } from '../../../../shared/utils/responsive.utils';
     TooltipModule,
     DefaultValuePipe,
     JoinPipe,
+    UserNamePipe,
   ],
   templateUrl: './activity-logs-tab.html',
 })
@@ -333,11 +335,5 @@ export class ActivityLogsTab {
       GOODIES_UNDONE: 'warn',
     };
     return map[action] ?? 'info';
-  }
-
-  getStaffUsername(value?: string): string {
-    if (!value) return '--';
-    const parts = value.split('__|__');
-    return parts.length > 1 ? parts[1] : value;
   }
 }

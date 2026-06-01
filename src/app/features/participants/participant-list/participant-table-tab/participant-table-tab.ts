@@ -133,6 +133,8 @@ export class ParticipantTableTab {
   selectedSearchType = this.listState.selectedSearchType;
   searchValue = this.listState.searchValue;
   dropdownSelectedItem = this.listState.dropdownSelectedItem;
+  // Race chosen to scope the CATEGORY dropdown (category lookup is a two-step pick).
+  categoryRaceId = this.listState.categoryRaceId;
   isSearchMode = this.listState.isSearchMode;
 
   // Race / Category dropdown data (for race/category search modes)
@@ -143,6 +145,22 @@ export class ParticipantTableTab {
   isDropdownSearch = computed(
     () => this.selectedSearchType() === 'RACE' || this.selectedSearchType() === 'CATEGORY',
   );
+
+  // Lookup by race/category sends IDS, not names: RACE → raceId,
+  // CATEGORY → `raceId#categoryId` (HttpParams URL-encodes the `#` as %23).
+  // The label still shows the human-readable name.
+  raceOptions = computed(() =>
+    this.races().map((r) => ({ label: r.raceName, value: String(r.id) })),
+  );
+  // CATEGORY lookup is scoped to the race picked in `categoryRaceId`, so the
+  // category dropdown only lists that race's categories (names can repeat across races).
+  categoryOptions = computed(() => {
+    const raceId = this.categoryRaceId();
+    if (raceId == null) return [];
+    return this.categories()
+      .filter((c) => c.raceId === raceId)
+      .map((c) => ({ label: c.categoryName, value: `${c.raceId}#${c.id}` }));
+  });
 
   searchPlaceholder = computed(() => {
     const option = this.lookupSearchTypes.find((t) => t.value === this.selectedSearchType());
@@ -281,6 +299,12 @@ export class ParticipantTableTab {
   onSearchTypeChange(): void {
     this.searchValue.set('');
     this.dropdownSelectedItem.set('');
+    this.categoryRaceId.set(null);
+  }
+
+  // CATEGORY mode: changing the race scope clears the previously picked category.
+  onCategoryRaceChange(): void {
+    this.dropdownSelectedItem.set('');
   }
 
   performSearch(): void {
@@ -327,7 +351,8 @@ export class ParticipantTableTab {
   private resetSearch(): void {
     this.searchValue.set('');
     this.dropdownSelectedItem.set('');
-    this.selectedSearchType.set('NAME');
+    this.categoryRaceId.set(null);
+    this.selectedSearchType.set('BIB');
     this.isSearchMode.set(false);
   }
 

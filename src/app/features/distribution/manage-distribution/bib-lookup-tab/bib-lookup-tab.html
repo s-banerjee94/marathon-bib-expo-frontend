@@ -41,9 +41,9 @@
           <p-select
             [(ngModel)]="dropdownSelectedItem"
             [loading]="isRacesLoading()"
-            [options]="selectedSearchType() === 'RACE' ? races() : categories()"
-            [optionLabel]="selectedSearchType() === 'RACE' ? 'raceName' : 'categoryName'"
-            [optionValue]="selectedSearchType() === 'RACE' ? 'raceName' : 'categoryName'"
+            [options]="selectedSearchType() === 'RACE' ? raceOptions() : categoryOptions()"
+            optionLabel="label"
+            optionValue="value"
             [size]="inputSize"
             fluid="true"
             id="distSearchDropdown"

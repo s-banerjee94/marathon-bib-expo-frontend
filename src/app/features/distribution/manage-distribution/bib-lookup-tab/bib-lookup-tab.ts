@@ -121,6 +121,16 @@ export class BibLookupTab implements OnDestroy {
     () => this.selectedSearchType() === 'RACE' || this.selectedSearchType() === 'CATEGORY',
   );
 
+  // Lookup by race/category sends IDS, not names: RACE → raceId,
+  // CATEGORY → `raceId#categoryId` (HttpParams URL-encodes the `#` as %23).
+  // The label still shows the human-readable name.
+  raceOptions = computed(() =>
+    this.races().map((r) => ({ label: r.raceName, value: String(r.id) })),
+  );
+  categoryOptions = computed(() =>
+    this.categories().map((c) => ({ label: c.categoryName, value: `${c.raceId}#${c.id}` })),
+  );
+
   results = signal<Participant[]>([]);
   loading = signal(false);
   error = signal<string | null>(null);
@@ -186,7 +196,9 @@ export class BibLookupTab implements OnDestroy {
   performSearch(): void {
     const isDropdown = this.isDropdownSearch();
     const value = isDropdown ? this.dropdownSelectedItem() : this.searchValue().trim();
-    if (!value || value.length < 2 || !this.eventId()) return;
+    // The 2-char minimum only applies to free-text searches; a race/category id
+    // (e.g. "5") selected from the dropdown is always a valid lookup value.
+    if (!value || (!isDropdown && value.length < 2) || !this.eventId()) return;
 
     this.results.set([]);
     this.lastEvaluatedKey.set(undefined);

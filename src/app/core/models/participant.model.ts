@@ -113,10 +113,10 @@ export interface CreateParticipantRequest {
   chipNumber: string;
   bibNumber: string;
   fullName: string;
+  // Race/category are sent by id only — the backend resolves the names live and
+  // returns them on the response. raceName/categoryName are no longer part of the contract.
   raceId: number;
-  raceName: string;
   categoryId: number;
-  categoryName: string;
   gender: string; // M, F, O
   phoneNumber?: string;
   email?: string;

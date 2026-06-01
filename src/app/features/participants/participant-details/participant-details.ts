@@ -28,6 +28,7 @@ import { EventService } from '../../../core/services/event.service';
 import { ErrorHandlerService } from '../../../core/services/error-handler.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { DefaultValuePipe } from '../../../shared/pipes/default-value.pipe';
+import { UserNamePipe } from '../../../shared/pipes/user-name-pipe';
 import {
   formatGoodiesKey,
   getGenderDisplay,
@@ -74,6 +75,7 @@ type FieldKey =
     SkeletonModule,
     TooltipModule,
     DefaultValuePipe,
+    UserNamePipe,
     EditableFieldRow,
   ],
 })

@@ -35,9 +35,11 @@ export class ParticipantListState {
   lastEvaluatedKey: string | undefined = undefined;
 
   // search state (two-way bound by the table tab)
-  readonly selectedSearchType = signal<LookupSearchType>('NAME');
+  readonly selectedSearchType = signal<LookupSearchType>('BIB');
   readonly searchValue = signal<string>('');
   readonly dropdownSelectedItem = signal<string>('');
+  // CATEGORY lookup is two-step: the race chosen here scopes the category dropdown.
+  readonly categoryRaceId = signal<number | null>(null);
   readonly isSearchMode = signal<boolean>(false);
 
   // event reference data (races/categories for the search dropdowns)
@@ -71,9 +73,10 @@ export class ParticipantListState {
     this.totalCount.set(0);
     this.hasMore.set(true);
     this.lastEvaluatedKey = undefined;
-    this.selectedSearchType.set('NAME');
+    this.selectedSearchType.set('BIB');
     this.searchValue.set('');
     this.dropdownSelectedItem.set('');
+    this.categoryRaceId.set(null);
     this.isSearchMode.set(false);
     this.races.set([]);
     this.categories.set([]);
