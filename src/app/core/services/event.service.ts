@@ -5,7 +5,6 @@ import {
   Category,
   CreateEventRequest,
   Event,
-  EventSummaryResponse,
   Race,
   UpdateEventRequest,
 } from '../models/event.model';
@@ -52,10 +51,6 @@ export class EventService {
 
   deleteEvent(id: number): Observable<void> {
     return this.http.delete<void>(`${this.baseUrl}/${id}`);
-  }
-
-  getEventSummary(id: number): Observable<EventSummaryResponse> {
-    return this.http.get<EventSummaryResponse>(`${this.baseUrl}/${id}/summary`);
   }
 
   getRaces(eventId: number): Observable<Race[]> {

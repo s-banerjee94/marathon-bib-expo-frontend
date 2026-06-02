@@ -111,22 +111,3 @@ export interface Category {
   raceId: number;
   eventId: number;
 }
-
-/**
- * Race Summary (for Event Summary Response)
- */
-export interface RaceSummary {
-  id: number;
-  raceName: string;
-  categoryCount: number;
-}
-
-/**
- * Event Summary Response with races and categories
- */
-export interface EventSummaryResponse {
-  event: Event;
-  races: RaceSummary[];
-  totalRaces: number;
-  totalCategories: number;
-}
