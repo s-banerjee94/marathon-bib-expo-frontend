@@ -63,7 +63,6 @@ export interface CreateEventRequest {
   timezone: string;
   latitude?: number;
   longitude?: number;
-  status?: EventStatus;
   organizationId: number;
   eventGoodies?: string;
 }
@@ -89,7 +88,6 @@ export interface UpdateEventRequest {
   timezone?: string;
   latitude?: number;
   longitude?: number;
-  status?: EventStatus;
   eventGoodies?: string;
 }
 
