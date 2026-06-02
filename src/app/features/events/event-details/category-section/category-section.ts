@@ -225,7 +225,7 @@ export class CategorySection {
               this.loadCategories();
             },
             error: (error: unknown) => {
-              this.errorHandler.showError(error, 'Failed to delete category');
+              this.errorHandler.showError(error);
               this.isLoading.set(false);
             },
           });

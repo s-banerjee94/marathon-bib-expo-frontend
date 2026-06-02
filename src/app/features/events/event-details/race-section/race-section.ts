@@ -152,7 +152,7 @@ export class RaceSection implements OnInit {
             this.toast.success('Race deleted successfully');
           },
           error: (error: unknown) => {
-            this.errorHandler.showError(error, 'Failed to delete race');
+            this.errorHandler.showError(error);
           },
         });
       },

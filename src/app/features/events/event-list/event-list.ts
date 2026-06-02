@@ -306,7 +306,7 @@ export class EventList extends BaseTableComponent<Event, EventFilterPreferences>
             this.loadData();
           },
           error: (error) => {
-            this.handleLoadError(error);
+            this.errorHandler.showError(error);
           },
         });
       },

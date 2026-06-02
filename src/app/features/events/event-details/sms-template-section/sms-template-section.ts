@@ -183,7 +183,7 @@ export class SmsTemplateSection implements OnInit, OnDestroy {
             this.toast.success('SMS template deleted successfully');
           },
           error: (error: unknown) => {
-            this.errorHandler.showError(error, 'Failed to delete SMS template');
+            this.errorHandler.showError(error);
           },
         });
       },

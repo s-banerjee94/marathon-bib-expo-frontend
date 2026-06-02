@@ -472,7 +472,7 @@ export class UserList extends BaseTableComponent<User, UserFilterPreferences> {
           },
           error: (error) => {
             this.deletingUserId.set(null);
-            this.errorHandler.showError(error, 'Failed to delete user');
+            this.errorHandler.showError(error);
           },
         });
       },

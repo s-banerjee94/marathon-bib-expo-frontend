@@ -413,7 +413,7 @@ export class ParticipantTableTab {
             this.totalCount.update((count) => Math.max(0, count - 1));
             this.selectedParticipants = [];
           },
-          error: (error) => this.errorHandler.showError(error, 'Failed to delete participant'),
+          error: (error) => this.errorHandler.showError(error),
         });
       },
     });
@@ -445,11 +445,18 @@ export class ParticipantTableTab {
           chunks.push(bibNumbers.slice(i, i + BULK_DELETE_MAX_LIMIT));
         }
 
+        // Capture a failing chunk's backend error so it can be surfaced verbatim
+        // if nothing ends up deleted, instead of a fabricated frontend message.
+        let deleteError: unknown = null;
+
         forkJoin(
           chunks.map((chunk) =>
             this.participantService.bulkDeleteParticipants(eventId, chunk).pipe(
               map(() => chunk),
-              catchError(() => of<string[]>([])),
+              catchError((error) => {
+                deleteError = error;
+                return of<string[]>([]);
+              }),
             ),
           ),
         ).subscribe((deletedChunks) => {
@@ -463,10 +470,7 @@ export class ParticipantTableTab {
           this.selectedParticipants = [];
 
           if (removedBibs.length === 0) {
-            this.errorHandler.showError(
-              { message: 'No participants could be deleted' },
-              'Delete failed',
-            );
+            this.errorHandler.showError(deleteError);
           } else {
             const message =
               failedCount > 0

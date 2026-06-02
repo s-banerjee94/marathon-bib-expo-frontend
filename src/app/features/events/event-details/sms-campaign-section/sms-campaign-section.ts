@@ -172,7 +172,7 @@ export class SmsCampaignSection implements OnInit {
             this.toast.success('Campaign deleted successfully', 'Deleted');
           },
           error: (error: unknown) => {
-            this.errorHandler.showError(error, 'Failed to delete campaign');
+            this.errorHandler.showError(error);
           },
         });
       },
