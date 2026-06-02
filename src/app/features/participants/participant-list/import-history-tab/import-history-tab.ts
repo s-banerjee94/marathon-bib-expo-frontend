@@ -15,7 +15,7 @@ import { SkeletonModule } from 'primeng/skeleton';
 import { ImportErrorItem } from '../../../../core/models/participant.model';
 import { ParticipantService } from '../../../../core/services/participant.service';
 import { ErrorHandlerService } from '../../../../core/services/error-handler.service';
-import { DefaultValuePipe } from '../../../../shared/pipes/default-value.pipe';
+import { LabelizePipe } from '../../../../shared/pipes/labelize-pipe';
 import { ParticipantListState } from '../participant-list-state.service';
 
 const IMPORT_ERRORS_PAGE_SIZE = 50;
@@ -25,7 +25,7 @@ const IMPORT_ERRORS_PAGE_SIZE = 50;
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './import-history-tab.html',
-  imports: [TableModule, TagModule, ButtonModule, SkeletonModule, DefaultValuePipe],
+  imports: [TableModule, TagModule, ButtonModule, SkeletonModule, LabelizePipe],
 })
 export class ImportHistoryTab {
   private participantService = inject(ParticipantService);

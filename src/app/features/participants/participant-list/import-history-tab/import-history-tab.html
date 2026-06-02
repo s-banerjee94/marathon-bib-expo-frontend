@@ -28,12 +28,12 @@
             <td>
               <p-tag
                 [rounded]="true"
-                [value]="error.errorType"
+                [value]="error.errorType | labelize"
                 severity="danger"
                 size="small"
               ></p-tag>
             </td>
-            <td class="font-medium">{{ error.field | defaultValue }}</td>
+            <td class="font-medium">{{ error.field | labelize }}</td>
             <td class="text-sm"><i class="pi pi-times-circle mr-2"></i>{{ error.message }}</td>
           }
         </tr>

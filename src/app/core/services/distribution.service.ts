@@ -64,6 +64,7 @@ export class DistributionService {
     );
   }
 
+  // TODO: not wired into any UI yet — add a bulk bib-collect action in the distribution feature
   bulkCollectBib(
     eventId: number,
     request: BulkCollectBibRequest,
