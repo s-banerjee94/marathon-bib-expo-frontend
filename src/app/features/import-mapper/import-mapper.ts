@@ -14,6 +14,7 @@ import { ParticipantService } from '../../core/services/participant.service';
 import { EventService } from '../../core/services/event.service';
 import { ImportProgressService } from '../../core/services/import-progress.service';
 import { Event } from '../../core/models/event.model';
+import { ImportMode } from '../../core/models/participant.model';
 import { ColumnMapper } from './column-mapper/column-mapper';
 import {
   BUCKET_FIELDS,
@@ -29,13 +30,14 @@ import {
  * Route (`/participants/import-map`) that maps an uploaded CSV onto participant
  * fields by dragging, then launches the async batch import.
  *
- * The event is always supplied by the caller via the `?eventId=` query param
- * (the participant list's Import button) — there is no event picker here. Flow:
- * upload a CSV → connect columns to fields → confirm & import. Submitting POSTs
- * the file plus the {@link MappingConfig} JSON (the `ImportMappingRequest`
- * contract) to the batch-import endpoint, which deletes existing participants
- * and runs a Spring Batch job. Progress is tracked by the global
- * {@link ImportProgressService} floating widget.
+ * The event and run mode are supplied by the caller via the `?eventId=` and
+ * `?mode=` query params (the participant list's Import / Add On buttons) —
+ * there is no event picker here. Flow: upload a CSV → connect columns to fields →
+ * confirm & import. Submitting POSTs the file plus the {@link MappingConfig} JSON
+ * (the `ImportMappingRequest` contract) to the batch-import endpoint. In `IMPORT`
+ * mode the backend wipes existing participants and runs a full Spring Batch load;
+ * in `ADD_ON` mode it appends the rows without wiping. Progress is tracked by the
+ * global {@link ImportProgressService} floating widget.
  */
 @Component({
   selector: 'app-import-mapper',
@@ -69,9 +71,12 @@ export class ImportMapper {
     { n: 3, label: 'Review & Import' },
   ];
 
-  // --- event (supplied via ?eventId) + target fields ---
+  // --- event (supplied via ?eventId) + run mode (?mode) + target fields ---
   protected readonly selectedEventId = signal<number | null>(null);
   protected readonly selectedEvent = signal<Event | null>(null);
+  /** Run mode from `?mode=` — IMPORT (full replace) or ADD_ON (append walk-ins). */
+  protected readonly importMode = signal<ImportMode>('IMPORT');
+  protected readonly isAddOn = computed(() => this.importMode() === 'ADD_ON');
   protected readonly targetFields = signal<TargetField[]>([]);
   protected readonly fieldsLoading = signal(false);
 
@@ -188,13 +193,15 @@ export class ImportMapper {
   });
 
   constructor() {
-    // The event is always provided by the caller (participant list → ?eventId=…).
-    const eventId = Number(this.route.snapshot.queryParamMap.get('eventId'));
+    // The event and mode are provided by the caller (participant list → ?eventId=…&mode=…).
+    const params = this.route.snapshot.queryParamMap;
+    const eventId = Number(params.get('eventId'));
     if (!Number.isFinite(eventId) || eventId <= 0) {
       this.toast.error('Select an event to import participants.');
       this.router.navigate(['/participants']);
       return;
     }
+    this.importMode.set(params.get('mode') === 'ADD_ON' ? 'ADD_ON' : 'IMPORT');
     this.selectedEventId.set(eventId);
     this.loadEvent(eventId);
     this.loadImportFields(eventId);
@@ -296,25 +303,27 @@ export class ImportMapper {
     if (eventId === null || !file || !this.canProceed() || this.isImporting()) return;
 
     this.isImporting.set(true);
-    this.participantService.launchBatchImport(eventId, file, this.mappingConfigJson()).subscribe({
-      next: (response) => {
-        this.importProgress.start(eventId, response.jobExecutionId);
-        this.toast.success(
-          `Import job #${response.jobExecutionId} started — track progress in the corner.`,
-          'Import started',
-        );
-        const orgId = this.selectedEvent()?.organizationId;
-        this.router.navigate(['/participants/event', eventId, 'list'], {
-          queryParams: {
-            organizationId: orgId != null ? String(orgId) : undefined,
-            eventId: String(eventId),
-          },
-        });
-      },
-      error: (error) => {
-        this.isImporting.set(false);
-        this.errorHandler.showError(error, 'Failed to start import');
-      },
-    });
+    this.participantService
+      .launchBatchImport(eventId, file, this.mappingConfigJson(), this.importMode())
+      .subscribe({
+        next: (response) => {
+          this.importProgress.start(eventId, response.jobExecutionId);
+          this.toast.success(
+            `${this.isAddOn() ? 'Add-on import' : 'Import'} job #${response.jobExecutionId} started — track progress in the corner.`,
+            this.isAddOn() ? 'Add-on import started' : 'Import started',
+          );
+          const orgId = this.selectedEvent()?.organizationId;
+          this.router.navigate(['/participants/event', eventId, 'list'], {
+            queryParams: {
+              organizationId: orgId != null ? String(orgId) : undefined,
+              eventId: String(eventId),
+            },
+          });
+        },
+        error: (error) => {
+          this.isImporting.set(false);
+          this.errorHandler.showError(error, 'Failed to start import');
+        },
+      });
   }
 }

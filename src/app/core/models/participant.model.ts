@@ -205,6 +205,14 @@ export interface ImportJobListResponse {
   totalPages: number;
 }
 
+/**
+ * Batch-import run mode (sent as the `mode` query param on launch).
+ * - `IMPORT` (default): full load — wipes existing participants, then loads the
+ *   file. Allowed only while the event is DRAFT.
+ * - `ADD_ON`: appends walk-ins without wiping. Allowed while DRAFT or PUBLISHED.
+ */
+export type ImportMode = 'IMPORT' | 'ADD_ON';
+
 export interface BatchImportResponse {
   jobExecutionId: number;
   status: string;

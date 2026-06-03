@@ -59,14 +59,25 @@
     <p-card>
       <!-- Page-level actions (outside the tabbed content) -->
       <div class="flex flex-col sm:flex-row gap-2 mb-4">
-        <p-button
-          (onClick)="startImport()"
-          [disabled]="!canImport()"
-          [size]="buttonSize"
-          icon="pi pi-upload"
-          label="Import Participants"
-          severity="primary"
-        ></p-button>
+        @if (canFullImport()) {
+          <p-button
+            (onClick)="startImport('IMPORT')"
+            [size]="buttonSize"
+            icon="pi pi-upload"
+            label="Import Participants"
+            severity="primary"
+          ></p-button>
+        }
+        @if (canAddOn()) {
+          <p-button
+            (onClick)="startImport('ADD_ON')"
+            [outlined]="true"
+            [size]="buttonSize"
+            icon="pi pi-user-plus"
+            label="Add On"
+            severity="secondary"
+          ></p-button>
+        }
         <p-button
           (onClick)="openCreateDialog()"
           [size]="buttonSize"
@@ -83,11 +94,17 @@
         ></p-button>
       </div>
 
-      @if (selectedEvent() && !canImport()) {
+      @if (selectedEvent() && !canAddOn()) {
         <p class="mb-4 -mt-2 text-sm text-muted-color">
           <i class="pi pi-info-circle"></i>
-          Import is only available for events in <strong>draft</strong> status. This event is
-          {{ selectedEvent()?.status }}.
+          Importing participants is only available for events in <strong>draft</strong> or
+          <strong>published</strong> status. This event is {{ selectedEvent()?.status }}.
+        </p>
+      } @else if (selectedEvent() && !canFullImport()) {
+        <p class="mb-4 -mt-2 text-sm text-muted-color">
+          <i class="pi pi-info-circle"></i>
+          This event is <strong>published</strong>, so only <strong>Add On</strong> (append) is
+          available. A full import that replaces all participants is limited to draft events.
         </p>
       }
 

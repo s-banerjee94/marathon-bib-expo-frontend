@@ -1,9 +1,14 @@
 <div class="p-2 sm:p-3 md:p-4">
   <div class="mb-5">
-    <h1 class="text-3xl font-bold">Import Participants</h1>
+    <h1 class="text-3xl font-bold">{{ isAddOn() ? 'Add On' : 'Import Participants' }}</h1>
     <p class="mt-2">
-      Choose an event, upload a CSV, map its columns to participant fields by dragging, then run the
-      import.
+      @if (isAddOn()) {
+        Upload a CSV, map its columns to participant fields by dragging, then add these participants
+        to the event — existing participants are kept.
+      } @else {
+        Upload a CSV, map its columns to participant fields by dragging, then run a full import that
+        replaces all existing participants.
+      }
     </p>
   </div>
 
@@ -43,8 +48,12 @@
     @case (1) {
       <div class="w-full min-w-0 space-y-4">
         <p-message severity="info">
-          Importing into <strong>{{ selectedEventName() }}</strong
-          >. Upload a CSV with a header row — you'll map its columns to fields by dragging in the
+          @if (isAddOn()) {
+            Adding participants to <strong>{{ selectedEventName() }}</strong>
+          } @else {
+            Importing into <strong>{{ selectedEventName() }}</strong>
+          }
+          . Upload a CSV with a header row — you'll map its columns to fields by dragging in the
           next step, so no fixed column order is required.
         </p-message>
 
@@ -237,6 +246,10 @@
         <!-- summary chips -->
         <div class="flex flex-wrap items-center gap-2">
           <p-tag [value]="selectedEventName()" severity="contrast"></p-tag>
+          <p-tag
+            [value]="isAddOn() ? 'Add on' : 'Full import'"
+            [severity]="isAddOn() ? 'info' : 'danger'"
+          ></p-tag>
           <p-tag [value]="mappingConfig().mappings.length + ' mapped'" severity="success"></p-tag>
           <p-tag [value]="mappingConfig().goodies.length + ' goodies'" severity="info"></p-tag>
           <p-tag [value]="mappingConfig().other.length + ' other'" severity="info"></p-tag>
@@ -283,10 +296,18 @@
           </p>
         }
 
-        <p-message severity="warn">
-          Importing deletes <strong>all existing participants</strong> for
-          {{ selectedEventName() }} and replaces them with the {{ totalRows() }} rows in this file.
-        </p-message>
+        @if (isAddOn()) {
+          <p-message severity="info">
+            This appends the <strong>{{ totalRows() }} rows</strong> in this file to
+            {{ selectedEventName() }}. Existing participants are kept.
+          </p-message>
+        } @else {
+          <p-message severity="warn">
+            Importing deletes <strong>all existing participants</strong> for
+            {{ selectedEventName() }} and replaces them with the {{ totalRows() }} rows in this
+            file.
+          </p-message>
+        }
 
         <!-- raw JSON kept, collapsed -->
         <p-panel header="Raw mapping JSON" [toggleable]="true" [collapsed]="true">
@@ -326,10 +347,10 @@
             (onClick)="launchImport()"
             [disabled]="!canProceed()"
             [loading]="isImporting()"
-            icon="pi pi-upload"
+            [icon]="isAddOn() ? 'pi pi-user-plus' : 'pi pi-upload'"
             iconPos="right"
-            label="Import Participants"
-            severity="danger"
+            [label]="isAddOn() ? 'Add On' : 'Import Participants'"
+            [severity]="isAddOn() ? 'success' : 'danger'"
           ></p-button>
         </div>
       </div>

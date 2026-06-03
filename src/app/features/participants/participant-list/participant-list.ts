@@ -27,7 +27,7 @@ import { ButtonModule } from 'primeng/button';
 import { TooltipModule } from 'primeng/tooltip';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { ConfirmationService } from 'primeng/api';
-import { Participant } from '../../../core/models/participant.model';
+import { ImportMode, Participant } from '../../../core/models/participant.model';
 import { ParticipantService } from '../../../core/services/participant.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { UserRole } from '../../../core/models/user.model';
@@ -130,11 +130,18 @@ export class ParticipantList implements OnInit {
   // The currently selected event (with status), read from the event selector.
   protected readonly selectedEvent = computed(() => this.eventSelector()?.selectedEvent() ?? null);
 
-  // Import is a full-replace and the backend only allows it for DRAFT events,
-  // so the entry point is disabled otherwise (mirrors the mapper's own gating).
-  protected readonly canImport = computed(
+  // Full Import wipes existing participants, so the backend allows it for DRAFT
+  // events only. Add-on (append walk-ins) is also allowed for PUBLISHED events.
+  protected readonly canFullImport = computed(
     () => this.selectedEventId() != null && this.selectedEvent()?.status === EventStatus.DRAFT,
   );
+  protected readonly canAddOn = computed(() => {
+    const status = this.selectedEvent()?.status;
+    return (
+      this.selectedEventId() != null &&
+      (status === EventStatus.DRAFT || status === EventStatus.PUBLISHED)
+    );
+  });
 
   // Active tab derived from router state — reads the deepest child route path
   activeTab = toSignal(
@@ -441,13 +448,17 @@ export class ParticipantList implements OnInit {
   }
 
   // ---------- Import ----------
-  // Opens the column-mapping importer for the selected event. The mapper owns the
-  // upload → map → confirm → launch flow and reports progress via ImportProgressService.
-  startImport(): void {
+  // Opens the column-mapping importer for the selected event in the requested mode.
+  // The mapper owns the upload → map → confirm → launch flow and reports progress
+  // via ImportProgressService. IMPORT (full replace) is DRAFT-only; ADD_ON (append
+  // walk-ins) is allowed for DRAFT or PUBLISHED — each button gates its own mode.
+  startImport(mode: ImportMode = 'IMPORT'): void {
     const eventId = this.selectedEventId();
-    if (eventId == null || !this.canImport()) return;
+    if (eventId == null) return;
+    if (mode === 'IMPORT' && !this.canFullImport()) return;
+    if (mode === 'ADD_ON' && !this.canAddOn()) return;
     this.router.navigate(['/participants/import-map'], {
-      queryParams: { eventId: String(eventId) },
+      queryParams: { eventId: String(eventId), mode },
     });
   }
 
