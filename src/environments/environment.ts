@@ -1,11 +1,10 @@
 // Development environment. Replaced by environment.prod.ts during production builds (see angular.json fileReplacements).
 export const environment = {
   production: false,
-  // localhost keeps the frontend (localhost:4200) and backend same-SITE so the
-  // HttpOnly refresh + CSRF cookies are sent (port is ignored for SameSite).
-  // Requires the backend to be running on THIS machine at port 8080.
-  apiBaseUrl: 'http://localhost:8080/api',
-  // Network backend (different machine). NOTE: cross-site from localhost over HTTP
-  // means auth cookies will NOT be sent — use the dev proxy instead if you need this.
-  // apiBaseUrl: 'http://192.168.0.101:8080/api',
+  // Relative path → routed through the dev proxy (proxy.conf.json) to the backend
+  // on THIS machine at :8080. This keeps the frontend and backend same-ORIGIN, so
+  // the HttpOnly refresh + readable csrfToken cookies work — including over plain
+  // HTTP from another device (e.g. your phone) at http://<laptop-ip>:4200.
+  // Requires the backend running on this machine at port 8080.
+  apiBaseUrl: '/api',
 };

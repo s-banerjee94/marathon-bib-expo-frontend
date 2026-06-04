@@ -140,6 +140,15 @@ export class QrScan implements OnDestroy {
   }
 
   async startScan(): Promise<void> {
+    // The camera + BarcodeDetector APIs are only exposed in a secure context
+    // (HTTPS or localhost). Over plain http://<ip> the browser hides them, so check
+    // this FIRST — otherwise an Android Chrome user wrongly sees "browser unsupported".
+    if (!window.isSecureContext) {
+      this.scanError.set(
+        'Camera scanning needs a secure (HTTPS) connection. Open this app over HTTPS to scan, or enter a BIB number manually below.',
+      );
+      return;
+    }
     if (!this.barcodeDetectorSupported) {
       this.scanError.set(
         'QR scanning requires Chrome on Android or Safari 17.4+. Enter a BIB number manually below.',

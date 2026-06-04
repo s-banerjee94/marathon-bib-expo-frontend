@@ -1,14 +1,11 @@
 import { inject, Injectable, signal } from '@angular/core';
-import { HttpClient, HttpErrorResponse, HttpHeaders } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Observable, of, Subject, throwError } from 'rxjs';
 import { catchError, finalize, switchMap, tap } from 'rxjs/operators';
 import { AuthResponse, LoginRequest, User, UserRole } from '../models/user.model';
 import { BASE_URI } from '../../shared/constants/api.constant';
-import { getCookie } from '../utils/cookie.util';
 import { LocalStorageService } from './local-storage.service';
 
-const CSRF_COOKIE_NAME = 'csrfToken';
-const CSRF_HEADER_NAME = 'X-CSRF-Token';
 const SESSION_INVALIDATED_MESSAGE = 'Session invalidated by another login. Please log in again.';
 
 @Injectable({
@@ -63,26 +60,17 @@ export class AuthService {
 
   /**
    * POST /auth/refresh — exchanges the HttpOnly refresh-token cookie for a new
-   * access token (and rotates the refresh cookie server-side). Must echo the
-   * CSRF token as a header.
+   * access token (and rotates the refresh cookie server-side). The CSRF header is
+   * attached by authInterceptor (all mutating requests carry it).
    */
   refresh(): Observable<string> {
-    return this.http
-      .post<AuthResponse>(
-        this.refreshUrl,
-        {},
-        {
-          headers: this.csrfHeaders(),
-          withCredentials: true,
-        },
-      )
-      .pipe(
-        tap((res) => {
-          this.accessTokenSignal.set(res.accessToken);
-          this.tokenRefreshedSubject.next(res.accessToken);
-        }),
-        switchMap((res) => of(res.accessToken)),
-      );
+    return this.http.post<AuthResponse>(this.refreshUrl, {}, { withCredentials: true }).pipe(
+      tap((res) => {
+        this.accessTokenSignal.set(res.accessToken);
+        this.tokenRefreshedSubject.next(res.accessToken);
+      }),
+      switchMap((res) => of(res.accessToken)),
+    );
   }
 
   // ============================================================================
@@ -109,19 +97,10 @@ export class AuthService {
    * Always clears local state, even if the server call fails (e.g. network down).
    */
   logout(): Observable<void> {
-    return this.http
-      .post<void>(
-        this.logoutUrl,
-        {},
-        {
-          headers: this.csrfHeaders(),
-          withCredentials: true,
-        },
-      )
-      .pipe(
-        catchError(() => of(void 0)),
-        finalize(() => this.clearLocalState()),
-      );
+    return this.http.post<void>(this.logoutUrl, {}, { withCredentials: true }).pipe(
+      catchError(() => of(void 0)),
+      finalize(() => this.clearLocalState()),
+    );
   }
 
   /**
@@ -188,11 +167,6 @@ export class AuthService {
     // Wipe ALL persisted state on logout — theme, table prefs, in-flight imports,
     // legacy tokens. The next session starts from defaults.
     this.storage.clear();
-  }
-
-  private csrfHeaders(): HttpHeaders {
-    const token = getCookie(CSRF_COOKIE_NAME);
-    return token ? new HttpHeaders({ [CSRF_HEADER_NAME]: token }) : new HttpHeaders();
   }
 
   private handleLoginError(error: unknown): Observable<never> {

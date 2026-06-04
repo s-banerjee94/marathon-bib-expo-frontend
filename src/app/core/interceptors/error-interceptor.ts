@@ -9,6 +9,7 @@ import { inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { BehaviorSubject, catchError, filter, Observable, switchMap, take, throwError } from 'rxjs';
 import { AuthService } from '../services/auth.service';
+import { CSRF_HEADER_NAME, getCsrfToken, isMutatingMethod } from '../utils/csrf.util';
 
 const AUTH_PATH_LOGIN = '/auth/login';
 const AUTH_PATH_REFRESH = '/auth/refresh';
@@ -28,7 +29,15 @@ function isAuthEndpoint(url: string): boolean {
 }
 
 function attachToken(request: HttpRequest<unknown>, token: string): HttpRequest<unknown> {
-  return request.clone({ setHeaders: { Authorization: `Bearer ${token}` } });
+  // Re-read the CSRF cookie too — /refresh may have rotated it, so the original
+  // request's header would otherwise be stale and fail validation on retry.
+  const csrfToken = isMutatingMethod(request.method) ? getCsrfToken() : null;
+  return request.clone({
+    setHeaders: {
+      Authorization: `Bearer ${token}`,
+      ...(csrfToken ? { [CSRF_HEADER_NAME]: csrfToken } : {}),
+    },
+  });
 }
 
 export const errorInterceptor: HttpInterceptorFn = (request, next) => {
