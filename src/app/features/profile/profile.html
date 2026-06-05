@@ -1,0 +1,431 @@
+<div class="p-2 sm:p-3 md:p-4">
+  <!-- Page header -->
+  <div class="mb-6 flex items-start justify-between gap-3">
+    <div class="min-w-0">
+      <h1 class="text-3xl font-bold mb-2">My Profile</h1>
+      <p class="text-color-secondary">Manage your personal information and account security.</p>
+    </div>
+    <p-button
+      (onClick)="goBack()"
+      [text]="true"
+      icon="pi pi-arrow-left"
+      label="Back"
+      severity="secondary"
+      size="small"
+    />
+  </div>
+
+  @if (user(); as u) {
+    <div class="flex flex-col gap-6">
+      <!-- Identity hero (full-width banner) -->
+      <p-card class="shadow-lg">
+        <ng-template pTemplate="content">
+          <div class="flex flex-col sm:flex-row sm:items-center gap-5">
+            <div class="relative shrink-0">
+              <p-avatar
+                (onImageError)="onAvatarImageError()"
+                [image]="avatarImage()"
+                [label]="avatarImage() ? undefined : avatarLabel()"
+                shape="circle"
+                size="xlarge"
+              />
+              @if (avatarPending()) {
+                <div
+                  class="absolute inset-0 flex items-center justify-center rounded-full"
+                  style="background: color-mix(in srgb, var(--surface-card), transparent 20%)"
+                >
+                  <p-progressSpinner
+                    strokeWidth="4"
+                    styleClass="!w-8 !h-8"
+                    ariaLabel="Updating photo"
+                  />
+                </div>
+              }
+            </div>
+
+            <div class="flex flex-col gap-1 min-w-0">
+              <div class="flex items-center gap-2 flex-wrap">
+                <h2 class="text-xl font-semibold truncate">{{ u.fullName | defaultValue }}</h2>
+                <p-tag [value]="roleLabel()" />
+              </div>
+              <span class="text-sm" style="color: var(--text-color-secondary)">
+                &#64;{{ u.username }}
+              </span>
+            </div>
+
+            <div class="flex flex-wrap gap-2 sm:ml-auto">
+              <p-button
+                (onClick)="openAvatarPicker()"
+                [disabled]="avatarPending()"
+                [outlined]="true"
+                icon="pi pi-camera"
+                label="Change photo"
+                size="small"
+              />
+              @if (u.profilePictureUrl) {
+                <p-button
+                  (onClick)="onAvatarRemove()"
+                  [disabled]="avatarPending()"
+                  [text]="true"
+                  icon="pi pi-trash"
+                  label="Remove"
+                  severity="danger"
+                  size="small"
+                />
+              }
+            </div>
+          </div>
+          <input
+            #avatarInput
+            type="file"
+            accept="image/*"
+            class="hidden"
+            (change)="onAvatarInputChange($event)"
+          />
+        </ng-template>
+      </p-card>
+
+      <!-- Three equal-height columns -->
+      <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+        <!-- Personal information -->
+        <p-card
+          class="h-full shadow-lg"
+          styleClass="h-full"
+          [pt]="{
+            body: { class: 'flex h-full flex-col' },
+            content: { class: 'flex flex-1 flex-col' },
+          }"
+        >
+          <ng-template pTemplate="content">
+            <form
+              #profileForm="ngForm"
+              (ngSubmit)="onSaveProfile(profileForm)"
+              class="flex flex-1 flex-col gap-5"
+            >
+              <div class="flex items-start gap-3">
+                <span
+                  class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg"
+                  style="
+                    background: color-mix(in srgb, var(--primary-color), transparent 90%);
+                    color: var(--primary-color);
+                  "
+                >
+                  <i class="pi pi-user text-lg"></i>
+                </span>
+                <div class="min-w-0">
+                  <h2 class="text-lg font-semibold leading-tight">Personal Information</h2>
+                  <p class="text-sm mt-0.5" style="color: var(--text-color-secondary)">
+                    Update your name and contact details.
+                  </p>
+                </div>
+              </div>
+
+              <div class="flex flex-col gap-4">
+                <!-- Full Name -->
+                <div class="flex flex-col gap-1">
+                  <p-floatlabel variant="on">
+                    <input
+                      #fullName="ngModel"
+                      [(ngModel)]="profile.fullName"
+                      [invalid]="shouldShowError(fullName, profileForm.submitted)"
+                      [pSize]="inputSize"
+                      autocomplete="name"
+                      fluid="true"
+                      id="fullName"
+                      maxlength="100"
+                      name="fullName"
+                      pInputText
+                      required
+                    />
+                    <label for="fullName">Full Name *</label>
+                  </p-floatlabel>
+                  @if (shouldShowError(fullName, profileForm.submitted)) {
+                    <p-message [size]="inputSize" severity="error" variant="simple">
+                      @if (fullName.hasError('required')) {
+                        Full name is required.
+                      }
+                      @if (fullName.hasError('maxlength')) {
+                        Full name must not exceed 100 characters.
+                      }
+                    </p-message>
+                  }
+                </div>
+
+                <!-- Email -->
+                <div class="flex flex-col gap-1">
+                  <p-floatlabel variant="on">
+                    <input
+                      #email="ngModel"
+                      [(ngModel)]="profile.email"
+                      [invalid]="shouldShowError(email, profileForm.submitted)"
+                      [pSize]="inputSize"
+                      [required]="contactRequired()"
+                      autocomplete="email"
+                      email
+                      fluid="true"
+                      id="email"
+                      maxlength="100"
+                      name="email"
+                      pInputText
+                      type="email"
+                    />
+                    <label for="email">Email{{ contactRequired() ? ' *' : '' }}</label>
+                  </p-floatlabel>
+                  @if (shouldShowError(email, profileForm.submitted)) {
+                    <p-message [size]="inputSize" severity="error" variant="simple">
+                      @if (email.hasError('required')) {
+                        Email is required.
+                      }
+                      @if (email.hasError('email')) {
+                        Please enter a valid email.
+                      }
+                    </p-message>
+                  }
+                </div>
+
+                <!-- Phone -->
+                <div class="flex flex-col gap-1">
+                  <p-floatlabel variant="on">
+                    <input
+                      #phone="ngModel"
+                      [(ngModel)]="profile.phoneNumber"
+                      [invalid]="shouldShowError(phone, profileForm.submitted)"
+                      [pSize]="inputSize"
+                      [required]="contactRequired()"
+                      autocomplete="tel"
+                      fluid="true"
+                      id="phone"
+                      maxlength="10"
+                      name="phoneNumber"
+                      pInputText
+                      pattern="^\d{10}$"
+                      type="tel"
+                    />
+                    <label for="phone">Phone{{ contactRequired() ? ' *' : '' }}</label>
+                  </p-floatlabel>
+                  @if (shouldShowError(phone, profileForm.submitted)) {
+                    <p-message [size]="inputSize" severity="error" variant="simple">
+                      @if (phone.hasError('required')) {
+                        Phone number is required.
+                      }
+                      @if (phone.hasError('pattern')) {
+                        Enter a valid 10-digit phone number.
+                      }
+                    </p-message>
+                  }
+                </div>
+              </div>
+
+              <div
+                class="flex justify-end gap-3 pt-4 mt-auto border-t"
+                style="border-color: var(--surface-border)"
+              >
+                <p-button
+                  (onClick)="resetProfile(profileForm)"
+                  [disabled]="savingProfile() || profileForm.pristine"
+                  [text]="true"
+                  label="Reset"
+                  severity="secondary"
+                  size="small"
+                  type="button"
+                />
+                <p-button
+                  [disabled]="savingProfile() || profileForm.invalid || profileForm.pristine"
+                  [loading]="savingProfile()"
+                  icon="pi pi-check"
+                  label="Save"
+                  size="small"
+                  type="submit"
+                />
+              </div>
+            </form>
+          </ng-template>
+        </p-card>
+
+        <!-- Password -->
+        <p-card
+          class="h-full shadow-lg"
+          styleClass="h-full"
+          [pt]="{
+            body: { class: 'flex h-full flex-col' },
+            content: { class: 'flex flex-1 flex-col' },
+          }"
+        >
+          <ng-template pTemplate="content">
+            <form
+              #passwordForm="ngForm"
+              (ngSubmit)="onSavePassword(passwordForm)"
+              class="flex flex-1 flex-col gap-5"
+            >
+              <div class="flex items-start gap-3">
+                <span
+                  class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg"
+                  style="
+                    background: color-mix(in srgb, var(--primary-color), transparent 90%);
+                    color: var(--primary-color);
+                  "
+                >
+                  <i class="pi pi-lock text-lg"></i>
+                </span>
+                <div class="min-w-0">
+                  <h2 class="text-lg font-semibold leading-tight">Password</h2>
+                  <p class="text-sm mt-0.5" style="color: var(--text-color-secondary)">
+                    Choose a strong password to keep your account secure.
+                  </p>
+                </div>
+              </div>
+
+              <div class="flex flex-col gap-4">
+                <!-- New password -->
+                <div class="flex flex-col gap-1">
+                  <p-floatlabel variant="on">
+                    <p-password
+                      #newPassword="ngModel"
+                      [(ngModel)]="passwords.newPassword"
+                      [feedback]="true"
+                      [fluid]="true"
+                      [maxlength]="100"
+                      [toggleMask]="true"
+                      appendTo="body"
+                      autocomplete="new-password"
+                      inputId="newPassword"
+                      name="newPassword"
+                      size="small"
+                    />
+                    <label for="newPassword">New Password *</label>
+                  </p-floatlabel>
+                  @if (
+                    (newPassword.touched || passwordForm.submitted) &&
+                    passwords.newPassword.length > 0 &&
+                    !newPasswordValid
+                  ) {
+                    <p-message [size]="inputSize" severity="error" variant="simple">
+                      Password must be at least 8 characters.
+                    </p-message>
+                  }
+                </div>
+
+                <!-- Confirm password -->
+                <div class="flex flex-col gap-1">
+                  <p-floatlabel variant="on">
+                    <p-password
+                      #confirmPassword="ngModel"
+                      [(ngModel)]="passwords.confirmPassword"
+                      [feedback]="false"
+                      [fluid]="true"
+                      [maxlength]="100"
+                      [toggleMask]="true"
+                      autocomplete="new-password"
+                      inputId="confirmPassword"
+                      name="confirmPassword"
+                      size="small"
+                    />
+                    <label for="confirmPassword">Confirm Password *</label>
+                  </p-floatlabel>
+                  @if (
+                    (confirmPassword.touched || passwordForm.submitted) &&
+                    passwords.confirmPassword.length > 0 &&
+                    !passwordsMatch
+                  ) {
+                    <p-message [size]="inputSize" severity="error" variant="simple">
+                      Passwords do not match.
+                    </p-message>
+                  }
+                </div>
+              </div>
+
+              <div
+                class="flex justify-end pt-4 mt-auto border-t"
+                style="border-color: var(--surface-border)"
+              >
+                <p-button
+                  [disabled]="savingPassword() || !newPasswordValid || !passwordsMatch"
+                  [loading]="savingPassword()"
+                  icon="pi pi-check"
+                  label="Update"
+                  size="small"
+                  type="submit"
+                />
+              </div>
+            </form>
+          </ng-template>
+        </p-card>
+
+        <!-- Account (read-only) -->
+        <p-card
+          class="h-full shadow-lg"
+          styleClass="h-full"
+          [pt]="{
+            body: { class: 'flex h-full flex-col' },
+            content: { class: 'flex flex-1 flex-col' },
+          }"
+        >
+          <ng-template pTemplate="content">
+            <div class="flex flex-col gap-5">
+              <div class="flex items-start gap-3">
+                <span
+                  class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg"
+                  style="
+                    background: color-mix(in srgb, var(--primary-color), transparent 90%);
+                    color: var(--primary-color);
+                  "
+                >
+                  <i class="pi pi-id-card text-lg"></i>
+                </span>
+                <div class="min-w-0">
+                  <h2 class="text-lg font-semibold leading-tight">Account</h2>
+                  <p class="text-sm mt-0.5" style="color: var(--text-color-secondary)">
+                    Read-only account information.
+                  </p>
+                </div>
+              </div>
+
+              <div class="flex flex-col gap-5">
+                <div class="flex flex-col gap-1">
+                  <span
+                    class="text-xs uppercase tracking-wide"
+                    style="color: var(--text-color-secondary)"
+                  >
+                    Username
+                  </span>
+                  <span class="text-sm font-medium">{{ u.username | defaultValue }}</span>
+                </div>
+                <div class="flex flex-col gap-1">
+                  <span
+                    class="text-xs uppercase tracking-wide"
+                    style="color: var(--text-color-secondary)"
+                  >
+                    Organization
+                  </span>
+                  <span class="text-sm font-medium">{{ u.organizationName | defaultValue }}</span>
+                </div>
+                <div class="flex flex-col gap-1">
+                  <span
+                    class="text-xs uppercase tracking-wide"
+                    style="color: var(--text-color-secondary)"
+                  >
+                    Account created
+                  </span>
+                  <span class="text-sm font-medium">
+                    {{ u.createdAt ? (u.createdAt | date: 'mediumDate') : '--' }}
+                  </span>
+                </div>
+                <div class="flex flex-col gap-1">
+                  <span
+                    class="text-xs uppercase tracking-wide"
+                    style="color: var(--text-color-secondary)"
+                  >
+                    Last updated
+                  </span>
+                  <span class="text-sm font-medium">
+                    {{ u.updatedAt ? (u.updatedAt | date: 'MMM d, y, h:mm a') : '--' }}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </ng-template>
+        </p-card>
+      </div>
+    </div>
+  }
+</div>

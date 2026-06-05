@@ -12,19 +12,14 @@ export const ORGANIZATIONS_ROUTES: Routes = [
       import('./organization-list/organization-list').then((m) => m.OrganizationList),
     canActivate: [roleGuard(ORGANIZATION_ROLES)],
     title: pageTitle('Organizations'),
-    children: [
-      {
-        path: 'new',
-        loadComponent: () =>
-          import('./organization-form/organization-form').then((m) => m.OrganizationForm),
-        title: pageTitle('New Organization'),
-      },
-      {
-        path: ':id/edit',
-        loadComponent: () =>
-          import('./organization-form/organization-form').then((m) => m.OrganizationForm),
-        title: pageTitle('Edit Organization'),
-      },
-    ],
+  },
+  {
+    // ROOT/ADMIN edit opens the full-page organization account view (not a dialog),
+    // where governance fields (tier, billing email, quotas) are also editable.
+    path: ':id/edit',
+    loadComponent: () =>
+      import('../organization-account/organization-account').then((m) => m.OrganizationAccount),
+    canActivate: [roleGuard(ORGANIZATION_ROLES)],
+    title: pageTitle('Edit Organization'),
   },
 ];

@@ -82,7 +82,11 @@ body.blocked-scroll {
 .layout-sidebar {
   top: var(--topbar-height);
   width: var(--sidebar-width);
+  /* 100vh extends behind the mobile system nav bar (clipping the bottom-pinned item);
+     dvh tracks the visible viewport. vh kept as a fallback for older browsers. */
   height: calc(100vh - var(--topbar-height));
+  height: calc(100dvh - var(--topbar-height));
+  padding-bottom: calc(1rem + env(safe-area-inset-bottom));
 }
 
 @media (max-width: 991px) {

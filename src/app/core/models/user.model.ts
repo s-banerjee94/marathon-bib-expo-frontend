@@ -10,6 +10,15 @@ export enum UserRole {
   DISTRIBUTOR = 'DISTRIBUTOR',
 }
 
+/** Human-readable labels for each role, for display in menus and profile views. */
+export const ROLE_LABELS: Record<UserRole, string> = {
+  [UserRole.ROOT]: 'Root',
+  [UserRole.ADMIN]: 'Admin',
+  [UserRole.ORGANIZER_ADMIN]: 'Organizer Admin',
+  [UserRole.ORGANIZER_USER]: 'Organizer User',
+  [UserRole.DISTRIBUTOR]: 'Distributor',
+};
+
 /**
  * User model matching backend UserResponse
  */
@@ -20,6 +29,8 @@ export interface User {
   fullName: string;
   phoneNumber: string;
   role: UserRole;
+  /** Short-lived presigned URL for the profile picture; null/undefined if none set. */
+  profilePictureUrl?: string;
   organizationId?: number;
   organizationName?: string;
   enabled: boolean;

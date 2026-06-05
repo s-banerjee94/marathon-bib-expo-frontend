@@ -42,6 +42,8 @@ export interface Organization {
   country?: string;
   taxId?: string;
   registrationNumber?: string;
+  /** Short-lived presigned URL for the organization logo; null/undefined if none set. */
+  logoUrl?: string;
   userQuota?: UserQuotaDto;
   subscriptionTier?: string;
   subscriptionStatus?: string;

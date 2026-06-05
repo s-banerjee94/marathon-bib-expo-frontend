@@ -120,6 +120,18 @@ export class AuthService {
     return this.currentUserSignal()?.role ?? null;
   }
 
+  /**
+   * Merge fields into the cached current user (e.g. after a profile-picture
+   * change) so signals like the navbar avatar update immediately. No-op when not
+   * logged in.
+   */
+  updateCurrentUser(patch: Partial<User>): void {
+    const current = this.currentUserSignal();
+    if (current) {
+      this.currentUserSignal.set({ ...current, ...patch });
+    }
+  }
+
   hasRole(role: UserRole): boolean {
     return this.currentUserSignal()?.role === role;
   }

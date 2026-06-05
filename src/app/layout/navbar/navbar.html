@@ -147,16 +147,43 @@
         </p-popover>
       }
 
-      <!-- User Avatar Menu -->
-      <p-avatar
-        (click)="menu.toggle($event)"
-        [label]="avatarLabel()"
-        shape="circle"
-        size="normal"
-        styleClass="cursor-pointer"
-        ariaLabel="Open user menu"
-      ></p-avatar>
-      <p-menu #menu [model]="items" popup="true"></p-menu>
+      <!-- User Avatar Menu — only for authenticated users -->
+      @if (isAuthenticated()) {
+        <p-avatar
+          (click)="menu.toggle($event)"
+          (onImageError)="onAvatarImageError()"
+          [image]="avatarImage()"
+          [label]="avatarImage() ? undefined : avatarLabel()"
+          shape="circle"
+          size="normal"
+          styleClass="cursor-pointer shrink-0"
+          ariaLabel="Open user menu"
+        ></p-avatar>
+        <p-menu #menu [model]="items" popup="true" appendTo="body" styleClass="min-w-56 w-max">
+          <!-- Identity header (industry-standard account menu) -->
+          <ng-template #start>
+            <div
+              class="flex items-center gap-3 px-3 py-3 border-b"
+              style="border-color: var(--surface-border)"
+            >
+              <p-avatar
+                (onImageError)="onAvatarImageError()"
+                [image]="avatarImage()"
+                [label]="avatarImage() ? undefined : avatarLabel()"
+                shape="circle"
+                size="large"
+                styleClass="shrink-0"
+              ></p-avatar>
+              <div class="flex flex-col items-start gap-1">
+                <span class="font-semibold whitespace-nowrap">
+                  {{ currentUser()?.fullName || currentUser()?.username }}
+                </span>
+                <p-tag [value]="roleLabel()" />
+              </div>
+            </div>
+          </ng-template>
+        </p-menu>
+      }
     </div>
   </ng-template>
 </p-menubar>

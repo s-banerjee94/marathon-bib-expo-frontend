@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
-import { authGuard } from './core/guards/auth.guard';
+import { authGuard, roleGuard } from './core/guards/auth.guard';
+import { UserRole } from './core/models/user.model';
 import { pageTitle } from './shared/constants/app.constant';
 
 export const routes: Routes = [
@@ -18,6 +19,21 @@ export const routes: Routes = [
     loadComponent: () => import('./features/dashboard/dashboard').then((m) => m.Dashboard),
     canActivate: [authGuard],
     title: pageTitle('Dashboard'),
+  },
+  {
+    path: 'profile',
+    loadComponent: () => import('./features/profile/profile').then((m) => m.Profile),
+    canActivate: [authGuard],
+    title: pageTitle('My Profile'),
+  },
+  {
+    path: 'organization',
+    loadComponent: () =>
+      import('./features/organization-account/organization-account').then(
+        (m) => m.OrganizationAccount,
+      ),
+    canActivate: [roleGuard([UserRole.ORGANIZER_ADMIN])],
+    title: pageTitle('Organization'),
   },
   {
     path: 'organizations',

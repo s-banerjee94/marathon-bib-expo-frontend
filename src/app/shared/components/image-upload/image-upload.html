@@ -1,0 +1,71 @@
+<div class="flex items-center gap-4">
+  <!-- Preview / placeholder -->
+  <div
+    class="relative flex shrink-0 items-center justify-center overflow-hidden border"
+    [class.rounded-full]="shape === 'circle'"
+    [class.rounded-lg]="shape === 'square'"
+    [class.w-20]="shape === 'circle'"
+    [class.h-20]="shape === 'circle'"
+    [class.w-24]="shape === 'square'"
+    [class.h-24]="shape === 'square'"
+    style="background: var(--surface-ground); border-color: var(--surface-border)"
+  >
+    @if (imageUrl && !broken()) {
+      <img
+        (error)="onImageError()"
+        [src]="imageUrl"
+        [alt]="alt"
+        class="h-full w-full"
+        [class.object-cover]="shape === 'circle'"
+        [class.object-contain]="shape === 'square'"
+        [class.p-2]="shape === 'square'"
+      />
+    } @else {
+      <i
+        class="pi text-2xl"
+        [class.pi-user]="shape === 'circle'"
+        [class.pi-image]="shape === 'square'"
+        style="color: var(--text-color-secondary)"
+      ></i>
+    }
+
+    @if (pending) {
+      <div
+        class="absolute inset-0 flex items-center justify-center"
+        style="background: color-mix(in srgb, var(--surface-card), transparent 25%)"
+      >
+        <p-progressSpinner strokeWidth="4" styleClass="!w-8 !h-8" ariaLabel="Uploading" />
+      </div>
+    }
+  </div>
+
+  <!-- Actions -->
+  <div class="flex flex-col gap-2">
+    <div class="flex flex-wrap gap-2">
+      <p-button
+        (onClick)="openPicker()"
+        [disabled]="isBusy"
+        [label]="imageUrl ? 'Change' : 'Upload'"
+        icon="pi pi-upload"
+        size="small"
+        [outlined]="true"
+      />
+      @if (imageUrl) {
+        <p-button
+          (onClick)="remove()"
+          [disabled]="isBusy"
+          label="Remove"
+          icon="pi pi-trash"
+          size="small"
+          severity="danger"
+          [text]="true"
+        />
+      }
+    </div>
+    @if (helpText) {
+      <span class="text-xs" style="color: var(--text-color-secondary)">{{ helpText }}</span>
+    }
+  </div>
+
+  <input #fileInput type="file" [accept]="accept" class="hidden" (change)="onFileChange($event)" />
+</div>

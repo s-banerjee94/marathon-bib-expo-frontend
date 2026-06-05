@@ -31,6 +31,22 @@
     (ngSubmit)="onSubmit(eventForm)"
     [class]="isDialogMode() ? 'flex flex-col gap-4 mt-2' : 'flex flex-col gap-4'"
   >
+    <!-- Logo — edit mode only -->
+    @if (isEditMode()) {
+      <div class="flex flex-col gap-2">
+        <span class="text-sm font-medium">Logo</span>
+        <app-image-upload
+          shape="square"
+          [imageUrl]="logoUrl()"
+          [pending]="logoPending()"
+          alt="Event logo"
+          helpText="PNG with a transparent background looks best. Resized to fit 1024px."
+          (fileSelected)="onLogoSelected($event)"
+          (removeRequested)="onLogoRemove()"
+        />
+      </div>
+    }
+
     <!-- Organization -->
     @if (showOrganizationDropdown()) {
       <div class="flex flex-col gap-1">

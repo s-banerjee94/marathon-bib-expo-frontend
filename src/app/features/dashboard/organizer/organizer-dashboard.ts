@@ -164,12 +164,12 @@ export class OrganizerDashboard implements OnInit {
   }
 
   goToCreateUser(): void {
-    this.router.navigate(['/users/new']);
+    this.router.navigate(['/users'], { queryParams: { create: 'true' } });
   }
 
   goToCreateDistributor(): void {
-    this.router.navigate(['/users/new'], {
-      queryParams: { role: UserRole.DISTRIBUTOR },
+    this.router.navigate(['/users'], {
+      queryParams: { create: 'true', createRole: UserRole.DISTRIBUTOR },
     });
   }
 

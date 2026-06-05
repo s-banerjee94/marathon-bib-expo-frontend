@@ -35,6 +35,8 @@ interface EventFormModel {
   organizationId: number;
 }
 import { EventService } from '../../../core/services/event.service';
+import { ImageUploadService } from '../../../core/services/image-upload.service';
+import { ImageUpload } from '../../../shared/components/image-upload/image-upload';
 import { AuthService } from '../../../core/services/auth.service';
 import { ErrorHandlerService } from '../../../core/services/error-handler.service';
 import { ToastService } from '../../../core/services/toast.service';
@@ -72,6 +74,7 @@ import {
     DatePickerModule,
     SkeletonModule,
     OrganizationSelector,
+    ImageUpload,
   ],
   templateUrl: './event-form.html',
 })
@@ -101,6 +104,9 @@ export class EventForm implements OnInit {
   eventId = signal<number | null>(null);
   isLoading = signal(false);
   timezoneOptions = signal<string[]>([]);
+  // Event logo (edit mode only)
+  logoUrl = signal<string | null | undefined>(undefined);
+  logoPending = signal(false);
   // Country and timezone data
   readonly countryOptions: CountryOption[] = COUNTRY_OPTIONS;
   // Form input size (controlled centrally via constant)
@@ -111,6 +117,7 @@ export class EventForm implements OnInit {
   // Template utility function
   shouldShowError = shouldShowError;
   private eventService = inject(EventService);
+  private imageUploadService = inject(ImageUploadService);
   private authService = inject(AuthService);
   // Check if user is ROOT or ADMIN (can create events for any organization)
   readonly isRootOrAdmin = this.authService.hasAnyRole([UserRole.ROOT, UserRole.ADMIN]);
@@ -275,6 +282,39 @@ export class EventForm implements OnInit {
     });
   }
 
+  onLogoSelected(file: File): void {
+    const id = this.eventId();
+    if (!id) return;
+    this.logoPending.set(true);
+    this.imageUploadService.replaceEventLogo(id, file).subscribe({
+      next: (event) => this.afterLogoChange(event, 'Logo updated'),
+      error: (error) => {
+        this.logoPending.set(false);
+        this.errorHandler.showError(error);
+      },
+    });
+  }
+
+  onLogoRemove(): void {
+    const id = this.eventId();
+    if (!id) return;
+    this.logoPending.set(true);
+    this.imageUploadService.removeEventLogo(id).subscribe({
+      next: (event) => this.afterLogoChange(event, 'Logo removed'),
+      error: (error) => {
+        this.logoPending.set(false);
+        this.errorHandler.showError(error);
+      },
+    });
+  }
+
+  private afterLogoChange(event: Event, message: string): void {
+    this.logoPending.set(false);
+    this.logoUrl.set(event.logoUrl ?? null);
+    this.eventListBus.publish({ action: 'updated', event });
+    this.toast.success(message);
+  }
+
   private parseDateFromStrings(date: string, time?: string): Date {
     const [y, m, d] = date.split('-').map(Number);
     if (time) {
@@ -300,6 +340,7 @@ export class EventForm implements OnInit {
       this.timezoneOptions.set(getCountryTimezones(event.country));
     }
     this.currentStatus.set(event.status);
+    this.logoUrl.set(event.logoUrl ?? null);
     this.event = {
       eventName: event.eventName,
       eventDescription: event.eventDescription,

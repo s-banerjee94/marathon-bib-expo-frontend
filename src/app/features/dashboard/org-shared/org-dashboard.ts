@@ -602,10 +602,12 @@ export class OrgDashboard implements OnInit {
     this.router.navigate(['/users']);
   }
   goToCreateUser(): void {
-    this.router.navigate(['/users/new']);
+    this.router.navigate(['/users'], { queryParams: { create: 'true' } });
   }
   goToCreateDistributor(): void {
-    this.router.navigate(['/users/new'], { queryParams: { role: UserRole.DISTRIBUTOR } });
+    this.router.navigate(['/users'], {
+      queryParams: { create: 'true', createRole: UserRole.DISTRIBUTOR },
+    });
   }
   goToParticipants(): void {
     this.router.navigate(['/participants']);

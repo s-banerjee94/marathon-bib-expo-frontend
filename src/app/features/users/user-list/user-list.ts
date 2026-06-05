@@ -1,15 +1,8 @@
-import { Component, computed, DestroyRef, effect, inject, signal, ViewChild } from '@angular/core';
+import { Component, computed, DestroyRef, inject, signal, ViewChild } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import {
-  ActivatedRoute,
-  NavigationEnd,
-  Params,
-  ParamMap,
-  Router,
-  RouterOutlet,
-} from '@angular/router';
+import { ActivatedRoute, Params, ParamMap, Router } from '@angular/router';
 import { EMPTY, Subject } from 'rxjs';
-import { catchError, debounceTime, distinctUntilChanged, filter, switchMap } from 'rxjs/operators';
+import { catchError, debounceTime, distinctUntilChanged, switchMap } from 'rxjs/operators';
 import { TableLazyLoadEvent, TableModule } from 'primeng/table';
 import { CommonModule } from '@angular/common';
 import { Popover, PopoverModule } from 'primeng/popover';
@@ -76,7 +69,6 @@ interface UserFilterPreferences extends TableFilterPreferences {
     FloatLabelModule,
     DefaultValuePipe,
     OrganizationSelector,
-    RouterOutlet,
     ListShell,
   ],
   providers: [DialogService, ConfirmationService],
@@ -109,13 +101,6 @@ export class UserList extends BaseTableComponent<User, UserFilterPreferences> {
   private route = inject(ActivatedRoute);
   private destroyRef = inject(DestroyRef);
   private userListBus = inject(UserListBus);
-  // Tracks which dialog is currently driven by the URL: null = closed, 'new' = create, 'edit:<id>' = edit.
-  // Used to ignore router events that don't change the dialog state.
-  private dialogKey: string | null = null;
-  // True when the dialog is being closed by syncDialogToRoute (URL change),
-  // so the onClose handler skips its own URL-clearing navigation.
-  private closingDialogFromRoute = false;
-  hasFormRoute = signal(false);
   // Drawer badge: count of filters set away from their defaults.
   activeFilterCount = computed(() => {
     let count = 0;
@@ -136,19 +121,6 @@ export class UserList extends BaseTableComponent<User, UserFilterPreferences> {
   constructor() {
     super();
     this.initializeColumns();
-    this.syncDialogToRoute();
-    this.router.events
-      .pipe(
-        filter((event): event is NavigationEnd => event instanceof NavigationEnd),
-        takeUntilDestroyed(this.destroyRef),
-      )
-      .subscribe(() => this.syncDialogToRoute());
-
-    // Viewport flag now lives on the base class; re-run dialog sync whenever it flips.
-    effect(() => {
-      this.isMobile();
-      this.syncDialogToRoute();
-    });
 
     // Subscribe to the load pipeline BEFORE queryParamMap — the route observable emits the
     // current value synchronously on subscribe, which triggers loadTrigger.next() inside
@@ -323,121 +295,19 @@ export class UserList extends BaseTableComponent<User, UserFilterPreferences> {
   }
 
   onCreate(): void {
-    this.router.navigate(['/users/new'], { queryParamsHandling: 'preserve' });
+    this.openCreateDialog();
   }
 
   onEdit(user: User): void {
     this.router.navigate(['/users', user.id, 'edit'], { queryParamsHandling: 'preserve' });
   }
 
-  private syncDialogToRoute(): void {
-    const child = this.route.snapshot.firstChild;
-    const segments = child?.url ?? [];
-    let nextKey: string | null = null;
-
-    if (segments[0]?.path === 'new') {
-      nextKey = 'new';
-    } else if (segments.length === 2 && segments[1].path === 'edit') {
-      nextKey = `edit:${segments[0].path}`;
-    }
-
-    this.hasFormRoute.set(nextKey !== null);
-
-    // On mobile the routed UserForm component takes the whole view; skip the dialog flow
-    // and tear down any dialog that was open before a viewport change.
-    if (this.isMobile()) {
-      if (this.dialogKey !== null && this.dialogRef) {
-        this.closingDialogFromRoute = true;
-        this.dialogRef.close();
-      }
-      this.dialogKey = null;
-      return;
-    }
-
-    if (nextKey === this.dialogKey) {
-      return;
-    }
-
-    const previousKey = this.dialogKey;
-    this.dialogKey = nextKey;
-
-    if (previousKey !== null && this.dialogRef) {
-      this.closingDialogFromRoute = true;
-      this.dialogRef.close();
-    }
-
-    if (nextKey === 'new') {
-      this.openCreateDialog();
-    } else if (nextKey?.startsWith('edit:')) {
-      const id = Number(nextKey.slice('edit:'.length));
-      if (Number.isFinite(id)) {
-        this.openEditDialog(id);
-      }
-    }
-  }
-
-  private openCreateDialog(): void {
-    this.openDialog(UserForm, 'Create User', {
-      isEditMode: false,
-      successMessage: {
-        severity: 'success',
-        summary: 'Created',
-        detail: 'User created successfully',
-      },
-    });
-
-    if (this.dialogRef) {
-      this.dialogRef.onClose.subscribe(
-        (
-          result:
-            | { user?: User; message?: { severity: string; summary: string; detail: string } }
-            | undefined,
-        ) => {
-          if (result?.message) {
-            this.toast.show(result.message);
-          }
-          this.returnToList();
-        },
-      );
-    }
-  }
-
-  private openEditDialog(userId: number): void {
-    this.openDialog(UserForm, 'Edit User', {
-      userId,
-      isEditMode: true,
-      successMessage: {
-        severity: 'success',
-        summary: 'Updated',
-        detail: 'User updated successfully',
-      },
-    });
-
-    if (this.dialogRef) {
-      this.dialogRef.onClose.subscribe(
-        (
-          result:
-            | { user?: User; message?: { severity: string; summary: string; detail: string } }
-            | undefined,
-        ) => {
-          if (result?.message) {
-            this.toast.show(result.message);
-          }
-          this.returnToList();
-        },
-      );
-    }
-  }
-
-  // Clear the dialog segment from the URL once the dialog finishes.
-  // Skipped when syncDialogToRoute initiated the close — the URL is already moving elsewhere.
-  private returnToList(): void {
-    if (this.closingDialogFromRoute) {
-      this.closingDialogFromRoute = false;
-      return;
-    }
-    this.dialogKey = null;
-    this.router.navigate(['/users'], { queryParamsHandling: 'preserve' });
+  // Create always opens as a dialog (desktop and mobile alike — openDialog goes
+  // full-width on small screens). On success UserForm publishes to UserListBus,
+  // which prepends the new row in place; the list is never refetched. An optional
+  // `role` preselects the dropdown (used by the dashboard quick-create shortcuts).
+  private openCreateDialog(role?: UserRole): void {
+    this.openDialog(UserForm, 'Create User', { role });
   }
 
   canManageUser(user: User): boolean {
@@ -587,6 +457,15 @@ export class UserList extends BaseTableComponent<User, UserFilterPreferences> {
     this.filterSort.set(sortParam ? [sortParam] : []);
 
     this.loadData();
+
+    // Dashboards deep-link here with ?create=true (optionally &createRole=…) to start
+    // a new user. createRole is distinct from the `role` filter param above so the
+    // two don't collide. Strip the flags from the URL and open the create dialog.
+    if (params.get('create') === 'true') {
+      const createRole = params.get('createRole') as UserRole | null;
+      this.pushStateToUrl({ create: null, createRole: null });
+      this.openCreateDialog(createRole ?? undefined);
+    }
   }
 
   protected override getDefaultFilterPreferences(): UserFilterPreferences {

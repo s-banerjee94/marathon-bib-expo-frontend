@@ -1,15 +1,4 @@
-<!-- Shared loading skeleton -->
-<ng-template #loadingSkeleton>
-  <div class="flex flex-col gap-4">
-    <p-skeleton height="3rem" />
-    <p-skeleton height="3rem" />
-    <p-skeleton height="3rem" />
-    <p-skeleton height="10rem" />
-  </div>
-</ng-template>
-
-<!-- Shared form fields — receives the NgForm reference as $implicit context (f) -->
-<ng-template #formFields let-f>
+<form #orgForm="ngForm" (ngSubmit)="onSubmit(orgForm)" class="flex flex-col gap-4 mt-2">
   <!-- Basic Information -->
   <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
     <!-- Organization Name -->
@@ -18,7 +7,7 @@
         <input
           #organizerName="ngModel"
           [(ngModel)]="organization.organizerName"
-          [invalid]="organizerName.invalid && (organizerName.touched || $any(f).submitted)"
+          [invalid]="organizerName.invalid && (organizerName.touched || orgForm.submitted)"
           [pSize]="inputSize"
           autocomplete="organization"
           fluid="true"
@@ -29,7 +18,7 @@
         />
         <label for="organizerName">Organization Name *</label>
       </p-floatlabel>
-      @if (organizerName.invalid && (organizerName.touched || $any(f).submitted)) {
+      @if (organizerName.invalid && (organizerName.touched || orgForm.submitted)) {
         <p-message [size]="inputSize" severity="error" variant="simple">
           Organization name is required.
         </p-message>
@@ -42,7 +31,7 @@
         <input
           #email="ngModel"
           [(ngModel)]="organization.email"
-          [invalid]="email.invalid && (email.touched || $any(f).submitted)"
+          [invalid]="email.invalid && (email.touched || orgForm.submitted)"
           [pSize]="inputSize"
           autocomplete="email"
           email
@@ -55,7 +44,7 @@
         />
         <label for="email">Email *</label>
       </p-floatlabel>
-      @if (email.invalid && (email.touched || $any(f).submitted)) {
+      @if (email.invalid && (email.touched || orgForm.submitted)) {
         <p-message [size]="inputSize" severity="error" variant="simple">
           @if (email.hasError('required')) {
             Email is required.
@@ -240,6 +229,7 @@
             [checkmark]="true"
             [options]="subscriptionTiers"
             [size]="inputSize"
+            appendTo="body"
             fluid="true"
             id="subscriptionTier"
             name="subscriptionTier"
@@ -257,7 +247,7 @@
           <input
             #billingEmail="ngModel"
             [(ngModel)]="organization.billingEmail"
-            [invalid]="billingEmail.invalid && (billingEmail.touched || $any(f).submitted)"
+            [invalid]="billingEmail.invalid && (billingEmail.touched || orgForm.submitted)"
             [pSize]="inputSize"
             autocomplete="email"
             email
@@ -269,7 +259,7 @@
           />
           <label for="billingEmail">Billing Email</label>
         </p-floatlabel>
-        @if (billingEmail.invalid && (billingEmail.touched || $any(f).submitted)) {
+        @if (billingEmail.invalid && (billingEmail.touched || orgForm.submitted)) {
           <p-message [size]="inputSize" severity="error" variant="simple">
             Please enter a valid email.
           </p-message>
@@ -327,67 +317,15 @@
     </div>
   </div>
 
-  <!-- Action Buttons -->
-  <div
-    class="flex gap-3 pt-2"
-    [class.justify-between]="!isDialogMode()"
-    [class.justify-end]="isDialogMode()"
-  >
-    @if (!isDialogMode()) {
-      <button
-        (click)="goBack()"
-        [disabled]="isSubmitting()"
-        [outlined]="true"
-        icon="pi pi-arrow-left"
-        pButton
-        severity="secondary"
-        type="button"
-      >
-        <span pButtonLabel>Back to Organizations</span>
-      </button>
-    }
-    <button
-      [disabled]="isSubmitting() || isLoading() || $any(f).invalid"
-      pButton
-      severity="primary"
+  <!-- Actions -->
+  <div class="flex gap-3 pt-2 justify-end">
+    <p-button
+      [disabled]="isSubmitting() || orgForm.invalid"
+      [label]="isSubmitting() ? 'Creating...' : 'Create Organization'"
+      [loading]="isSubmitting()"
+      [size]="inputSize"
+      icon="pi pi-check"
       type="submit"
-    >
-      <span pButtonLabel>{{ submitButtonText() }}</span>
-    </button>
+    />
   </div>
-</ng-template>
-
-<!-- Route Mode: Centered card -->
-@if (!isDialogMode()) {
-  <div class="flex justify-center items-start min-h-screen p-6">
-    <p-card class="w-full max-w-4xl shadow-lg">
-      <ng-template pTemplate="title">
-        <h2 class="text-2xl font-bold">{{ title() }}</h2>
-      </ng-template>
-      <ng-template pTemplate="content">
-        @if (isLoading()) {
-          <ng-container *ngTemplateOutlet="loadingSkeleton" />
-        } @else {
-          <form #orgForm="ngForm" (ngSubmit)="onSubmit(orgForm)" class="flex flex-col gap-4">
-            <ng-container *ngTemplateOutlet="formFields; context: { $implicit: orgForm }" />
-          </form>
-        }
-      </ng-template>
-    </p-card>
-  </div>
-}
-
-<!-- Dialog Mode: Direct form -->
-@if (isDialogMode()) {
-  @if (isLoading()) {
-    <ng-container *ngTemplateOutlet="loadingSkeleton" />
-  } @else {
-    <form
-      #orgFormDialog="ngForm"
-      (ngSubmit)="onSubmit(orgFormDialog)"
-      class="flex flex-col gap-4 mt-2"
-    >
-      <ng-container *ngTemplateOutlet="formFields; context: { $implicit: orgFormDialog }" />
-    </form>
-  }
-}
+</form>

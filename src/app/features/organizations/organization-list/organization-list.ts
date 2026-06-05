@@ -1,15 +1,8 @@
-import { Component, computed, DestroyRef, effect, inject, signal, ViewChild } from '@angular/core';
+import { Component, computed, DestroyRef, inject, signal, ViewChild } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import {
-  ActivatedRoute,
-  NavigationEnd,
-  Params,
-  ParamMap,
-  Router,
-  RouterOutlet,
-} from '@angular/router';
+import { ActivatedRoute, Params, ParamMap, Router } from '@angular/router';
 import { EMPTY, Subject } from 'rxjs';
-import { catchError, debounceTime, distinctUntilChanged, filter, switchMap } from 'rxjs/operators';
+import { catchError, debounceTime, distinctUntilChanged, switchMap } from 'rxjs/operators';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TableLazyLoadEvent, TableModule } from 'primeng/table';
@@ -65,7 +58,6 @@ interface OrganizationFilterPreferences extends TableFilterPreferences {
     DefaultValuePipe,
     UserQuotaPipe,
     PopoverModule,
-    RouterOutlet,
     ListShell,
   ],
   providers: [DialogService, ConfirmationService],
@@ -99,15 +91,6 @@ export class OrganizationList extends BaseTableComponent<
   private route = inject(ActivatedRoute);
   private destroyRef = inject(DestroyRef);
   private organizationListBus = inject(OrganizationListBus);
-  // Tracks which dialog is currently driven by the URL: null = closed, 'new' = create,
-  // 'edit:<id>' = edit. Used to ignore router events that don't change the dialog state.
-  private dialogKey: string | null = null;
-  // True when the dialog is being closed by syncDialogToRoute (URL change),
-  // so the onClose handler skips its own URL-clearing navigation.
-  private closingDialogFromRoute = false;
-  // isMobile is provided by BaseTableComponent; the form renders full-page via
-  // <router-outlet /> on mobile, and as an overlay dialog on desktop.
-  hasFormRoute = signal(false);
   // Drawer badge: count of filters set away from their defaults.
   activeFilterCount = computed(() => {
     let count = 0;
@@ -127,19 +110,6 @@ export class OrganizationList extends BaseTableComponent<
   constructor() {
     super();
     this.initializeColumns();
-    this.syncDialogToRoute();
-    this.router.events
-      .pipe(
-        filter((event): event is NavigationEnd => event instanceof NavigationEnd),
-        takeUntilDestroyed(this.destroyRef),
-      )
-      .subscribe(() => this.syncDialogToRoute());
-
-    // Re-sync dialog when the viewport flips between mobile and desktop.
-    effect(() => {
-      this.isMobile();
-      this.syncDialogToRoute();
-    });
 
     // Subscribe to the load pipeline BEFORE queryParamMap — the route observable emits the
     // current value synchronously on subscribe, which triggers loadTrigger.next() inside
@@ -278,127 +248,18 @@ export class OrganizationList extends BaseTableComponent<
   }
 
   onCreate(): void {
-    this.router.navigate(['/organizations/new'], { queryParamsHandling: 'preserve' });
+    this.openCreateDialog();
   }
 
   onEdit(org: Organization): void {
     this.router.navigate(['/organizations', org.id, 'edit'], { queryParamsHandling: 'preserve' });
   }
 
-  private syncDialogToRoute(): void {
-    const child = this.route.snapshot.firstChild;
-    const segments = child?.url ?? [];
-    let nextKey: string | null = null;
-
-    if (segments[0]?.path === 'new') {
-      nextKey = 'new';
-    } else if (segments.length === 2 && segments[1].path === 'edit') {
-      nextKey = `edit:${segments[0].path}`;
-    }
-
-    this.hasFormRoute.set(nextKey !== null);
-
-    // On mobile the routed OrganizationForm component takes the whole view; skip the
-    // dialog flow and tear down any dialog that was open before a viewport change.
-    if (this.isMobile()) {
-      if (this.dialogKey !== null && this.dialogRef) {
-        this.closingDialogFromRoute = true;
-        this.dialogRef.close();
-      }
-      this.dialogKey = null;
-      return;
-    }
-
-    if (nextKey === this.dialogKey) {
-      return;
-    }
-
-    const previousKey = this.dialogKey;
-    this.dialogKey = nextKey;
-
-    if (previousKey !== null && this.dialogRef) {
-      this.closingDialogFromRoute = true;
-      this.dialogRef.close();
-    }
-
-    if (nextKey === 'new') {
-      this.openCreateDialog();
-    } else if (nextKey?.startsWith('edit:')) {
-      const id = Number(nextKey.slice('edit:'.length));
-      if (Number.isFinite(id)) {
-        this.openEditDialog(id);
-      }
-    }
-  }
-
+  // Create always opens as a dialog (desktop and mobile alike — openDialog goes
+  // full-width on small screens). On success OrganizationForm publishes to
+  // OrganizationListBus, which prepends the new row in place; the list is never refetched.
   private openCreateDialog(): void {
-    this.openDialog(OrganizationForm, 'Create Organization', {
-      isEditMode: false,
-      successMessage: {
-        severity: 'success',
-        summary: 'Created',
-        detail: 'Organization created successfully',
-      },
-    });
-
-    if (this.dialogRef) {
-      this.dialogRef.onClose.subscribe(
-        (
-          result:
-            | {
-                organization?: Organization;
-                message?: { severity: string; summary: string; detail: string };
-              }
-            | undefined,
-        ) => {
-          if (result?.message) {
-            this.toast.show(result.message);
-          }
-          this.returnToList();
-        },
-      );
-    }
-  }
-
-  private openEditDialog(organizationId: number): void {
-    this.openDialog(OrganizationForm, 'Edit Organization', {
-      organizationId,
-      isEditMode: true,
-      successMessage: {
-        severity: 'success',
-        summary: 'Updated',
-        detail: 'Organization updated successfully',
-      },
-    });
-
-    if (this.dialogRef) {
-      this.dialogRef.onClose.subscribe(
-        (
-          result:
-            | {
-                organization?: Organization;
-                message?: { severity: string; summary: string; detail: string };
-              }
-            | undefined,
-        ) => {
-          if (result?.message) {
-            this.toast.show(result.message);
-          }
-          this.returnToList();
-        },
-      );
-    }
-  }
-
-  // Clear the dialog segment from the URL once the dialog finishes.
-  // Skipped when syncDialogToRoute initiated the close — the URL is already moving elsewhere.
-  private returnToList(): void {
-    if (this.closingDialogFromRoute) {
-      this.closingDialogFromRoute = false;
-      return;
-    }
-    this.dialogKey = null;
-    this.router.navigate(['/organizations'], { queryParamsHandling: 'preserve' });
+    this.openDialog(OrganizationForm, 'Create Organization', {});
   }
 
   override onSearchInput(value: string): void {
@@ -475,6 +336,13 @@ export class OrganizationList extends BaseTableComponent<
     this.filterSort.set(sortParam ? [sortParam] : []);
 
     this.loadData();
+
+    // Dashboards deep-link here with ?create=true to start a new organization.
+    // Strip the flag from the URL and open the (route-less) create dialog.
+    if (params.get('create') === 'true') {
+      this.pushStateToUrl({ create: null });
+      this.openCreateDialog();
+    }
   }
 
   protected override getDefaultFilterPreferences(): OrganizationFilterPreferences {

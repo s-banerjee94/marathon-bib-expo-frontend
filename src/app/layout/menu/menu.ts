@@ -11,6 +11,7 @@ import { MenuitemComponent } from '../menuitem/menuitem';
   standalone: true,
   imports: [CommonModule, MenuitemComponent],
   templateUrl: './menu.html',
+  host: { class: 'block h-full' },
 })
 export class MenuComponent {
   private authService = inject(AuthService);
@@ -66,12 +67,30 @@ export class MenuComponent {
     },
   ];
 
+  // Pinned to the bottom of the sidebar, visually separated from the main nav.
+  private readonly bottomMenuItems: AppMenuItem[] = [
+    {
+      label: 'Organization',
+      icon: 'pi pi-building',
+      routerLink: '/organization',
+      roles: [UserRole.ORGANIZER_ADMIN],
+    },
+  ];
+
   filteredMenu = computed(() => {
     const userRole = this.authService.getCurrentRole();
     if (!userRole) return [];
 
     const isMobile = this.layoutService.isMobile();
     return this.filterMenu(this.menuItems, userRole, isMobile);
+  });
+
+  filteredBottomMenu = computed(() => {
+    const userRole = this.authService.getCurrentRole();
+    if (!userRole) return [];
+
+    const isMobile = this.layoutService.isMobile();
+    return this.filterMenu(this.bottomMenuItems, userRole, isMobile);
   });
 
   private filterMenu(items: AppMenuItem[], userRole: UserRole, isMobile: boolean): AppMenuItem[] {
