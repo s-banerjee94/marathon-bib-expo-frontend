@@ -21,5 +21,22 @@ export const ORGANIZATIONS_ROUTES: Routes = [
       import('../organization-account/organization-account').then((m) => m.OrganizationAccount),
     canActivate: [roleGuard(ORGANIZATION_ROLES)],
     title: pageTitle('Edit Organization'),
+    children: [
+      { path: '', redirectTo: 'account', pathMatch: 'full' },
+      {
+        path: 'account',
+        loadComponent: () =>
+          import('../organization-account/organization-account-details/organization-account-details').then(
+            (m) => m.OrganizationAccountDetails,
+          ),
+      },
+      {
+        path: 'billing',
+        loadComponent: () =>
+          import('../organization-account/organization-billing-section/organization-billing-section').then(
+            (m) => m.OrganizationBillingSection,
+          ),
+      },
+    ],
   },
 ];

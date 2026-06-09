@@ -1,0 +1,581 @@
+@if (organization(); as org) {
+  <div class="flex flex-col gap-6">
+    <!-- Identity hero (logo uploads immediately, so it sits outside the save form) -->
+    <p-card class="shadow-lg">
+      <ng-template pTemplate="content">
+        <div class="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+          <div class="flex flex-col gap-1 min-w-0">
+            <div class="flex items-center gap-2 flex-wrap">
+              <h2 class="text-2xl font-semibold truncate">{{ org.organizerName }}</h2>
+              @if (org.subscriptionTier) {
+                <p-tag [value]="tierLabel()" />
+              }
+            </div>
+            @if (org.website) {
+              <a
+                [href]="org.website"
+                class="text-sm truncate"
+                rel="noopener"
+                style="color: var(--primary-color)"
+                target="_blank"
+              >
+                {{ org.website }}
+              </a>
+            } @else {
+              <span class="text-sm" style="color: var(--text-color-secondary)">
+                {{ org.email | defaultValue }}
+              </span>
+            }
+          </div>
+
+          <div class="shrink-0">
+            <app-image-upload
+              shape="square"
+              [imageUrl]="org.logoUrl"
+              [pending]="logoPending()"
+              alt="Organization logo"
+              helpText="PNG with a transparent background looks best. Resized to fit 512px."
+              (fileSelected)="onLogoSelected($event)"
+              (removeRequested)="onLogoRemove()"
+            />
+          </div>
+        </div>
+      </ng-template>
+    </p-card>
+
+    <form #detailsForm="ngForm" (ngSubmit)="onSaveDetails(detailsForm)" class="flex flex-col gap-6">
+      <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+        <!-- Organization details (editable) -->
+        <p-card
+          class="h-full shadow-lg xl:col-span-2"
+          styleClass="h-full"
+          [pt]="{ body: { class: 'h-full' } }"
+        >
+          <ng-template pTemplate="content">
+            <div class="flex flex-col gap-6">
+              <div class="flex items-start justify-between gap-3">
+                <div class="flex min-w-0 items-start gap-3">
+                  <span
+                    class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg"
+                    style="
+                      background: color-mix(in srgb, var(--primary-color), transparent 90%);
+                      color: var(--primary-color);
+                    "
+                  >
+                    <i class="pi pi-building text-lg"></i>
+                  </span>
+                  <div class="min-w-0">
+                    <h2 class="text-lg font-semibold leading-tight">Organization Details</h2>
+                    <p class="text-sm mt-0.5" style="color: var(--text-color-secondary)">
+                      Contact and business information.
+                    </p>
+                  </div>
+                </div>
+                <!-- ORGANIZER_ADMIN saves from here; ROOT/ADMIN use the bottom action bar. -->
+                @if (!canEditGovernance) {
+                  <p-button
+                    class="shrink-0"
+                    [disabled]="savingDetails() || detailsForm.invalid || detailsForm.pristine"
+                    [loading]="savingDetails()"
+                    [size]="inputSize"
+                    icon="pi pi-check"
+                    label="Save"
+                    type="submit"
+                  />
+                }
+              </div>
+
+              <!-- Basic information -->
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- Organization Name -->
+                <div class="flex flex-col gap-1 md:col-span-2">
+                  <p-floatlabel variant="on">
+                    <input
+                      #organizerName="ngModel"
+                      [(ngModel)]="details.organizerName"
+                      [invalid]="shouldShowError(organizerName, detailsForm.submitted)"
+                      [pSize]="inputSize"
+                      autocomplete="organization"
+                      fluid="true"
+                      id="organizerName"
+                      maxlength="200"
+                      minlength="2"
+                      name="organizerName"
+                      pInputText
+                      required
+                    />
+                    <label for="organizerName">Organization Name *</label>
+                  </p-floatlabel>
+                  @if (shouldShowError(organizerName, detailsForm.submitted)) {
+                    <p-message [size]="inputSize" severity="error" variant="simple">
+                      @if (organizerName.hasError('required')) {
+                        Organization name is required.
+                      }
+                      @if (organizerName.hasError('minlength')) {
+                        Organization name must be at least 2 characters.
+                      }
+                      @if (organizerName.hasError('maxlength')) {
+                        Organization name must not exceed 200 characters.
+                      }
+                    </p-message>
+                  }
+                </div>
+
+                <!-- Email -->
+                <div class="flex flex-col gap-1">
+                  <p-floatlabel variant="on">
+                    <input
+                      #email="ngModel"
+                      [(ngModel)]="details.email"
+                      [invalid]="shouldShowError(email, detailsForm.submitted)"
+                      [pSize]="inputSize"
+                      autocomplete="email"
+                      email
+                      fluid="true"
+                      id="email"
+                      maxlength="100"
+                      name="email"
+                      pInputText
+                      required
+                      type="email"
+                    />
+                    <label for="email">Email *</label>
+                  </p-floatlabel>
+                  @if (shouldShowError(email, detailsForm.submitted)) {
+                    <p-message [size]="inputSize" severity="error" variant="simple">
+                      @if (email.hasError('required')) {
+                        Email is required.
+                      }
+                      @if (email.hasError('email')) {
+                        Please enter a valid email.
+                      }
+                    </p-message>
+                  }
+                </div>
+
+                <!-- Phone -->
+                <div class="flex flex-col gap-1">
+                  <p-floatlabel variant="on">
+                    <input
+                      #phone="ngModel"
+                      [(ngModel)]="details.phoneNumber"
+                      [invalid]="shouldShowError(phone, detailsForm.submitted)"
+                      [pSize]="inputSize"
+                      autocomplete="tel"
+                      fluid="true"
+                      id="phone"
+                      maxlength="10"
+                      name="phoneNumber"
+                      pInputText
+                      pattern="^\d{10}$"
+                      type="tel"
+                    />
+                    <label for="phone">Phone</label>
+                  </p-floatlabel>
+                  @if (shouldShowError(phone, detailsForm.submitted)) {
+                    <p-message [size]="inputSize" severity="error" variant="simple">
+                      Enter a valid 10-digit phone number.
+                    </p-message>
+                  }
+                </div>
+
+                <!-- Website -->
+                <div class="flex flex-col gap-1 md:col-span-2">
+                  <p-floatlabel variant="on">
+                    <input
+                      [(ngModel)]="details.website"
+                      [pSize]="inputSize"
+                      autocomplete="url"
+                      fluid="true"
+                      id="website"
+                      name="website"
+                      pInputText
+                      type="url"
+                    />
+                    <label for="website">Website</label>
+                  </p-floatlabel>
+                </div>
+              </div>
+
+              <!-- Address -->
+              <div>
+                <h3 class="text-sm font-semibold mb-3" style="color: var(--text-color-secondary)">
+                  Address
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div class="flex flex-col gap-1 md:col-span-2">
+                    <p-floatlabel variant="on">
+                      <input
+                        [(ngModel)]="details.addressLine1"
+                        [pSize]="inputSize"
+                        autocomplete="address-line1"
+                        fluid="true"
+                        id="addressLine1"
+                        maxlength="200"
+                        name="addressLine1"
+                        pInputText
+                      />
+                      <label for="addressLine1">Address Line 1</label>
+                    </p-floatlabel>
+                  </div>
+                  <div class="flex flex-col gap-1 md:col-span-2">
+                    <p-floatlabel variant="on">
+                      <input
+                        [(ngModel)]="details.addressLine2"
+                        [pSize]="inputSize"
+                        autocomplete="address-line2"
+                        fluid="true"
+                        id="addressLine2"
+                        maxlength="200"
+                        name="addressLine2"
+                        pInputText
+                      />
+                      <label for="addressLine2">Address Line 2</label>
+                    </p-floatlabel>
+                  </div>
+                  <div class="flex flex-col gap-1">
+                    <p-floatlabel variant="on">
+                      <input
+                        [(ngModel)]="details.city"
+                        [pSize]="inputSize"
+                        autocomplete="address-level2"
+                        fluid="true"
+                        id="city"
+                        maxlength="100"
+                        name="city"
+                        pInputText
+                      />
+                      <label for="city">City</label>
+                    </p-floatlabel>
+                  </div>
+                  <div class="flex flex-col gap-1">
+                    <p-floatlabel variant="on">
+                      <input
+                        [(ngModel)]="details.stateProvince"
+                        [pSize]="inputSize"
+                        autocomplete="address-level1"
+                        fluid="true"
+                        id="stateProvince"
+                        maxlength="100"
+                        name="stateProvince"
+                        pInputText
+                      />
+                      <label for="stateProvince">State/Province</label>
+                    </p-floatlabel>
+                  </div>
+                  <div class="flex flex-col gap-1">
+                    <p-floatlabel variant="on">
+                      <input
+                        [(ngModel)]="details.postalCode"
+                        [pSize]="inputSize"
+                        autocomplete="postal-code"
+                        fluid="true"
+                        id="postalCode"
+                        maxlength="20"
+                        name="postalCode"
+                        pInputText
+                      />
+                      <label for="postalCode">Postal Code</label>
+                    </p-floatlabel>
+                  </div>
+                  <div class="flex flex-col gap-1">
+                    <p-floatlabel variant="on">
+                      <input
+                        [(ngModel)]="details.country"
+                        [pSize]="inputSize"
+                        autocomplete="country-name"
+                        fluid="true"
+                        id="country"
+                        maxlength="100"
+                        name="country"
+                        pInputText
+                      />
+                      <label for="country">Country</label>
+                    </p-floatlabel>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Business information -->
+              <div>
+                <h3 class="text-sm font-semibold mb-3" style="color: var(--text-color-secondary)">
+                  Business Information
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div class="flex flex-col gap-1">
+                    <p-floatlabel variant="on">
+                      <input
+                        [(ngModel)]="details.taxId"
+                        [pSize]="inputSize"
+                        autocomplete="off"
+                        fluid="true"
+                        id="taxId"
+                        maxlength="50"
+                        name="taxId"
+                        pInputText
+                      />
+                      <label for="taxId">Tax ID</label>
+                    </p-floatlabel>
+                  </div>
+                  <div class="flex flex-col gap-1">
+                    <p-floatlabel variant="on">
+                      <input
+                        [(ngModel)]="details.registrationNumber"
+                        [pSize]="inputSize"
+                        autocomplete="off"
+                        fluid="true"
+                        id="registrationNumber"
+                        maxlength="50"
+                        name="registrationNumber"
+                        pInputText
+                      />
+                      <label for="registrationNumber">Registration Number</label>
+                    </p-floatlabel>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </ng-template>
+        </p-card>
+
+        <!-- Subscription & quotas -->
+        <p-card class="h-full shadow-lg" styleClass="h-full" [pt]="{ body: { class: 'h-full' } }">
+          <ng-template pTemplate="content">
+            <div class="flex flex-col gap-5">
+              <div class="flex items-start gap-3">
+                <span
+                  class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg"
+                  style="
+                    background: color-mix(in srgb, var(--primary-color), transparent 90%);
+                    color: var(--primary-color);
+                  "
+                >
+                  <i class="pi pi-verified text-lg"></i>
+                </span>
+                <div class="min-w-0">
+                  <h2 class="text-lg font-semibold leading-tight">Subscription &amp; Usage</h2>
+                  <p class="text-sm mt-0.5" style="color: var(--text-color-secondary)">
+                    @if (canEditGovernance) {
+                      Plan, billing, and user limits.
+                    } @else {
+                      Managed by your administrator.
+                    }
+                  </p>
+                </div>
+              </div>
+
+              @if (canEditGovernance) {
+                <!-- Editable governance (ROOT/ADMIN) -->
+                <div class="flex flex-col gap-4">
+                  <div class="flex flex-col gap-1">
+                    <p-floatlabel variant="on">
+                      <p-select
+                        [(ngModel)]="governance.subscriptionTier"
+                        [checkmark]="true"
+                        [options]="subscriptionTiers"
+                        [size]="inputSize"
+                        appendTo="body"
+                        fluid="true"
+                        inputId="subscriptionTier"
+                        name="subscriptionTier"
+                        optionLabel="label"
+                        optionValue="value"
+                        placeholder="Select a tier"
+                      />
+                      <label for="subscriptionTier">Subscription Tier</label>
+                    </p-floatlabel>
+                  </div>
+
+                  <div class="flex flex-col gap-1">
+                    <p-floatlabel variant="on">
+                      <input
+                        #billingEmail="ngModel"
+                        [(ngModel)]="governance.billingEmail"
+                        [invalid]="shouldShowError(billingEmail, detailsForm.submitted)"
+                        [pSize]="inputSize"
+                        autocomplete="email"
+                        email
+                        fluid="true"
+                        id="billingEmail"
+                        name="billingEmail"
+                        pInputText
+                        type="email"
+                      />
+                      <label for="billingEmail">Billing Email</label>
+                    </p-floatlabel>
+                    @if (shouldShowError(billingEmail, detailsForm.submitted)) {
+                      <p-message [size]="inputSize" severity="error" variant="simple">
+                        Please enter a valid email.
+                      </p-message>
+                    }
+                  </div>
+
+                  <div class="flex flex-col gap-3">
+                    <span
+                      class="text-xs uppercase tracking-wide"
+                      style="color: var(--text-color-secondary)"
+                    >
+                      User Quotas (max)
+                    </span>
+                    <div class="flex flex-col gap-3">
+                      <p-floatlabel variant="on">
+                        <p-inputnumber
+                          [(ngModel)]="governance.maxAdmins"
+                          [min]="1"
+                          [showButtons]="true"
+                          [size]="inputSize"
+                          fluid="true"
+                          inputId="maxAdmins"
+                          name="maxAdmins"
+                        />
+                        <label for="maxAdmins">Organizer Admins</label>
+                      </p-floatlabel>
+                      <p-floatlabel variant="on">
+                        <p-inputnumber
+                          [(ngModel)]="governance.maxOrganizerUsers"
+                          [min]="1"
+                          [showButtons]="true"
+                          [size]="inputSize"
+                          fluid="true"
+                          inputId="maxOrganizerUsers"
+                          name="maxOrganizerUsers"
+                        />
+                        <label for="maxOrganizerUsers">Organizer Users</label>
+                      </p-floatlabel>
+                      <p-floatlabel variant="on">
+                        <p-inputnumber
+                          [(ngModel)]="governance.maxDistributors"
+                          [min]="1"
+                          [showButtons]="true"
+                          [size]="inputSize"
+                          fluid="true"
+                          inputId="maxDistributors"
+                          name="maxDistributors"
+                        />
+                        <label for="maxDistributors">Distributors</label>
+                      </p-floatlabel>
+                    </div>
+                  </div>
+                </div>
+              } @else {
+                <!-- Read-only governance (ORGANIZER_ADMIN) -->
+                <div class="flex flex-col gap-5">
+                  <div class="flex flex-col gap-1">
+                    <span
+                      class="text-xs uppercase tracking-wide"
+                      style="color: var(--text-color-secondary)"
+                    >
+                      Plan
+                    </span>
+                    <div class="flex items-center gap-2">
+                      @if (org.subscriptionTier) {
+                        <p-tag [value]="tierLabel()" />
+                      } @else {
+                        <span class="text-sm font-medium">--</span>
+                      }
+                      @if (org.subscriptionStatus) {
+                        <span class="text-sm" style="color: var(--text-color-secondary)">
+                          {{ org.subscriptionStatus }}
+                        </span>
+                      }
+                    </div>
+                  </div>
+
+                  <div class="flex flex-col gap-1">
+                    <span
+                      class="text-xs uppercase tracking-wide"
+                      style="color: var(--text-color-secondary)"
+                    >
+                      Billing Email
+                    </span>
+                    <span class="text-sm font-medium break-all">
+                      {{ org.billingEmail | defaultValue }}
+                    </span>
+                  </div>
+
+                  <div class="flex flex-col gap-3">
+                    <span
+                      class="text-xs uppercase tracking-wide"
+                      style="color: var(--text-color-secondary)"
+                    >
+                      User Quotas
+                    </span>
+                    @for (row of quotaRows(); track row.label) {
+                      <div class="flex flex-col gap-1">
+                        <span class="text-xs font-medium text-right">{{ row.display }}</span>
+                        <div class="flex items-center gap-3">
+                          <span class="w-32 shrink-0 truncate text-sm font-medium">
+                            {{ row.label }}
+                          </span>
+                          <p-progressbar
+                            class="flex-1"
+                            [value]="row.percent"
+                            [showValue]="false"
+                            [dt]="{ height: '0.5rem' }"
+                            [attr.aria-label]="row.label + ' usage ' + row.display"
+                          />
+                        </div>
+                      </div>
+                    }
+                  </div>
+                </div>
+              }
+
+              <!-- Read-only meta (both modes) -->
+              <div
+                class="flex flex-col gap-5 pt-4 border-t"
+                style="border-color: var(--surface-border)"
+              >
+                <div class="flex flex-col gap-1">
+                  <span
+                    class="text-xs uppercase tracking-wide"
+                    style="color: var(--text-color-secondary)"
+                  >
+                    Created
+                  </span>
+                  <span class="text-sm font-medium">
+                    {{ org.createdAt ? (org.createdAt | date: 'mediumDate') : '--' }}
+                  </span>
+                </div>
+                <div class="flex flex-col gap-1">
+                  <span
+                    class="text-xs uppercase tracking-wide"
+                    style="color: var(--text-color-secondary)"
+                  >
+                    Last updated
+                  </span>
+                  <span class="text-sm font-medium">
+                    {{ org.updatedAt ? (org.updatedAt | date: 'MMM d, y, h:mm a') : '--' }}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </ng-template>
+        </p-card>
+      </div>
+
+      <!-- Action bar (ROOT/ADMIN). ORGANIZER_ADMIN saves from the details card header. -->
+      @if (canEditGovernance) {
+        <div class="flex justify-end gap-3">
+          <p-button
+            (onClick)="resetDetails(detailsForm)"
+            [disabled]="savingDetails() || detailsForm.pristine"
+            [text]="true"
+            label="Reset"
+            severity="secondary"
+            size="small"
+            type="button"
+          />
+          <p-button
+            [disabled]="savingDetails() || detailsForm.invalid || detailsForm.pristine"
+            [loading]="savingDetails()"
+            icon="pi pi-check"
+            label="Save Changes"
+            size="small"
+            type="submit"
+          />
+        </div>
+      }
+    </form>
+  </div>
+}

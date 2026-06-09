@@ -1,152 +1,84 @@
+import { Component, inject, OnInit, signal } from '@angular/core';
+import { Location } from '@angular/common';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { filter, map, startWith } from 'rxjs/operators';
 import {
-  ChangeDetectionStrategy,
-  Component,
-  computed,
-  inject,
-  OnInit,
-  signal,
-} from '@angular/core';
-import { DatePipe, Location } from '@angular/common';
-import { FormsModule, NgForm } from '@angular/forms';
-import { ActivatedRoute } from '@angular/router';
-import { CardModule } from 'primeng/card';
-import { TagModule } from 'primeng/tag';
+  ActivatedRoute,
+  NavigationEnd,
+  Router,
+  RouterLink,
+  RouterLinkActive,
+  RouterOutlet,
+} from '@angular/router';
+import { TabsModule } from 'primeng/tabs';
 import { ButtonModule } from 'primeng/button';
-import { InputTextModule } from 'primeng/inputtext';
-import { FloatLabelModule } from 'primeng/floatlabel';
-import { MessageModule } from 'primeng/message';
 import { SkeletonModule } from 'primeng/skeleton';
-import { ProgressBarModule } from 'primeng/progressbar';
-import { SelectModule } from 'primeng/select';
-import { InputNumberModule } from 'primeng/inputnumber';
 import { OrganizationService } from '../../core/services/organization.service';
-import { ImageUploadService } from '../../core/services/image-upload.service';
 import { ErrorHandlerService } from '../../core/services/error-handler.service';
-import { ToastService } from '../../core/services/toast.service';
 import { AuthService } from '../../core/services/auth.service';
-import { ImageUpload } from '../../shared/components/image-upload/image-upload';
-import { DefaultValuePipe } from '../../shared/pipes/default-value.pipe';
-import {
-  Organization,
-  SubscriptionTier,
-  UpdateOrganizationRequest,
-} from '../../core/models/organization.model';
-import { ROLE_LABELS, UserRole } from '../../core/models/user.model';
-import { shouldShowError } from '../../shared/utils/form.utils';
-import { FORM_INPUT_SIZE } from '../../shared/constants/form.constants';
-import { SUBSCRIPTION_TIER_OPTIONS } from '../../shared/constants/subscription.constant';
+import { UserRole } from '../../core/models/user.model';
+import { MobileTabBar, TabItem } from '../../shared/components/mobile-tab-bar/mobile-tab-bar';
+import { OrganizationAccountState } from './organization-account-state.service';
+
+const DEFAULT_TAB = 'account';
 
 /**
- * Organization "account" page. Serves two audiences:
- *  - ORGANIZER_ADMIN (route `/organization`, no id): loads their own organization
- *    (GET /organizations/organization). Subscription tier and quotas are read-only.
- *  - ROOT/ADMIN (route `/organizations/:id/edit`): loads any organization by id and
- *    can additionally edit governance fields (subscription tier, billing email,
- *    user quotas). This is the full-page replacement for the old edit dialog.
+ * Organization "account" page shell. Serves two audiences:
+ *  - ORGANIZER_ADMIN (route `/organization`, no id): loads their own organization.
+ *  - ROOT/ADMIN (route `/organizations/:id/edit`): loads any organization by id.
+ *
+ * Loads the organization once and shares it via `OrganizationAccountState`; the
+ * Account and Billing tabs are URL-driven routed children (mirrors event-details
+ * and platform-billing), so switching tabs changes the route.
  */
 @Component({
   selector: 'app-organization-account',
   standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    DatePipe,
-    FormsModule,
-    CardModule,
-    TagModule,
+    TabsModule,
     ButtonModule,
-    InputTextModule,
-    FloatLabelModule,
-    MessageModule,
     SkeletonModule,
-    ProgressBarModule,
-    SelectModule,
-    InputNumberModule,
-    ImageUpload,
-    DefaultValuePipe,
+    RouterOutlet,
+    RouterLink,
+    RouterLinkActive,
+    MobileTabBar,
   ],
+  providers: [OrganizationAccountState],
   templateUrl: './organization-account.html',
   styleUrl: './organization-account.css',
 })
 export class OrganizationAccount implements OnInit {
   private organizationService = inject(OrganizationService);
-  private imageUploadService = inject(ImageUploadService);
   private errorHandler = inject(ErrorHandlerService);
-  private toast = inject(ToastService);
   private authService = inject(AuthService);
   private location = inject(Location);
   private route = inject(ActivatedRoute);
+  private router = inject(Router);
+  private state = inject(OrganizationAccountState);
 
-  readonly inputSize = FORM_INPUT_SIZE;
-  readonly subscriptionTiers = SUBSCRIPTION_TIER_OPTIONS;
-  shouldShowError = shouldShowError;
-
-  // ROOT/ADMIN may edit governance fields (tier, billing email, quotas); an
-  // ORGANIZER_ADMIN editing their own org sees them read-only.
+  // ROOT/ADMIN edit any org (and its governance fields); an ORGANIZER_ADMIN edits
+  // their own org. Only used here for the page heading copy.
   readonly canEditGovernance = this.authService.hasAnyRole([UserRole.ROOT, UserRole.ADMIN]);
+
+  readonly organization = this.state.organization;
+  isLoading = signal(true);
 
   // Set from the route param when ROOT/ADMIN edit a specific org; null = "my org".
   private orgId: number | null = null;
 
-  organization = signal<Organization | null>(null);
-  isLoading = signal(true);
-  savingDetails = signal(false);
-  logoPending = signal(false);
+  readonly activeTab = toSignal(
+    this.router.events.pipe(
+      filter((e): e is NavigationEnd => e instanceof NavigationEnd),
+      startWith(null),
+      map(() => this.route.snapshot.firstChild?.routeConfig?.path ?? DEFAULT_TAB),
+    ),
+    { initialValue: this.route.snapshot.firstChild?.routeConfig?.path ?? DEFAULT_TAB },
+  );
 
-  // Editable form models (kept separate from the loaded org so Reset works).
-  details = {
-    organizerName: '',
-    email: '',
-    phoneNumber: '',
-    website: '',
-    addressLine1: '',
-    addressLine2: '',
-    city: '',
-    stateProvince: '',
-    postalCode: '',
-    country: '',
-    taxId: '',
-    registrationNumber: '',
-  };
-  governance = {
-    subscriptionTier: undefined as SubscriptionTier | undefined,
-    billingEmail: '',
-    maxAdmins: null as number | null,
-    maxOrganizerUsers: null as number | null,
-    maxDistributors: null as number | null,
-  };
-
-  tierLabel = computed(() => {
-    const tier = this.organization()?.subscriptionTier;
-    return this.subscriptionTiers.find((o) => o.value === tier)?.label ?? tier ?? '--';
-  });
-
-  // Read-only usage rows for the quota card: label, "used / max" text, and a
-  // fill percentage for the progress bar (0 when the quota is unlimited).
-  quotaRows = computed(() => {
-    const q = this.organization()?.userQuota;
-    const rows = [
-      {
-        label: ROLE_LABELS[UserRole.ORGANIZER_ADMIN],
-        used: q?.admins?.used ?? 0,
-        max: q?.admins?.max,
-      },
-      {
-        label: ROLE_LABELS[UserRole.ORGANIZER_USER],
-        used: q?.organizerUsers?.used ?? 0,
-        max: q?.organizerUsers?.max,
-      },
-      {
-        label: ROLE_LABELS[UserRole.DISTRIBUTOR],
-        used: q?.distributors?.used ?? 0,
-        max: q?.distributors?.max,
-      },
-    ];
-    return rows.map((r) => ({
-      label: r.label,
-      display: `${r.used} / ${r.max ?? '∞'}`,
-      percent: r.max && r.max > 0 ? Math.min(100, Math.round((r.used / r.max) * 100)) : 0,
-    }));
-  });
+  readonly tabs: TabItem[] = [
+    { id: 'account', label: 'Account', icon: 'pi-building' },
+    { id: 'billing', label: 'Billing', icon: 'pi-receipt' },
+  ];
 
   ngOnInit(): void {
     const idParam = this.route.snapshot.paramMap.get('id');
@@ -163,9 +95,8 @@ export class OrganizationAccount implements OnInit {
 
     request$.subscribe({
       next: (org) => {
+        this.state.setOrganization(org);
         this.isLoading.set(false);
-        this.organization.set(org);
-        this.populateDetails(org);
       },
       error: (error) => {
         this.isLoading.set(false);
@@ -174,119 +105,11 @@ export class OrganizationAccount implements OnInit {
     });
   }
 
-  // ── Details ─────────────────────────────────────────────────────────────────
-
-  onSaveDetails(form: NgForm): void {
-    if (form.invalid) return;
-    const id = this.organization()?.id;
-    if (id == null) return;
-
-    const request: UpdateOrganizationRequest = {
-      organizerName: this.details.organizerName.trim(),
-      email: this.details.email.trim(),
-      phoneNumber: this.details.phoneNumber.trim() || undefined,
-      website: this.details.website.trim() || undefined,
-      addressLine1: this.details.addressLine1.trim() || undefined,
-      addressLine2: this.details.addressLine2.trim() || undefined,
-      city: this.details.city.trim() || undefined,
-      stateProvince: this.details.stateProvince.trim() || undefined,
-      postalCode: this.details.postalCode.trim() || undefined,
-      country: this.details.country.trim() || undefined,
-      taxId: this.details.taxId.trim() || undefined,
-      registrationNumber: this.details.registrationNumber.trim() || undefined,
-    };
-
-    if (this.canEditGovernance) {
-      request.subscriptionTier = this.governance.subscriptionTier;
-      request.billingEmail = this.governance.billingEmail.trim() || undefined;
-      request.userQuota = {
-        admins: { max: this.governance.maxAdmins },
-        organizerUsers: { max: this.governance.maxOrganizerUsers },
-        distributors: { max: this.governance.maxDistributors },
-      };
-    }
-
-    this.savingDetails.set(true);
-    this.organizationService.updateOrganization(id, request).subscribe({
-      next: (updated) => {
-        this.savingDetails.set(false);
-        this.organization.set(updated);
-        this.populateDetails(updated);
-        form.form.markAsPristine();
-        this.toast.success('Organization updated');
-      },
-      error: (error) => {
-        this.savingDetails.set(false);
-        this.errorHandler.showError(error);
-      },
-    });
-  }
-
-  resetDetails(form: NgForm): void {
-    const current = this.organization();
-    if (current) this.populateDetails(current);
-    form.form.markAsPristine();
-  }
-
-  // ── Logo ──────────────────────────────────────────────────────────────────
-
-  onLogoSelected(file: File): void {
-    const id = this.organization()?.id;
-    if (id == null) return;
-    this.logoPending.set(true);
-    this.imageUploadService.replaceOrganizationLogo(id, file).subscribe({
-      next: (org) => this.afterLogoChange(org.logoUrl, 'Logo updated'),
-      error: (error) => {
-        this.logoPending.set(false);
-        this.errorHandler.showError(error);
-      },
-    });
-  }
-
-  onLogoRemove(): void {
-    const id = this.organization()?.id;
-    if (id == null) return;
-    this.logoPending.set(true);
-    this.imageUploadService.removeOrganizationLogo(id).subscribe({
-      next: (org) => this.afterLogoChange(org.logoUrl, 'Logo removed'),
-      error: (error) => {
-        this.logoPending.set(false);
-        this.errorHandler.showError(error);
-      },
-    });
+  onTabChange(tabId: string): void {
+    this.router.navigate([tabId], { relativeTo: this.route });
   }
 
   goBack(): void {
     this.location.back();
-  }
-
-  private afterLogoChange(logoUrl: string | undefined, message: string): void {
-    this.logoPending.set(false);
-    this.organization.update((prev) => (prev ? { ...prev, logoUrl } : prev));
-    this.toast.success(message);
-  }
-
-  private populateDetails(org: Organization): void {
-    this.details = {
-      organizerName: org.organizerName ?? '',
-      email: org.email ?? '',
-      phoneNumber: org.phoneNumber ?? '',
-      website: org.website ?? '',
-      addressLine1: org.addressLine1 ?? '',
-      addressLine2: org.addressLine2 ?? '',
-      city: org.city ?? '',
-      stateProvince: org.stateProvince ?? '',
-      postalCode: org.postalCode ?? '',
-      country: org.country ?? '',
-      taxId: org.taxId ?? '',
-      registrationNumber: org.registrationNumber ?? '',
-    };
-    this.governance = {
-      subscriptionTier: (org.subscriptionTier as SubscriptionTier | undefined) ?? undefined,
-      billingEmail: org.billingEmail ?? '',
-      maxAdmins: org.userQuota?.admins?.max ?? null,
-      maxOrganizerUsers: org.userQuota?.organizerUsers?.max ?? null,
-      maxDistributors: org.userQuota?.distributors?.max ?? null,
-    };
   }
 }

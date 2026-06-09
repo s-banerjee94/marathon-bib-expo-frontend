@@ -1,0 +1,284 @@
+<app-list-shell
+  (columnSelectionChange)="onColumnSelectionChange()"
+  (pageChange)="onPageChange($event)"
+  (searchChange)="onSearchInput($event)"
+  (searchClear)="clearSearch()"
+  [(selectedColumns)]="selectedCols"
+  [activeFilterCount]="activeFilterCount()"
+  [columns]="cols()"
+  [currentPage]="currentPage()"
+  [isLoading]="isLoading()"
+  [isMobile]="isMobile()"
+  [items]="entities()"
+  [pageSize]="pageSize()"
+  [rowsPerPageOptions]="[10, 25, 50]"
+  [searchTerm]="searchTerm()"
+  [totalRecords]="totalRecords()"
+  emptyIcon="pi pi-receipt"
+  emptyMessage="No bills yet"
+  emptyHint="Invoices appear here once an event is completed or cancelled"
+  searchPlaceholder="Search event or invoice (min 2 chars)..."
+>
+  <ng-template #filters>
+    <p-select
+      [ngModel]="reason()"
+      (ngModelChange)="reason.set($event); onFilterChange()"
+      [options]="reasonOptions"
+      [size]="inputSize"
+      optionLabel="label"
+      optionValue="value"
+      placeholder="All triggers"
+      [showClear]="true"
+      appendTo="body"
+      class="w-full sm:w-44"
+    />
+    <p-select
+      [ngModel]="paymentStatus()"
+      (ngModelChange)="paymentStatus.set($event); onFilterChange()"
+      [options]="paymentOptions"
+      [size]="inputSize"
+      optionLabel="label"
+      optionValue="value"
+      placeholder="All payments"
+      [showClear]="true"
+      appendTo="body"
+      class="w-full sm:w-44"
+    />
+    <p-datepicker
+      [ngModel]="dateRange()"
+      (ngModelChange)="dateRange.set($event)"
+      (onSelect)="onDateSelect()"
+      (onClear)="onDateClear()"
+      selectionMode="range"
+      [readonlyInput]="true"
+      [showClear]="true"
+      [size]="inputSize"
+      dateFormat="dd-M-yy"
+      placeholder="Date range"
+      appendTo="body"
+      class="w-full sm:w-64"
+    />
+    <p-floatlabel variant="on">
+      <p-select
+        (ngModelChange)="onSortChange($event)"
+        [ngModel]="selectedSort()"
+        [options]="sortOptions"
+        [showClear]="true"
+        [size]="inputSize"
+        appendTo="body"
+        class="w-full md:w-48"
+        inputId="orgBillSort"
+        optionLabel="label"
+        optionValue="value"
+      />
+      <label for="orgBillSort">Sort By</label>
+    </p-floatlabel>
+    @if (activeFilterCount() > 0) {
+      <p-button
+        label="Clear"
+        icon="pi pi-filter-slash"
+        [text]="true"
+        severity="secondary"
+        [size]="inputSize"
+        (onClick)="clearFilters()"
+      />
+    }
+  </ng-template>
+
+  <ng-template #desktopBody>
+    <p-table
+      (onLazyLoad)="onPageChange($event)"
+      [first]="currentPage() * pageSize()"
+      [lazy]="true"
+      [paginator]="true"
+      [rows]="pageSize()"
+      [rowsPerPageOptions]="[10, 25, 50]"
+      [scrollable]="true"
+      [size]="inputSize"
+      [tableStyle]="{ 'min-width': '50rem' }"
+      [totalRecords]="totalRecords()"
+      [value]="displayData()"
+      dataKey="billId"
+      scrollHeight="600px"
+    >
+      <ng-template pTemplate="header">
+        <tr>
+          <th class="w-16 whitespace-nowrap" pFrozenColumn>Sl. No</th>
+          @for (col of visibleCols; track col.field) {
+            <th [class]="getColumnAlignment(col.field) + ' whitespace-nowrap'">
+              <span>{{ col.header }}</span>
+              @if (isSorted(col.field)) {
+                <i [class]="getSortIcon(col.field)" class="ml-2"></i>
+              }
+            </th>
+          }
+          <th class="text-center w-28 whitespace-nowrap" pFrozenColumn alignFrozen="right">
+            Details
+          </th>
+        </tr>
+      </ng-template>
+
+      <ng-template let-bill let-rowIndex="rowIndex" pTemplate="body">
+        <tr>
+          @if (isLoading()) {
+            <td pFrozenColumn><p-skeleton /></td>
+            @for (col of visibleCols; track col.field) {
+              <td [class]="getColumnAlignment(col.field) + ' whitespace-nowrap'">
+                <p-skeleton />
+              </td>
+            }
+            <td class="text-center whitespace-nowrap" pFrozenColumn alignFrozen="right">
+              <p-skeleton height="2rem" width="5rem" />
+            </td>
+          } @else {
+            <td class="text-color-secondary whitespace-nowrap" pFrozenColumn>
+              {{ currentPage() * pageSize() + rowIndex + 1 }}
+            </td>
+            @for (col of visibleCols; track col.field) {
+              <td [class]="getColumnAlignment(col.field) + ' whitespace-nowrap'">
+                @if (col.field === 'eventName') {
+                  <span class="font-medium">{{ bill.eventName }}</span>
+                } @else if (col.field === 'status') {
+                  <p-tag
+                    [value]="statusLabel(bill.status)"
+                    [severity]="statusSeverity(bill.status)"
+                  />
+                } @else if (col.field === 'reason') {
+                  <p-tag
+                    [value]="reasonLabel(bill.reason)"
+                    [severity]="reasonSeverity(bill.reason)"
+                  />
+                } @else if (col.field === 'paymentStatus') {
+                  @if (bill.status === BillStatus.FINAL) {
+                    <p-tag
+                      [value]="paymentLabel(bill.paymentStatus)"
+                      [severity]="paymentSeverity(bill.paymentStatus)"
+                    />
+                  } @else {
+                    <span class="opacity-50">--</span>
+                  }
+                } @else if (
+                  col.field === 'subtotal' ||
+                  col.field === 'taxAmount' ||
+                  col.field === 'totalAmount'
+                ) {
+                  <span [class.font-semibold]="col.field === 'totalAmount'">
+                    {{ formatMoney($any(getCellValue(bill, col.field)), bill.currency) }}
+                  </span>
+                } @else if (col.type === 'datetime') {
+                  {{
+                    $any(getCellValue(bill, col.field))
+                      | date: 'dd-MMM-yyyy, hh:mm a'
+                      | defaultValue
+                  }}
+                } @else if (col.type === 'date') {
+                  {{ $any(getCellValue(bill, col.field)) | date: 'dd-MMM-yyyy' | defaultValue }}
+                } @else {
+                  {{ getCellValue(bill, col.field) | defaultValue }}
+                }
+              </td>
+            }
+            <td class="text-center whitespace-nowrap" pFrozenColumn alignFrozen="right">
+              <div class="flex justify-center gap-1">
+                <p-button
+                  icon="pi pi-eye"
+                  label="View"
+                  [text]="true"
+                  size="small"
+                  [loading]="viewLoadingId() === bill.billId"
+                  (onClick)="openDetail(bill)"
+                />
+                @if (bill.downloadUrl) {
+                  <p-button
+                    icon="pi pi-download"
+                    [text]="true"
+                    [rounded]="true"
+                    size="small"
+                    pTooltip="Download PDF"
+                    tooltipPosition="top"
+                    (onClick)="downloadBill(bill)"
+                  />
+                }
+              </div>
+            </td>
+          }
+        </tr>
+      </ng-template>
+
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td [attr.colspan]="visibleCols.length + 2">
+            @if (!isLoading()) {
+              <div class="flex flex-col items-center justify-center py-12 px-4 text-center">
+                <i class="pi pi-receipt text-6xl mb-4 opacity-30"></i>
+                <p class="text-lg font-medium mb-1">No bills yet</p>
+                <p class="text-sm opacity-60">
+                  Invoices appear here once an event is completed or cancelled.
+                </p>
+              </div>
+            }
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </ng-template>
+
+  <ng-template #mobileCard let-bill>
+    <p-card>
+      <div class="flex flex-col gap-4">
+        <!-- Title + lifecycle status -->
+        <div class="flex items-start justify-between gap-3">
+          <div class="min-w-0">
+            <div class="font-semibold truncate">{{ bill.eventName }}</div>
+            <div class="text-xs opacity-60 mt-0.5 truncate">
+              @if (bill.invoiceNumber) {
+                {{ bill.invoiceNumber }} ·
+              }
+              {{ bill.createdAt | date: 'dd MMM yyyy' }}
+            </div>
+          </div>
+          <p-tag [value]="statusLabel(bill.status)" [severity]="statusSeverity(bill.status)" />
+        </div>
+
+        <!-- Amount (hero) + payment state -->
+        <div class="flex items-end justify-between gap-3">
+          <div class="flex flex-col">
+            <span class="text-xs uppercase tracking-wide opacity-50">Total</span>
+            <span class="text-xl font-semibold">
+              {{ formatMoney(bill.totalAmount, bill.currency) }}
+            </span>
+          </div>
+          @if (bill.status === BillStatus.FINAL) {
+            <p-tag
+              [value]="paymentLabel(bill.paymentStatus)"
+              [severity]="paymentSeverity(bill.paymentStatus)"
+            />
+          }
+        </div>
+      </div>
+      <ng-template #footer>
+        <div class="flex justify-end gap-2">
+          @if (bill.downloadUrl) {
+            <p-button
+              label="Download PDF"
+              icon="pi pi-download"
+              [text]="true"
+              size="small"
+              (onClick)="downloadBill(bill)"
+            />
+          }
+          <p-button
+            label="View"
+            icon="pi pi-eye"
+            [text]="true"
+            size="small"
+            [loading]="viewLoadingId() === bill.billId"
+            (onClick)="openDetail(bill)"
+          />
+        </div>
+      </ng-template>
+    </p-card>
+  </ng-template>
+</app-list-shell>
+
+<app-bill-detail-dialog [(visible)]="detailVisible" [bill]="selectedBill()" [canManage]="false" />

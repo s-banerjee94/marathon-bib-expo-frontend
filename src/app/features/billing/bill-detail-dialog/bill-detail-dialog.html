@@ -1,0 +1,27 @@
+<p-dialog
+  [(visible)]="visible"
+  [header]="dialogHeader()"
+  [modal]="true"
+  [draggable]="false"
+  [resizable]="false"
+  [dismissableMask]="true"
+  [style]="{ width: '95vw', maxWidth: '760px' }"
+>
+  <app-bill-detail
+    [bill]="bill()"
+    [eventId]="eventId()"
+    [canManage]="canManage()"
+    (billChange)="billChange.emit($event)"
+    (issueFinal)="issueFinal.emit()"
+  />
+
+  <ng-template pTemplate="footer">
+    <p-button
+      label="Close"
+      [text]="true"
+      severity="secondary"
+      [size]="buttonSize"
+      (onClick)="visible.set(false)"
+    />
+  </ng-template>
+</p-dialog>

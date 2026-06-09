@@ -30,7 +30,7 @@
           [attr.aria-selected]="tab.id === activeId()"
           [attr.aria-label]="tab.label"
           (click)="select(tab)"
-          class="relative flex h-14 min-w-14 flex-1 cursor-pointer items-center justify-center bg-transparent transition-colors duration-150"
+          class="relative flex h-14 min-w-[72px] flex-1 cursor-pointer items-center justify-center bg-transparent transition-colors duration-150"
           [class]="
             tab.id === activeId()
               ? 'text-[var(--primary-color)]'

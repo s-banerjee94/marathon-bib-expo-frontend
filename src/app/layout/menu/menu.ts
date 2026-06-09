@@ -60,6 +60,12 @@ export class MenuComponent {
       routerLink: '/distribution',
     },
     {
+      label: 'Billing',
+      icon: 'pi pi-receipt',
+      routerLink: '/billing',
+      roles: [UserRole.ROOT, UserRole.ADMIN],
+    },
+    {
       label: 'Audit Logs',
       icon: 'pi pi-history',
       routerLink: '/audit-logs',

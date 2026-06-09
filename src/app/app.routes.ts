@@ -34,11 +34,33 @@ export const routes: Routes = [
       ),
     canActivate: [roleGuard([UserRole.ORGANIZER_ADMIN])],
     title: pageTitle('Organization'),
+    children: [
+      { path: '', redirectTo: 'account', pathMatch: 'full' },
+      {
+        path: 'account',
+        loadComponent: () =>
+          import('./features/organization-account/organization-account-details/organization-account-details').then(
+            (m) => m.OrganizationAccountDetails,
+          ),
+      },
+      {
+        path: 'billing',
+        loadComponent: () =>
+          import('./features/organization-account/organization-billing-section/organization-billing-section').then(
+            (m) => m.OrganizationBillingSection,
+          ),
+      },
+    ],
   },
   {
     path: 'organizations',
     loadChildren: () =>
       import('./features/organizations/organizations.routes').then((m) => m.ORGANIZATIONS_ROUTES),
+  },
+  {
+    // Platform-wide billing console — ROOT/ADMIN oversee every organization's bills.
+    path: 'billing',
+    loadChildren: () => import('./features/billing/billing.routes').then((m) => m.BILLING_ROUTES),
   },
   {
     path: 'users',

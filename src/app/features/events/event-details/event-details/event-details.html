@@ -103,15 +103,19 @@
 
         <!-- Name, status tag, and action buttons -->
         <div class="flex-1 min-w-0">
-          <div class="flex justify-between items-start">
-            <div class="min-w-0 mr-4">
-              <h1 class="text-3xl font-bold mb-2">{{ event()!.eventName }}</h1>
+          <div class="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3">
+            <div class="min-w-0">
+              <h1 class="text-2xl sm:text-3xl font-bold mb-2 break-words">
+                {{ event()!.eventName }}
+              </h1>
               <p-tag [value]="event()!.status" [severity]="getStatusSeverity(event()!.status)" />
             </div>
-            <div class="flex gap-2 flex-shrink-0">
+            <div class="flex flex-wrap gap-2 sm:flex-shrink-0">
               <p-button
                 icon="pi pi-link"
-                label="Generate Short URLs"
+                [label]="isMobile() ? '' : 'Generate Short URLs'"
+                pTooltip="Generate Short URLs"
+                tooltipPosition="bottom"
                 severity="secondary"
                 [outlined]="true"
                 [size]="buttonSize"
@@ -120,14 +124,18 @@
               />
               <p-button
                 icon="pi pi-pencil"
-                label="Edit Event"
+                [label]="isMobile() ? '' : 'Edit Event'"
+                pTooltip="Edit Event"
+                tooltipPosition="bottom"
                 severity="secondary"
                 [size]="buttonSize"
                 (onClick)="onEditEvent()"
               />
               <p-button
                 icon="pi pi-sync"
-                label="Change Status"
+                [label]="isMobile() ? '' : 'Change Status'"
+                pTooltip="Change Status"
+                tooltipPosition="bottom"
                 severity="secondary"
                 [outlined]="true"
                 [size]="buttonSize"
@@ -222,6 +230,12 @@
             <i class="pi pi-send mr-2"></i>
             SMS Campaigns
           </p-tab>
+          @if (canViewBilling) {
+            <p-tab value="billing" [routerLink]="['billing']" routerLinkActive>
+              <i class="pi pi-receipt mr-2"></i>
+              Billing
+            </p-tab>
+          }
         </p-tablist>
       </p-tabs>
     </div>
@@ -233,7 +247,7 @@
     <!-- Mobile-only bottom tab bar (self-hides at md+); spacer clears the fixed bar. -->
     <app-mobile-tab-bar
       class="md:hidden"
-      [tabs]="eventTabs"
+      [tabs]="visibleTabs"
       [activeId]="activeTab()"
       (tabChange)="onTabChange($event)"
     />

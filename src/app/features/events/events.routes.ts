@@ -89,6 +89,17 @@ export const EVENTS_ROUTES: Routes = [
           ),
         title: pageTitle('Event SMS Campaigns'),
       },
+      {
+        // Bills are visible to ROOT/ADMIN/ORGANIZER_ADMIN only — not ORGANIZER_USER.
+        // The guard 401s ORGANIZER_USER who deep-links the URL (backend GET also 403s them).
+        path: 'billing',
+        loadComponent: () =>
+          import('./event-details/event-billing-section/event-billing-section').then(
+            (m) => m.EventBillingSection,
+          ),
+        canActivate: [roleGuard([UserRole.ROOT, UserRole.ADMIN, UserRole.ORGANIZER_ADMIN])],
+        title: pageTitle('Event Billing'),
+      },
     ],
   },
 ];

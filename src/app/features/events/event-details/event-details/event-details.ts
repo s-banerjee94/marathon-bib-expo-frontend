@@ -22,6 +22,8 @@ import { ConfirmationService, MenuItem } from 'primeng/api';
 import { DialogService } from 'primeng/dynamicdialog';
 import { Event, EventStatus } from '../../../../core/models/event.model';
 import { EventService } from '../../../../core/services/event.service';
+import { AuthService } from '../../../../core/services/auth.service';
+import { UserRole } from '../../../../core/models/user.model';
 import { DistributionService } from '../../../../core/services/distribution.service';
 import { ErrorHandlerService } from '../../../../core/services/error-handler.service';
 import { ToastService } from '../../../../core/services/toast.service';
@@ -33,6 +35,7 @@ import {
 } from '../../../../shared/utils/event-status.utils';
 import { EventForm } from '../../event-form/event-form';
 import { BUTTON_SIZE } from '../../../../shared/constants/form.constants';
+import { injectIsMobile } from '../../../../shared/utils/responsive.utils';
 import { MobileTabBar, TabItem } from '../../../../shared/components/mobile-tab-bar/mobile-tab-bar';
 
 const DEFAULT_TAB = 'dashboard';
@@ -72,6 +75,14 @@ export class EventDetails implements OnInit {
   private confirmationService = inject(ConfirmationService);
   private destroyRef = inject(DestroyRef);
   private state = inject(EventDetailsState);
+  private authService = inject(AuthService);
+
+  // Billing is visible to ROOT/ADMIN/ORGANIZER_ADMIN only — never ORGANIZER_USER or DISTRIBUTOR.
+  protected readonly canViewBilling = this.authService.hasAnyRole([
+    UserRole.ROOT,
+    UserRole.ADMIN,
+    UserRole.ORGANIZER_ADMIN,
+  ]);
 
   event = signal<Event | null>(null);
   isLoading = signal(true);
@@ -98,6 +109,7 @@ export class EventDetails implements OnInit {
   protected readonly getStatusSeverity = getEventStatusSeverity;
   protected readonly getStatusLabel = getEventStatusLabel;
   protected readonly buttonSize = BUTTON_SIZE;
+  protected readonly isMobile = injectIsMobile();
 
   protected readonly eventTabs: TabItem[] = [
     { id: 'dashboard', label: 'Dashboard', icon: 'pi-chart-bar' },
@@ -107,7 +119,13 @@ export class EventDetails implements OnInit {
     { id: 'categories', label: 'Categories', icon: 'pi-tags' },
     { id: 'sms-templates', label: 'SMS Templates', icon: 'pi-envelope' },
     { id: 'sms-campaigns', label: 'SMS Campaigns', icon: 'pi-send' },
+    { id: 'billing', label: 'Billing', icon: 'pi-receipt' },
   ];
+
+  // Mobile tab bar — drops the Billing tab for roles that can't view it.
+  protected readonly visibleTabs: TabItem[] = this.canViewBilling
+    ? this.eventTabs
+    : this.eventTabs.filter((tab) => tab.id !== 'billing');
 
   ngOnInit(): void {
     if (!Number.isFinite(this.eventId()) || this.eventId() <= 0) {

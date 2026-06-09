@@ -1,0 +1,245 @@
+<div class="flex flex-col gap-6 pt-2">
+  <!-- Freshness + refresh / range selector -->
+  <div class="flex flex-wrap items-center justify-between gap-3">
+    <div class="flex flex-wrap items-center gap-3">
+      @if (hasSnapshot()) {
+        <span class="text-sm opacity-60">
+          Last updated {{ refreshedAt() | date: 'dd-MMM-yyyy, hh:mm a' }}
+          @if (computedByLabel()) {
+            · by {{ computedByLabel() }}
+          }
+        </span>
+      }
+      <p-button
+        label="Refresh"
+        icon="pi pi-refresh"
+        [text]="true"
+        [size]="buttonSize"
+        [loading]="updating()"
+        (onClick)="refresh()"
+      />
+    </div>
+    <p-select
+      [ngModel]="range()"
+      (ngModelChange)="onRangeChange($event)"
+      [options]="rangeOptions"
+      [size]="inputSize"
+      optionLabel="label"
+      optionValue="value"
+      appendTo="body"
+    />
+  </div>
+
+  @if (isLoading()) {
+    <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+      <p-skeleton height="6rem" />
+      <p-skeleton height="6rem" />
+      <p-skeleton height="6rem" />
+      <p-skeleton height="6rem" />
+    </div>
+    <p-skeleton height="16rem" />
+  } @else if (!hasSnapshot()) {
+    <!-- Empty state — snapshot never computed -->
+    <p-card>
+      <div class="flex flex-col items-center justify-center py-16 px-4 text-center">
+        <i class="pi pi-chart-bar text-6xl mb-4 opacity-30"></i>
+        <p class="text-lg font-medium mb-1">No statistics yet</p>
+        <p class="text-sm opacity-60 mb-5">
+          Stats are computed once invoices are finalized. Click Refresh to generate the first
+          snapshot.
+        </p>
+        <p-button
+          label="Refresh"
+          icon="pi pi-refresh"
+          [size]="buttonSize"
+          [loading]="updating()"
+          (onClick)="refresh()"
+        />
+      </div>
+    </p-card>
+  } @else {
+    <!-- KPI tiles: billed → collected → outstanding → collection rate -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+      <p-card>
+        <div class="flex flex-col gap-1">
+          <span class="text-xs uppercase tracking-wide opacity-60">Billed</span>
+          <span class="text-2xl font-semibold">{{ formatMoney(billed().amount, currency()) }}</span>
+          <span class="text-xs opacity-60">{{ billed().count | number }} bills</span>
+        </div>
+      </p-card>
+      <p-card>
+        <div class="flex flex-col gap-1">
+          <span class="text-xs uppercase tracking-wide opacity-60">Collected</span>
+          <span class="text-2xl font-semibold">
+            {{ formatMoney(collected().amount, currency()) }}
+          </span>
+          <span class="text-xs opacity-60">{{ collected().count | number }} bills</span>
+        </div>
+      </p-card>
+      <p-card>
+        <div class="flex flex-col gap-1">
+          <span class="text-xs uppercase tracking-wide opacity-60">Outstanding</span>
+          <span class="text-2xl font-semibold">
+            {{ formatMoney(outstanding().amount, currency()) }}
+          </span>
+          <span class="text-xs opacity-60">{{ outstanding().count | number }} bills</span>
+        </div>
+      </p-card>
+      <p-card>
+        <div class="flex flex-col gap-2">
+          <span class="text-xs uppercase tracking-wide opacity-60">Collection rate</span>
+          <span class="text-2xl font-semibold">{{ collectionRate() | number: '1.0-1' }}%</span>
+          <p-progressbar
+            [value]="collectionRate()"
+            [showValue]="false"
+            [dt]="{ height: '0.5rem' }"
+          />
+        </div>
+      </p-card>
+    </div>
+
+    <!-- Secondary stat strip -->
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+      <p-card>
+        <div class="flex flex-col gap-1">
+          <span class="text-xs uppercase tracking-wide opacity-60">Avg bill</span>
+          <span class="text-lg font-semibold">{{ formatMoney(averageBill(), currency()) }}</span>
+        </div>
+      </p-card>
+      <p-card>
+        <div class="flex flex-col gap-1">
+          <span class="text-xs uppercase tracking-wide opacity-60">GST collected</span>
+          <span class="text-lg font-semibold">{{ formatMoney(gst().collected, currency()) }}</span>
+        </div>
+      </p-card>
+      <p-card>
+        <div class="flex flex-col gap-1">
+          <span class="text-xs uppercase tracking-wide opacity-60">DSO</span>
+          <span class="text-lg font-semibold">{{ dso() | number }} days</span>
+        </div>
+      </p-card>
+      <p-card>
+        <div class="flex flex-col gap-1">
+          <span class="text-xs uppercase tracking-wide opacity-60">Bills</span>
+          <span class="text-lg font-semibold">{{ billed().count | number }}</span>
+        </div>
+      </p-card>
+    </div>
+
+    <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+      <!-- Trend: billed vs collected -->
+      <p-card class="xl:col-span-2">
+        <ng-template pTemplate="header">
+          <div class="px-4 pt-4">
+            <h2 class="text-lg font-semibold">Billed vs collected</h2>
+            <p class="text-sm opacity-60">Last 12 months</p>
+          </div>
+        </ng-template>
+        @if (hasTrend() && trendChart(); as chart) {
+          <div class="h-64">
+            <p-chart type="line" [data]="chart" [options]="trendOptions()" height="100%" />
+          </div>
+        } @else {
+          <div class="flex flex-col items-center justify-center h-64 text-center">
+            <i class="pi pi-chart-line text-5xl mb-3 opacity-30"></i>
+            <p class="text-sm opacity-60">No billing activity yet.</p>
+          </div>
+        }
+      </p-card>
+
+      <!-- Trigger split -->
+      <p-card>
+        <ng-template pTemplate="header">
+          <div class="px-4 pt-4">
+            <h2 class="text-lg font-semibold">By trigger</h2>
+          </div>
+        </ng-template>
+        <div class="flex flex-col gap-5">
+          @for (row of reasonRows(); track row.label) {
+            <div class="flex flex-col gap-1.5">
+              <div class="flex items-center justify-between text-sm">
+                <span class="font-medium">{{ row.label }}</span>
+                <span class="opacity-70">
+                  {{ formatMoney(row.amount, currency()) }} · {{ row.count | number }}
+                </span>
+              </div>
+              <p-progressbar
+                [value]="row.percent"
+                [showValue]="false"
+                [dt]="{ height: '0.5rem' }"
+              />
+            </div>
+          }
+        </div>
+      </p-card>
+    </div>
+
+    <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+      <!-- Receivables aging -->
+      <p-card>
+        <ng-template pTemplate="header">
+          <div class="px-4 pt-4">
+            <h2 class="text-lg font-semibold">Receivables aging</h2>
+            <p class="text-sm opacity-60">Outstanding by age since finalize</p>
+          </div>
+        </ng-template>
+        <div class="flex flex-col gap-5">
+          @for (band of agingRows(); track band.bucket) {
+            <div class="flex flex-col gap-1.5">
+              <div class="flex items-center justify-between text-sm">
+                <span class="font-medium">{{ band.bucket }} days</span>
+                <span class="opacity-70">
+                  {{ formatMoney(band.amount, currency()) }} · {{ band.count | number }}
+                </span>
+              </div>
+              <p-progressbar
+                [value]="band.percent"
+                [showValue]="false"
+                [dt]="{ height: '0.5rem' }"
+              />
+            </div>
+          }
+        </div>
+      </p-card>
+
+      <!-- Top organizations -->
+      <p-card class="xl:col-span-2">
+        <ng-template pTemplate="header">
+          <div class="px-4 pt-4">
+            <h2 class="text-lg font-semibold">Top organizations</h2>
+            <p class="text-sm opacity-60">Billed and outstanding</p>
+          </div>
+        </ng-template>
+        @if (topOrgs().length === 0) {
+          <div class="flex flex-col items-center justify-center py-10 text-center">
+            <i class="pi pi-building text-5xl mb-3 opacity-30"></i>
+            <p class="text-sm opacity-60">No billing data yet.</p>
+          </div>
+        } @else {
+          <div class="flex flex-col gap-4">
+            @for (org of topOrgs(); track org.organizationId) {
+              <button
+                type="button"
+                class="flex flex-col gap-1.5 text-left w-full"
+                (click)="goToOrg(org.organizationId)"
+              >
+                <div class="flex items-center justify-between gap-3 text-sm">
+                  <span class="font-medium truncate">{{ org.organizerName }}</span>
+                  <span class="opacity-70 whitespace-nowrap">
+                    {{ formatMoney(org.billed, currency()) }} billed ·
+                    {{ formatMoney(org.outstanding, currency()) }} due
+                  </span>
+                </div>
+                <p-progressbar
+                  [value]="org.percent"
+                  [showValue]="false"
+                  [dt]="{ height: '0.5rem' }"
+                />
+              </button>
+            }
+          </div>
+        }
+      </p-card>
+    </div>
+  }
+</div>
