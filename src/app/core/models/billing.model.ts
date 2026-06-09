@@ -192,8 +192,9 @@ export interface BillSearchParams {
  *
  * Computed entirely in a dedicated Lambda (never in Spring) and read from a
  * precomputed snapshot, sliced to the requested `range`. **Only FINAL bills
- * count** — drafts are excluded from every figure. Within a range the cohort
- * reconciles: `billed = collected + outstanding` (both amount and count).
+ * count toward every amount** — the `counts` and `byStatus` blocks are the only
+ * place draft *counts* appear. Within a range the cohort reconciles:
+ * `billed = collected + outstanding` (both amount and count).
  */
 
 /** Range window for the stats — a rolling floor on the bill's finalize date. */
@@ -259,6 +260,52 @@ export interface TopOrganizationBilling {
   billsCount: number;
 }
 
+/** One event's billed rollup for the "Top Events by Billed Amount" leaderboard. */
+export interface TopEventBilling {
+  eventId: number;
+  eventName: string;
+  organizerName: string;
+  billed: number;
+}
+
+/**
+ * A headline count with its change vs the previous comparison period (see
+ * `BillStatsResponse.comparisonLabel`). `deltaPct` is null when there is no
+ * prior period to compare (e.g. the ALL range).
+ */
+export interface TrendedCount {
+  value: number;
+  deltaPct: number | null;
+}
+
+/**
+ * A money total with its change and a short sparkline series (oldest first).
+ * `count` is only populated for `billedThisMonth` ("158 Bills").
+ */
+export interface TrendedMoney {
+  amount: number;
+  deltaPct: number | null;
+  count?: number;
+  spark: number[];
+}
+
+/** Paid vs unpaid amounts for the payment-distribution donut. */
+export interface PaymentSplit {
+  paid: number;
+  unpaid: number;
+}
+
+/** Key set for the headline counters. */
+export type BillCountKey = 'total' | 'draft' | 'final' | 'paid' | 'unpaid';
+
+/** Key set for the money cards. */
+export type BillMoneyKey =
+  | 'billed'
+  | 'collected'
+  | 'outstanding'
+  | 'averageBill'
+  | 'billedThisMonth';
+
 /** Query for GET /api/billing/stats. */
 export interface BillStatsParams {
   range?: BillStatsRange;
@@ -272,6 +319,19 @@ export interface BillStatsResponse {
   refreshedAt: string | null;
   /** What last triggered the recompute; null if never computed. */
   computedBy: BillStatsComputedBy | null;
+  /** Human caption for every ±% on the screen (e.g. "vs Apr 12 – May 11"); null on the ALL range. */
+  comparisonLabel: string | null;
+
+  /**
+   * Headline bill counts keyed total/draft/final/paid/unpaid, each with a deltaPct.
+   * The only block that counts drafts (total = draft + final); all amounts elsewhere are FINAL-only.
+   */
+  counts: Record<BillCountKey, TrendedCount>;
+  /**
+   * Money cards keyed billed/collected/outstanding/averageBill/billedThisMonth, each an amount with
+   * a deltaPct and a sparkline; billedThisMonth also carries a count and is range-independent.
+   */
+  money: Record<BillMoneyKey, TrendedMoney>;
 
   billed: BilledStat;
   /** PAID part of the cohort. */
@@ -289,9 +349,15 @@ export interface BillStatsResponse {
   gst: GstStat;
   /** Billed amount + count split by trigger; both keys are always present. */
   byReason: Record<'AUTO' | 'MANUAL', MoneyStat>;
+  /** Bill counts keyed DRAFT and FINAL (drafts included); DRAFT = counts.draft.value, FINAL = counts.final.value. */
+  byStatus: Record<'DRAFT' | 'FINAL', number>;
+  /** Paid vs unpaid amounts (= collected.amount / outstanding.amount). */
+  payment: PaymentSplit;
   /** Outstanding split into 0-30 / 31-60 / 61-90 / 90+ day bands. */
   aging: AgingBucket[];
   trend: BillStatsTrend;
+  /** Top events by billed amount (DESC), for the leaderboard bar. */
+  topEvents: TopEventBilling[];
   topOrganizations: TopOrganizationBilling[];
 }
 

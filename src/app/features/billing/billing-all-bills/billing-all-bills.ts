@@ -1,10 +1,11 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { RouterLink } from '@angular/router';
 import { TableLazyLoadEvent, TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
+import { AvatarModule } from 'primeng/avatar';
 import { TagModule } from 'primeng/tag';
 import { SelectModule } from 'primeng/select';
 import { DatePickerModule } from 'primeng/datepicker';
@@ -20,7 +21,6 @@ import { BaseTableComponent } from '../../../shared/base/base-table.component';
 import { TableFilterPreferences } from '../../../shared/models/table-config.model';
 import { ListShell } from '../../../shared/components/list/list-shell/list-shell';
 import { BillingService } from '../../../core/services/billing.service';
-import { OrganizationService } from '../../../core/services/organization.service';
 import {
   BillGenerationResponse,
   BillGenerationStatus,
@@ -32,6 +32,7 @@ import {
 } from '../../../core/models/billing.model';
 import { UserRole } from '../../../core/models/user.model';
 import { formatMoney } from '../../../shared/utils/currency.utils';
+import { hueVar, OrgHue, randomHue } from '../../../shared/utils/org-palette.util';
 import {
   billColumnAlignment,
   billReasonLabel,
@@ -48,6 +49,10 @@ import {
 import { BILL_SORT_OPTIONS } from '../../../shared/constants/sort-options.constant';
 import { STORAGE_KEYS } from '../../../shared/constants/storage-keys.constant';
 import { DefaultValuePipe } from '../../../shared/pipes/default-value.pipe';
+import { OrgNamePipe } from '../../../shared/pipes/org-name-pipe';
+import { EventLogoPipe } from '../../../shared/pipes/event-logo-pipe';
+import { InitialsPipe } from '../../../shared/pipes/initials-pipe';
+import { OrganizationSelector } from '../../../layout/organization-selector/organization-selector';
 import { BillDetailDialog } from '../bill-detail-dialog/bill-detail-dialog';
 
 interface BillFilterPreferences extends TableFilterPreferences {
@@ -73,6 +78,7 @@ interface BillFilterPreferences extends TableFilterPreferences {
     TableModule,
     ButtonModule,
     CardModule,
+    AvatarModule,
     TagModule,
     SelectModule,
     DatePickerModule,
@@ -80,7 +86,12 @@ interface BillFilterPreferences extends TableFilterPreferences {
     SkeletonModule,
     TooltipModule,
     ConfirmPopupModule,
+    RouterLink,
     DefaultValuePipe,
+    OrgNamePipe,
+    EventLogoPipe,
+    InitialsPipe,
+    OrganizationSelector,
     ListShell,
     BillDetailDialog,
   ],
@@ -94,9 +105,7 @@ export class BillingAllBills extends BaseTableComponent<BillResponse, BillFilter
   protected override allColumns = BILL_COLUMNS;
 
   private billingService = inject(BillingService);
-  private organizationService = inject(OrganizationService);
   private confirmationService = inject(ConfirmationService);
-  private router = inject(Router);
 
   protected readonly formatMoney = formatMoney;
   protected readonly statusLabel = billStatusLabel;
@@ -110,8 +119,10 @@ export class BillingAllBills extends BaseTableComponent<BillResponse, BillFilter
   protected readonly PaymentStatus = PaymentStatus;
   protected readonly sortOptions = BILL_SORT_OPTIONS;
 
+  // PT: shrink the avatar initials to 60% (−40%) of the large size; logo images are unaffected.
+  protected readonly avatarPt = { label: { style: { fontSize: '60%' } } };
+
   protected readonly updatingPaymentId = signal<string | null>(null);
-  protected readonly orgOptions = signal<{ label: string; value: number }[]>([]);
 
   // Bill detail dialog. The feed omits line items, so View fetches the full bill.
   // This console is ROOT/ADMIN-only, so they can edit a draft's line items (and
@@ -161,7 +172,6 @@ export class BillingAllBills extends BaseTableComponent<BillResponse, BillFilter
         this.allColumns.filter((c) => DEFAULT_BILL_COLUMN_FIELDS.includes(c.field)),
       );
     }
-    this.loadOrgOptions();
   }
 
   override ngOnInit(): void {
@@ -231,6 +241,30 @@ export class BillingAllBills extends BaseTableComponent<BillResponse, BillFilter
   downloadBill(bill: BillResponse): void {
     // FINAL bills carry a short-lived presigned PDF URL; only open a real link.
     if (bill.downloadUrl) window.open(bill.downloadUrl, '_blank', 'noopener');
+  }
+
+  // A random PrimeNG hue per bill, cached by billId so the card accent and avatar
+  // share one colour and it stays fixed across re-renders.
+  private readonly billHues = new Map<string, OrgHue>();
+
+  private hueFor(bill: BillResponse): OrgHue {
+    let hue = this.billHues.get(bill.billId);
+    if (!hue) {
+      hue = randomHue();
+      this.billHues.set(bill.billId, hue);
+    }
+    return hue;
+  }
+
+  /** Left-edge accent on the mobile card — a truly random PrimeNG palette colour, fixed per bill. */
+  cardAccent(bill: BillResponse): Record<string, string> {
+    return { 'border-left': `4px solid ${hueVar(this.hueFor(bill), 500)}` };
+  }
+
+  /** Avatar fill + initials colour — the same random hue as the card accent. */
+  avatarStyle(bill: BillResponse): Record<string, string> {
+    const hue = this.hueFor(bill);
+    return { 'background-color': hueVar(hue, 100), color: hueVar(hue, 700) };
   }
 
   /** Payment is one-way: settle an UNPAID final as PAID (permanent, no revert). */
@@ -321,19 +355,6 @@ export class BillingAllBills extends BaseTableComponent<BillResponse, BillFilter
     }
   }
 
-  goToEvent(bill: BillResponse): void {
-    this.router.navigate(['/events', bill.eventId, 'billing']);
-  }
-
-  goToOrg(bill: BillResponse): void {
-    this.router.navigate(['/organizations', bill.organizationId, 'edit']);
-  }
-
-  /** Bills only carry organizationId; resolve a name from the loaded options. */
-  orgName(id: number): string {
-    return this.orgOptions().find((o) => o.value === id)?.label ?? `Org #${id}`;
-  }
-
   protected override getDefaultFilterPreferences(): BillFilterPreferences {
     return {
       enabled: true,
@@ -360,19 +381,6 @@ export class BillingAllBills extends BaseTableComponent<BillResponse, BillFilter
     this.reason.set(prefs.reason ?? null);
     this.paymentStatus.set(prefs.paymentStatus ?? null);
     this.organizationId.set(prefs.organizationId ?? null);
-  }
-
-  private loadOrgOptions(): void {
-    this.organizationService
-      .searchOrganizations({ page: 0, size: 100, sort: ['organizerName,asc'] })
-      .subscribe({
-        next: (res) =>
-          this.orgOptions.set(
-            (res.content ?? []).map((o) => ({ label: o.organizerName, value: o.id })),
-          ),
-        // Non-fatal: the org filter simply stays empty on a fresh platform.
-        error: () => this.orgOptions.set([]),
-      });
   }
 
   private toIso(date: Date, endOfDay: boolean): string {

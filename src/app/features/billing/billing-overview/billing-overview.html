@@ -1,13 +1,10 @@
-<div class="flex flex-col gap-6 pt-2">
-  <!-- Freshness + refresh / range selector -->
+<div class="flex flex-col gap-4">
+  <!-- ── Freshness + range ──────────────────────────────────────────────────── -->
   <div class="flex flex-wrap items-center justify-between gap-3">
     <div class="flex flex-wrap items-center gap-3">
       @if (hasSnapshot()) {
-        <span class="text-sm opacity-60">
-          Last updated {{ refreshedAt() | date: 'dd-MMM-yyyy, hh:mm a' }}
-          @if (computedByLabel()) {
-            · by {{ computedByLabel() }}
-          }
+        <span class="text-sm text-color-secondary">
+          Updated {{ refreshedAt() | date: 'dd-MMM-yyyy, hh:mm a' }}
         </span>
       }
       <p-button
@@ -30,216 +27,331 @@
     />
   </div>
 
-  @if (isLoading()) {
-    <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-      <p-skeleton height="6rem" />
-      <p-skeleton height="6rem" />
-      <p-skeleton height="6rem" />
-      <p-skeleton height="6rem" />
-    </div>
-    <p-skeleton height="16rem" />
-  } @else if (!hasSnapshot()) {
-    <!-- Empty state — snapshot never computed -->
-    <p-card>
-      <div class="flex flex-col items-center justify-center py-16 px-4 text-center">
-        <i class="pi pi-chart-bar text-6xl mb-4 opacity-30"></i>
-        <p class="text-lg font-medium mb-1">No statistics yet</p>
-        <p class="text-sm opacity-60 mb-5">
-          Stats are computed once invoices are finalized. Click Refresh to generate the first
-          snapshot.
-        </p>
-        <p-button
-          label="Refresh"
-          icon="pi pi-refresh"
-          [size]="buttonSize"
-          [loading]="updating()"
-          (onClick)="refresh()"
-        />
+  <!-- ── Headline counters ──────────────────────────────────────────────────── -->
+  <div class="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-3">
+    @for (card of kpiCards(); track card.label) {
+      <p-card [dt]="cardPad">
+        <div class="flex items-start justify-between gap-2">
+          <span class="text-sm text-color-secondary truncate">{{ card.label }}</span>
+          <span
+            class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+            [style.background]="tint(card.color)"
+          >
+            <i [class]="card.icon" [style.color]="ref(card.color)"></i>
+          </span>
+        </div>
+        <div class="text-2xl font-bold mt-2">{{ card.value | number }}</div>
+        <div class="flex items-center gap-1 mt-1 text-xs h-4">
+          @if (card.deltaPct !== null) {
+            <i
+              [class]="card.deltaPct >= 0 ? 'pi pi-arrow-up' : 'pi pi-arrow-down'"
+              class="text-[10px]"
+              [style.color]="card.deltaPct >= 0 ? ref('green') : ref('red')"
+            ></i>
+            <span
+              class="font-medium"
+              [style.color]="card.deltaPct >= 0 ? ref('green') : ref('red')"
+            >
+              {{ (card.deltaPct < 0 ? -card.deltaPct : card.deltaPct) | number: '1.1-1' }}%
+            </span>
+            <span class="text-color-secondary truncate">{{ comparisonLabel() }}</span>
+          }
+        </div>
+      </p-card>
+    }
+  </div>
+
+  <!-- ── Money totals with sparklines ───────────────────────────────────────── -->
+  <div class="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-3">
+    @for (card of amountCards(); track card.label; let i = $index) {
+      <p-card [dt]="cardPad">
+        <span class="text-[11px] uppercase tracking-wide text-color-secondary truncate block">
+          {{ card.label }}
+        </span>
+        <div class="text-xl font-bold mt-1">{{ formatMoney(card.amount, currency()) }}</div>
+        <div class="flex items-center gap-1 mt-1 text-xs h-4">
+          @if (card.deltaPct !== null) {
+            <i
+              [class]="card.deltaPct >= 0 ? 'pi pi-arrow-up' : 'pi pi-arrow-down'"
+              class="text-[10px]"
+              [style.color]="card.deltaPct >= 0 ? ref('green') : ref('red')"
+            ></i>
+            <span
+              class="font-medium"
+              [style.color]="card.deltaPct >= 0 ? ref('green') : ref('red')"
+            >
+              {{ (card.deltaPct < 0 ? -card.deltaPct : card.deltaPct) | number: '1.1-1' }}%
+            </span>
+            <span class="text-color-secondary truncate">{{ comparisonLabel() }}</span>
+          } @else if (card.sub) {
+            <span class="text-color-secondary">{{ card.sub }}</span>
+          }
+        </div>
+        @if (sparklines()[i]; as spark) {
+          <div class="mt-2 h-9">
+            <p-chart type="line" [data]="spark" [options]="sparkOptions" height="36px" />
+          </div>
+        }
+      </p-card>
+    }
+  </div>
+
+  <!-- ── Trend · Type · Status · Payment ────────────────────────────────────── -->
+  <!-- Trend column is 1.3fr (≈30% wider than each donut); the 3 donuts share 1fr each. -->
+  <div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-[1.3fr_1fr_1fr_1fr] gap-3">
+    <!-- Billed vs Collected trend -->
+    <p-card [dt]="cardPad">
+      <span class="font-semibold text-sm">Billed vs Collected Trend</span>
+      @if (trendChart(); as chart) {
+        <div class="h-56 mt-2">
+          <p-chart type="line" [data]="chart" [options]="trendOptions()" height="100%" />
+        </div>
+      } @else {
+        <div class="flex flex-col items-center justify-center h-56 text-center">
+          <i class="pi pi-chart-line text-4xl mb-2 opacity-30"></i>
+          <p class="text-sm text-color-secondary">No billing activity yet.</p>
+        </div>
+      }
+    </p-card>
+
+    <!-- Bills by Type -->
+    <p-card [dt]="cardPad">
+      <span class="font-semibold text-sm">Bills by Type</span>
+      <div class="flex flex-col items-center mt-2">
+        <div class="relative w-36 h-36">
+          @if (typeChart(); as chart) {
+            <p-chart type="doughnut" [data]="chart" [options]="doughnutOptions" height="100%" />
+          }
+        </div>
+        <ul class="w-full mt-3 space-y-1.5">
+          @for (row of typeLegend(); track row.label) {
+            <li class="flex items-center gap-2 text-xs">
+              <span class="w-2.5 h-2.5 rounded-sm shrink-0" [style.background]="row.color"></span>
+              <span class="flex-1 truncate">{{ row.label }}</span>
+              <span class="font-semibold">{{ row.primary }}</span>
+              <span class="text-color-secondary">{{ row.secondary }}</span>
+            </li>
+          }
+        </ul>
       </div>
     </p-card>
-  } @else {
-    <!-- KPI tiles: billed → collected → outstanding → collection rate -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-      <p-card>
-        <div class="flex flex-col gap-1">
-          <span class="text-xs uppercase tracking-wide opacity-60">Billed</span>
-          <span class="text-2xl font-semibold">{{ formatMoney(billed().amount, currency()) }}</span>
-          <span class="text-xs opacity-60">{{ billed().count | number }} bills</span>
+
+    <!-- Bills by Status -->
+    <p-card [dt]="cardPad">
+      <span class="font-semibold text-sm">Bills by Status</span>
+      <div class="flex flex-col items-center mt-2">
+        <div class="relative w-36 h-36">
+          @if (statusChart(); as chart) {
+            <p-chart type="doughnut" [data]="chart" [options]="doughnutOptions" height="100%" />
+          }
         </div>
-      </p-card>
-      <p-card>
-        <div class="flex flex-col gap-1">
-          <span class="text-xs uppercase tracking-wide opacity-60">Collected</span>
-          <span class="text-2xl font-semibold">
-            {{ formatMoney(collected().amount, currency()) }}
-          </span>
-          <span class="text-xs opacity-60">{{ collected().count | number }} bills</span>
+        <ul class="w-full mt-3 space-y-1.5">
+          @for (row of statusLegend(); track row.label) {
+            <li class="flex items-center gap-2 text-xs">
+              <span class="w-2.5 h-2.5 rounded-sm shrink-0" [style.background]="row.color"></span>
+              <span class="flex-1 truncate">{{ row.label }}</span>
+              <span class="font-semibold">{{ row.primary }}</span>
+              <span class="text-color-secondary">{{ row.secondary }}</span>
+            </li>
+          }
+        </ul>
+      </div>
+    </p-card>
+
+    <!-- Payment Distribution -->
+    <p-card [dt]="cardPad">
+      <span class="font-semibold text-sm">Payment Distribution</span>
+      <div class="flex flex-col items-center mt-2">
+        <div class="relative w-36 h-36">
+          @if (paymentChart(); as chart) {
+            <p-chart type="doughnut" [data]="chart" [options]="doughnutOptions" height="100%" />
+          }
         </div>
-      </p-card>
-      <p-card>
-        <div class="flex flex-col gap-1">
-          <span class="text-xs uppercase tracking-wide opacity-60">Outstanding</span>
-          <span class="text-2xl font-semibold">
-            {{ formatMoney(outstanding().amount, currency()) }}
-          </span>
-          <span class="text-xs opacity-60">{{ outstanding().count | number }} bills</span>
-        </div>
-      </p-card>
-      <p-card>
-        <div class="flex flex-col gap-2">
-          <span class="text-xs uppercase tracking-wide opacity-60">Collection rate</span>
-          <span class="text-2xl font-semibold">{{ collectionRate() | number: '1.0-1' }}%</span>
-          <p-progressbar
-            [value]="collectionRate()"
-            [showValue]="false"
-            [dt]="{ height: '0.5rem' }"
+        <ul class="w-full mt-3 space-y-1.5">
+          @for (row of paymentLegend(); track row.label) {
+            <li class="flex items-center gap-2 text-xs">
+              <span class="w-2.5 h-2.5 rounded-sm shrink-0" [style.background]="row.color"></span>
+              <span class="flex-1 truncate">{{ row.label }}</span>
+              <span class="font-semibold">{{ row.primary }}</span>
+              <span class="text-color-secondary truncate">{{ row.secondary }}</span>
+            </li>
+          }
+        </ul>
+      </div>
+    </p-card>
+  </div>
+
+  <!-- ── Top Events · Outstanding by Organizer · Aging ──────────────────────── -->
+  <div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3">
+    <!-- Top 5 Events by Billed Amount -->
+    <p-card [dt]="cardPad">
+      <span class="font-semibold text-sm">Top 5 Events by Billed Amount</span>
+      @if (topEventsChart()?.labels?.length) {
+        <div class="h-64 mt-2">
+          <p-chart
+            type="bar"
+            [data]="topEventsChart()!"
+            [options]="barOptions()"
+            [plugins]="barPlugins"
+            height="100%"
           />
         </div>
-      </p-card>
-    </div>
+      } @else {
+        <div class="flex flex-col items-center justify-center h-64 text-center">
+          <i class="pi pi-chart-bar text-4xl mb-2 opacity-30"></i>
+          <p class="text-sm text-color-secondary">No billed events yet.</p>
+        </div>
+      }
+    </p-card>
 
-    <!-- Secondary stat strip -->
-    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
-      <p-card>
-        <div class="flex flex-col gap-1">
-          <span class="text-xs uppercase tracking-wide opacity-60">Avg bill</span>
-          <span class="text-lg font-semibold">{{ formatMoney(averageBill(), currency()) }}</span>
+    <!-- Outstanding Amount by Organizer -->
+    <p-card [dt]="cardPad">
+      <span class="font-semibold text-sm">Outstanding Amount by Organizer</span>
+      @if (outstandingChart()?.labels?.length) {
+        <div class="h-64 mt-2">
+          <p-chart
+            type="bar"
+            [data]="outstandingChart()!"
+            [options]="barOptions()"
+            [plugins]="barPlugins"
+            height="100%"
+          />
         </div>
-      </p-card>
-      <p-card>
-        <div class="flex flex-col gap-1">
-          <span class="text-xs uppercase tracking-wide opacity-60">GST collected</span>
-          <span class="text-lg font-semibold">{{ formatMoney(gst().collected, currency()) }}</span>
+      } @else {
+        <div class="flex flex-col items-center justify-center h-64 text-center">
+          <i class="pi pi-building text-4xl mb-2 opacity-30"></i>
+          <p class="text-sm text-color-secondary">Nothing outstanding.</p>
         </div>
-      </p-card>
-      <p-card>
-        <div class="flex flex-col gap-1">
-          <span class="text-xs uppercase tracking-wide opacity-60">DSO</span>
-          <span class="text-lg font-semibold">{{ dso() | number }} days</span>
-        </div>
-      </p-card>
-      <p-card>
-        <div class="flex flex-col gap-1">
-          <span class="text-xs uppercase tracking-wide opacity-60">Bills</span>
-          <span class="text-lg font-semibold">{{ billed().count | number }}</span>
-        </div>
-      </p-card>
-    </div>
+      }
+    </p-card>
 
-    <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
-      <!-- Trend: billed vs collected -->
-      <p-card class="xl:col-span-2">
-        <ng-template pTemplate="header">
-          <div class="px-4 pt-4">
-            <h2 class="text-lg font-semibold">Billed vs collected</h2>
-            <p class="text-sm opacity-60">Last 12 months</p>
-          </div>
-        </ng-template>
-        @if (hasTrend() && trendChart(); as chart) {
-          <div class="h-64">
-            <p-chart type="line" [data]="chart" [options]="trendOptions()" height="100%" />
-          </div>
-        } @else {
-          <div class="flex flex-col items-center justify-center h-64 text-center">
-            <i class="pi pi-chart-line text-5xl mb-3 opacity-30"></i>
-            <p class="text-sm opacity-60">No billing activity yet.</p>
-          </div>
-        }
-      </p-card>
-
-      <!-- Trigger split -->
-      <p-card>
-        <ng-template pTemplate="header">
-          <div class="px-4 pt-4">
-            <h2 class="text-lg font-semibold">By trigger</h2>
-          </div>
-        </ng-template>
-        <div class="flex flex-col gap-5">
-          @for (row of reasonRows(); track row.label) {
-            <div class="flex flex-col gap-1.5">
-              <div class="flex items-center justify-between text-sm">
-                <span class="font-medium">{{ row.label }}</span>
-                <span class="opacity-70">
-                  {{ formatMoney(row.amount, currency()) }} · {{ row.count | number }}
-                </span>
-              </div>
-              <p-progressbar
-                [value]="row.percent"
-                [showValue]="false"
-                [dt]="{ height: '0.5rem' }"
-              />
-            </div>
+    <!-- Aging of Outstanding Amount -->
+    <p-card [dt]="cardPad">
+      <span class="font-semibold text-sm">Aging of Outstanding Amount</span>
+      <div class="flex flex-col items-center mt-2">
+        <div class="relative w-40 h-40">
+          @if (agingChart(); as chart) {
+            <p-chart type="doughnut" [data]="chart" [options]="doughnutOptions" height="100%" />
           }
-        </div>
-      </p-card>
-    </div>
-
-    <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
-      <!-- Receivables aging -->
-      <p-card>
-        <ng-template pTemplate="header">
-          <div class="px-4 pt-4">
-            <h2 class="text-lg font-semibold">Receivables aging</h2>
-            <p class="text-sm opacity-60">Outstanding by age since finalize</p>
+          <div
+            class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none"
+          >
+            <span class="text-base font-bold leading-none">{{
+              formatInr(totalOutstanding())
+            }}</span>
+            <span class="text-[10px] text-color-secondary mt-0.5">Total Outstanding</span>
           </div>
-        </ng-template>
-        <div class="flex flex-col gap-5">
-          @for (band of agingRows(); track band.bucket) {
-            <div class="flex flex-col gap-1.5">
-              <div class="flex items-center justify-between text-sm">
-                <span class="font-medium">{{ band.bucket }} days</span>
-                <span class="opacity-70">
-                  {{ formatMoney(band.amount, currency()) }} · {{ band.count | number }}
-                </span>
-              </div>
-              <p-progressbar
-                [value]="band.percent"
-                [showValue]="false"
-                [dt]="{ height: '0.5rem' }"
-              />
-            </div>
+        </div>
+        <ul class="w-full mt-3 space-y-1.5">
+          @for (row of agingLegend(); track row.label) {
+            <li class="flex items-center gap-2 text-xs">
+              <span class="w-2.5 h-2.5 rounded-sm shrink-0" [style.background]="row.color"></span>
+              <span class="flex-1 truncate">{{ row.label }}</span>
+              <span class="font-semibold">{{ row.primary }}</span>
+              <span class="text-color-secondary">{{ row.secondary }}</span>
+            </li>
+          } @empty {
+            <li class="text-xs text-color-secondary text-center py-2">No outstanding bills.</li>
           }
-        </div>
-      </p-card>
+        </ul>
+      </div>
+    </p-card>
+  </div>
 
-      <!-- Top organizations -->
-      <p-card class="xl:col-span-2">
-        <ng-template pTemplate="header">
-          <div class="px-4 pt-4">
-            <h2 class="text-lg font-semibold">Top organizations</h2>
-            <p class="text-sm opacity-60">Billed and outstanding</p>
-          </div>
-        </ng-template>
-        @if (topOrgs().length === 0) {
-          <div class="flex flex-col items-center justify-center py-10 text-center">
-            <i class="pi pi-building text-5xl mb-3 opacity-30"></i>
-            <p class="text-sm opacity-60">No billing data yet.</p>
-          </div>
-        } @else {
-          <div class="flex flex-col gap-4">
-            @for (org of topOrgs(); track org.organizationId) {
-              <button
-                type="button"
-                class="flex flex-col gap-1.5 text-left w-full"
-                (click)="goToOrg(org.organizationId)"
-              >
-                <div class="flex items-center justify-between gap-3 text-sm">
-                  <span class="font-medium truncate">{{ org.organizerName }}</span>
-                  <span class="opacity-70 whitespace-nowrap">
-                    {{ formatMoney(org.billed, currency()) }} billed ·
-                    {{ formatMoney(org.outstanding, currency()) }} due
-                  </span>
-                </div>
-                <p-progressbar
-                  [value]="org.percent"
-                  [showValue]="false"
-                  [dt]="{ height: '0.5rem' }"
-                />
-              </button>
+  <!-- ── Recent Bills ───────────────────────────────────────────────────────── -->
+  <p-card [dt]="cardPad">
+    <div class="flex items-center justify-between gap-2 mb-2">
+      <span class="font-semibold text-sm">Recent Bills</span>
+      <p-button
+        label="View all"
+        icon="pi pi-arrow-right"
+        iconPos="right"
+        [text]="true"
+        severity="secondary"
+        [size]="buttonSize"
+        styleClass="!text-xs"
+        (onClick)="goToAllBills()"
+      />
+    </div>
+    <p-table
+      [value]="recentBills()"
+      [lazy]="true"
+      (onLazyLoad)="onRecentLazy($event)"
+      [loading]="billsLoading()"
+      [paginator]="true"
+      [rows]="5"
+      [totalRecords]="totalBills()"
+      [rowsPerPageOptions]="[5, 10, 20]"
+      [showCurrentPageReport]="true"
+      currentPageReportTemplate="Showing {first} to {last} of {totalRecords} results"
+      [scrollable]="true"
+      [size]="inputSize"
+      [tableStyle]="{ 'min-width': '60rem' }"
+      dataKey="billId"
+    >
+      <ng-template pTemplate="header">
+        <tr>
+          <th class="whitespace-nowrap">Invoice No.</th>
+          <th class="whitespace-nowrap">Event</th>
+          <th class="whitespace-nowrap">Organizer</th>
+          <th class="text-center whitespace-nowrap">Type</th>
+          <th class="text-center whitespace-nowrap">Status</th>
+          <th class="text-center whitespace-nowrap">Payment Status</th>
+          <th class="whitespace-nowrap">Bill Date</th>
+          <th class="text-right whitespace-nowrap">Amount (₹)</th>
+          <th class="text-center whitespace-nowrap">Actions</th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-bill>
+        <tr>
+          <td class="font-medium whitespace-nowrap">{{ billNo(bill) }}</td>
+          <td class="whitespace-nowrap">{{ bill.eventName }}</td>
+          <td class="whitespace-nowrap">{{ bill.organizationId | orgName }}</td>
+          <td class="text-center whitespace-nowrap">
+            <p-tag [value]="reasonLabel(bill.reason)" [severity]="reasonSeverity(bill.reason)" />
+          </td>
+          <td class="text-center whitespace-nowrap">
+            <p-tag [value]="statusLabel(bill.status)" [severity]="statusSeverity(bill.status)" />
+          </td>
+          <td class="text-center whitespace-nowrap">
+            @if (bill.status === BillStatus.FINAL) {
+              <p-tag
+                [value]="paymentLabel(bill.paymentStatus)"
+                [severity]="paymentSeverity(bill.paymentStatus)"
+              />
+            } @else {
+              <span class="opacity-50">–</span>
             }
-          </div>
-        }
-      </p-card>
-    </div>
-  }
+          </td>
+          <td class="whitespace-nowrap">{{ bill.createdAt | date: 'MMM d, y' }}</td>
+          <td class="text-right whitespace-nowrap">{{ amountPlain(bill.totalAmount) }}</td>
+          <td class="text-center whitespace-nowrap">
+            <div class="flex justify-center gap-1">
+              <p-button
+                icon="pi pi-eye"
+                [text]="true"
+                [rounded]="true"
+                [size]="buttonSize"
+                pTooltip="View bills"
+                tooltipPosition="top"
+                (onClick)="goToEventBilling(bill)"
+              />
+              <p-button
+                icon="pi pi-ellipsis-v"
+                [text]="true"
+                [rounded]="true"
+                severity="secondary"
+                [size]="buttonSize"
+              />
+            </div>
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td colspan="9" class="text-center py-8 text-color-secondary">No bills yet.</td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </p-card>
 </div>

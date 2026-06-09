@@ -11,10 +11,12 @@
   [currentPage]="currentPage()"
   [isLoading]="isLoading()"
   [isMobile]="isMobile()"
+  [inlineMobileFilters]="true"
   [items]="entities()"
   [pageSize]="pageSize()"
   [rowsPerPageOptions]="[10, 25, 50]"
   [searchTerm]="searchTerm()"
+  [searchMaxWidthClass]="'sm:max-w-[39.2rem]'"
   [totalRecords]="totalRecords()"
   emptyIcon="pi pi-receipt"
   emptyMessage="No bills found"
@@ -22,18 +24,14 @@
   searchPlaceholder="Search org or event (min 2 chars)..."
 >
   <ng-template #filters>
-    <p-select
-      [ngModel]="organizationId()"
-      (ngModelChange)="organizationId.set($event); onFilterChange()"
-      [options]="orgOptions()"
-      [size]="inputSize"
-      optionLabel="label"
-      optionValue="value"
+    <app-organization-selector
+      [selectedOrganizationId]="organizationId() ?? undefined"
+      (organizationIdChange)="organizationId.set($event ?? null); onFilterChange()"
+      [showFloatLabel]="false"
       placeholder="All organizations"
-      [showClear]="true"
-      appendTo="body"
-      class="w-full sm:w-56"
-    />
+      inputId="billOrgFilter"
+      class="block w-full sm:w-56"
+    ></app-organization-selector>
     <p-datepicker
       [ngModel]="dateRange()"
       (ngModelChange)="dateRange.set($event)"
@@ -151,17 +149,19 @@
             @for (col of visibleCols; track col.field) {
               <td [class]="getColumnAlignment(col.field) + ' whitespace-nowrap'">
                 @if (col.field === 'organizationId') {
-                  <button
-                    type="button"
-                    class="font-medium hover:underline text-left"
-                    (click)="goToOrg(bill)"
+                  <a
+                    [routerLink]="['/organizations', bill.organizationId, 'edit']"
+                    class="font-medium hover:underline cursor-pointer"
                   >
-                    {{ orgName(bill.organizationId) }}
-                  </button>
+                    {{ bill.organizationId | orgName }}
+                  </a>
                 } @else if (col.field === 'eventName') {
-                  <button type="button" class="hover:underline text-left" (click)="goToEvent(bill)">
+                  <a
+                    [routerLink]="['/events', bill.eventId, 'billing']"
+                    class="hover:underline cursor-pointer"
+                  >
                     {{ bill.eventName }}
-                  </button>
+                  </a>
                 } @else if (col.field === 'status') {
                   <p-tag
                     [value]="statusLabel(bill.status)"
@@ -262,31 +262,57 @@
   </ng-template>
 
   <ng-template #mobileCard let-bill>
-    <p-card>
-      <div class="flex flex-col gap-2">
-        <div class="flex items-start justify-between gap-2">
+    <p-card [style]="cardAccent(bill)">
+      <div class="flex items-start gap-3">
+        @let eventLogoUrl = bill.eventId | eventLogo;
+        @if (eventLogoUrl) {
+          <p-avatar
+            [image]="eventLogoUrl"
+            [style]="avatarStyle(bill)"
+            shape="circle"
+            size="large"
+            styleClass="shrink-0"
+          />
+        } @else {
+          <p-avatar
+            [label]="bill.eventName | initials: 2"
+            [style]="avatarStyle(bill)"
+            [pt]="avatarPt"
+            shape="circle"
+            size="large"
+            styleClass="shrink-0"
+          />
+        }
+        <div class="flex flex-1 min-w-0 items-start justify-between gap-2">
           <div class="min-w-0">
-            <button
-              type="button"
-              class="font-semibold truncate hover:underline text-left"
-              (click)="goToOrg(bill)"
-            >
-              {{ orgName(bill.organizationId) }}
-            </button>
-            <button
-              type="button"
-              class="block text-sm opacity-70 truncate hover:underline text-left"
-              (click)="goToEvent(bill)"
+            <a
+              [routerLink]="['/events', bill.eventId, 'billing']"
+              class="block font-semibold truncate hover:underline cursor-pointer"
             >
               {{ bill.eventName }}
-            </button>
-            <div class="text-xs opacity-50">
-              {{ bill.createdAt | date: 'dd-MMM-yyyy, hh:mm a' }}
+            </a>
+            <a
+              [routerLink]="['/organizations', bill.organizationId, 'edit']"
+              class="block text-sm opacity-70 truncate hover:underline cursor-pointer"
+            >
+              {{ bill.organizationId | orgName }}
+            </a>
+            @if (bill.invoiceNumber) {
+              <div class="text-sm truncate text-[#2563eb]">{{ bill.invoiceNumber }}</div>
+            }
+            <div class="flex items-center gap-1 text-xs opacity-50 mt-0.5">
+              <i class="pi pi-calendar text-[10px]"></i>
+              <span class="truncate">{{ bill.createdAt | date: 'dd-MMM-yyyy, hh:mm a' }}</span>
             </div>
           </div>
-          <div class="flex flex-col items-end gap-1">
-            <p-tag [value]="statusLabel(bill.status)" [severity]="statusSeverity(bill.status)" />
-            <p-tag [value]="reasonLabel(bill.reason)" [severity]="reasonSeverity(bill.reason)" />
+          <div class="flex flex-col items-end gap-1.5 shrink-0">
+            <span class="text-base font-bold whitespace-nowrap">
+              {{ formatMoney(bill.totalAmount, bill.currency) }}
+            </span>
+            <div class="flex flex-wrap items-center justify-end gap-1">
+              <p-tag [value]="statusLabel(bill.status)" [severity]="statusSeverity(bill.status)" />
+              <p-tag [value]="reasonLabel(bill.reason)" [severity]="reasonSeverity(bill.reason)" />
+            </div>
             @if (bill.status === BillStatus.FINAL) {
               <p-tag
                 [value]="paymentLabel(bill.paymentStatus)"
@@ -295,39 +321,21 @@
             }
           </div>
         </div>
-        <div class="flex items-center justify-between">
-          @if (bill.invoiceNumber) {
-            <span class="text-xs opacity-60">{{ bill.invoiceNumber }}</span>
-          } @else {
-            <span></span>
-          }
-          <span class="font-semibold">{{ formatMoney(bill.totalAmount, bill.currency) }}</span>
-        </div>
       </div>
       <ng-template #footer>
-        <div class="flex items-center justify-between gap-2">
-          @if (bill.status === BillStatus.FINAL && bill.paymentStatus !== PaymentStatus.PAID) {
-            <p-button
-              label="Mark Paid"
-              icon="pi pi-wallet"
-              [text]="true"
-              severity="success"
-              size="small"
-              [loading]="updatingPaymentId() === bill.billId"
-              (onClick)="markPaid(bill, $event)"
-            />
-          } @else {
-            <span></span>
-          }
+        <div class="flex items-center justify-between gap-2 border-t border-surface pt-3">
           <div class="flex items-center gap-2">
-            <p-button
-              label="View"
-              icon="pi pi-eye"
-              [text]="true"
-              size="small"
-              [loading]="viewLoadingId() === bill.billId"
-              (onClick)="openDetail(bill)"
-            />
+            @if (bill.status === BillStatus.FINAL && bill.paymentStatus !== PaymentStatus.PAID) {
+              <p-button
+                label="Mark Paid"
+                icon="pi pi-wallet"
+                [text]="true"
+                severity="success"
+                size="small"
+                [loading]="updatingPaymentId() === bill.billId"
+                (onClick)="markPaid(bill, $event)"
+              />
+            }
             @if (bill.downloadUrl) {
               <p-button
                 label="Download PDF"
@@ -338,6 +346,14 @@
               />
             }
           </div>
+          <p-button
+            label="View"
+            icon="pi pi-eye"
+            [text]="true"
+            size="small"
+            [loading]="viewLoadingId() === bill.billId"
+            (onClick)="openDetail(bill)"
+          />
         </div>
       </ng-template>
     </p-card>

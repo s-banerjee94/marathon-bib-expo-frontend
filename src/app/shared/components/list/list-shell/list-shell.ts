@@ -52,11 +52,15 @@ export class ListShell<T = unknown> {
   isLoading = input<boolean>(false);
   searchTerm = input<string>('');
   searchPlaceholder = input<string>('Search (min 2 chars)...');
+  /** Desktop width cap for the search box (Tailwind class). Mobile is always full-width. */
+  searchMaxWidthClass = input<string>('sm:max-w-md');
   searchChange = output<string>();
   searchClear = output<void>();
 
   // Filters
   activeFilterCount = input<number>(0);
+  /** Mobile-only: render the Filters button on the search row instead of its own row below. */
+  inlineMobileFilters = input<boolean>(false);
 
   // Column selector — hidden on mobile via the template
   showColumnSelector = input<boolean>(true);

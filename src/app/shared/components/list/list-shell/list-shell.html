@@ -16,39 +16,51 @@
       [isLoading]="isLoading()"
       [value]="searchTerm()"
       [placeholder]="searchPlaceholder()"
+      [maxWidthClass]="searchMaxWidthClass()"
     />
-    @if (actionsTpl()) {
+    @if ((isMobile() && inlineMobileFilters()) || actionsTpl()) {
       <div class="flex items-center gap-2">
-        <ng-container *ngTemplateOutlet="actionsTpl()!" />
+        @if (isMobile() && inlineMobileFilters()) {
+          <app-list-filter-panel
+            [isMobile]="true"
+            [activeFilterCount]="activeFilterCount()"
+            [filtersTemplate]="filtersTpl() ?? null"
+          />
+        }
+        @if (actionsTpl()) {
+          <ng-container *ngTemplateOutlet="actionsTpl()!" />
+        }
       </div>
     }
   </div>
 
-  <!-- Filters + Column Selector (right-aligned on mobile so the lone Filters button sits at the right) -->
-  <div class="mb-4 flex flex-wrap items-center gap-4" [class.justify-end]="isMobile()">
-    <app-list-filter-panel
-      [isMobile]="isMobile()"
-      [activeFilterCount]="activeFilterCount()"
-      [filtersTemplate]="filtersTpl() ?? null"
-    />
+  <!-- Filters + Column Selector — hidden on mobile when the Filters button is inlined onto the search row -->
+  @if (!(isMobile() && inlineMobileFilters())) {
+    <div class="mb-4 flex flex-wrap items-center gap-4" [class.justify-end]="isMobile()">
+      <app-list-filter-panel
+        [isMobile]="isMobile()"
+        [activeFilterCount]="activeFilterCount()"
+        [filtersTemplate]="filtersTpl() ?? null"
+      />
 
-    @if (showColumnSelector() && !isMobile()) {
-      <div class="flex items-center gap-2">
-        <label for="columnSelect">Columns:</label>
-        <p-multiselect
-          (ngModelChange)="selectedColumns.set($event); columnSelectionChange.emit()"
-          [ngModel]="selectedColumns()"
-          [maxSelectedLabels]="2"
-          [options]="columns()"
-          [size]="inputSize"
-          inputId="columnSelect"
-          optionDisabled="disabled"
-          optionLabel="header"
-          placeholder="Select Columns"
-        />
-      </div>
-    }
-  </div>
+      @if (showColumnSelector() && !isMobile()) {
+        <div class="flex items-center gap-2">
+          <label for="columnSelect">Columns:</label>
+          <p-multiselect
+            (ngModelChange)="selectedColumns.set($event); columnSelectionChange.emit()"
+            [ngModel]="selectedColumns()"
+            [maxSelectedLabels]="2"
+            [options]="columns()"
+            [size]="inputSize"
+            inputId="columnSelect"
+            optionDisabled="disabled"
+            optionLabel="header"
+            placeholder="Select Columns"
+          />
+        </div>
+      }
+    </div>
+  }
 
   @if (!isMobile()) {
     @if (desktopTpl()) {
