@@ -28,7 +28,7 @@ import { ToastService } from '../../core/services/toast.service';
 import { AuthService } from '../../core/services/auth.service';
 import { DefaultValuePipe } from '../../shared/pipes/default-value.pipe';
 import { ROLE_LABELS, UpdateUserRequest, User } from '../../core/models/user.model';
-import { shouldShowError } from '../../shared/utils/form.utils';
+import { buildDirtyPatch, shouldShowError } from '../../shared/utils/form.utils';
 import { getInitials } from '../../shared/utils/initials.util';
 import { userCanManage } from '../../shared/utils/user-permissions.utils';
 import { roleRequiresEmailPhone } from '../users/user-form/user-form.utils';
@@ -153,11 +153,12 @@ export class UserAccount implements OnInit {
     const id = this.user()?.id;
     if (id == null) return;
 
-    const request: UpdateUserRequest = {
-      fullName: this.profile.fullName.trim() || undefined,
-      email: this.profile.email.trim() || undefined,
-      phoneNumber: this.profile.phoneNumber.trim() || undefined,
-    };
+    // Dirty-fields-only merge patch: omitted = unchanged, '' = clear.
+    const request = buildDirtyPatch<UpdateUserRequest>(form, this.profile);
+    if (Object.keys(request).length === 0) {
+      form.form.markAsPristine();
+      return;
+    }
 
     this.savingProfile.set(true);
     this.userService.updateUser(id, request).subscribe({

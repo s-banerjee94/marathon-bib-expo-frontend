@@ -41,7 +41,7 @@ import { AuthService } from '../../../core/services/auth.service';
 import { ErrorHandlerService } from '../../../core/services/error-handler.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { UserRole } from '../../../core/models/user.model';
-import { shouldShowError } from '../../../shared/utils/form.utils';
+import { buildDirtyPatch, shouldShowError } from '../../../shared/utils/form.utils';
 import { FORM_INPUT_SIZE } from '../../../shared/constants/form.constants';
 import { OrganizationSelector } from '../../../layout/organization-selector/organization-selector';
 import { EventListBus } from '../event-list-bus.service';
@@ -403,13 +403,11 @@ export class EventForm implements OnInit {
   }
 
   private buildPatchRequest(form: NgForm): UpdateEventRequest {
-    const TRANSFORMED = new Set(['eventStartDate', 'eventEndDate']);
-
-    const patch = Object.fromEntries(
-      Object.keys(this.event)
-        .filter((key) => !TRANSFORMED.has(key) && form.controls[key]?.dirty)
-        .map((key) => [key, this.event[key as keyof EventFormModel]]),
-    ) as UpdateEventRequest;
+    const patch = buildDirtyPatch<UpdateEventRequest>(
+      form,
+      this.event,
+      new Set(['eventStartDate', 'eventEndDate']),
+    );
 
     if (form.controls['eventStartDate']?.dirty) {
       patch.eventStartDate = this.toDateString(this.event.eventStartDate);

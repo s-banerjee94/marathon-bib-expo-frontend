@@ -1,7 +1,7 @@
 import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, NgForm } from '@angular/forms';
-import { shouldShowError } from '../../../../shared/utils/form.utils';
+import { buildDirtyPatch, shouldShowError } from '../../../../shared/utils/form.utils';
 import { DynamicDialogConfig, DynamicDialogRef } from 'primeng/dynamicdialog';
 import { InputTextModule } from 'primeng/inputtext';
 import { SelectModule } from 'primeng/select';
@@ -214,13 +214,11 @@ export class SmsCampaignForm implements OnInit {
   }
 
   private buildPatch(form: NgForm): UpdateSmsCampaignRequest {
-    const TRANSFORMED = new Set(['scheduledAt']);
-
-    const patch = Object.fromEntries(
-      Object.keys(this.formData)
-        .filter((key) => !TRANSFORMED.has(key) && form.controls[key]?.dirty)
-        .map((key) => [key, this.formData[key as keyof typeof this.formData]]),
-    ) as UpdateSmsCampaignRequest;
+    const patch = buildDirtyPatch<UpdateSmsCampaignRequest>(
+      form,
+      this.formData,
+      new Set(['scheduledAt']),
+    );
 
     if (form.controls['scheduledAt']?.dirty && this.formData.scheduledAt) {
       patch.scheduledDate = this.toDateStr(this.formData.scheduledAt);

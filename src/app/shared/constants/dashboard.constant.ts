@@ -41,13 +41,38 @@ export const EVENT_STATUS_CHART_LABELS = ['Draft', 'Published', 'Completed', 'Ca
 // Category labels for the User-Role doughnut + legend.
 export const USER_ROLE_CHART_LABELS = ['Organization Admin', 'Organization Users', 'Distributors'];
 
-// Theme CSS-variable tokens colouring the status / role doughnuts (index-aligned
-// with the label arrays above).
-export const EVENT_STATUS_PALETTE_TOKENS = [
-  '--p-primary-500',
-  '--p-primary-300',
-  '--p-primary-200',
-  '--p-surface-300',
-];
+// Shared chart-palette colour keys colouring the status / role doughnuts and
+// their legends (index-aligned with the label arrays above). Status colours are
+// semantically aligned with the event-status tag severities: Draft=warn/amber,
+// Published=success/green, Completed=info/blue, Cancelled=danger/red.
+export const EVENT_STATUS_COLORS = ['amber', 'green', 'blue', 'red'];
 
-export const USER_ROLE_PALETTE_TOKENS = ['--p-primary-500', '--p-primary-300', '--p-surface-300'];
+export const USER_ROLE_COLORS = ['violet', 'blue', 'teal'];
+
+// Per-stat-card accent colour keys, keyed by spark key. Drives both the card's
+// icon chip and its sparkline so each card reads as its own colour.
+export const ORG_STAT_CARD_COLORS: Record<string, string> = {
+  events: 'blue',
+  active: 'green',
+  users: 'violet',
+  cities: 'orange',
+};
+
+// Per-quick-action accent colour keys (index-aligned with the quick-action order).
+export const ORG_QUICK_ACTION_COLORS = ['blue', 'violet', 'teal', 'green', 'orange', 'cyan'];
+
+// Colour cycle for the Events-by-City bars so each city reads as its own colour.
+// All entries are PrimeNG primitive colour keys (→ `--p-{name}-500`). Cycles
+// when there are more cities than colours.
+export const EVENTS_BY_CITY_COLORS = [
+  'blue',
+  'teal',
+  'violet',
+  'orange',
+  'green',
+  'cyan',
+  'amber',
+  'pink',
+  'indigo',
+  'rose',
+];

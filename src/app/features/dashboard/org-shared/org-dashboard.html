@@ -101,9 +101,10 @@
         } @else {
           <div class="flex items-center gap-2.5">
             <div
-              class="w-9 h-9 rounded-lg flex items-center justify-center bg-surface-100 dark:bg-surface-800 shrink-0"
+              class="w-9 h-9 rounded-lg flex items-center justify-center shrink-0"
+              [style.background]="tint(card.color)"
             >
-              <i [class]="card.icon + ' text-base text-primary'"></i>
+              <i [class]="card.icon + ' text-base'" [style.color]="ref(card.color)"></i>
             </div>
             <div class="min-w-0">
               <p class="text-[11px] uppercase tracking-wide text-color-secondary truncate">
@@ -250,7 +251,11 @@
         <ul class="space-y-3">
           @for (event of activeEvents(); track event.id) {
             <li class="flex items-center gap-3 cursor-pointer" (click)="goToEventDetails(event)">
-              <p-avatar [image]="event.logoUrl" icon="pi pi-flag" shape="circle" />
+              @if (event.logoUrl) {
+                <p-avatar [image]="event.logoUrl" shape="circle" />
+              } @else {
+                <p-avatar icon="pi pi-flag" shape="circle" />
+              }
               <div class="min-w-0 flex-1">
                 <p class="font-medium truncate">{{ event.eventName }}</p>
                 <p class="text-xs text-color-secondary truncate">
@@ -330,7 +335,11 @@
               <td>
                 <div class="flex items-center gap-2 min-w-0">
                   <span class="shrink-0">
-                    <p-avatar [image]="event.logoUrl" icon="pi pi-flag" shape="circle" />
+                    @if (event.logoUrl) {
+                      <p-avatar [image]="event.logoUrl" shape="circle" />
+                    } @else {
+                      <p-avatar icon="pi pi-flag" shape="circle" />
+                    }
                   </span>
                   <span class="font-medium truncate max-w-[50ch]" [title]="event.eventName">
                     {{ event.eventName }}
@@ -385,7 +394,12 @@
             (click)="qa.action()"
             class="flex flex-col items-center justify-center gap-2 py-5 px-2 rounded-lg border border-surface-200 dark:border-surface-700 hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors"
           >
-            <i [class]="qa.icon + ' text-xl text-primary'"></i>
+            <span
+              class="w-10 h-10 rounded-lg flex items-center justify-center"
+              [style.background]="tint(qa.color)"
+            >
+              <i [class]="qa.icon + ' text-xl'" [style.color]="ref(qa.color)"></i>
+            </span>
             <span class="text-xs font-medium text-center">{{ qa.label }}</span>
           </button>
         }

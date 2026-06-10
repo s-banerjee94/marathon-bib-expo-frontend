@@ -322,6 +322,8 @@ export class ParticipantDetails {
     }
   }
 
+  // Builds a single-field merge patch. Optional fields send '' when cleared
+  // (the backend's clear-to-NULL signal); required fields block empty saves.
   private buildUpdateRequest(field: FieldKey): UpdateParticipantRequest | null {
     const v = this.workingValue;
     const r: UpdateParticipantRequest = {};
@@ -335,22 +337,24 @@ export class ParticipantDetails {
         if (!r.gender) return null;
         break;
       case 'dateOfBirth':
-        r.dateOfBirth = this.formatDob(v as Date | null);
+        r.dateOfBirth = this.formatDob(v as Date | null) ?? '';
         break;
       case 'age':
-        r.age = v == null || v === '' ? undefined : Number(v);
+        // Numeric fields cannot be cleared via PATCH — empty just skips.
+        if (v == null || v === '') return null;
+        r.age = Number(v);
         break;
       case 'email':
-        r.email = stringOrUndef(v);
+        r.email = stringOrEmpty(v);
         break;
       case 'phoneNumber':
-        r.phoneNumber = stringOrUndef(v);
+        r.phoneNumber = stringOrEmpty(v);
         break;
       case 'city':
-        r.city = stringOrUndef(v);
+        r.city = stringOrEmpty(v);
         break;
       case 'country':
-        r.country = stringOrUndef(v);
+        r.country = stringOrEmpty(v);
         break;
       case 'raceId':
         if (v == null || v === '') return null;
@@ -368,13 +372,13 @@ export class ParticipantDetails {
         if (!r.chipNumber) return null;
         break;
       case 'emergencyContactName':
-        r.emergencyContactName = stringOrUndef(v);
+        r.emergencyContactName = stringOrEmpty(v);
         break;
       case 'emergencyContactPhone':
-        r.emergencyContactPhone = stringOrUndef(v);
+        r.emergencyContactPhone = stringOrEmpty(v);
         break;
       case 'notes':
-        r.notes = stringOrUndef(v);
+        r.notes = stringOrEmpty(v);
         break;
       default:
         return null;
@@ -481,4 +485,9 @@ function stringOrUndef(v: unknown): string | undefined {
   if (v == null) return undefined;
   const s = String(v).trim();
   return s === '' ? undefined : s;
+}
+
+// Cleared optional fields are sent as '' — the backend's clear-to-NULL signal.
+function stringOrEmpty(v: unknown): string {
+  return v == null ? '' : String(v).trim();
 }

@@ -45,15 +45,24 @@ import {
   DASHBOARD_SPARKLINE_OPTIONS,
   DASHBOARD_TIME_RANGE_OPTIONS,
   EVENT_STATUS_CHART_LABELS,
-  EVENT_STATUS_PALETTE_TOKENS,
+  EVENT_STATUS_COLORS,
+  EVENTS_BY_CITY_COLORS,
+  ORG_QUICK_ACTION_COLORS,
+  ORG_STAT_CARD_COLORS,
   RECENT_ACTIVITY_LIMIT,
   USER_ROLE_CHART_LABELS,
-  USER_ROLE_PALETTE_TOKENS,
+  USER_ROLE_COLORS,
 } from '../../../shared/constants/dashboard.constant';
 import {
   getEventStatusLabel,
   getEventStatusSeverity,
 } from '../../../shared/utils/event-status.utils';
+import {
+  paletteAlpha,
+  paletteRef,
+  paletteResolve,
+  paletteTint,
+} from '../../../shared/utils/chart-palette.util';
 
 interface ChartConfig {
   labels: string[];
@@ -228,6 +237,7 @@ export class OrgDashboard implements OnInit {
       value: this.totalEvents(),
       subtitle: 'All time',
       sparkKey: 'events' as SparkKey,
+      color: ORG_STAT_CARD_COLORS['events'],
       linkLabel: 'View all events',
       action: () => this.goToEvents(),
     },
@@ -237,6 +247,7 @@ export class OrgDashboard implements OnInit {
       value: this.activeEventsCount(),
       subtitle: 'Currently running',
       sparkKey: 'active' as SparkKey,
+      color: ORG_STAT_CARD_COLORS['active'],
       linkLabel: 'View active events',
       action: () => this.goToEvents(),
     },
@@ -246,6 +257,7 @@ export class OrgDashboard implements OnInit {
       value: this.totalUsers(),
       subtitle: 'All users',
       sparkKey: 'users' as SparkKey,
+      color: ORG_STAT_CARD_COLORS['users'],
       linkLabel: 'View users',
       action: () => this.goToUsers(),
     },
@@ -255,6 +267,7 @@ export class OrgDashboard implements OnInit {
       value: this.distinctCities(),
       subtitle: 'All locations',
       sparkKey: 'cities' as SparkKey,
+      color: ORG_STAT_CARD_COLORS['cities'],
       linkLabel: 'View locations',
       action: () => this.goToEvents(),
     },
@@ -267,13 +280,13 @@ export class OrgDashboard implements OnInit {
       this.completedEventsCount(),
       this.cancelledEventsCount(),
     ];
-    return this.toLegend(EVENT_STATUS_CHART_LABELS, values, this.statusTokens);
+    return this.toLegend(EVENT_STATUS_CHART_LABELS, values, this.statusColors);
   });
   eventStatusTotal = computed(() => this.eventStatusLegend().reduce((s, i) => s + i.value, 0));
 
   roleLegend = computed<LegendItem[]>(() => {
     const values = this.roleCounts();
-    return this.toLegend(USER_ROLE_CHART_LABELS, values, this.roleTokens);
+    return this.toLegend(USER_ROLE_CHART_LABELS, values, this.roleColors);
   });
   roleTotal = computed(() => this.roleLegend().reduce((s, i) => s + i.value, 0));
 
@@ -288,15 +301,15 @@ export class OrgDashboard implements OnInit {
     ];
   }
 
-  // Builds index-aligned legend rows (label ↔ value ↔ palette token) with each
-  // slice's share of the total. Colours use `var(--token)` so DOM swatches stay
-  // theme-reactive without a rebuild.
-  private toLegend(labels: string[], values: number[], tokens: string[]): LegendItem[] {
+  // Builds index-aligned legend rows (label ↔ value ↔ palette colour) with each
+  // slice's share of the total. Colours use `var(--p-…)` refs so DOM swatches
+  // stay theme-reactive without a rebuild.
+  private toLegend(labels: string[], values: number[], colors: string[]): LegendItem[] {
     const total = values.reduce((sum, v) => sum + v, 0);
     return labels.map((label, i) => ({
       label,
       value: values[i],
-      color: this.varRef(tokens[i]),
+      color: paletteRef(colors[i]),
       percent: total ? (values[i] / total) * 100 : 0,
     }));
   }
@@ -308,7 +321,7 @@ export class OrgDashboard implements OnInit {
     { icon: 'pi pi-calendar', label: 'View Events', action: () => this.goToEvents() },
     { icon: 'pi pi-list', label: 'Participants', action: () => this.goToParticipants() },
     { icon: 'pi pi-users', label: 'Manage Users', action: () => this.goToUsers() },
-  ];
+  ].map((qa, i) => ({ ...qa, color: ORG_QUICK_ACTION_COLORS[i] ?? 'blue' }));
 
   // ── Organization profile (header card) ──
   orgInitials = computed(() => {
@@ -509,7 +522,7 @@ export class OrgDashboard implements OnInit {
       datasets: [
         {
           data: [s.draft, s.published, s.completed, s.cancelled],
-          backgroundColor: this.resolve(this.statusTokens),
+          backgroundColor: this.statusColors.map(paletteResolve),
           borderWidth: 0,
         },
       ],
@@ -522,7 +535,7 @@ export class OrgDashboard implements OnInit {
       datasets: [
         {
           data: this.roleCounts(),
-          backgroundColor: this.resolve(this.roleTokens),
+          backgroundColor: this.roleColors.map(paletteResolve),
           borderWidth: 0,
         },
       ],
@@ -531,12 +544,16 @@ export class OrgDashboard implements OnInit {
 
   private rebuildCityChart(): void {
     const byCity = this.citySlice();
+    // Each city bar takes its own colour from the PrimeNG primitive palette,
+    // cycling when there are more cities than colours.
     this.eventsByCityChart.set({
       labels: byCity.map((c) => c.city),
       datasets: [
         {
           data: byCity.map((c) => c.count),
-          backgroundColor: this.cssVar('--p-primary-400') || '#60a5fa',
+          backgroundColor: byCity.map((_, i) =>
+            paletteResolve(EVENTS_BY_CITY_COLORS[i % EVENTS_BY_CITY_COLORS.length]),
+          ),
           borderRadius: 6,
         },
       ],
@@ -545,18 +562,19 @@ export class OrgDashboard implements OnInit {
 
   private rebuildSparklines(): void {
     const trends = this.trendsSlice();
-    const sparkBorder = this.cssVar('--p-primary-500') || '#6366f1';
-    const sparkFill = this.cssVar('--p-primary-100') || '#e0e7ff';
     const labels = trends?.bucketLabels ?? [];
-    const buildSpark = (data: number[] | undefined): ChartConfig | null => {
+    // Each sparkline takes its card's accent colour so the line + soft fill match
+    // the icon chip above it.
+    const buildSpark = (key: SparkKey, data: number[] | undefined): ChartConfig | null => {
       if (!data || !data.length) return null;
+      const stroke = paletteResolve(ORG_STAT_CARD_COLORS[key]);
       return {
         labels: labels.length === data.length ? labels : data.map((_, i) => `${i}`),
         datasets: [
           {
             data,
-            borderColor: sparkBorder,
-            backgroundColor: sparkFill,
+            borderColor: stroke,
+            backgroundColor: paletteAlpha(stroke, 0.14),
             fill: true,
             tension: 0.4,
             pointRadius: 0,
@@ -565,30 +583,29 @@ export class OrgDashboard implements OnInit {
       };
     };
     this.sparklines.set({
-      events: buildSpark(trends?.series.events),
-      active: buildSpark(trends?.series.active),
-      users: buildSpark(trends?.series.users),
-      cities: buildSpark(trends?.series.cities),
+      events: buildSpark('events', trends?.series.events),
+      active: buildSpark('active', trends?.series.active),
+      users: buildSpark('users', trends?.series.users),
+      cities: buildSpark('cities', trends?.series.cities),
     });
   }
 
   protected readonly statusSeverity = getEventStatusSeverity;
   protected readonly statusLabel = getEventStatusLabel;
 
-  // ── Theme palette helpers ──
-  private readonly statusTokens = EVENT_STATUS_PALETTE_TOKENS;
-  private readonly roleTokens = USER_ROLE_PALETTE_TOKENS;
+  // ── Theme palette helpers (shared chart palette) ──
+  // Semantic colour keys for the status / role doughnuts + legends.
+  private readonly statusColors = EVENT_STATUS_COLORS;
+  private readonly roleColors = USER_ROLE_COLORS;
+
+  // Exposed to the template for the colourful stat-card / quick-action icon chips.
+  /** Live `var(--p-…)` ref for a coloured icon/swatch. */
+  protected ref = paletteRef;
+  /** Soft tinted background for an icon chip. */
+  protected tint = paletteTint;
 
   private cssVar(name: string): string {
     return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
-  }
-
-  private resolve(tokens: string[]): string[] {
-    return tokens.map((t) => this.cssVar(t));
-  }
-
-  varRef(token: string): string {
-    return `var(${token})`;
   }
 
   // ── Navigation ──

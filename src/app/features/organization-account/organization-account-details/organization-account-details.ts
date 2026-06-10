@@ -30,7 +30,7 @@ import {
   UpdateOrganizationRequest,
 } from '../../../core/models/organization.model';
 import { ROLE_LABELS, UserRole } from '../../../core/models/user.model';
-import { shouldShowError } from '../../../shared/utils/form.utils';
+import { buildDirtyPatch, shouldShowError } from '../../../shared/utils/form.utils';
 import { FORM_INPUT_SIZE } from '../../../shared/constants/form.constants';
 import { SUBSCRIPTION_TIER_OPTIONS } from '../../../shared/constants/subscription.constant';
 import { OrganizationAccountState } from '../organization-account-state.service';
@@ -152,29 +152,32 @@ export class OrganizationAccountDetails implements OnInit {
     const id = this.organization()?.id;
     if (id == null) return;
 
-    const request: UpdateOrganizationRequest = {
-      organizerName: this.details.organizerName.trim(),
-      email: this.details.email.trim(),
-      phoneNumber: this.details.phoneNumber.trim() || undefined,
-      website: this.details.website.trim() || undefined,
-      addressLine1: this.details.addressLine1.trim() || undefined,
-      addressLine2: this.details.addressLine2.trim() || undefined,
-      city: this.details.city.trim() || undefined,
-      stateProvince: this.details.stateProvince.trim() || undefined,
-      postalCode: this.details.postalCode.trim() || undefined,
-      country: this.details.country.trim() || undefined,
-      taxId: this.details.taxId.trim() || undefined,
-      registrationNumber: this.details.registrationNumber.trim() || undefined,
-    };
+    // Dirty-fields-only merge patch: omitted = unchanged, '' = clear.
+    const request = buildDirtyPatch<UpdateOrganizationRequest>(form, this.details);
 
     if (this.canEditGovernance) {
-      request.subscriptionTier = this.governance.subscriptionTier;
-      request.billingEmail = this.governance.billingEmail.trim() || undefined;
-      request.userQuota = {
-        admins: { max: this.governance.maxAdmins },
-        organizerUsers: { max: this.governance.maxOrganizerUsers },
-        distributors: { max: this.governance.maxDistributors },
-      };
+      if (form.controls['subscriptionTier']?.dirty) {
+        request.subscriptionTier = this.governance.subscriptionTier;
+      }
+      if (form.controls['billingEmail']?.dirty) {
+        request.billingEmail = this.governance.billingEmail;
+      }
+      const quotaDirty = ['maxAdmins', 'maxOrganizerUsers', 'maxDistributors'].some(
+        (key) => form.controls[key]?.dirty,
+      );
+      // The quota object travels whole — the backend applies all three caps together.
+      if (quotaDirty) {
+        request.userQuota = {
+          admins: { max: this.governance.maxAdmins },
+          organizerUsers: { max: this.governance.maxOrganizerUsers },
+          distributors: { max: this.governance.maxDistributors },
+        };
+      }
+    }
+
+    if (Object.keys(request).length === 0) {
+      form.form.markAsPristine();
+      return;
     }
 
     this.savingDetails.set(true);

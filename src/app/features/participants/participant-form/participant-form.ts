@@ -28,7 +28,7 @@ import { ErrorHandlerService } from '../../../core/services/error-handler.servic
 import { ToastService } from '../../../core/services/toast.service';
 import { OrganizationSelector } from '../../../layout/organization-selector/organization-selector';
 import { EventSelector } from '../../../layout/event-selector/event-selector';
-import { shouldShowError } from '../../../shared/utils/form.utils';
+import { buildDirtyPatch, shouldShowError } from '../../../shared/utils/form.utils';
 import { FORM_INPUT_SIZE } from '../../../shared/constants/form.constants';
 import { GENDER_OPTIONS } from '../../../shared/constants/participant-columns.constant';
 import { UserRole } from '../../../core/models/user.model';
@@ -358,7 +358,7 @@ export class ParticipantForm implements OnInit {
     this.submitDisabledChange.emit(this.isSubmitDisabled());
   }
 
-  onSubmit(_form: NgForm): void {
+  onSubmit(form: NgForm): void {
     // Submit button is gated by isSubmitDisabled(); these checks are defensive only.
     if (this.isSubmitDisabled()) {
       return;
@@ -370,23 +370,27 @@ export class ParticipantForm implements OnInit {
     this.isSubmitting.set(true);
 
     if (this.isEditMode() && this.bibNumber()) {
-      // Edit mode
-      const updateRequest: UpdateParticipantRequest = {
-        chipNumber: model.chipNumber,
-        fullName: model.fullName,
-        email: model.email || undefined,
-        phoneNumber: model.phoneNumber || undefined,
-        dateOfBirth: this.formatDateForWire(model.dateOfBirth),
-        age: model.age || undefined,
-        gender: model.gender,
-        country: model.country || undefined,
-        city: model.city || undefined,
-        raceId: String(model.raceId),
-        categoryId: String(model.categoryId),
-        emergencyContactName: model.emergencyContactName || undefined,
-        emergencyContactPhone: model.emergencyContactPhone || undefined,
-        notes: model.notes || undefined,
-      };
+      // Edit mode — dirty-fields-only merge patch: omitted = unchanged, '' = clear.
+      const updateRequest = buildDirtyPatch<UpdateParticipantRequest>(
+        form,
+        model,
+        new Set(['bibNumber', 'raceName', 'categoryName', 'dateOfBirth', 'raceId', 'categoryId']),
+      );
+
+      if (form.controls['dateOfBirth']?.dirty) {
+        updateRequest.dateOfBirth = this.formatDateForWire(model.dateOfBirth) ?? '';
+      }
+      // Race and category travel together — changing race forces a category repick.
+      if (form.controls['raceId']?.dirty || form.controls['categoryId']?.dirty) {
+        updateRequest.raceId = String(model.raceId);
+        updateRequest.categoryId = String(model.categoryId);
+      }
+
+      if (Object.keys(updateRequest).length === 0) {
+        this.isSubmitting.set(false);
+        this.dialogRef?.close();
+        return;
+      }
 
       this.participantService
         .updateParticipant(targetEventId, this.bibNumber()!, updateRequest)

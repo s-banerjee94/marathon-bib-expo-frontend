@@ -37,6 +37,12 @@ import {
 } from '../../../shared/utils/billing.utils';
 import { FORM_INPUT_SIZE, BUTTON_SIZE } from '../../../shared/constants/form.constants';
 import { OrgNamePipe } from '../../../shared/pipes/org-name-pipe';
+import {
+  paletteAlpha,
+  paletteRef,
+  paletteResolve,
+  paletteTint,
+} from '../../../shared/utils/chart-palette.util';
 
 interface ChartConfig {
   labels: string[];
@@ -599,33 +605,15 @@ export class BillingOverview implements OnInit {
     return (Number.isInteger(p) ? p : p.toFixed(1)) + '%';
   }
 
-  // ── Theme palette helpers ─────────────────────────────────────────────────────
+  // ── Theme palette helpers (shared chart palette) ──────────────────────────────
   /** Concrete colour for canvas (resolved theme token, hex fallback). */
-  private resolve(name: string): string {
-    return this.cssVar(`--p-${name}-500`) || PALETTE[name] || name;
-  }
-
+  private resolve = paletteResolve;
   /** Live `var(--p-…)` ref for DOM swatches/icons (re-colours with the theme). */
-  protected ref(name: string): string {
-    return `var(--p-${name}-500, ${PALETTE[name] ?? name})`;
-  }
-
+  protected ref = paletteRef;
   /** Soft tinted background for an icon chip — a translucent mix of the colour. */
-  protected tint(name: string): string {
-    return `color-mix(in srgb, ${this.ref(name)} 14%, transparent)`;
-  }
-
+  protected tint = paletteTint;
   /** Translucent fill for a canvas area (rgba derived from the resolved hex). */
-  private alpha(color: string, a: number): string {
-    const hex = color.startsWith('#') ? color : '';
-    if (hex.length === 7) {
-      const r = parseInt(hex.slice(1, 3), 16);
-      const g = parseInt(hex.slice(3, 5), 16);
-      const b = parseInt(hex.slice(5, 7), 16);
-      return `rgba(${r}, ${g}, ${b}, ${a})`;
-    }
-    return `color-mix(in srgb, ${color} ${Math.round(a * 100)}%, transparent)`;
-  }
+  private alpha = paletteAlpha;
 
   private trackTheme(): void {
     this.layout.isDarkTheme();
@@ -656,18 +644,3 @@ const AGING_COLORS = ['teal', 'amber', 'orange', 'red'];
 function count(n: number): string {
   return `(${n.toLocaleString('en-IN')})`;
 }
-
-// Chart/legend palette keys → hex fallbacks. These keep canvas charts and DOM
-// swatches coloured even before a `--p-{color}-500` theme token resolves. Kept at
-// module scope so the legend computeds (which call `ref()`) can read it.
-const PALETTE: Record<string, string> = {
-  blue: '#3b82f6',
-  green: '#22c55e',
-  teal: '#14b8a6',
-  red: '#ef4444',
-  orange: '#f97316',
-  amber: '#f59e0b',
-  violet: '#8b5cf6',
-  slate: '#64748b',
-  cyan: '#06b6d4',
-};

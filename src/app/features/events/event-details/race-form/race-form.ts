@@ -11,7 +11,7 @@ import { Race, CreateRaceRequest, UpdateRaceRequest } from '../../../../core/mod
 import { RaceService } from '../../../../core/services/race.service';
 import { ErrorHandlerService } from '../../../../core/services/error-handler.service';
 import { FORM_INPUT_SIZE } from '../../../../shared/constants/form.constants';
-import { shouldShowError } from '../../../../shared/utils/form.utils';
+import { buildDirtyPatch, shouldShowError } from '../../../../shared/utils/form.utils';
 
 @Component({
   selector: 'app-race-form',
@@ -59,11 +59,7 @@ export class RaceForm implements OnInit {
     if (!form.valid) return;
 
     if (this.isEditMode()) {
-      const patch = Object.fromEntries(
-        Object.keys(this.formData)
-          .filter((key) => form.controls[key]?.dirty)
-          .map((key) => [key, this.formData[key as keyof typeof this.formData]]),
-      ) as UpdateRaceRequest;
+      const patch = buildDirtyPatch<UpdateRaceRequest>(form, this.formData);
 
       if (!Object.keys(patch).length) {
         this.ref.close();
