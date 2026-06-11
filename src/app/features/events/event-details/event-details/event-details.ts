@@ -117,8 +117,8 @@ export class EventDetails implements OnInit {
     { id: 'goodies', label: 'Goodies', icon: 'pi-gift' },
     { id: 'races', label: 'Races', icon: 'pi-flag' },
     { id: 'categories', label: 'Categories', icon: 'pi-tags' },
-    { id: 'sms-templates', label: 'SMS Templates', icon: 'pi-envelope' },
-    { id: 'sms-campaigns', label: 'SMS Campaigns', icon: 'pi-send' },
+    { id: 'templates', label: 'Template', icon: 'pi-envelope' },
+    { id: 'campaigns', label: 'Campaign', icon: 'pi-send' },
     { id: 'billing', label: 'Billing', icon: 'pi-receipt' },
   ];
 

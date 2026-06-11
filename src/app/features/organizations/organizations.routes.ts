@@ -31,6 +31,13 @@ export const ORGANIZATIONS_ROUTES: Routes = [
           ),
       },
       {
+        path: 'settings',
+        loadComponent: () =>
+          import('../organization-account/organization-settings-section/organization-settings-section').then(
+            (m) => m.OrganizationSettingsSection,
+          ),
+      },
+      {
         path: 'billing',
         loadComponent: () =>
           import('../organization-account/organization-billing-section/organization-billing-section').then(

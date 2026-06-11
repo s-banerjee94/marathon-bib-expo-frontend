@@ -10,15 +10,14 @@ import { FloatLabelModule } from 'primeng/floatlabel';
 import { MessageModule } from 'primeng/message';
 import { DatePickerModule } from 'primeng/datepicker';
 import {
-  SmsCampaign,
-  SmsCampaignTargetFilter,
-  SmsCampaignTriggerType,
-  CreateSmsCampaignRequest,
-  UpdateSmsCampaignRequest,
-} from '../../../../core/models/sms-campaign.model';
-import { SmsTemplate } from '../../../../core/models/sms-template.model';
-import { SmsCampaignService } from '../../../../core/services/sms-campaign.service';
-import { SmsTemplateService } from '../../../../core/services/sms-template.service';
+  WhatsAppCampaign,
+  WhatsAppCampaignTargetFilter,
+  WhatsAppCampaignTriggerType,
+  CreateWhatsAppCampaignRequest,
+  UpdateWhatsAppCampaignRequest,
+} from '../../../../core/models/whatsapp-campaign.model';
+import { WhatsAppTemplate } from '../../../../core/models/whatsapp-template.model';
+import { WhatsAppService } from '../../../../core/services/whatsapp.service';
 import { ErrorHandlerService } from '../../../../core/services/error-handler.service';
 import { FORM_INPUT_SIZE } from '../../../../shared/constants/form.constants';
 import {
@@ -33,7 +32,7 @@ import {
 } from '../../../../shared/utils/campaign-schedule.utils';
 
 @Component({
-  selector: 'app-sms-campaign-form',
+  selector: 'app-whatsapp-campaign-form',
   imports: [
     CommonModule,
     FormsModule,
@@ -44,26 +43,25 @@ import {
     MessageModule,
     DatePickerModule,
   ],
-  templateUrl: './sms-campaign-form.html',
-  styleUrl: './sms-campaign-form.css',
+  templateUrl: './whatsapp-campaign-form.html',
+  styleUrl: './whatsapp-campaign-form.css',
 })
-export class SmsCampaignForm implements OnInit {
+export class WhatsappCampaignForm implements OnInit {
   readonly shouldShowError = shouldShowError;
 
   private config = inject(DynamicDialogConfig);
   private ref = inject(DynamicDialogRef);
-  private campaignService = inject(SmsCampaignService);
-  private smsTemplateService = inject(SmsTemplateService);
+  private whatsAppService = inject(WhatsAppService);
   private errorHandler = inject(ErrorHandlerService);
 
   isEditMode = signal(false);
   isSubmitting = signal(false);
-  templates = signal<SmsTemplate[]>([]);
+  templates = signal<WhatsAppTemplate[]>([]);
   loadingTemplates = signal(true);
   eventTimezone = signal<string>('');
   minScheduledDate = signal<Date>(new Date());
 
-  triggerTypeValue = signal<SmsCampaignTriggerType | null>(null);
+  triggerTypeValue = signal<WhatsAppCampaignTriggerType | null>(null);
   isScheduled = computed(() => this.triggerTypeValue() === 'SCHEDULED');
   hasTrigger = computed(() => !!this.triggerTypeValue());
 
@@ -76,13 +74,13 @@ export class SmsCampaignForm implements OnInit {
 
   formData: {
     name: string;
-    smsTemplateId: number | null;
-    triggerType: SmsCampaignTriggerType | null;
-    targetFilter: SmsCampaignTargetFilter | null;
+    whatsAppTemplateId: number | null;
+    triggerType: WhatsAppCampaignTriggerType | null;
+    targetFilter: WhatsAppCampaignTargetFilter | null;
     scheduledAt: Date | null;
   } = {
     name: '',
-    smsTemplateId: null,
+    whatsAppTemplateId: null,
     triggerType: null,
     targetFilter: null,
     scheduledAt: null,
@@ -90,7 +88,7 @@ export class SmsCampaignForm implements OnInit {
 
   ngOnInit(): void {
     const data = this.config.data as {
-      campaign?: SmsCampaign;
+      campaign?: WhatsAppCampaign;
       eventId: number;
       eventTimezone?: string;
     };
@@ -107,7 +105,7 @@ export class SmsCampaignForm implements OnInit {
 
     this.formData = {
       name: c?.name ?? '',
-      smsTemplateId: c?.smsTemplateId ?? null,
+      whatsAppTemplateId: c?.whatsAppTemplateId ?? null,
       triggerType: c?.triggerType ?? null,
       targetFilter: c?.targetFilter ?? null,
       scheduledAt,
@@ -117,7 +115,7 @@ export class SmsCampaignForm implements OnInit {
     this.loadTemplates(data.eventId);
   }
 
-  onTriggerTypeChange(type: SmsCampaignTriggerType | null): void {
+  onTriggerTypeChange(type: WhatsAppCampaignTriggerType | null): void {
     this.triggerTypeValue.set(type);
     if (!type) {
       this.formData.targetFilter = null;
@@ -132,7 +130,7 @@ export class SmsCampaignForm implements OnInit {
   }
 
   private loadTemplates(eventId: number): void {
-    this.smsTemplateService.getSmsTemplatesByEvent(eventId).subscribe({
+    this.whatsAppService.getTemplatesByEvent(eventId).subscribe({
       next: (templates) => {
         this.templates.set(templates);
         this.loadingTemplates.set(false);
@@ -154,12 +152,12 @@ export class SmsCampaignForm implements OnInit {
     this.isSubmitting.set(true);
 
     const request$ = this.isEditMode()
-      ? this.campaignService.updateCampaign(
+      ? this.whatsAppService.updateCampaign(
           this.eventId,
           this.campaignId!,
-          payload as UpdateSmsCampaignRequest,
+          payload as UpdateWhatsAppCampaignRequest,
         )
-      : this.campaignService.createCampaign(this.eventId, payload as CreateSmsCampaignRequest);
+      : this.whatsAppService.createCampaign(this.eventId, payload as CreateWhatsAppCampaignRequest);
 
     request$.subscribe({
       next: (result) => {
@@ -176,10 +174,10 @@ export class SmsCampaignForm implements OnInit {
     });
   }
 
-  private buildPayload(): CreateSmsCampaignRequest {
-    const payload: CreateSmsCampaignRequest = {
+  private buildPayload(): CreateWhatsAppCampaignRequest {
+    const payload: CreateWhatsAppCampaignRequest = {
       name: this.formData.name,
-      smsTemplateId: this.formData.smsTemplateId!,
+      whatsAppTemplateId: this.formData.whatsAppTemplateId!,
     };
 
     if (this.formData.triggerType) {
@@ -194,8 +192,8 @@ export class SmsCampaignForm implements OnInit {
     return payload;
   }
 
-  private buildPatch(form: NgForm): UpdateSmsCampaignRequest {
-    const patch = buildDirtyPatch<UpdateSmsCampaignRequest>(
+  private buildPatch(form: NgForm): UpdateWhatsAppCampaignRequest {
+    const patch = buildDirtyPatch<UpdateWhatsAppCampaignRequest>(
       form,
       this.formData,
       new Set(['scheduledAt']),

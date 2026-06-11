@@ -1,0 +1,163 @@
+<form #campaignForm="ngForm" (ngSubmit)="onSubmit(campaignForm)" class="flex flex-col gap-4 mt-2">
+  <!-- Campaign Name -->
+  <div class="flex flex-col gap-1">
+    <p-floatlabel variant="on">
+      <input
+        #name="ngModel"
+        pInputText
+        id="name"
+        name="name"
+        [(ngModel)]="formData.name"
+        [pSize]="inputSize"
+        [invalid]="shouldShowError(name, campaignForm.submitted)"
+        fluid="true"
+        required
+        maxlength="100"
+      />
+      <label for="name">Campaign Name *</label>
+    </p-floatlabel>
+    @if (shouldShowError(name, campaignForm.submitted)) {
+      <p-message [size]="inputSize" severity="error" variant="simple">
+        @if (name.hasError('required')) {
+          Campaign name is required.
+        }
+        @if (name.hasError('maxlength')) {
+          Must not exceed 100 characters.
+        }
+      </p-message>
+    }
+  </div>
+
+  <!-- WhatsApp Template -->
+  <div class="flex flex-col gap-1">
+    <p-floatlabel variant="on">
+      <p-select
+        #whatsAppTemplateId="ngModel"
+        inputId="whatsAppTemplateId"
+        name="whatsAppTemplateId"
+        [(ngModel)]="formData.whatsAppTemplateId"
+        [options]="templates()"
+        [size]="inputSize"
+        [loading]="loadingTemplates()"
+        [invalid]="shouldShowError(whatsAppTemplateId, campaignForm.submitted)"
+        optionLabel="name"
+        optionValue="id"
+        fluid="true"
+        required
+      />
+      <label for="whatsAppTemplateId">WhatsApp Template *</label>
+    </p-floatlabel>
+    @if (shouldShowError(whatsAppTemplateId, campaignForm.submitted)) {
+      <p-message [size]="inputSize" severity="error" variant="simple">
+        WhatsApp template is required.
+      </p-message>
+    }
+  </div>
+
+  <!-- Trigger Type (optional — omitting saves as DRAFT) -->
+  <div class="flex flex-col gap-1">
+    <p-floatlabel variant="on">
+      <p-select
+        inputId="triggerType"
+        name="triggerType"
+        [(ngModel)]="formData.triggerType"
+        [options]="triggerOptions"
+        [size]="inputSize"
+        [showClear]="true"
+        optionLabel="label"
+        optionValue="value"
+        fluid="true"
+        (ngModelChange)="onTriggerTypeChange($event)"
+      />
+      <label for="triggerType">Trigger Type</label>
+    </p-floatlabel>
+    @if (triggerTypeValue() === 'AUTO_BIB_COLLECTED') {
+      <small class="text-sm"
+        >Fires automatically each time a participant collects their bib. Only one active campaign of
+        this type is allowed per event.</small
+      >
+    }
+  </div>
+
+  <!-- Target Filter (only when a trigger is selected) -->
+  @if (hasTrigger()) {
+    <div class="flex flex-col gap-1">
+      <p-floatlabel variant="on">
+        <p-select
+          #targetFilter="ngModel"
+          inputId="targetFilter"
+          name="targetFilter"
+          [(ngModel)]="formData.targetFilter"
+          [options]="targetOptions"
+          [size]="inputSize"
+          [invalid]="shouldShowError(targetFilter, campaignForm.submitted)"
+          optionLabel="label"
+          optionValue="value"
+          fluid="true"
+          required
+        />
+        <label for="targetFilter">Target *</label>
+      </p-floatlabel>
+      @if (shouldShowError(targetFilter, campaignForm.submitted)) {
+        <p-message [size]="inputSize" severity="error" variant="simple">
+          Target is required.
+        </p-message>
+      }
+    </div>
+  }
+
+  <!-- Scheduled At (only when SCHEDULED) -->
+  @if (isScheduled()) {
+    <div class="flex flex-col gap-1">
+      <p-floatlabel variant="on">
+        <p-datepicker
+          #scheduledAtCtrl="ngModel"
+          [(ngModel)]="formData.scheduledAt"
+          [showTime]="true"
+          [minDate]="minScheduledDate()"
+          [size]="inputSize"
+          [invalid]="shouldShowError(scheduledAtCtrl, campaignForm.submitted)"
+          [showOnFocus]="false"
+          (onSelect)="onScheduledAtSelect($event)"
+          appendTo="body"
+          dateFormat="dd-mm-yy"
+          fluid="true"
+          hourFormat="12"
+          iconDisplay="input"
+          inputId="scheduledAt"
+          name="scheduledAt"
+          panelStyleClass="compact-datepicker"
+          required
+          showIcon
+        ></p-datepicker>
+        <label for="scheduledAt">Scheduled At *</label>
+      </p-floatlabel>
+      @if (eventTimezone()) {
+        <small class="text-sm">Times are in event timezone: {{ eventTimezone() }}</small>
+      }
+      @if (shouldShowError(scheduledAtCtrl, campaignForm.submitted)) {
+        <p-message [size]="inputSize" severity="error" variant="simple">
+          Scheduled date and time is required.
+        </p-message>
+      }
+    </div>
+  }
+
+  <!-- Actions -->
+  <div class="flex justify-end gap-3 pt-4 border-t">
+    <button
+      pButton
+      type="button"
+      label="Cancel"
+      severity="secondary"
+      [outlined]="true"
+      (click)="onCancel()"
+    ></button>
+    <button
+      pButton
+      type="submit"
+      [label]="isEditMode() ? 'Update Campaign' : 'Create Campaign'"
+      [disabled]="loadingTemplates() || isSubmitting()"
+    ></button>
+  </div>
+</form>

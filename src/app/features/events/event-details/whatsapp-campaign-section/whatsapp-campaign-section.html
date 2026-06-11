@@ -1,0 +1,297 @@
+<div class="space-y-4">
+  <!-- Header -->
+  <div class="space-y-3">
+    <h2 class="text-xl font-semibold">WhatsApp Campaigns</h2>
+    <div class="flex justify-end items-center gap-3">
+      @if (!isMobile()) {
+        <div class="flex items-center gap-2">
+          <label for="whatsappCampaignColumnSelect" class="text-sm">Columns:</label>
+          <p-multiselect
+            (ngModelChange)="onColumnSelectionChange()"
+            [(ngModel)]="selectedCols"
+            [maxSelectedLabels]="2"
+            [options]="cols()"
+            [size]="inputSize"
+            inputId="whatsappCampaignColumnSelect"
+            optionDisabled="disabled"
+            optionLabel="header"
+            placeholder="Select Columns"
+          />
+        </div>
+      }
+      <p-button
+        [label]="isMobile() ? '' : 'Create Campaign'"
+        icon="pi pi-plus"
+        [size]="buttonSize"
+        (onClick)="onCreate()"
+        [disabled]="isLoading()"
+      />
+    </div>
+  </div>
+
+  @if (!isMobile()) {
+    <!-- Desktop Table -->
+    <p-table
+      [value]="displayData()"
+      dataKey="id"
+      [scrollable]="true"
+      [tableStyle]="{ 'min-width': '50rem' }"
+      [size]="inputSize"
+    >
+      <ng-template pTemplate="header">
+        <tr>
+          <th class="w-16 whitespace-nowrap" pFrozenColumn>Sl. No</th>
+          @for (col of visibleCols(); track col.field) {
+            <th class="whitespace-nowrap">{{ col.header }}</th>
+          }
+          <th class="w-40 whitespace-nowrap" pFrozenColumn alignFrozen="right">Actions</th>
+        </tr>
+      </ng-template>
+
+      <ng-template pTemplate="body" let-campaign let-rowIndex="rowIndex">
+        <tr>
+          @if (isLoading()) {
+            <td pFrozenColumn><p-skeleton /></td>
+            @for (col of visibleCols(); track col.field) {
+              <td><p-skeleton /></td>
+            }
+            <td pFrozenColumn alignFrozen="right"><p-skeleton height="2rem" width="8rem" /></td>
+          } @else {
+            <td class="text-color-secondary whitespace-nowrap" pFrozenColumn>{{ rowIndex + 1 }}</td>
+            @for (col of visibleCols(); track col.field) {
+              <td class="whitespace-nowrap">
+                @switch (col.field) {
+                  @case ('id') {
+                    {{ campaign.id }}
+                  }
+                  @case ('name') {
+                    {{ campaign.name | defaultValue }}
+                  }
+                  @case ('whatsAppTemplateName') {
+                    {{ campaign.whatsAppTemplateName | defaultValue }}
+                  }
+                  @case ('triggerType') {
+                    {{ campaign.triggerType | smsTriggerLabel }}
+                  }
+                  @case ('targetFilter') {
+                    {{ campaign.targetFilter | smsTargetLabel }}
+                  }
+                  @case ('scheduledDate') {
+                    <span class="whitespace-nowrap">
+                      {{
+                        campaign.scheduledDate
+                          | formatEventDateTime: campaign.scheduledTime : eventTimezone()
+                      }}
+                      @if (eventTimezone()) {
+                        ({{
+                          campaign.scheduledDate
+                            | formatEventDateTime
+                              : campaign.scheduledTime
+                              : eventTimezone()
+                              : 'abbr'
+                        }})
+                      }
+                    </span>
+                  }
+                  @case ('status') {
+                    @if (actionLoadingId() === campaign.id) {
+                      <p-skeleton height="1.5rem" width="4rem" />
+                    } @else {
+                      <p-tag
+                        [value]="campaign.status"
+                        [severity]="statusSeverity(campaign.status)"
+                        [rounded]="true"
+                      />
+                    }
+                  }
+                  @case ('sentCount') {
+                    {{ campaign.sentCount ?? 0 }}
+                  }
+                  @case ('createdAt') {
+                    {{ campaign.createdAt | date: 'dd-MMM-yyyy, hh:mm a' | defaultValue }}
+                  }
+                  @case ('updatedAt') {
+                    {{ campaign.updatedAt | date: 'dd-MMM-yyyy, hh:mm a' | defaultValue }}
+                  }
+                  @case ('createdBy') {
+                    {{ campaign.createdBy | defaultValue }}
+                  }
+                  @case ('lastModifiedBy') {
+                    {{ campaign.lastModifiedBy | defaultValue }}
+                  }
+                }
+              </td>
+            }
+            <td class="whitespace-nowrap" pFrozenColumn alignFrozen="right">
+              <div class="flex gap-1">
+                <p-button
+                  icon="pi pi-eye"
+                  [text]="true"
+                  [rounded]="true"
+                  severity="secondary"
+                  size="small"
+                  (onClick)="onView(campaign)"
+                  pTooltip="View Details"
+                  tooltipPosition="top"
+                />
+                @if (canEdit(campaign)) {
+                  <p-button
+                    icon="pi pi-pencil"
+                    [text]="true"
+                    [rounded]="true"
+                    severity="info"
+                    size="small"
+                    (onClick)="onEdit(campaign)"
+                    pTooltip="Edit"
+                    tooltipPosition="top"
+                  />
+                }
+                @if (canDisarm(campaign)) {
+                  <p-button
+                    icon="pi pi-pause"
+                    [text]="true"
+                    [rounded]="true"
+                    severity="warn"
+                    size="small"
+                    (onClick)="onDisarm(campaign, $event)"
+                    pTooltip="Disarm"
+                    tooltipPosition="top"
+                  />
+                }
+                @if (canDelete(campaign)) {
+                  <p-button
+                    icon="pi pi-trash"
+                    [text]="true"
+                    [rounded]="true"
+                    severity="danger"
+                    size="small"
+                    (onClick)="onDelete(campaign, $event)"
+                    pTooltip="Delete"
+                    tooltipPosition="top"
+                  />
+                }
+              </div>
+            </td>
+          }
+        </tr>
+      </ng-template>
+
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td [attr.colspan]="visibleCols().length + 2" class="text-center py-8">
+            No campaigns found. Click "Create Campaign" to add one.
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+  } @else {
+    <!-- Mobile Cards -->
+    @if (isLoading()) {
+      <div class="flex flex-col gap-3">
+        @for (i of [1, 2, 3]; track i) {
+          <p-card>
+            <p-skeleton height="1.25rem" styleClass="mb-2" />
+            <p-skeleton height="1rem" width="50%" styleClass="mb-1" />
+            <p-skeleton height="1rem" width="70%" />
+          </p-card>
+        }
+      </div>
+    } @else if (campaigns().length === 0) {
+      <div class="flex flex-col items-center justify-center py-12 px-4">
+        <i class="pi pi-whatsapp text-6xl mb-4 opacity-30"></i>
+        <p class="text-lg font-medium mb-1">No campaigns found</p>
+        <p class="text-sm opacity-60">Tap + to create a campaign</p>
+      </div>
+    } @else {
+      <div class="flex flex-col gap-3">
+        @for (campaign of campaigns(); track campaign.id) {
+          <p-card>
+            <div class="flex flex-col gap-1.5">
+              <div class="flex items-start justify-between gap-2">
+                <span class="font-semibold text-base truncate">{{ campaign.name }}</span>
+                @if (actionLoadingId() === campaign.id) {
+                  <p-skeleton height="1.5rem" width="4rem" />
+                } @else {
+                  <p-tag
+                    [value]="campaign.status"
+                    [severity]="statusSeverity(campaign.status)"
+                    [rounded]="true"
+                  />
+                }
+              </div>
+              <div class="flex flex-col gap-1 text-sm">
+                @if (campaign.whatsAppTemplateName) {
+                  <div class="flex items-center gap-2">
+                    <i class="pi pi-whatsapp opacity-60 w-4"></i>
+                    <span class="truncate">{{ campaign.whatsAppTemplateName }}</span>
+                  </div>
+                }
+                @if (campaign.triggerType) {
+                  <div class="flex items-center gap-2">
+                    <i class="pi pi-bolt opacity-60 w-4"></i>
+                    <span>{{ campaign.triggerType | smsTriggerLabel }}</span>
+                  </div>
+                }
+                @if (campaign.scheduledDate) {
+                  <div class="flex items-center gap-2">
+                    <i class="pi pi-calendar opacity-60 w-4"></i>
+                    <span>
+                      {{
+                        campaign.scheduledDate
+                          | formatEventDateTime: campaign.scheduledTime : eventTimezone()
+                      }}
+                    </span>
+                  </div>
+                }
+              </div>
+            </div>
+            <ng-template #footer>
+              <div class="flex justify-end gap-1">
+                <p-button
+                  icon="pi pi-eye"
+                  [text]="true"
+                  [rounded]="true"
+                  severity="secondary"
+                  size="small"
+                  (onClick)="onView(campaign)"
+                />
+                @if (canEdit(campaign)) {
+                  <p-button
+                    icon="pi pi-pencil"
+                    [text]="true"
+                    [rounded]="true"
+                    severity="info"
+                    size="small"
+                    (onClick)="onEdit(campaign)"
+                  />
+                }
+                @if (canDisarm(campaign)) {
+                  <p-button
+                    icon="pi pi-pause"
+                    [text]="true"
+                    [rounded]="true"
+                    severity="warn"
+                    size="small"
+                    (onClick)="onDisarm(campaign, $event)"
+                  />
+                }
+                @if (canDelete(campaign)) {
+                  <p-button
+                    icon="pi pi-trash"
+                    [text]="true"
+                    [rounded]="true"
+                    severity="danger"
+                    size="small"
+                    (onClick)="onDelete(campaign, $event)"
+                  />
+                }
+              </div>
+            </ng-template>
+          </p-card>
+        }
+      </div>
+    }
+  }
+</div>
+
+<p-confirmpopup />

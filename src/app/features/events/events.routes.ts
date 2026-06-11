@@ -74,20 +74,68 @@ export const EVENTS_ROUTES: Routes = [
         title: pageTitle('Event Categories'),
       },
       {
-        path: 'sms-templates',
+        path: 'templates',
         loadComponent: () =>
-          import('./event-details/sms-template-section/sms-template-section').then(
-            (m) => m.SmsTemplateSection,
+          import('./event-details/templates-section/templates-section').then(
+            (m) => m.TemplatesSection,
           ),
-        title: pageTitle('Event SMS Templates'),
+        title: pageTitle('Event Templates'),
+        children: [
+          { path: '', redirectTo: 'sms', pathMatch: 'full' },
+          {
+            path: 'sms',
+            loadComponent: () =>
+              import('./event-details/sms-template-section/sms-template-section').then(
+                (m) => m.SmsTemplateSection,
+              ),
+          },
+          {
+            path: 'whatsapp',
+            loadComponent: () =>
+              import('./event-details/whatsapp-template-section/whatsapp-template-section').then(
+                (m) => m.WhatsappTemplateSection,
+              ),
+          },
+          {
+            path: 'email',
+            loadComponent: () =>
+              import('./event-details/email-template-section/email-template-section').then(
+                (m) => m.EmailTemplateSection,
+              ),
+          },
+        ],
       },
       {
-        path: 'sms-campaigns',
+        path: 'campaigns',
         loadComponent: () =>
-          import('./event-details/sms-campaign-section/sms-campaign-section').then(
-            (m) => m.SmsCampaignSection,
+          import('./event-details/campaigns-section/campaigns-section').then(
+            (m) => m.CampaignsSection,
           ),
-        title: pageTitle('Event SMS Campaigns'),
+        title: pageTitle('Event Campaigns'),
+        children: [
+          { path: '', redirectTo: 'sms', pathMatch: 'full' },
+          {
+            path: 'sms',
+            loadComponent: () =>
+              import('./event-details/sms-campaign-section/sms-campaign-section').then(
+                (m) => m.SmsCampaignSection,
+              ),
+          },
+          {
+            path: 'whatsapp',
+            loadComponent: () =>
+              import('./event-details/whatsapp-campaign-section/whatsapp-campaign-section').then(
+                (m) => m.WhatsappCampaignSection,
+              ),
+          },
+          {
+            path: 'email',
+            loadComponent: () =>
+              import('./event-details/email-campaign-section/email-campaign-section').then(
+                (m) => m.EmailCampaignSection,
+              ),
+          },
+        ],
       },
       {
         // Bills are visible to ROOT/ADMIN/ORGANIZER_ADMIN only — not ORGANIZER_USER.

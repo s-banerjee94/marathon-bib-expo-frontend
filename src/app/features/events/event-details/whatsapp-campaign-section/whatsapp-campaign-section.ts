@@ -20,22 +20,22 @@ import { ConfirmPopupModule } from 'primeng/confirmpopup';
 import { FormsModule } from '@angular/forms';
 import { DialogService } from 'primeng/dynamicdialog';
 import { ConfirmationService } from 'primeng/api';
-import { SmsCampaign } from '../../../../core/models/sms-campaign.model';
-import { SmsCampaignService } from '../../../../core/services/sms-campaign.service';
+import { WhatsAppCampaign } from '../../../../core/models/whatsapp-campaign.model';
+import { WhatsAppService } from '../../../../core/services/whatsapp.service';
 import { ErrorHandlerService } from '../../../../core/services/error-handler.service';
 import { ToastService } from '../../../../core/services/toast.service';
 import { EventDetailsState } from '../event-details-state.service';
-import { SmsCampaignForm } from '../sms-campaign-form/sms-campaign-form';
-import { SmsCampaignDetail } from '../sms-campaign-detail/sms-campaign-detail';
+import { WhatsappCampaignForm } from '../whatsapp-campaign-form/whatsapp-campaign-form';
+import { WhatsappCampaignDetail } from '../whatsapp-campaign-detail/whatsapp-campaign-detail';
 import { DefaultValuePipe } from '../../../../shared/pipes/default-value.pipe';
 import { FormatEventDateTimePipe } from '../../../../shared/pipes/format-event-date-time-pipe';
 import { SmsTriggerLabelPipe } from '../../../../shared/pipes/sms-trigger-label-pipe';
 import { SmsTargetLabelPipe } from '../../../../shared/pipes/sms-target-label-pipe';
 import { TableColumn } from '../../../../shared/models/table-config.model';
 import {
-  SMS_CAMPAIGN_COLUMNS,
-  DEFAULT_SMS_CAMPAIGN_COLUMNS,
-} from '../../../../shared/constants/sms-campaign-columns.constant';
+  WHATSAPP_CAMPAIGN_COLUMNS,
+  DEFAULT_WHATSAPP_CAMPAIGN_COLUMNS,
+} from '../../../../shared/constants/whatsapp-campaign-columns.constant';
 import { STORAGE_KEYS } from '../../../../shared/constants/storage-keys.constant';
 import { BUTTON_SIZE, FORM_INPUT_SIZE } from '../../../../shared/constants/form.constants';
 import { LocalStorageService } from '../../../../core/services/local-storage.service';
@@ -49,7 +49,7 @@ import { injectIsMobile } from '../../../../shared/utils/responsive.utils';
 import { getCampaignStatusSeverity } from '../../../../shared/utils/campaign-status.utils';
 
 @Component({
-  selector: 'app-sms-campaign-section',
+  selector: 'app-whatsapp-campaign-section',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     CommonModule,
@@ -68,13 +68,13 @@ import { getCampaignStatusSeverity } from '../../../../shared/utils/campaign-sta
     SmsTargetLabelPipe,
   ],
   providers: [DialogService, ConfirmationService],
-  templateUrl: './sms-campaign-section.html',
-  styleUrl: './sms-campaign-section.css',
+  templateUrl: './whatsapp-campaign-section.html',
+  styleUrl: './whatsapp-campaign-section.css',
 })
-export class SmsCampaignSection implements OnInit {
+export class WhatsappCampaignSection implements OnInit {
   eventId = input.required<number, string>({ transform: (v) => Number(v) });
 
-  private campaignService = inject(SmsCampaignService);
+  private campaignService = inject(WhatsAppService);
   private errorHandler = inject(ErrorHandlerService);
   private toast = inject(ToastService);
   private dialogService = inject(DialogService);
@@ -84,14 +84,14 @@ export class SmsCampaignSection implements OnInit {
 
   protected readonly eventTimezone = computed(() => this.state.event()?.timezone ?? '');
 
-  campaigns = signal<SmsCampaign[]>([]);
+  campaigns = signal<WhatsAppCampaign[]>([]);
   isLoading = signal(true);
   isMobile = injectIsMobile();
   cols = signal<TableColumn[]>([]);
   selectedCols = signal<TableColumn[]>([]);
-  visibleCols = computed(() => getVisibleCols(SMS_CAMPAIGN_COLUMNS, this.selectedCols()));
+  visibleCols = computed(() => getVisibleCols(WHATSAPP_CAMPAIGN_COLUMNS, this.selectedCols()));
   displayData = computed(() =>
-    this.isLoading() ? (Array(3).fill({}) as SmsCampaign[]) : this.campaigns(),
+    this.isLoading() ? (Array(3).fill({}) as WhatsAppCampaign[]) : this.campaigns(),
   );
   actionLoadingId = signal<number | null>(null);
 
@@ -101,9 +101,9 @@ export class SmsCampaignSection implements OnInit {
   ngOnInit(): void {
     initializeColumnPreferences(
       this.storage,
-      SMS_CAMPAIGN_COLUMNS,
-      DEFAULT_SMS_CAMPAIGN_COLUMNS,
-      STORAGE_KEYS.SMS_CAMPAIGN_TABLE_COLUMNS,
+      WHATSAPP_CAMPAIGN_COLUMNS,
+      DEFAULT_WHATSAPP_CAMPAIGN_COLUMNS,
+      STORAGE_KEYS.WHATSAPP_CAMPAIGN_TABLE_COLUMNS,
       this.cols,
       this.selectedCols,
     );
@@ -111,8 +111,12 @@ export class SmsCampaignSection implements OnInit {
   }
 
   onColumnSelectionChange(): void {
-    enforceRequiredColumns(this.selectedCols, SMS_CAMPAIGN_COLUMNS);
-    saveColumnPreferences(this.storage, this.selectedCols, STORAGE_KEYS.SMS_CAMPAIGN_TABLE_COLUMNS);
+    enforceRequiredColumns(this.selectedCols, WHATSAPP_CAMPAIGN_COLUMNS);
+    saveColumnPreferences(
+      this.storage,
+      this.selectedCols,
+      STORAGE_KEYS.WHATSAPP_CAMPAIGN_TABLE_COLUMNS,
+    );
   }
 
   loadCampaigns(): void {
@@ -123,20 +127,20 @@ export class SmsCampaignSection implements OnInit {
         this.isLoading.set(false);
       },
       error: (error: unknown) => {
-        this.errorHandler.showError(error, 'Failed to load SMS campaigns');
+        this.errorHandler.showError(error, 'Failed to load WhatsApp campaigns');
         this.isLoading.set(false);
       },
     });
   }
 
   onCreate(): void {
-    const ref = this.dialogService.open(SmsCampaignForm, {
-      header: 'Create SMS Campaign',
+    const ref = this.dialogService.open(WhatsappCampaignForm, {
+      header: 'Create WhatsApp Campaign',
       width: '560px',
       data: { campaign: null, eventId: this.eventId(), eventTimezone: this.eventTimezone() },
     });
 
-    ref?.onClose.subscribe((result: SmsCampaign | undefined) => {
+    ref?.onClose.subscribe((result: WhatsAppCampaign | undefined) => {
       if (result) {
         this.campaigns.update((list) => [result, ...list]);
         this.toast.success('Campaign created successfully');
@@ -144,14 +148,14 @@ export class SmsCampaignSection implements OnInit {
     });
   }
 
-  onEdit(campaign: SmsCampaign): void {
-    const ref = this.dialogService.open(SmsCampaignForm, {
-      header: 'Edit SMS Campaign',
+  onEdit(campaign: WhatsAppCampaign): void {
+    const ref = this.dialogService.open(WhatsappCampaignForm, {
+      header: 'Edit WhatsApp Campaign',
       width: '560px',
       data: { campaign, eventId: this.eventId(), eventTimezone: this.eventTimezone() },
     });
 
-    ref?.onClose.subscribe((result: SmsCampaign | undefined) => {
+    ref?.onClose.subscribe((result: WhatsAppCampaign | undefined) => {
       if (result) {
         this.campaigns.update((list) => list.map((c) => (c.id === result.id ? result : c)));
         this.toast.success('Campaign updated successfully');
@@ -159,7 +163,7 @@ export class SmsCampaignSection implements OnInit {
     });
   }
 
-  onDelete(campaign: SmsCampaign, event: Event): void {
+  onDelete(campaign: WhatsAppCampaign, event: Event): void {
     this.confirmationService.confirm({
       target: event.target as EventTarget,
       message: `Delete "${campaign.name}"? This cannot be undone.`,
@@ -180,7 +184,7 @@ export class SmsCampaignSection implements OnInit {
     });
   }
 
-  onDisarm(campaign: SmsCampaign, event: Event): void {
+  onDisarm(campaign: WhatsAppCampaign, event: Event): void {
     this.confirmationService.confirm({
       target: event.target as EventTarget,
       message: `Disarm "${campaign.name}"? It will move back to Draft.`,
@@ -205,8 +209,8 @@ export class SmsCampaignSection implements OnInit {
     });
   }
 
-  onView(campaign: SmsCampaign): void {
-    this.dialogService.open(SmsCampaignDetail, {
+  onView(campaign: WhatsAppCampaign): void {
+    this.dialogService.open(WhatsappCampaignDetail, {
       header: campaign.name,
       width: '560px',
       modal: true,
@@ -219,15 +223,15 @@ export class SmsCampaignSection implements OnInit {
 
   readonly statusSeverity = getCampaignStatusSeverity;
 
-  canEdit(campaign: SmsCampaign): boolean {
+  canEdit(campaign: WhatsAppCampaign): boolean {
     return campaign.status === 'DRAFT';
   }
 
-  canDisarm(campaign: SmsCampaign): boolean {
+  canDisarm(campaign: WhatsAppCampaign): boolean {
     return campaign.status === 'ACTIVE';
   }
 
-  canDelete(campaign: SmsCampaign): boolean {
+  canDelete(campaign: WhatsAppCampaign): boolean {
     return campaign.status === 'DRAFT';
   }
 }

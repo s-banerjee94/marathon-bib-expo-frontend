@@ -1,0 +1,81 @@
+@if (campaign(); as c) {
+  <div class="flex flex-col gap-4">
+    <!-- Status & ID -->
+    <div class="flex items-center justify-between">
+      <div class="flex flex-col gap-1">
+        <span class="text-xs font-medium uppercase tracking-wide">ID</span>
+        <span class="font-mono">{{ c.id }}</span>
+      </div>
+      <p-tag [value]="c.status" [severity]="statusSeverity(c.status)" [rounded]="true" />
+    </div>
+
+    <p-divider styleClass="my-0" />
+
+    <!-- Template -->
+    <div class="flex flex-col gap-1">
+      <span class="text-xs font-medium uppercase tracking-wide">WhatsApp Template</span>
+      <span>{{ c.whatsAppTemplateName | defaultValue }}</span>
+    </div>
+
+    <!-- Trigger & Target -->
+    <div class="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
+      <div class="flex flex-col gap-1">
+        <span class="text-xs font-medium uppercase tracking-wide">Trigger Type</span>
+        <span>{{ c.triggerType | smsTriggerLabel | defaultValue }}</span>
+      </div>
+      <div class="flex flex-col gap-1">
+        <span class="text-xs font-medium uppercase tracking-wide">Target</span>
+        <span>{{ c.targetFilter | smsTargetLabel | defaultValue }}</span>
+      </div>
+      @if (c.triggerType === 'SCHEDULED') {
+        <div class="flex flex-col gap-1 col-span-2">
+          <span class="text-xs font-medium uppercase tracking-wide">Scheduled At</span>
+          <div class="flex flex-col gap-0.5 leading-tight">
+            <span>{{ c.scheduledDate | formatEventDateTime: c.scheduledTime }}</span>
+            <span class="text-xs">{{
+              c.scheduledDate | formatEventDateTime: c.scheduledTime : eventTimezone() : 'abbr'
+            }}</span>
+          </div>
+        </div>
+      }
+    </div>
+
+    <!-- Sent Count -->
+    <div class="flex flex-col gap-1">
+      <span class="text-xs font-medium uppercase tracking-wide">Messages Sent</span>
+      <span class="text-2xl font-bold">{{ c.sentCount ?? 0 }}</span>
+    </div>
+
+    <p-divider styleClass="my-0" />
+
+    <!-- Audit Info -->
+    <div class="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
+      <div class="flex flex-col gap-1">
+        <span class="text-xs font-medium uppercase tracking-wide">Event</span>
+        <span>{{ c.eventName | defaultValue }}</span>
+      </div>
+      <div></div>
+      <div class="flex flex-col gap-1">
+        <span class="text-xs font-medium uppercase tracking-wide">Created At</span>
+        <span>{{ c.createdAt | date: 'dd-MMM-yyyy, hh:mm a' | defaultValue }}</span>
+      </div>
+      <div class="flex flex-col gap-1">
+        <span class="text-xs font-medium uppercase tracking-wide">Updated At</span>
+        <span>{{ c.updatedAt | date: 'dd-MMM-yyyy, hh:mm a' | defaultValue }}</span>
+      </div>
+      <div class="flex flex-col gap-1">
+        <span class="text-xs font-medium uppercase tracking-wide">Created By</span>
+        <span>{{ c.createdBy | defaultValue }}</span>
+      </div>
+      <div class="flex flex-col gap-1">
+        <span class="text-xs font-medium uppercase tracking-wide">Last Modified By</span>
+        <span>{{ c.lastModifiedBy | defaultValue }}</span>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="flex justify-end border-t pt-3">
+      <p-button label="Close" severity="secondary" [outlined]="true" (onClick)="onClose()" />
+    </div>
+  </div>
+}

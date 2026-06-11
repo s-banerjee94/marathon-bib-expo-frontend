@@ -1,0 +1,207 @@
+<form #templateForm="ngForm" (ngSubmit)="onSubmit(templateForm)" class="flex flex-col gap-4 mt-2">
+  <!-- Template Name -->
+  <div class="flex flex-col gap-1">
+    <p-floatlabel variant="on">
+      <input
+        pInputText
+        id="name"
+        name="name"
+        [(ngModel)]="formData.name"
+        [pSize]="inputSize"
+        fluid="true"
+        placeholder="e.g., Bib Collection Confirmation"
+        required
+        maxlength="100"
+        #name="ngModel"
+      />
+      <label for="name">Template Name *</label>
+    </p-floatlabel>
+    @if (name.invalid && name.touched) {
+      <p-message [size]="inputSize" severity="error" variant="simple">
+        @if (name.hasError('required')) {
+          Template name is required.
+        }
+        @if (name.hasError('maxlength')) {
+          Template name must not exceed 100 characters.
+        }
+      </p-message>
+    }
+  </div>
+
+  <!-- Content SID -->
+  <div class="flex flex-col gap-1">
+    <p-floatlabel variant="on">
+      <input
+        pInputText
+        id="contentSid"
+        name="contentSid"
+        [(ngModel)]="formData.contentSid"
+        [pSize]="inputSize"
+        fluid="true"
+        placeholder="HX0123456789abcdef0123456789abcdef"
+        required
+        pattern="^HX[0-9a-fA-F]{32}$"
+        #contentSid="ngModel"
+      />
+      <label for="contentSid">Twilio Content SID *</label>
+    </p-floatlabel>
+    @if (contentSid.invalid && contentSid.touched) {
+      <p-message [size]="inputSize" severity="error" variant="simple">
+        @if (contentSid.hasError('required')) {
+          Content SID is required.
+        }
+        @if (contentSid.hasError('pattern')) {
+          Must be a valid Content SID: "HX" followed by 32 hexadecimal characters.
+        }
+      </p-message>
+    } @else {
+      <small class="text-xs" style="color: var(--text-color-secondary)">
+        The approved template is created in the Twilio Console; paste its Content SID here.
+      </small>
+    }
+  </div>
+
+  <!-- Sender Scope -->
+  <div class="flex flex-col gap-1">
+    <p-floatlabel variant="on">
+      <p-select
+        inputId="senderScope"
+        name="senderScope"
+        [(ngModel)]="formData.senderScope"
+        [options]="scopeOptions"
+        optionLabel="label"
+        optionValue="value"
+        [size]="inputSize"
+        appendTo="body"
+        fluid="true"
+        required
+      />
+      <label for="senderScope">Sender Scope *</label>
+    </p-floatlabel>
+    <small class="text-xs" style="color: var(--text-color-secondary)">
+      Which Twilio account the Content SID lives under.
+    </small>
+  </div>
+
+  <!-- Template Body -->
+  <div class="flex flex-col gap-1">
+    <p-floatlabel variant="on">
+      <textarea
+        pTextarea
+        id="body"
+        name="body"
+        [(ngModel)]="formData.body"
+        (ngModelChange)="onBodyChange($event)"
+        rows="3"
+        fluid="true"
+        placeholder="Hi {{ '{{1}}' }}, your bib {{ '{{2}}' }} is ready for collection at {{ '{{3}}' }}."
+        required
+        [maxlength]="maxBodyLength"
+        #body="ngModel"
+      ></textarea>
+      <label for="body">Template Body *</label>
+    </p-floatlabel>
+    @if (body.invalid && body.touched) {
+      <p-message [size]="inputSize" severity="error" variant="simple">
+        @if (body.hasError('required')) {
+          Template body is required.
+        }
+        @if (body.hasError('maxlength')) {
+          Template body must not exceed {{ maxBodyLength }} characters.
+        }
+      </p-message>
+    } @else {
+      <small class="text-xs" style="color: var(--text-color-secondary)">
+        Paste the approved body exactly as it appears on Twilio, with its {{ '{{1}}' }}, {{ '{{2}}'
+        }} … positional markers.
+      </small>
+    }
+  </div>
+
+  <!-- Body Variables -->
+  <app-placeholder-variable-picker
+    [variables]="bodyVariables()"
+    (variablesChange)="bodyVariables.set($event)"
+  />
+
+  <!-- Preview: body with each marker resolved to its mapped variable -->
+  @if (markerCount() > 0) {
+    <div class="flex flex-col gap-1">
+      <span class="text-xs font-medium"
+        >Preview — each marker shows the variable that fills it:</span
+      >
+      <div class="border rounded-lg px-3 py-2 text-sm leading-loose">
+        @for (seg of bodySegments(); track $index) {
+          @if (seg.type === 'text') {
+            <span class="whitespace-pre-wrap">{{ seg.content }}</span>
+          } @else {
+            <span class="inline-flex align-middle">
+              @if (variableAt(seg.index); as variable) {
+                <p-tag
+                  [value]="'{{' + seg.index + '}} ' + variable"
+                  severity="success"
+                  [rounded]="true"
+                />
+              } @else {
+                <p-tag
+                  [value]="'{{' + seg.index + '}} — no variable'"
+                  severity="warn"
+                  icon="pi pi-exclamation-triangle"
+                  [rounded]="true"
+                />
+              }
+            </span>
+          }
+        }
+      </div>
+      @if (hasUnmappedMarker()) {
+        <small class="text-xs" style="color: var(--text-color-secondary)">
+          <i class="pi pi-info-circle"></i>
+          Some markers have no variable at that position — add or reorder variables so each
+          {{ '{{n}}' }} has a match.
+        </small>
+      }
+    </div>
+  }
+
+  <!-- Note -->
+  <div class="flex flex-col gap-1">
+    <p-floatlabel variant="on">
+      <textarea
+        pTextarea
+        id="note"
+        name="note"
+        [(ngModel)]="formData.note"
+        rows="2"
+        fluid="true"
+        placeholder="Optional note or description"
+        maxlength="500"
+        #note="ngModel"
+      ></textarea>
+      <label for="note">Note</label>
+    </p-floatlabel>
+    @if (note.invalid && note.touched) {
+      <p-message [size]="inputSize" severity="error" variant="simple">
+        Note must not exceed 500 characters.
+      </p-message>
+    }
+  </div>
+
+  <!-- Actions -->
+  <div class="flex justify-end gap-3 pt-4 border-t">
+    <button
+      pButton
+      type="button"
+      label="Cancel"
+      severity="secondary"
+      [outlined]="true"
+      (click)="onCancel()"
+    ></button>
+    <button
+      pButton
+      type="submit"
+      [label]="isEditMode() ? 'Update Template' : 'Create Template'"
+      [disabled]="templateForm.invalid || isSubmitting()"
+    ></button>
+  </div>
+</form>

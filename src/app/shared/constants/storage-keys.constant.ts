@@ -23,6 +23,8 @@ export const STORAGE_KEYS = {
   CATEGORY_TABLE_FILTERS: 'marathon_category_table_filters',
   SMS_TEMPLATE_TABLE_COLUMNS: 'marathon_sms_template_table_columns',
   SMS_CAMPAIGN_TABLE_COLUMNS: 'marathon_sms_campaign_table_columns',
+  WHATSAPP_TEMPLATE_TABLE_COLUMNS: 'marathon_whatsapp_template_table_columns',
+  WHATSAPP_CAMPAIGN_TABLE_COLUMNS: 'marathon_whatsapp_campaign_table_columns',
   BILL_TABLE_COLUMNS: 'marathon_bill_table_columns',
   BILL_TABLE_FILTERS: 'marathon_bill_table_filters',
   ORG_BILL_TABLE_COLUMNS: 'marathon_org_bill_table_columns',

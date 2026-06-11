@@ -1,0 +1,91 @@
+<div class="flex flex-col gap-2">
+  <div class="flex items-center justify-between">
+    <span class="text-sm font-medium">Body Variables</span>
+    <p-button
+      type="button"
+      icon="pi pi-plus"
+      label="Add variable"
+      severity="secondary"
+      [text]="true"
+      [size]="inputSize"
+      [disabled]="variables().length >= maxVariables()"
+      (onClick)="add()"
+    />
+  </div>
+  <small class="text-xs" style="color: var(--text-color-secondary)">
+    Each entry fills the matching Content template variable in order — variable 1, variable 2, and
+    so on. Up to {{ maxVariables() }} variables.
+  </small>
+
+  @if (variables().length === 0) {
+    <div
+      class="rounded-lg border border-dashed px-3 py-4 text-center text-sm"
+      style="color: var(--text-color-secondary)"
+    >
+      No variables. Add one if this template expects dynamic values.
+    </div>
+  } @else {
+    <div class="flex flex-col gap-2">
+      @for (variable of variables(); track $index) {
+        <div class="flex items-center gap-2">
+          <span
+            class="flex h-8 min-w-8 items-center justify-center rounded-md px-2 font-mono text-xs"
+            style="
+              background: color-mix(in srgb, var(--primary-color), transparent 88%);
+              color: var(--primary-color);
+            "
+          >
+            {{ '{{' + ($index + 1) + '}}' }}
+          </span>
+          <p-select
+            [ngModel]="variable"
+            [ngModelOptions]="{ standalone: true }"
+            (ngModelChange)="update($index, $event)"
+            [options]="options"
+            optionLabel="label"
+            optionValue="value"
+            [size]="inputSize"
+            appendTo="body"
+            fluid="true"
+            styleClass="flex-1"
+          />
+          <p-button
+            type="button"
+            icon="pi pi-arrow-up"
+            severity="secondary"
+            [text]="true"
+            [rounded]="true"
+            size="small"
+            [disabled]="$first"
+            (onClick)="move($index, -1)"
+            pTooltip="Move up"
+            tooltipPosition="top"
+          />
+          <p-button
+            type="button"
+            icon="pi pi-arrow-down"
+            severity="secondary"
+            [text]="true"
+            [rounded]="true"
+            size="small"
+            [disabled]="$last"
+            (onClick)="move($index, 1)"
+            pTooltip="Move down"
+            tooltipPosition="top"
+          />
+          <p-button
+            type="button"
+            icon="pi pi-trash"
+            severity="danger"
+            [text]="true"
+            [rounded]="true"
+            size="small"
+            (onClick)="remove($index)"
+            pTooltip="Remove"
+            tooltipPosition="top"
+          />
+        </div>
+      }
+    </div>
+  }
+</div>

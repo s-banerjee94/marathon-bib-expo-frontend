@@ -77,6 +77,7 @@ export class OrganizationAccount implements OnInit {
 
   readonly tabs: TabItem[] = [
     { id: 'account', label: 'Account', icon: 'pi-building' },
+    { id: 'settings', label: 'Settings', icon: 'pi-cog' },
     { id: 'billing', label: 'Billing', icon: 'pi-receipt' },
   ];
 
