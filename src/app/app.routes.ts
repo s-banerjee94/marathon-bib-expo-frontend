@@ -102,6 +102,14 @@ export const routes: Routes = [
     title: pageTitle('Verify Registration'),
   },
   {
+    // Public invite-acceptance page (no auth, no app shell). Reached via the
+    // /accept-invite?token=… link the backend bakes into issued invites.
+    path: 'accept-invite',
+    loadComponent: () =>
+      import('./features/accept-invitation/accept-invitation').then((m) => m.AcceptInvitation),
+    title: pageTitle('Accept Invite'),
+  },
+  {
     path: 'unauthorized',
     loadComponent: () =>
       import('./features/errors/unauthorized/unauthorized').then((m) => m.Unauthorized),

@@ -1,0 +1,183 @@
+<form #inviteFormRef="ngForm" (ngSubmit)="onGenerate()" class="flex flex-col gap-4 mt-2">
+  <p class="text-sm opacity-70 m-0">
+    The invitee opens the link to set their own username and password. The role and organization are
+    fixed by the link and can't be changed.
+  </p>
+
+  <!-- ROLE SELECTION -->
+  <div class="flex flex-col gap-2">
+    <span class="text-sm font-medium">Role *</span>
+    <div class="flex flex-wrap gap-x-6 gap-y-2">
+      @for (role of availableRoles(); track role.value) {
+        <div class="flex items-center gap-2">
+          <p-radiobutton
+            (ngModelChange)="onRoleChange($event)"
+            [inputId]="'role-' + role.value"
+            [ngModel]="selectedRole()"
+            [value]="role.value"
+            name="inviteRole"
+          />
+          <label class="cursor-pointer" [for]="'role-' + role.value">{{ role.label }}</label>
+        </div>
+      }
+    </div>
+  </div>
+
+  <!-- ORGANIZATION SELECTION -->
+  @if (showOrganizationDropdown()) {
+    <div class="flex flex-col gap-1">
+      <app-organization-selector
+        (organizationSelected)="onOrganizationSelected($event)"
+        (organizationCleared)="onOrganizationCleared()"
+        [required]="true"
+        [selectedOrganizationId]="organizationId()"
+        [size]="inputSize"
+        inputId="inviteOrganizationId"
+        label="Organization *"
+      >
+        @if (inviteFormRef.submitted && !organizationId()) {
+          <p-message [size]="inputSize" severity="error" variant="simple">
+            Organization is required.
+          </p-message>
+        }
+      </app-organization-selector>
+    </div>
+  }
+
+  <!-- INVITE LINK — read-only field plus copy / share / generate on one line.
+       The field fills in once a link is issued; generating is always allowed. -->
+  <div class="flex flex-col gap-1">
+    <label class="text-sm font-medium" for="inviteLink">Invite link</label>
+    <div class="flex items-center gap-2">
+      <input
+        [pSize]="inputSize"
+        [value]="inviteUrl() ?? ''"
+        class="flex-1 min-w-0"
+        fluid="true"
+        id="inviteLink"
+        pInputText
+        placeholder="Generate a link to see it here"
+        readonly
+      />
+      <p-button
+        (click)="copyLink()"
+        [disabled]="!inviteUrl()"
+        [size]="inputSize"
+        icon="pi pi-copy"
+        pTooltip="Copy link"
+        severity="secondary"
+        tooltipPosition="top"
+      />
+      @if (canShare) {
+        <p-button
+          (click)="shareLink()"
+          [disabled]="!inviteUrl()"
+          [size]="inputSize"
+          icon="pi pi-share-alt"
+          pTooltip="Share link"
+          severity="secondary"
+          tooltipPosition="top"
+        />
+      }
+      <p-button
+        [disabled]="isSubmitting()"
+        [loading]="isSubmitting()"
+        [size]="inputSize"
+        icon="pi pi-link"
+        label="Generate link"
+        styleClass="whitespace-nowrap"
+        type="submit"
+      />
+    </div>
+  </div>
+
+  <!-- DELIVERY (optional): have the backend send the link, or leave empty to share it yourself -->
+  <div class="flex flex-col gap-2">
+    <span class="text-sm font-medium">Send the link (optional)</span>
+    <p-selectbutton
+      [(ngModel)]="selectedChannels"
+      [multiple]="true"
+      [options]="channelOptions"
+      [size]="inputSize"
+      name="deliveryChannels"
+      optionLabel="label"
+      optionValue="value"
+    >
+      <ng-template #item let-item>
+        <i [class]="item.icon"></i>
+        <span class="ml-2">{{ item.label }}</span>
+      </ng-template>
+    </p-selectbutton>
+    <span class="text-xs opacity-60">
+      Leave unselected to just get the link and share it yourself.
+    </span>
+  </div>
+
+  <!-- RECIPIENT PHONE + SEND — shown when a channel is selected -->
+  @if (channelsSelected()) {
+    <div class="flex flex-col gap-1">
+      <div class="flex items-center gap-2">
+        <p-floatlabel class="flex-1 min-w-0" variant="on">
+          <input
+            #recipientPhoneRef="ngModel"
+            [(ngModel)]="recipientPhone"
+            [invalid]="
+              shouldShowError(recipientPhoneRef, inviteFormRef.submitted || attemptedSend())
+            "
+            [pSize]="inputSize"
+            fluid="true"
+            id="recipientPhone"
+            name="recipientPhone"
+            pInputText
+            pattern="^\d{10}$"
+            type="tel"
+          />
+          <label for="recipientPhone">Recipient phone</label>
+        </p-floatlabel>
+        <p-button
+          (click)="onSend()"
+          [disabled]="isSubmitting()"
+          [loading]="isSubmitting()"
+          [size]="inputSize"
+          icon="pi pi-send"
+          label="Send"
+          styleClass="whitespace-nowrap"
+          type="button"
+        />
+      </div>
+      @if (shouldShowError(recipientPhoneRef, inviteFormRef.submitted || attemptedSend())) {
+        <p-message [size]="inputSize" severity="error" variant="simple">
+          Enter a valid 10-digit phone number.
+        </p-message>
+      }
+      <span class="text-xs opacity-60">
+        Enter the recipient's 10-digit number, then Send to deliver the link.
+      </span>
+    </div>
+  }
+
+  <!-- DELIVERY OUTCOME -->
+  @if (deliveries().length > 0) {
+    <div class="flex flex-col gap-2 p-3 rounded-md border">
+      <span class="text-sm font-medium">Delivery</span>
+      @for (d of deliveries(); track d.channel) {
+        <div class="flex items-start gap-2 text-sm">
+          <i [class]="channelMeta[d.channel].icon + ' mt-0.5 opacity-70'"></i>
+          <div class="flex flex-col">
+            <span>
+              {{ channelMeta[d.channel].label }} —
+              @if (d.sent) {
+                <span style="color: var(--p-green-500)">Sent</span>
+              } @else {
+                <span style="color: var(--p-red-500)">Not sent</span>
+              }
+            </span>
+            @if (!d.sent && d.detail) {
+              <span class="opacity-70">{{ d.detail }}</span>
+            }
+          </div>
+        </div>
+      }
+    </div>
+  }
+</form>

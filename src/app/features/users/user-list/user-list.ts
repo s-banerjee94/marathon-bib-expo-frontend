@@ -17,6 +17,8 @@ import { CheckboxModule } from 'primeng/checkbox';
 import { SelectModule } from 'primeng/select';
 import { TagModule } from 'primeng/tag';
 import { FloatLabelModule } from 'primeng/floatlabel';
+import { MenuModule } from 'primeng/menu';
+import { MenuItem } from 'primeng/api';
 
 import { User, UserRole } from '../../../core/models/user.model';
 import { PageableParams, PageableResponse } from '../../../core/models/api.model';
@@ -27,6 +29,7 @@ import { USER_COLUMNS } from '../../../shared/constants/user-columns.constant';
 import { STORAGE_KEYS } from '../../../shared/constants/storage-keys.constant';
 import { USER_SORT_OPTIONS } from '../../../shared/constants/sort-options.constant';
 import { UserForm } from '../user-form/user-form';
+import { InviteForm } from '../invite-form/invite-form';
 import { UserListBus, UserMutation } from '../user-list-bus.service';
 import { DefaultValuePipe } from '../../../shared/pipes/default-value.pipe';
 import { BaseTableComponent } from '../../../shared/base/base-table.component';
@@ -67,6 +70,7 @@ interface UserFilterPreferences extends TableFilterPreferences {
     SelectModule,
     TagModule,
     FloatLabelModule,
+    MenuModule,
     DefaultValuePipe,
     OrganizationSelector,
     ListShell,
@@ -294,9 +298,20 @@ export class UserList extends BaseTableComponent<User, UserFilterPreferences> {
     });
   }
 
-  onCreate(): void {
-    this.openCreateDialog();
-  }
+  // The "Create" button opens this popup menu: fill in details now, or issue an
+  // invite link the new user accepts themselves.
+  readonly createMenuItems: MenuItem[] = [
+    {
+      label: 'Create manually',
+      icon: 'pi pi-user-plus',
+      command: () => this.openCreateDialog(),
+    },
+    {
+      label: 'Invite via link',
+      icon: 'pi pi-link',
+      command: () => this.openInviteDialog(),
+    },
+  ];
 
   onEdit(user: User): void {
     this.router.navigate(['/users', user.id, 'edit'], { queryParamsHandling: 'preserve' });
@@ -308,6 +323,13 @@ export class UserList extends BaseTableComponent<User, UserFilterPreferences> {
   // `role` preselects the dropdown (used by the dashboard quick-create shortcuts).
   private openCreateDialog(role?: UserRole): void {
     this.openDialog(UserForm, 'Create User', { role });
+  }
+
+  // Issue a one-time invite link instead of creating the account directly. The
+  // dialog collects the fixed role/org and returns a shareable link; no row is
+  // added until the invitee accepts (and they land here on the next refresh).
+  private openInviteDialog(): void {
+    this.openDialog(InviteForm, 'Invite User', {});
   }
 
   canManageUser(user: User): boolean {

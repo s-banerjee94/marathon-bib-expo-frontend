@@ -42,7 +42,7 @@ export class App {
   );
   isPublicRoute = computed(() => {
     const url = this.currentUrl().split('?')[0];
-    return url === '/s' || url.startsWith('/s/');
+    return url === '/s' || url.startsWith('/s/') || url === '/accept-invite';
   });
 
   layoutClasses = computed(() => {

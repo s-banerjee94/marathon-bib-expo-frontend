@@ -24,11 +24,13 @@
 >
   <ng-template #actions>
     <p-button
-      (click)="onCreate()"
-      [size]="inputSize"
-      icon="pi pi-plus"
+      (click)="createMenu.toggle($event)"
       [label]="isMobile() ? '' : 'Create User'"
+      [size]="inputSize"
+      aria-haspopup="true"
+      icon="pi pi-plus"
     />
+    <p-menu #createMenu [model]="createMenuItems" [popup]="true" appendTo="body" />
   </ng-template>
 
   <ng-template #filters>

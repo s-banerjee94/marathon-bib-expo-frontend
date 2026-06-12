@@ -1,0 +1,228 @@
+<div class="min-h-screen flex items-center justify-center p-4">
+  <div class="w-full max-w-md">
+    <p-card>
+      <ng-template pTemplate="header">
+        <div class="text-center pt-6 px-6">
+          <h1 class="text-3xl font-bold m-0 mb-2">Marathon Bib Expo</h1>
+          <p class="text-base m-0 opacity-70">Create your account</p>
+        </div>
+      </ng-template>
+
+      <ng-template pTemplate="content">
+        @if (isLoading()) {
+          <div class="flex flex-col gap-3">
+            <p-skeleton height="2.5rem" />
+            <p-skeleton height="2.5rem" />
+            <p-skeleton height="2.5rem" />
+            <p-skeleton height="2.5rem" width="60%" />
+          </div>
+        } @else if (invalidLink()) {
+          <div class="flex flex-col items-center text-center gap-3 py-4">
+            <i class="pi pi-times-circle text-5xl opacity-30"></i>
+            <p class="text-lg font-medium m-0">This invite link is invalid or has expired</p>
+            <p class="text-sm opacity-60 m-0">
+              Ask whoever invited you to send a new link, then open it again.
+            </p>
+            <p-button
+              (click)="goToLogin()"
+              [size]="inputSize"
+              icon="pi pi-sign-in"
+              label="Go to login"
+              styleClass="mt-2"
+            />
+          </div>
+        } @else if (details(); as invite) {
+          <div class="flex items-center justify-between gap-2 mb-4 p-3 rounded-md border">
+            <div class="flex flex-col">
+              <span class="text-sm opacity-70">You're joining as</span>
+              <span class="font-semibold">{{ roleLabels[invite.role] }}</span>
+              @if (invite.organizationName) {
+                <span class="text-sm opacity-70">{{ invite.organizationName }}</span>
+              }
+            </div>
+            <p-tag [rounded]="true" severity="info" [value]="roleLabels[invite.role]" />
+          </div>
+
+          <p class="text-xs opacity-60 mb-4 m-0">
+            Link expires {{ invite.expiresAt | date: 'dd-MMM-yyyy, hh:mm a' }}
+          </p>
+
+          <form
+            #acceptForm="ngForm"
+            (ngSubmit)="onSubmit(acceptForm)"
+            class="flex flex-col gap-4"
+            novalidate
+          >
+            <!-- Full Name -->
+            <div class="flex flex-col gap-1">
+              <p-floatlabel variant="on">
+                <input
+                  #fullName="ngModel"
+                  [(ngModel)]="form.fullName"
+                  [invalid]="shouldShowError(fullName, acceptForm.submitted)"
+                  [pSize]="inputSize"
+                  autocomplete="name"
+                  fluid="true"
+                  id="fullName"
+                  maxlength="100"
+                  name="fullName"
+                  pInputText
+                  required
+                />
+                <label for="fullName">Full Name *</label>
+              </p-floatlabel>
+              @if (shouldShowError(fullName, acceptForm.submitted)) {
+                <p-message [size]="inputSize" severity="error" variant="simple">
+                  Full name is required.
+                </p-message>
+              }
+            </div>
+
+            <!-- Username -->
+            <div class="flex flex-col gap-1">
+              <p-floatlabel variant="on">
+                <input
+                  #username="ngModel"
+                  [(ngModel)]="form.username"
+                  [invalid]="shouldShowError(username, acceptForm.submitted)"
+                  [pSize]="inputSize"
+                  autocomplete="username"
+                  fluid="true"
+                  id="username"
+                  maxlength="50"
+                  minlength="3"
+                  name="username"
+                  pInputText
+                  pattern="^[a-zA-Z0-9_-]+$"
+                  required
+                />
+                <label for="username">Username *</label>
+              </p-floatlabel>
+              @if (shouldShowError(username, acceptForm.submitted)) {
+                <p-message [size]="inputSize" severity="error" variant="simple">
+                  @if (username.hasError('required')) {
+                    Username is required.
+                  }
+                  @if (username.hasError('minlength')) {
+                    Username must be at least 3 characters.
+                  }
+                  @if (username.hasError('maxlength')) {
+                    Username must not exceed 50 characters.
+                  }
+                  @if (username.hasError('pattern')) {
+                    Username can only contain letters, numbers, underscores, and hyphens.
+                  }
+                </p-message>
+              }
+            </div>
+
+            <!-- Password -->
+            <div class="flex flex-col gap-1">
+              <p-floatlabel variant="on">
+                <input
+                  #password="ngModel"
+                  [(ngModel)]="form.password"
+                  [invalid]="shouldShowError(password, acceptForm.submitted)"
+                  [pSize]="inputSize"
+                  autocomplete="new-password"
+                  fluid="true"
+                  id="password"
+                  maxlength="100"
+                  minlength="8"
+                  name="password"
+                  pInputText
+                  required
+                  type="password"
+                />
+                <label for="password">Password *</label>
+              </p-floatlabel>
+              @if (shouldShowError(password, acceptForm.submitted)) {
+                <p-message [size]="inputSize" severity="error" variant="simple">
+                  @if (password.hasError('required')) {
+                    Password is required.
+                  }
+                  @if (password.hasError('minlength')) {
+                    Password must be at least 8 characters.
+                  }
+                </p-message>
+              }
+            </div>
+
+            <!-- Email -->
+            <div class="flex flex-col gap-1">
+              <p-floatlabel variant="on">
+                <input
+                  #email="ngModel"
+                  [(ngModel)]="form.email"
+                  [invalid]="shouldShowError(email, acceptForm.submitted)"
+                  [pSize]="inputSize"
+                  [required]="contactRequired()"
+                  autocomplete="email"
+                  email
+                  fluid="true"
+                  id="email"
+                  maxlength="100"
+                  name="email"
+                  pInputText
+                  type="email"
+                />
+                <label for="email">Email{{ contactRequired() ? ' *' : '' }}</label>
+              </p-floatlabel>
+              @if (shouldShowError(email, acceptForm.submitted)) {
+                <p-message [size]="inputSize" severity="error" variant="simple">
+                  @if (email.hasError('required')) {
+                    Email is required.
+                  }
+                  @if (email.hasError('email')) {
+                    Please enter a valid email.
+                  }
+                </p-message>
+              }
+            </div>
+
+            <!-- Phone Number -->
+            <div class="flex flex-col gap-1">
+              <p-floatlabel variant="on">
+                <input
+                  #phoneNumber="ngModel"
+                  [(ngModel)]="form.phoneNumber"
+                  [invalid]="shouldShowError(phoneNumber, acceptForm.submitted)"
+                  [pSize]="inputSize"
+                  [required]="contactRequired()"
+                  autocomplete="tel"
+                  fluid="true"
+                  id="phoneNumber"
+                  name="phoneNumber"
+                  pInputText
+                  pattern="^\d{10}$"
+                  type="tel"
+                />
+                <label for="phoneNumber">Phone Number{{ contactRequired() ? ' *' : '' }}</label>
+              </p-floatlabel>
+              @if (shouldShowError(phoneNumber, acceptForm.submitted)) {
+                <p-message [size]="inputSize" severity="error" variant="simple">
+                  @if (phoneNumber.hasError('required')) {
+                    Phone number is required.
+                  }
+                  @if (phoneNumber.hasError('pattern')) {
+                    Enter a valid 10-digit phone number.
+                  }
+                </p-message>
+              }
+            </div>
+
+            <p-button
+              [disabled]="isSubmitting() || acceptForm.invalid"
+              [label]="isSubmitting() ? 'Creating account...' : 'Create account'"
+              [loading]="isSubmitting()"
+              [size]="inputSize"
+              icon="pi pi-check"
+              styleClass="w-full mt-2"
+              type="submit"
+            />
+          </form>
+        }
+      </ng-template>
+    </p-card>
+  </div>
+</div>
