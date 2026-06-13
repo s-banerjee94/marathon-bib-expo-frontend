@@ -1,0 +1,65 @@
+/* ── Template purpose cards ───────────────────────────────────────────────── */
+.template-card {
+  /* Reset <button> defaults */
+  appearance: none;
+  font: inherit;
+  outline: inherit;
+  width: 100%;
+  text-align: left;
+
+  display: flex;
+  flex-direction: column;
+  padding: 1rem;
+  border-radius: 0.75rem;
+  border: 1px solid var(--p-content-border-color);
+  color: var(--p-text-color);
+  background: var(--p-content-background);
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s,
+    transform 0.15s;
+  cursor: pointer;
+}
+
+.template-card:hover {
+  border-color: var(--p-primary-color);
+  box-shadow: 0 4px 16px color-mix(in srgb, var(--p-primary-color) 10%, transparent);
+  transform: translateY(-2px);
+}
+
+/* Purpose icon badge */
+.template-card__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 0.5rem;
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+
+.template-card__icon[data-purpose='INVITE'] {
+  background-color: color-mix(in srgb, var(--p-primary-color) 12%, transparent);
+  color: var(--p-primary-color);
+}
+
+.template-card__icon[data-purpose='PASSWORD_RESET'] {
+  background-color: color-mix(in srgb, var(--p-orange-500) 15%, transparent);
+  color: var(--p-orange-500);
+}
+
+.template-card__icon[data-purpose='OTP'] {
+  background-color: color-mix(in srgb, var(--p-violet-500) 15%, transparent);
+  color: var(--p-violet-500);
+}
+
+/* Card footer: status badge + chevron */
+.template-card__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 0.875rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--p-content-border-color);
+}

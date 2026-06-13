@@ -41,7 +41,7 @@
             [ngModel]="variable"
             [ngModelOptions]="{ standalone: true }"
             (ngModelChange)="update($index, $event)"
-            [options]="options"
+            [options]="resolvedOptions()"
             optionLabel="label"
             optionValue="value"
             [size]="inputSize"

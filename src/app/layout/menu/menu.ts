@@ -71,6 +71,12 @@ export class MenuComponent {
       routerLink: '/audit-logs',
       roles: [UserRole.ROOT, UserRole.ADMIN, UserRole.ORGANIZER_ADMIN, UserRole.ORGANIZER_USER],
     },
+    {
+      label: 'System Messaging',
+      icon: 'pi pi-megaphone',
+      routerLink: '/system-messaging',
+      roles: [UserRole.ROOT],
+    },
   ];
 
   // Pinned to the bottom of the sidebar, visually separated from the main nav.

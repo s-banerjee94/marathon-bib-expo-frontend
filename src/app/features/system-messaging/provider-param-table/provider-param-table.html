@@ -1,0 +1,97 @@
+@if (params().length) {
+  <!-- Column headers (desktop only); each row repeats the same grid template. -->
+  <div
+    class="hidden md:grid md:grid-cols-[1.2fr_1fr_2fr_auto] gap-2 px-1 pb-2 text-xs font-semibold uppercase text-color-secondary"
+  >
+    <span>Name</span>
+    <span>Location</span>
+    <span>Value</span>
+    <span></span>
+  </div>
+
+  <div class="flex flex-col gap-3 md:gap-2">
+    @for (param of params(); track $index) {
+      <div
+        class="grid grid-cols-1 md:grid-cols-[1.2fr_1fr_2fr_auto] gap-2 items-center p-3 md:p-0 md:py-1 rounded-lg md:rounded-none border md:border-0 border-surface"
+      >
+        <input
+          pInputText
+          [pSize]="inputSize"
+          class="w-full"
+          placeholder="Field name"
+          [ngModel]="param.name"
+          [ngModelOptions]="{ standalone: true }"
+          (ngModelChange)="setName($index, $event)"
+        />
+
+        <p-select
+          [size]="inputSize"
+          styleClass="w-full"
+          [options]="locationOptions"
+          optionLabel="label"
+          optionValue="value"
+          [ngModel]="param.location"
+          [ngModelOptions]="{ standalone: true }"
+          (ngModelChange)="setLocation($index, $event)"
+        />
+
+        <input
+          pInputText
+          [pSize]="inputSize"
+          class="w-full font-mono text-sm"
+          placeholder="Static value or token"
+          [ngModel]="param.value"
+          [ngModelOptions]="{ standalone: true }"
+          (ngModelChange)="setValue($index, $event)"
+        />
+
+        <div class="flex items-center justify-end gap-1">
+          <p-button
+            icon="pi pi-arrow-up"
+            severity="secondary"
+            text
+            rounded
+            size="small"
+            pTooltip="Move up"
+            [disabled]="$first"
+            (onClick)="move($index, -1)"
+          />
+          <p-button
+            icon="pi pi-arrow-down"
+            severity="secondary"
+            text
+            rounded
+            size="small"
+            pTooltip="Move down"
+            [disabled]="$last"
+            (onClick)="move($index, 1)"
+          />
+          <p-button
+            icon="pi pi-times"
+            severity="danger"
+            text
+            rounded
+            size="small"
+            pTooltip="Remove"
+            (onClick)="remove($index)"
+          />
+        </div>
+      </div>
+    }
+  </div>
+} @else {
+  <div class="text-sm text-color-secondary p-4 rounded-lg border border-dashed border-surface">
+    No parameters yet. Add the headers or query fields the provider expects.
+  </div>
+}
+
+<div class="mt-3">
+  <p-button
+    label="Add parameter"
+    icon="pi pi-plus"
+    severity="secondary"
+    outlined
+    size="small"
+    (onClick)="add()"
+  />
+</div>

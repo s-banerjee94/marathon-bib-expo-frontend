@@ -1,10 +1,15 @@
-import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { SelectModule } from 'primeng/select';
 import { ButtonModule } from 'primeng/button';
 import { TooltipModule } from 'primeng/tooltip';
 import { FORM_INPUT_SIZE } from '../../constants/form.constants';
 import { PLACEHOLDER_MAP } from '../../constants/sms-template-placeholders.constant';
+
+export interface PlaceholderOption {
+  value: string;
+  label: string;
+}
 
 // Controlled, ordered picker for #{field} placeholder variables. Each entry maps
 // to a positional Content-template variable ({{1}}, {{2}}, …). The parent owns the
@@ -20,19 +25,29 @@ import { PLACEHOLDER_MAP } from '../../constants/sms-template-placeholders.const
 export class PlaceholderVariablePicker {
   variables = input<string[]>([]);
   maxVariables = input(20);
+  // Optional override of the placeholder catalog; defaults to the participant/event
+  // PLACEHOLDER_MAP so existing callers keep their behavior.
+  options = input<PlaceholderOption[] | undefined>(undefined);
   variablesChange = output<string[]>();
 
   readonly inputSize = FORM_INPUT_SIZE;
 
-  readonly options = Object.entries(PLACEHOLDER_MAP).map(([field, label]) => ({
-    value: `#{${field}}`,
-    label: `${label} — #{${field}}`,
-  }));
+  private readonly defaultOptions: PlaceholderOption[] = Object.entries(PLACEHOLDER_MAP).map(
+    ([field, label]) => ({
+      value: `#{${field}}`,
+      label: `${label} — #{${field}}`,
+    }),
+  );
+
+  readonly resolvedOptions = computed<PlaceholderOption[]>(
+    () => this.options() ?? this.defaultOptions,
+  );
 
   add(): void {
     const list = this.variables();
     if (list.length >= this.maxVariables()) return;
-    this.variablesChange.emit([...list, this.options[0].value]);
+    const first = this.resolvedOptions()[0]?.value ?? '';
+    this.variablesChange.emit([...list, first]);
   }
 
   remove(index: number): void {

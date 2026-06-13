@@ -93,6 +93,14 @@ export const routes: Routes = [
       import('./features/audit-logs/audit-logs.routes').then((m) => m.AUDIT_LOGS_ROUTES),
   },
   {
+    // ROOT-only platform messaging config — provider connections + system templates.
+    path: 'system-messaging',
+    loadChildren: () =>
+      import('./features/system-messaging/system-messaging.routes').then(
+        (m) => m.SYSTEM_MESSAGING_ROUTES,
+      ),
+  },
+  {
     // Public participant verification short link (no auth, no app shell).
     path: 's/:shortCode',
     loadComponent: () =>
