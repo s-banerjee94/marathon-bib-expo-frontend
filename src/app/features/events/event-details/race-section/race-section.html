@@ -69,6 +69,9 @@
                     {{ race.raceDescription | defaultValue }}
                   </div>
                 }
+                @case ('reportingTime') {
+                  {{ formatReportingTime(race.reportingTime) | defaultValue }}
+                }
                 @case ('categoryCount') {
                   <div class="text-center">{{ race.categoryCount }}</div>
                 }
@@ -171,6 +174,12 @@
               </div>
               @if (race.raceDescription) {
                 <p class="text-sm opacity-70 line-clamp-2">{{ race.raceDescription }}</p>
+              }
+              @if (race.reportingTime) {
+                <div class="flex items-center gap-1.5 text-sm opacity-70">
+                  <i class="pi pi-clock text-xs"></i>
+                  <span>{{ formatReportingTime(race.reportingTime) }}</span>
+                </div>
               }
             </div>
             <ng-template #footer>

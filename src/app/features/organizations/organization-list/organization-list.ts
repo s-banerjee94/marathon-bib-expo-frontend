@@ -103,9 +103,9 @@ export class OrganizationList extends BaseTableComponent<
   private urlSearchSubject = new Subject<string>();
   // Single-flight load trigger; switchMap below cancels the prior HTTP request when a new emit arrives.
   private loadTrigger = new Subject<void>();
-  // Default page size — kept consistent with BaseTableComponent's initial pageSize signal so
+  // Default page size — applied on init (overriding BaseTableComponent's signal) so
   // the URL stays clean (?size=… is only emitted when the user picks a non-default size).
-  private readonly DEFAULT_PAGE_SIZE = 5;
+  private readonly DEFAULT_PAGE_SIZE = 20;
 
   constructor() {
     super();

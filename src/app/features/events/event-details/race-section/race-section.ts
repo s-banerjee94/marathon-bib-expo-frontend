@@ -35,6 +35,7 @@ import {
   saveColumnPreferences,
 } from '../../../../shared/utils/column.utils';
 import { injectIsMobile } from '../../../../shared/utils/responsive.utils';
+import { formatUtcInstantInZone } from '../../../../shared/utils/timezone.utils';
 
 @Component({
   selector: 'app-race-section',
@@ -74,8 +75,13 @@ export class RaceSection implements OnInit {
   cols = signal<TableColumn[]>([]);
   selectedCols = signal<TableColumn[]>([]);
   visibleCols = computed(() => getVisibleCols(RACE_COLUMNS, this.selectedCols()));
+  eventTimezone = computed(() => this.state.event()?.timezone ?? '');
   readonly inputSize = FORM_INPUT_SIZE;
   readonly buttonSize = BUTTON_SIZE;
+
+  formatReportingTime(iso?: string): string {
+    return formatUtcInstantInZone(iso, this.eventTimezone());
+  }
 
   ngOnInit(): void {
     initializeColumnPreferences(
@@ -112,7 +118,7 @@ export class RaceSection implements OnInit {
     const ref = this.dialogService.open(RaceForm, {
       header: 'Create Race',
       width: '600px',
-      data: { race: null, eventId: this.eventId() },
+      data: { race: null, eventId: this.eventId(), eventTimezone: this.eventTimezone() },
     });
 
     ref?.onClose.subscribe((result: Race | undefined) => {
@@ -127,7 +133,7 @@ export class RaceSection implements OnInit {
     const ref = this.dialogService.open(RaceForm, {
       header: 'Edit Race',
       width: '600px',
-      data: { race, eventId: this.eventId() },
+      data: { race, eventId: this.eventId(), eventTimezone: this.eventTimezone() },
     });
 
     ref?.onClose.subscribe((result: Race | undefined) => {
