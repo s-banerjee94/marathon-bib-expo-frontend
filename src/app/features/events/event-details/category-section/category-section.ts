@@ -165,16 +165,14 @@ export class CategorySection {
 
     ref?.onClose.subscribe((result: unknown) => {
       if (result) {
-        this.isLoading.set(true);
         const request = result as CreateCategoryRequest;
         this.categoryService.createCategory(this.eventId(), race.id, request).subscribe({
-          next: () => {
+          next: (created: Category) => {
             this.toast.success('Category created successfully');
-            this.loadCategories();
+            this.categories.update((list) => [...list, created]);
           },
           error: (error: unknown) => {
             this.errorHandler.showError(error, 'Failed to create category');
-            this.isLoading.set(false);
           },
         });
       }
@@ -190,18 +188,18 @@ export class CategorySection {
 
     ref?.onClose.subscribe((result: unknown) => {
       if (result) {
-        this.isLoading.set(true);
         const request = result as UpdateCategoryRequest;
         this.categoryService
           .updateCategory(this.eventId(), category.raceId, category.id, request)
           .subscribe({
-            next: () => {
+            next: (updated: Category) => {
               this.toast.success('Category updated successfully');
-              this.loadCategories();
+              this.categories.update((list) =>
+                list.map((c) => (c.id === updated.id ? updated : c)),
+              );
             },
             error: (error: unknown) => {
               this.errorHandler.showError(error, 'Failed to update category');
-              this.isLoading.set(false);
             },
           });
       }
@@ -216,17 +214,15 @@ export class CategorySection {
       acceptButtonStyleClass: 'p-button-danger p-button-sm',
       rejectButtonStyleClass: 'p-button-sm',
       accept: () => {
-        this.isLoading.set(true);
         this.categoryService
           .deleteCategory(this.eventId(), category.raceId, category.id)
           .subscribe({
             next: () => {
               this.toast.success('Category deleted successfully');
-              this.loadCategories();
+              this.categories.update((list) => list.filter((c) => c.id !== category.id));
             },
             error: (error: unknown) => {
               this.errorHandler.showError(error);
-              this.isLoading.set(false);
             },
           });
       },
