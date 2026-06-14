@@ -84,6 +84,9 @@ export class EventDetails implements OnInit {
     UserRole.ORGANIZER_ADMIN,
   ]);
 
+  // Limits is visible to ROOT/ADMIN only.
+  protected readonly canViewLimits = this.authService.hasAnyRole([UserRole.ROOT, UserRole.ADMIN]);
+
   event = signal<Event | null>(null);
   isLoading = signal(true);
   statusMenuItems = signal<MenuItem[]>([]);
@@ -123,10 +126,12 @@ export class EventDetails implements OnInit {
     { id: 'limits', label: 'Limits', icon: 'pi-sliders-h' },
   ];
 
-  // Mobile tab bar — drops the Billing tab for roles that can't view it.
-  protected readonly visibleTabs: TabItem[] = this.canViewBilling
-    ? this.eventTabs
-    : this.eventTabs.filter((tab) => tab.id !== 'billing');
+  // Mobile tab bar — drops tabs the current role can't view.
+  protected readonly visibleTabs: TabItem[] = this.eventTabs.filter((tab) => {
+    if (tab.id === 'billing') return this.canViewBilling;
+    if (tab.id === 'limits') return this.canViewLimits;
+    return true;
+  });
 
   ngOnInit(): void {
     if (!Number.isFinite(this.eventId()) || this.eventId() <= 0) {

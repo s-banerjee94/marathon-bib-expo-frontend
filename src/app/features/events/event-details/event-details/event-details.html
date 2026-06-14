@@ -236,10 +236,12 @@
               Billing
             </p-tab>
           }
-          <p-tab value="limits" [routerLink]="['limits']" routerLinkActive>
-            <i class="pi pi-sliders-h mr-2"></i>
-            Limits
-          </p-tab>
+          @if (canViewLimits) {
+            <p-tab value="limits" [routerLink]="['limits']" routerLinkActive>
+              <i class="pi pi-sliders-h mr-2"></i>
+              Limits
+            </p-tab>
+          }
         </p-tablist>
       </p-tabs>
     </div>
