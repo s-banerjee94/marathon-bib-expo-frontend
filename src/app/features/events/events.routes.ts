@@ -148,6 +148,17 @@ export const EVENTS_ROUTES: Routes = [
         canActivate: [roleGuard([UserRole.ROOT, UserRole.ADMIN, UserRole.ORGANIZER_ADMIN])],
         title: pageTitle('Event Billing'),
       },
+      {
+        // All event roles can open the Limits tab; only ROOT/ADMIN can edit (enforced
+        // in-component and by the backend, which also 403s GET for organizer roles).
+        path: 'limits',
+        loadComponent: () =>
+          import('./event-details/event-limits-section/event-limits-section').then(
+            (m) => m.EventLimitsSection,
+          ),
+        canActivate: [roleGuard(EVENT_ROLES)],
+        title: pageTitle('Event Limits'),
+      },
     ],
   },
 ];

@@ -120,6 +120,7 @@ export class EventDetails implements OnInit {
     { id: 'templates', label: 'Template', icon: 'pi-envelope' },
     { id: 'campaigns', label: 'Campaign', icon: 'pi-send' },
     { id: 'billing', label: 'Billing', icon: 'pi-receipt' },
+    { id: 'limits', label: 'Limits', icon: 'pi-sliders-h' },
   ];
 
   // Mobile tab bar — drops the Billing tab for roles that can't view it.
