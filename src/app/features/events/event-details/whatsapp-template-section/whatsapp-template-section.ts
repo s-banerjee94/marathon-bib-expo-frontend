@@ -113,10 +113,6 @@ export class WhatsappTemplateSection implements OnInit, OnDestroy {
     this.searchSubject.complete();
   }
 
-  scopeLabel(scope: WhatsAppTemplate['senderScope']): string {
-    return scope === 'ORGANIZATION' ? 'Organization' : 'Default';
-  }
-
   onColumnSelectionChange(): void {
     enforceRequiredColumns(this.selectedCols, WHATSAPP_TEMPLATE_COLUMNS);
     saveColumnPreferences(

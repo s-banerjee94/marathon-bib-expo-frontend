@@ -101,6 +101,17 @@ export const routes: Routes = [
       ),
   },
   {
+    // ROOT-only platform-default campaign senders (SMS/WhatsApp). Per-org overrides
+    // live in the organization settings page.
+    path: 'campaign-providers',
+    loadComponent: () =>
+      import('./features/campaign-providers/campaign-providers/campaign-providers').then(
+        (m) => m.CampaignProviders,
+      ),
+    canActivate: [roleGuard([UserRole.ROOT])],
+    title: pageTitle('Campaign Senders'),
+  },
+  {
     // Public participant verification short link (no auth, no app shell).
     path: 's/:shortCode',
     loadComponent: () =>

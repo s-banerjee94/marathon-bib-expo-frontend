@@ -1,0 +1,112 @@
+<form #form="ngForm" (ngSubmit)="onSubmit(form)" class="flex flex-col gap-5 pt-2">
+  <p class="text-sm text-color-secondary m-0">
+    Sends a real message through the configured provider so you can confirm it works before enabling
+    it.
+  </p>
+
+  <div class="flex flex-col gap-1">
+    <p-floatlabel variant="on">
+      <input
+        #recipientPhone="ngModel"
+        pInputText
+        [pSize]="inputSize"
+        id="recipientPhone"
+        name="recipientPhone"
+        fluid="true"
+        autocomplete="off"
+        placeholder="9198XXXXXXXX"
+        [(ngModel)]="formData.recipientPhone"
+        [invalid]="shouldShowError(recipientPhone, form.submitted)"
+        required
+      />
+      <label for="recipientPhone">Recipient phone *</label>
+    </p-floatlabel>
+    @if (shouldShowError(recipientPhone, form.submitted)) {
+      <p-message [size]="inputSize" severity="error" variant="simple">
+        Recipient phone is required.
+      </p-message>
+    }
+  </div>
+
+  <div class="flex flex-col gap-1">
+    <p-floatlabel variant="on">
+      <input
+        pInputText
+        [pSize]="inputSize"
+        id="templateId"
+        name="templateId"
+        fluid="true"
+        autocomplete="off"
+        [(ngModel)]="formData.templateId"
+      />
+      <label for="templateId">{{ isWhatsApp ? 'Content SID' : 'DLT template id' }}</label>
+    </p-floatlabel>
+  </div>
+
+  @if (isWhatsApp) {
+    <div class="flex flex-col gap-1">
+      <p-floatlabel variant="on">
+        <textarea
+          pTextarea
+          id="variables"
+          name="variables"
+          rows="3"
+          [autoResize]="true"
+          fluid="true"
+          [(ngModel)]="formData.variables"
+        ></textarea>
+        <label for="variables">Variables</label>
+      </p-floatlabel>
+      <span class="text-xs text-color-secondary">
+        Positional template variables, one per line, in order.
+      </span>
+    </div>
+  } @else {
+    <div class="flex flex-col gap-1">
+      <p-floatlabel variant="on">
+        <input
+          pInputText
+          [pSize]="inputSize"
+          id="senderId"
+          name="senderId"
+          fluid="true"
+          autocomplete="off"
+          [(ngModel)]="formData.senderId"
+        />
+        <label for="senderId">Sender id</label>
+      </p-floatlabel>
+    </div>
+    <div class="flex flex-col gap-1">
+      <p-floatlabel variant="on">
+        <textarea
+          pTextarea
+          id="message"
+          name="message"
+          rows="3"
+          [autoResize]="true"
+          fluid="true"
+          [(ngModel)]="formData.message"
+        ></textarea>
+        <label for="message">Message</label>
+      </p-floatlabel>
+      <span class="text-xs text-color-secondary">The finished message text to send.</span>
+    </div>
+  }
+
+  <div class="flex justify-end gap-2 pt-2">
+    <p-button
+      label="Cancel"
+      severity="secondary"
+      [outlined]="true"
+      type="button"
+      (onClick)="onCancel()"
+    />
+    <p-button
+      label="Send test"
+      icon="pi pi-send"
+      type="submit"
+      [loading]="submitting()"
+      [disabled]="submitting() || form.invalid"
+    />
+  </div>
+</form>

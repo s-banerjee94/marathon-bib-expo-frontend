@@ -4,7 +4,6 @@ export const WHATSAPP_TEMPLATE_COLUMNS: TableColumn[] = [
   { field: 'name', header: 'Name', required: true, disabled: true },
   { field: 'contentSid', header: 'Content SID', required: true, disabled: true },
   { field: 'body', header: 'Body' },
-  { field: 'senderScope', header: 'Sender Scope' },
   { field: 'bodyVariables', header: 'Variables' },
   { field: 'note', header: 'Note' },
   { field: 'createdAt', header: 'Created At' },
@@ -13,10 +12,4 @@ export const WHATSAPP_TEMPLATE_COLUMNS: TableColumn[] = [
   { field: 'lastModifiedBy', header: 'Last Modified By' },
 ];
 
-export const DEFAULT_WHATSAPP_TEMPLATE_COLUMNS = [
-  'name',
-  'contentSid',
-  'body',
-  'senderScope',
-  'bodyVariables',
-];
+export const DEFAULT_WHATSAPP_TEMPLATE_COLUMNS = ['name', 'contentSid', 'body', 'bodyVariables'];

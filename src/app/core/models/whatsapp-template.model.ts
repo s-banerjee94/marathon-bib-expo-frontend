@@ -1,5 +1,3 @@
-export type WhatsAppSenderScope = 'DEFAULT' | 'ORGANIZATION';
-
 export interface WhatsAppTemplate {
   id: number;
   name: string;
@@ -7,7 +5,6 @@ export interface WhatsAppTemplate {
   body?: string;
   bodyVariables?: string[];
   note?: string;
-  senderScope: WhatsAppSenderScope;
   eventId: number;
   organizationId?: number;
   eventName?: string;
@@ -23,7 +20,6 @@ export interface CreateWhatsAppTemplateRequest {
   body: string;
   bodyVariables?: string[];
   note?: string;
-  senderScope: WhatsAppSenderScope;
 }
 
 export interface UpdateWhatsAppTemplateRequest {
@@ -32,5 +28,4 @@ export interface UpdateWhatsAppTemplateRequest {
   body?: string;
   bodyVariables?: string[];
   note?: string;
-  senderScope?: WhatsAppSenderScope;
 }

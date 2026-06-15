@@ -77,6 +77,12 @@ export class MenuComponent {
       routerLink: '/system-messaging',
       roles: [UserRole.ROOT],
     },
+    {
+      label: 'Campaign Senders',
+      icon: 'pi pi-send',
+      routerLink: '/campaign-providers',
+      roles: [UserRole.ROOT],
+    },
   ];
 
   // Pinned to the bottom of the sidebar, visually separated from the main nav.

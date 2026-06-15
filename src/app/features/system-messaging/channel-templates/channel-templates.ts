@@ -72,9 +72,8 @@ export class ChannelTemplates {
     }
 
     const ref = this.dialogService.open(TemplateEditor, {
-      header: undefined,
+      showHeader: false,
       modal: true,
-      closable: true,
       closeOnEscape: true,
       dismissableMask: true,
       style: { width: '640px', 'max-width': '95vw' },

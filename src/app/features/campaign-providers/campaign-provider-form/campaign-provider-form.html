@@ -1,0 +1,22 @@
+<app-provider-connection-form
+  [provider]="provider()"
+  [loading]="loading()"
+  [saving]="saving()"
+  [removing]="removing()"
+  [defaultTemplateMode]="defaultTemplateMode()"
+  [subtitle]="subtitle()"
+  enabledHint="When off, this provider is saved but never used to send campaigns."
+  [showTest]="true"
+  [showRemove]="isOrg()"
+  (save)="onSave($event)"
+  (test)="onTest()"
+  (remove)="onRemove($event)"
+>
+  @if (isOrg() && !provider()) {
+    <p-message banner severity="info" styleClass="w-full mb-2" icon="pi pi-info-circle">
+      No override set — this organization's campaigns currently use the platform-default sender.
+      Configure one below to send through your own account.
+    </p-message>
+  }
+</app-provider-connection-form>
+<p-confirmpopup />

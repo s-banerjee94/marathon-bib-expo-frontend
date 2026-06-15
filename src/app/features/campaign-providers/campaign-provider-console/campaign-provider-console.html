@@ -1,0 +1,14 @@
+<div class="flex flex-col gap-4">
+  <p-tabs [value]="selectedChannel()" (valueChange)="onChannelChange($event)">
+    <p-tablist>
+      @for (channel of channels; track channel.value) {
+        <p-tab [value]="channel.value">
+          <i [class]="channel.icon" class="mr-2"></i>
+          {{ channel.label }}
+        </p-tab>
+      }
+    </p-tablist>
+  </p-tabs>
+
+  <app-campaign-provider-form [scope]="scope()" [channel]="selectedChannel()" />
+</div>

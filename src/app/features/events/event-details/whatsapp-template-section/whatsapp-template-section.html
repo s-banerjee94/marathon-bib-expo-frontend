@@ -99,13 +99,6 @@
                       {{ template.body | truncate: 40 | defaultValue }}
                     </div>
                   }
-                  @case ('senderScope') {
-                    <p-tag
-                      [value]="scopeLabel(template.senderScope)"
-                      [severity]="template.senderScope === 'ORGANIZATION' ? 'info' : 'secondary'"
-                      [rounded]="true"
-                    />
-                  }
                   @case ('bodyVariables') {
                     {{ template.bodyVariables?.length || 0 }}
                   }
@@ -200,11 +193,6 @@
             <div class="flex flex-col gap-1.5">
               <div class="flex items-start justify-between gap-2">
                 <span class="font-semibold text-base truncate">{{ template.name }}</span>
-                <p-tag
-                  [value]="scopeLabel(template.senderScope)"
-                  [severity]="template.senderScope === 'ORGANIZATION' ? 'info' : 'secondary'"
-                  [rounded]="true"
-                />
               </div>
               <p class="text-xs font-mono opacity-70 truncate">{{ template.contentSid }}</p>
               @if (template.body) {

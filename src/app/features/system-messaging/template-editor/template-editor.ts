@@ -1,4 +1,5 @@
-import { Component, ElementRef, inject, OnInit, signal, viewChild } from '@angular/core';
+import { Component, computed, ElementRef, inject, OnInit, signal, viewChild } from '@angular/core';
+import { NgTemplateOutlet } from '@angular/common';
 import { FormsModule, NgForm } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -24,9 +25,9 @@ import {
   MessagingChannel,
   SaveSystemMessageTemplateRequest,
   SystemMessageTemplateResponse,
+  TemplateMode,
 } from '../../../core/models/system-messaging.model';
 import {
-  CHANNEL_DEFAULT_TEMPLATE_MODE,
   ChannelMeta,
   MESSAGE_PURPOSES,
   PurposeMeta,
@@ -49,6 +50,7 @@ interface TemplateForm {
   selector: 'app-template-editor',
   imports: [
     FormsModule,
+    NgTemplateOutlet,
     RouterLink,
     ButtonModule,
     CardModule,
@@ -81,7 +83,6 @@ export class TemplateEditor implements OnInit {
   protected channel!: MessagingChannel;
   protected purposeMeta?: PurposeMeta;
   protected channelMeta?: ChannelMeta;
-  protected usesVariables = false;
   protected placeholderOptions: PlaceholderOption[] = [];
   protected isDialog = false;
 
@@ -90,9 +91,26 @@ export class TemplateEditor implements OnInit {
   readonly template = signal<SystemMessageTemplateResponse | null>(null);
   readonly variables = signal<string[]>([]);
 
+  // The channel's provider decides the template shape. null until loaded; false when no
+  // provider is configured yet → prompt to set one up before authoring a template.
+  readonly hasProvider = signal<boolean | null>(null);
+  readonly providerMode = signal<TemplateMode | null>(null);
+  // PROVIDER_RENDERED → variable-driven (template id + positional #{...} variables we send
+  // as values); CLIENT_RENDERED → body-driven (message text we render). Never both.
+  readonly usesVariables = computed(() => this.providerMode() === 'PROVIDER_RENDERED');
+
   private readonly bodyInput = viewChild<ElementRef<HTMLTextAreaElement>>('bodyInput');
 
   model: TemplateForm = { body: '', dltTemplateId: '', senderId: '', enabled: false };
+
+  protected get titleText(): string {
+    return `${this.purposeMeta?.label ?? this.purpose} · ${this.channelMeta?.label ?? this.channel}`;
+  }
+
+  // Provider-rendered template id is a Twilio Content SID (WhatsApp) or a DLT id (SMS).
+  protected get templateIdLabel(): string {
+    return this.channel === 'WHATSAPP' ? 'Content SID' : 'DLT template id';
+  }
 
   ngOnInit(): void {
     if (this.dialogRef && this.dialogConfig?.data) {
@@ -106,13 +124,33 @@ export class TemplateEditor implements OnInit {
 
     this.purposeMeta = MESSAGE_PURPOSES.find((p) => p.value === this.purpose);
     this.channelMeta = SYSTEM_MESSAGING_CHANNELS.find((c) => c.value === this.channel);
-    this.usesVariables = CHANNEL_DEFAULT_TEMPLATE_MODE[this.channel] === 'PROVIDER_RENDERED';
     this.placeholderOptions = SYSTEM_MESSAGE_PLACEHOLDERS[this.purpose] ?? [];
     this.load();
   }
 
+  // The provider's templateMode drives whether the editor is body- or variable-based, so
+  // load it first; a 404 means no provider yet → prompt to configure one before authoring.
   private load(): void {
     this.loading.set(true);
+    this.service.getProvider(this.channel).subscribe({
+      next: (provider) => {
+        this.hasProvider.set(true);
+        this.providerMode.set(provider.templateMode);
+        this.loadTemplate();
+      },
+      error: (error: HttpErrorResponse) => {
+        if (error.status === 404) {
+          this.hasProvider.set(false);
+          this.loading.set(false);
+        } else {
+          this.loading.set(false);
+          this.errorHandler.showError(error);
+        }
+      },
+    });
+  }
+
+  private loadTemplate(): void {
     this.service.getTemplate(this.purpose, this.channel).subscribe({
       next: (template) => {
         this.applyTemplate(template);
@@ -162,7 +200,9 @@ export class TemplateEditor implements OnInit {
       senderId: this.trimOrUndefined(this.model.senderId),
       enabled: this.model.enabled,
     };
-    if (this.usesVariables) {
+    // One mode or the other, never both: variable-driven sends the positional #{...}
+    // variables for the provider to render; body-driven sends the message text we render.
+    if (this.usesVariables()) {
       request.variables = this.variables().join('\n');
     } else {
       request.body = this.model.body;

@@ -12,14 +12,12 @@ import { DynamicDialogConfig, DynamicDialogRef } from 'primeng/dynamicdialog';
 import { InputTextModule } from 'primeng/inputtext';
 import { TextareaModule } from 'primeng/textarea';
 import { ButtonModule } from 'primeng/button';
-import { SelectModule } from 'primeng/select';
 import { FloatLabelModule } from 'primeng/floatlabel';
 import { MessageModule } from 'primeng/message';
 import { TagModule } from 'primeng/tag';
 import {
   CreateWhatsAppTemplateRequest,
   UpdateWhatsAppTemplateRequest,
-  WhatsAppSenderScope,
   WhatsAppTemplate,
 } from '../../../../core/models/whatsapp-template.model';
 import { WhatsAppService } from '../../../../core/services/whatsapp.service';
@@ -40,7 +38,6 @@ const MAX_BODY_LENGTH = 1024;
     InputTextModule,
     TextareaModule,
     ButtonModule,
-    SelectModule,
     FloatLabelModule,
     MessageModule,
     TagModule,
@@ -78,23 +75,16 @@ export class WhatsappTemplateForm implements OnInit {
     this.bodySegments().some((s) => s.type === 'marker' && !this.bodyVariables()[s.index - 1]),
   );
 
-  readonly scopeOptions: { label: string; value: WhatsAppSenderScope }[] = [
-    { label: 'Default (application account)', value: 'DEFAULT' },
-    { label: "Organization's own account", value: 'ORGANIZATION' },
-  ];
-
   formData: {
     name: string;
     contentSid: string;
     body: string;
     note: string;
-    senderScope: WhatsAppSenderScope;
   } = {
     name: '',
     contentSid: '',
     body: '',
     note: '',
-    senderScope: 'DEFAULT',
   };
 
   ngOnInit(): void {
@@ -108,7 +98,6 @@ export class WhatsappTemplateForm implements OnInit {
       contentSid: t?.contentSid ?? '',
       body: t?.body ?? '',
       note: t?.note ?? '',
-      senderScope: t?.senderScope ?? 'DEFAULT',
     };
     this.bodyValue.set(this.formData.body);
     this.originalBodyVariables = [...(t?.bodyVariables ?? [])];

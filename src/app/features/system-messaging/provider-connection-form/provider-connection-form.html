@@ -13,10 +13,7 @@
       }
     </div>
   </ng-template>
-  <ng-template pTemplate="subtitle">
-    How the platform connects to the vendor to send messages. Secrets are stored write-only and
-    never shown again after saving.
-  </ng-template>
+  <ng-template pTemplate="subtitle">{{ subtitle() }}</ng-template>
 
   <ng-template pTemplate="content">
     @if (loading()) {
@@ -26,7 +23,9 @@
         <p-skeleton height="9rem" />
       </div>
     } @else {
-      <form #form="ngForm" (ngSubmit)="onSave(form)" class="flex flex-col">
+      <ng-content select="[banner]" />
+
+      <form #form="ngForm" (ngSubmit)="onSubmit(form)" class="flex flex-col">
         <!-- Endpoint -->
         <div class="form-section">
           <div class="form-section__heading">
@@ -288,7 +287,7 @@
           </div>
         </div>
 
-        <!-- Footer: toggle + save -->
+        <!-- Footer: toggle + actions -->
         <div class="provider-footer">
           <div class="flex items-center gap-3">
             <p-toggleswitch
@@ -298,18 +297,41 @@
             />
             <div class="flex flex-col">
               <span class="text-sm font-medium">Active for sending</span>
-              <span class="text-xs text-color-secondary">
-                When off, this provider is saved but never used to send messages.
-              </span>
+              <span class="text-xs text-color-secondary">{{ enabledHint() }}</span>
             </div>
           </div>
-          <p-button
-            label="Save provider"
-            icon="pi pi-check"
-            type="submit"
-            [loading]="saving()"
-            [disabled]="saving() || form.invalid"
-          />
+          <div class="flex items-center gap-2 flex-wrap">
+            @if (showRemove() && provider()) {
+              <p-button
+                label="Remove override"
+                icon="pi pi-trash"
+                severity="danger"
+                [outlined]="true"
+                type="button"
+                [loading]="removing()"
+                [disabled]="removing() || saving()"
+                (onClick)="remove.emit($event)"
+              />
+            }
+            @if (showTest()) {
+              <p-button
+                label="Send test"
+                icon="pi pi-send"
+                severity="secondary"
+                [outlined]="true"
+                type="button"
+                [disabled]="saving() || removing()"
+                (onClick)="test.emit()"
+              />
+            }
+            <p-button
+              label="Save provider"
+              icon="pi pi-check"
+              type="submit"
+              [loading]="saving()"
+              [disabled]="saving() || removing() || form.invalid"
+            />
+          </div>
         </div>
       </form>
     }

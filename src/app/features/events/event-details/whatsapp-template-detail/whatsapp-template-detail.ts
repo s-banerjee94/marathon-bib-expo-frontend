@@ -21,12 +21,6 @@ export class WhatsappTemplateDetail {
 
   template = signal<WhatsAppTemplate | null>(this.config.data?.template ?? null);
 
-  scopeLabel = computed(() =>
-    this.template()?.senderScope === 'ORGANIZATION'
-      ? "Organization's own account"
-      : 'Default (application account)',
-  );
-
   // Body split into text + {{n}} marker segments so each marker can be shown
   // next to the variable (bodyVariables[n-1]) that fills it.
   bodySegments = computed(() => parseBodySegments(this.template()?.body ?? ''));

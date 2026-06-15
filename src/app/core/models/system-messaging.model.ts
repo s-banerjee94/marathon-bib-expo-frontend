@@ -13,6 +13,9 @@ export type MessageContentType = 'JSON' | 'FORM';
 
 export type ParamLocation = 'HEADER' | 'QUERY';
 
+// Whether a provider row is a transactional system sender or a campaign sender.
+export type ProviderUsage = 'SYSTEM' | 'CAMPAIGN';
+
 // One header or query parameter of the vendor request. `value` is free text that
 // may embed {{TOKEN}} placeholders the backend substitutes at send time.
 export interface ProviderParam {
@@ -41,6 +44,9 @@ export interface SaveMessagingProviderRequest {
 
 export interface MessagingProviderResponse {
   channel: MessagingChannel;
+  // CAMPAIGN rows carry their owning org (null for platform default); SYSTEM rows omit both.
+  usage?: ProviderUsage;
+  organizationId?: number;
   baseUrl?: string;
   httpMethod: ProviderHttpMethod;
   authType: ProviderAuthType;
