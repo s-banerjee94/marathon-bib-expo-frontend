@@ -7,7 +7,6 @@ import {
   OnDestroy,
   signal,
 } from '@angular/core';
-import { DatePipe } from '@angular/common';
 import { Router } from '@angular/router';
 import { AvatarModule } from 'primeng/avatar';
 import { ButtonModule } from 'primeng/button';
@@ -22,6 +21,8 @@ import { AuthService } from '../../core/services/auth.service';
 import { LayoutService } from '../../core/services/layout.service';
 import { NotificationService } from '../../core/services/notification.service';
 import { ThemeConfigurator } from '../theme-configurator/theme-configurator';
+import { NotificationCard } from '../../features/notifications/notification-card/notification-card';
+import { NotificationCardSkeleton } from '../../features/notifications/notification-card-skeleton/notification-card-skeleton';
 import { ROLE_LABELS } from '../../core/models/user.model';
 import { getInitials } from '../../shared/utils/initials.util';
 
@@ -30,7 +31,6 @@ import { getInitials } from '../../shared/utils/initials.util';
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './navbar.html',
   imports: [
-    DatePipe,
     AvatarModule,
     ButtonModule,
     MenubarModule,
@@ -40,6 +40,8 @@ import { getInitials } from '../../shared/utils/initials.util';
     TagModule,
     TooltipModule,
     ThemeConfigurator,
+    NotificationCard,
+    NotificationCardSkeleton,
   ],
 })
 export class Navbar implements OnDestroy {
@@ -90,12 +92,6 @@ export class Navbar implements OnDestroy {
     this.layoutService.onMenuToggle();
   }
 
-  onNotificationRead(id: number, read: boolean): void {
-    if (!read) {
-      this.notificationService.markAsRead(id);
-    }
-  }
-
   ngOnDestroy(): void {
     this.notificationService.disconnect();
   }
@@ -106,6 +102,10 @@ export class Navbar implements OnDestroy {
 
   protected onProfile(): void {
     this.router.navigate(['/profile']);
+  }
+
+  protected viewAllNotifications(): void {
+    this.router.navigate(['/notifications']);
   }
 
   protected onLogout(): void {

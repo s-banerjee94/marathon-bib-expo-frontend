@@ -1,0 +1,19 @@
+<p-card [pt]="cardPt">
+  <div class="flex gap-1">
+    <p-skeleton shape="circle" size="1.75rem" />
+    <div class="flex-1 flex flex-col gap-1">
+      <!-- Title + time -->
+      <div class="flex items-center justify-between gap-1">
+        <p-skeleton width="8rem" height="0.8rem" />
+        <p-skeleton width="5rem" height="0.65rem" />
+      </div>
+      <!-- Description -->
+      <p-skeleton width="90%" height="0.7rem" />
+      <!-- Meta -->
+      <div class="flex items-center gap-1">
+        <p-skeleton width="3.5rem" height="1rem" borderRadius="9999px" />
+        <p-skeleton width="4rem" height="0.7rem" />
+      </div>
+    </div>
+  </div>
+</p-card>

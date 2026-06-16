@@ -1,6 +1,6 @@
 import { inject, Injectable, signal } from '@angular/core';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
-import { Observable, of, Subject, throwError } from 'rxjs';
+import { Observable, of, throwError } from 'rxjs';
 import { catchError, finalize, switchMap, tap } from 'rxjs/operators';
 import { AuthResponse, LoginRequest, User, UserRole } from '../models/user.model';
 import { BASE_URI } from '../../shared/constants/api.constant';
@@ -20,11 +20,6 @@ export class AuthService {
   isLoading = this.loadingSignal.asReadonly();
 
   private accessTokenSignal = signal<string | null>(null);
-
-  // Emits whenever the in-memory access token is refreshed so SSE / other long-lived
-  // connections can reconnect with the new bearer.
-  private readonly tokenRefreshedSubject = new Subject<string>();
-  readonly tokenRefreshed$ = this.tokenRefreshedSubject.asObservable();
 
   private readonly http = inject(HttpClient);
   private readonly storage = inject(LocalStorageService);
@@ -65,10 +60,7 @@ export class AuthService {
    */
   refresh(): Observable<string> {
     return this.http.post<AuthResponse>(this.refreshUrl, {}, { withCredentials: true }).pipe(
-      tap((res) => {
-        this.accessTokenSignal.set(res.accessToken);
-        this.tokenRefreshedSubject.next(res.accessToken);
-      }),
+      tap((res) => this.accessTokenSignal.set(res.accessToken)),
       switchMap((res) => of(res.accessToken)),
     );
   }
@@ -81,10 +73,7 @@ export class AuthService {
     this.loadingSignal.set(true);
 
     return this.http.post<AuthResponse>(this.loginUrl, request, { withCredentials: true }).pipe(
-      tap((authResponse) => {
-        this.accessTokenSignal.set(authResponse.accessToken);
-        this.tokenRefreshedSubject.next(authResponse.accessToken);
-      }),
+      tap((authResponse) => this.accessTokenSignal.set(authResponse.accessToken)),
       switchMap(() => this.fetchCurrentUser()),
       tap((user) => this.setUserState(user)),
       catchError((error) => this.handleLoginError(error)),

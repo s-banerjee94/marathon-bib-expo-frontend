@@ -27,6 +27,15 @@ export const routes: Routes = [
     title: pageTitle('My Profile'),
   },
   {
+    path: 'notifications',
+    loadComponent: () =>
+      import('./features/notifications/notifications-page/notifications-page').then(
+        (m) => m.NotificationsPage,
+      ),
+    canActivate: [authGuard],
+    title: pageTitle('Notifications'),
+  },
+  {
     path: 'organization',
     loadComponent: () =>
       import('./features/organization-account/organization-account').then(
