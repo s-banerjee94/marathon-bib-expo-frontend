@@ -1,13 +1,23 @@
 <p-confirmpopup />
 <p-menu #overflowMenu [model]="overflowMenuItems()" [popup]="true" appendTo="body" />
 
-<!-- Header row -->
-<div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+<!-- Section header -->
+<div class="flex flex-wrap items-center justify-between gap-3 mb-2">
   <h2 class="text-lg font-semibold">Participant Statistics</h2>
   <div class="flex items-center gap-2">
-    @if (lastRefreshedAt()) {
-      <span class="text-xs text-gray-500" aria-live="polite">
-        Refreshed {{ lastRefreshedAt() | date: 'shortTime' }}
+    <p-selectbutton
+      [ngModel]="range()"
+      (ngModelChange)="onRangeChange($event)"
+      [options]="rangeOptions"
+      optionLabel="label"
+      optionValue="value"
+      [allowEmpty]="false"
+      [disabled]="isLoading() || isRefreshing()"
+      size="small"
+    />
+    @if (refreshedAt()) {
+      <span class="text-xs text-color-secondary hidden sm:block" aria-live="polite">
+        Refreshed {{ refreshedAt() | date: 'shortTime' }}
       </span>
     }
     <p-button
@@ -21,7 +31,7 @@
       size="small"
       pTooltip="Refresh"
       tooltipPosition="bottom"
-      ariaLabel="Refresh statistics"
+      ariaLabel="Refresh dashboard"
     />
     @if (canRebuild()) {
       <p-button
@@ -38,114 +48,293 @@
   </div>
 </div>
 
-<!-- Loading skeletons -->
+<p class="text-xs text-color-secondary mb-4 leading-relaxed">
+  <i class="pi pi-info-circle text-[11px]"></i>
+  The range scopes <span class="font-semibold text-color">distribution activity</span> — cards
+  tagged <p-tag value="range" severity="secondary" styleClass="!text-[10px] !py-0 !px-1.5" /> react
+  to it. Roster composition (gender, races, categories) and overall progress are event-wide.
+</p>
+
 @if (isLoading()) {
-  <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
-    <p-skeleton height="6rem" />
-    <p-skeleton height="6rem" />
-    <p-skeleton height="6rem" />
+  <!-- Loading skeletons -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 mb-4">
+    @for (i of [1, 2, 3, 4]; track i) {
+      <p-skeleton height="6.5rem" />
+    }
   </div>
-  <div class="grid grid-cols-1 lg:grid-cols-2 gap-3">
-    <p-skeleton height="14rem" />
-    <p-skeleton height="14rem" />
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-3 mb-4">
+    <p-skeleton height="20rem" class="lg:col-span-2" />
+    <p-skeleton height="20rem" />
   </div>
-} @else if (statistics(); as stats) {
-  <!-- KPI cards -->
-  <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+  <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+    @for (i of [1, 2, 3]; track i) {
+      <p-skeleton height="18rem" />
+    }
+  </div>
+} @else {
+  <!-- ── KPI strip ── -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 mb-4">
+    <!-- Total Participants (event-wide) -->
     <p-card>
-      <div class="flex items-center justify-between">
+      <div class="flex items-start justify-between">
         <div>
-          <p class="text-xs uppercase tracking-wide text-gray-500 mb-1">Total</p>
-          <p class="text-3xl font-bold leading-none">
-            {{ stats.totalParticipants | number }}
+          <p class="text-xs uppercase tracking-wide text-color-secondary mb-2">
+            Total Participants
           </p>
+          <p class="text-3xl font-bold leading-none">{{ totalParticipants() | number }}</p>
+          <p class="text-xs text-color-secondary mt-1.5">across {{ racesCount() }} races</p>
         </div>
         <div
-          class="w-10 h-10 rounded-full flex items-center justify-center bg-gray-100 dark:bg-surface-800"
+          class="w-10 h-10 rounded-full flex items-center justify-center bg-surface-100 dark:bg-surface-800 shrink-0"
         >
           <i class="pi pi-users text-lg"></i>
         </div>
       </div>
     </p-card>
 
+    <!-- Bibs Collected (range-scoped) -->
     <p-card>
-      <div class="flex items-center justify-between">
+      <div class="flex items-start justify-between">
         <div>
-          <p class="text-xs uppercase tracking-wide text-gray-500 mb-1">Bib Collected</p>
-          <p class="text-3xl font-bold leading-none">
-            {{ stats.bibCollectedCount | number }}
+          <p
+            class="text-xs uppercase tracking-wide text-color-secondary mb-2 flex items-center gap-1.5"
+          >
+            Bibs Collected
+            <p-tag [value]="rangeChip()" severity="secondary" styleClass="!text-[10px] !py-0" />
           </p>
-          <p class="text-xs text-gray-500 mt-1">
-            {{ collectionPercent() | number: '1.0-1' }}% of total
+          <p class="text-3xl font-bold leading-none" [style.color]="ref('green')">
+            {{ collectedInWindow() | number }}
           </p>
+          <p class="text-xs text-color-secondary mt-1.5">{{ collectedSubtitle() }}</p>
         </div>
         <div
-          class="w-10 h-10 rounded-full flex items-center justify-center bg-gray-100 dark:bg-surface-800"
+          class="w-10 h-10 rounded-full flex items-center justify-center shrink-0"
+          [style.background]="tint('green')"
         >
-          <i class="pi pi-check-circle text-lg"></i>
+          <i class="pi pi-check-circle text-lg" [style.color]="ref('green')"></i>
         </div>
       </div>
     </p-card>
 
+    <!-- Collection Rate (range-scoped) -->
     <p-card>
-      <div class="flex items-center justify-between">
+      <div class="flex items-start justify-between">
         <div>
-          <p class="text-xs uppercase tracking-wide text-gray-500 mb-1">Pending</p>
-          <p class="text-3xl font-bold leading-none">
-            {{ stats.pendingCount | number }}
+          <p
+            class="text-xs uppercase tracking-wide text-color-secondary mb-2 flex items-center gap-1.5"
+          >
+            Collection Rate
+            <p-tag [value]="rangeChip()" severity="secondary" styleClass="!text-[10px] !py-0" />
           </p>
+          <p class="text-3xl font-bold leading-none">
+            {{ rateValue() | number
+            }}<span class="text-sm font-medium text-color-secondary"> /hr</span>
+          </p>
+          <p class="text-xs text-color-secondary mt-1.5">{{ rateSubtitle() }}</p>
         </div>
         <div
-          class="w-10 h-10 rounded-full flex items-center justify-center bg-gray-100 dark:bg-surface-800"
+          class="w-10 h-10 rounded-full flex items-center justify-center bg-surface-100 dark:bg-surface-800 shrink-0"
         >
-          <i class="pi pi-clock text-lg"></i>
+          <i class="pi pi-bolt text-lg"></i>
+        </div>
+      </div>
+    </p-card>
+
+    <!-- Peak (range-scoped) -->
+    <p-card>
+      <div class="flex items-start justify-between">
+        <div>
+          <p
+            class="text-xs uppercase tracking-wide text-color-secondary mb-2 flex items-center gap-1.5"
+          >
+            Peak
+            <p-tag [value]="rangeChip()" severity="secondary" styleClass="!text-[10px] !py-0" />
+          </p>
+          <p class="text-3xl font-bold leading-none">{{ peakLabel() }}</p>
+          <p class="text-xs text-color-secondary mt-1.5">{{ peakSubtitle() }}</p>
+        </div>
+        <div
+          class="w-10 h-10 rounded-full flex items-center justify-center bg-surface-100 dark:bg-surface-800 shrink-0"
+        >
+          <i class="pi pi-chart-line text-lg"></i>
         </div>
       </div>
     </p-card>
   </div>
 
-  <!-- Breakdown grid -->
-  <div class="grid grid-cols-1 lg:grid-cols-2 gap-3">
-    <!-- Race breakdown -->
-    <p-card header="Race breakdown">
-      @if (stats.raceBreakdown.length) {
-        <p-table [value]="stats.raceBreakdown" [scrollable]="true" scrollHeight="20rem">
-          <ng-template pTemplate="header">
-            <tr>
-              <th>Race</th>
-              <th class="text-right">Total</th>
-              <th class="w-1/3">Collected</th>
-            </tr>
-          </ng-template>
-          <ng-template pTemplate="body" let-row>
-            <tr>
-              <td class="font-medium">{{ row.raceName }}</td>
-              <td class="text-right">{{ row.count | number }}</td>
-              <td>
-                <div class="flex items-center gap-2">
-                  <p-progressbar
-                    [value]="racePercent(row.count, row.bibCollectedCount)"
-                    [showValue]="false"
-                    styleClass="!h-2 flex-1"
-                  />
-                  <span class="text-xs whitespace-nowrap">
-                    {{ row.bibCollectedCount }}/{{ row.count }}
-                  </span>
-                </div>
-              </td>
-            </tr>
-          </ng-template>
-        </p-table>
+  <!-- ── Collection Over Time + Overall Progress ── -->
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-3 mb-4">
+    <!-- Collection Over Time (range-scoped) -->
+    <p-card class="lg:col-span-2">
+      <ng-template pTemplate="header">
+        <div class="flex flex-wrap items-center justify-between gap-2 px-5 pt-4">
+          <div class="flex items-center gap-2">
+            <span class="font-semibold">Collection Over Time</span>
+            <p-tag [value]="rangeChip()" severity="secondary" styleClass="!text-[10px]" />
+          </div>
+          <span class="text-xs text-color-secondary">Bibs per hour</span>
+        </div>
+      </ng-template>
+      @if (timelineChart(); as chart) {
+        <div class="h-[260px]">
+          <p-chart type="line" [data]="chart" [options]="timelineOptions()" height="260px" />
+        </div>
       } @else {
-        <p class="text-sm text-gray-500">No races yet.</p>
+        <div class="flex flex-col items-center justify-center h-[260px] gap-2 text-color-secondary">
+          <i class="pi pi-chart-line text-3xl opacity-40 text-primary"></i>
+          <p class="text-sm">No activity in this window</p>
+        </div>
       }
     </p-card>
 
-    <!-- Category breakdown -->
+    <!-- Overall Progress (event-wide) -->
     <p-card>
       <ng-template pTemplate="header">
-        <div class="flex flex-wrap items-center justify-between gap-2 px-4 pt-4">
-          <span class="font-semibold">Category breakdown</span>
+        <div class="flex items-center justify-between px-5 pt-4">
+          <span class="font-semibold">Overall Progress</span>
+          <p-tag value="OVERALL" severity="secondary" styleClass="!text-[10px]" />
+        </div>
+      </ng-template>
+      <div class="flex items-center justify-center h-44">
+        <p-knob
+          [ngModel]="overallPercent()"
+          [readonly]="true"
+          [size]="168"
+          valueTemplate="{value}%"
+          [valueColor]="ref('green')"
+          ariaLabel="Overall collection progress"
+        />
+      </div>
+      <div class="flex justify-around mt-3">
+        <div class="text-center">
+          <div class="text-lg font-bold" [style.color]="ref('green')">
+            {{ collectedCount() | number }}
+          </div>
+          <div class="text-[11px] uppercase tracking-wide text-color-secondary">Collected</div>
+        </div>
+        <div class="text-center">
+          <div class="text-lg font-bold" [style.color]="ref('amber')">
+            {{ pendingCount() | number }}
+          </div>
+          <div class="text-[11px] uppercase tracking-wide text-color-secondary">Pending</div>
+        </div>
+      </div>
+    </p-card>
+  </div>
+
+  <!-- ── Gender + Race Distribution + Race-wise Collection ── -->
+  <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 mb-4">
+    <!-- Gender (event-wide) -->
+    <p-card header="Gender">
+      @if (hasParticipants()) {
+        <div class="relative h-44">
+          <p-chart
+            type="doughnut"
+            [data]="genderChart()!"
+            [options]="doughnutOptions"
+            height="176px"
+          />
+          <div
+            class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none"
+          >
+            <span class="text-xl font-bold leading-none">{{ totalParticipants() | number }}</span>
+            <span class="text-[10px] uppercase tracking-wide text-color-secondary">Total</span>
+          </div>
+        </div>
+        <ul class="mt-3 space-y-1.5">
+          @for (item of genderLegend(); track item.label) {
+            <li class="flex items-center gap-2 text-sm">
+              <span class="w-2.5 h-2.5 rounded-sm shrink-0" [style.background-color]="item.color">
+              </span>
+              <span class="flex-1 truncate">{{ item.label }}</span>
+              <span class="font-semibold">{{ item.value | number }}</span>
+              <span class="text-color-secondary text-xs">
+                ({{ item.percent | number: '1.0-1' }}%)
+              </span>
+            </li>
+          }
+        </ul>
+      } @else {
+        <div class="flex flex-col items-center justify-center h-56 gap-2 text-color-secondary">
+          <i class="pi pi-users text-3xl opacity-40 text-primary"></i>
+          <p class="text-sm">No participants yet</p>
+        </div>
+      }
+    </p-card>
+
+    <!-- Race Distribution (event-wide) -->
+    <p-card header="Race Distribution">
+      @if (racesCount()) {
+        <div class="relative h-44">
+          <p-chart
+            type="doughnut"
+            [data]="raceDistChart()!"
+            [options]="doughnutOptions"
+            height="176px"
+          />
+          <div
+            class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none"
+          >
+            <span class="text-xl font-bold leading-none">{{ raceDistTotal() | number }}</span>
+            <span class="text-[10px] uppercase tracking-wide text-color-secondary">
+              Participants
+            </span>
+          </div>
+        </div>
+        <ul class="mt-3 space-y-1.5">
+          @for (item of raceDistLegend(); track item.label) {
+            <li class="flex items-center gap-2 text-sm">
+              <span class="w-2.5 h-2.5 rounded-sm shrink-0" [style.background-color]="item.color">
+              </span>
+              <span class="flex-1 truncate" [title]="item.label">{{ item.label }}</span>
+              <span class="font-semibold">{{ item.value | number }}</span>
+              <span class="text-color-secondary text-xs">
+                ({{ item.percent | number: '1.0-1' }}%)
+              </span>
+            </li>
+          }
+        </ul>
+      } @else {
+        <div class="flex flex-col items-center justify-center h-56 gap-2 text-color-secondary">
+          <i class="pi pi-flag text-3xl opacity-40 text-primary"></i>
+          <p class="text-sm">No races yet</p>
+        </div>
+      }
+    </p-card>
+
+    <!-- Race-wise Collection (event-wide) -->
+    <p-card header="Race-wise Collection">
+      @if (raceBars().length) {
+        <div class="space-y-4 pt-1">
+          @for (row of raceBars(); track row.name) {
+            <div>
+              <div class="flex items-baseline justify-between mb-1.5 gap-2">
+                <span class="text-sm font-medium truncate" [title]="row.name">{{ row.name }}</span>
+                <span class="text-xs text-color-secondary whitespace-nowrap">
+                  <span class="font-mono font-semibold text-color">{{ row.count | number }}</span>
+                  / {{ row.total | number }} · {{ row.percent | number: '1.0-0' }}%
+                </span>
+              </div>
+              <p-progressbar [value]="row.percent" [showValue]="false" styleClass="!h-2.5" />
+            </div>
+          }
+        </div>
+      } @else {
+        <div class="flex flex-col items-center justify-center h-56 gap-2 text-color-secondary">
+          <i class="pi pi-flag text-3xl opacity-40 text-primary"></i>
+          <p class="text-sm">No races yet</p>
+        </div>
+      }
+    </p-card>
+  </div>
+
+  <!-- ── Category Breakdown + Distributor Activity + Recent Collections ── -->
+  <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+    <!-- Category Breakdown (event-wide, race dropdown) -->
+    <p-card>
+      <ng-template pTemplate="header">
+        <div class="flex flex-wrap items-center justify-between gap-2 px-5 pt-4">
+          <span class="font-semibold">Category Breakdown</span>
           <p-select
             [(ngModel)]="selectedRaceFilter"
             [options]="raceFilterOptions()"
@@ -153,42 +342,121 @@
             optionLabel="label"
             optionValue="value"
             placeholder="Select race"
-            styleClass="!min-w-[10rem]"
+            styleClass="!min-w-[9rem]"
           />
         </div>
       </ng-template>
-      @if (filteredCategoryBreakdown().length) {
-        <p-table [value]="filteredCategoryBreakdown()" [scrollable]="true" scrollHeight="20rem">
-          <ng-template pTemplate="header">
-            <tr>
-              <th>Category</th>
-              <th class="text-right">Total</th>
-            </tr>
-          </ng-template>
-          <ng-template pTemplate="body" let-row>
-            <tr>
-              <td class="font-medium">{{ row.categoryName }}</td>
-              <td class="text-right">{{ row.count | number }}</td>
-            </tr>
-          </ng-template>
-        </p-table>
+      @if (filteredCategories().length) {
+        <div class="space-y-3 pt-1">
+          @for (row of filteredCategories(); track row.name) {
+            <div class="flex items-center gap-3">
+              <span class="text-xs font-medium w-24 shrink-0 truncate" [title]="row.name">
+                {{ row.name }}
+              </span>
+              <p-progressbar [value]="row.percent" [showValue]="false" styleClass="!h-2 flex-1" />
+              <span class="font-mono text-xs font-semibold w-10 text-right">
+                {{ row.count | number }}
+              </span>
+            </div>
+          }
+        </div>
       } @else {
-        <p class="text-sm text-gray-500">No categories for this race.</p>
-      }
-    </p-card>
-
-    <!-- Gender doughnut -->
-    <p-card header="Gender" styleClass="lg:col-span-2">
-      @if (genderChartData(); as data) {
-        <div class="h-64 flex items-center justify-center">
-          <p-chart
-            type="doughnut"
-            [data]="data"
-            [options]="genderChartOptions()"
-            styleClass="w-full max-w-md h-full"
-          />
+        <div class="flex flex-col items-center justify-center h-56 gap-2 text-color-secondary">
+          <i class="pi pi-tags text-3xl opacity-40 text-primary"></i>
+          <p class="text-sm">No categories for this race</p>
         </div>
       }
     </p-card>
+
+    <!-- Distributor Activity (range-scoped) -->
+    <p-card>
+      <ng-template pTemplate="header">
+        <div class="flex items-center justify-between gap-2 px-5 pt-4">
+          <div class="flex items-center gap-2">
+            <span class="font-semibold">Distributor Activity</span>
+            <p-tag [value]="rangeChip()" severity="secondary" styleClass="!text-[10px]" />
+          </div>
+          <span class="text-xs text-color-secondary">bibs handed out</span>
+        </div>
+      </ng-template>
+      @if (distributorBars().length) {
+        <div class="space-y-3 pt-1">
+          @for (row of distributorBars(); track row.name) {
+            <div>
+              <div class="flex items-center justify-between mb-1.5 gap-2">
+                <span class="flex items-center gap-2 min-w-0">
+                  <p-avatar [label]="row.name | initials: 2" shape="circle" size="normal" />
+                  <span class="text-sm font-medium truncate" [title]="row.name">{{
+                    row.name
+                  }}</span>
+                </span>
+                <span class="font-mono text-xs font-semibold shrink-0">{{
+                  row.count | number
+                }}</span>
+              </div>
+              <p-progressbar [value]="row.percent" [showValue]="false" styleClass="!h-2" />
+            </div>
+          }
+        </div>
+      } @else {
+        <div class="flex flex-col items-center justify-center h-56 gap-2 text-color-secondary">
+          <i class="pi pi-user text-3xl opacity-40 text-primary"></i>
+          <p class="text-sm">No distribution activity in this window</p>
+        </div>
+      }
+    </p-card>
+
+    <!-- Recent Collections (live feed) — hidden for roles the logs endpoint 403s. -->
+    @if (canViewRecentLogs()) {
+      <p-card>
+        <ng-template pTemplate="header">
+          <div class="flex items-center justify-between px-5 pt-4">
+            <span class="font-semibold">Recent Collections</span>
+            <span class="text-[11px] text-color-secondary inline-flex items-center gap-1.5">
+              <i class="pi pi-circle-fill text-[7px] text-primary"></i> LIVE
+            </span>
+          </div>
+        </ng-template>
+        @if (isLoadingRecent()) {
+          <div class="space-y-3">
+            @for (i of [1, 2, 3, 4]; track i) {
+              <div class="flex items-center gap-3">
+                <p-skeleton width="3rem" height="1rem" />
+                <div class="flex-1 space-y-1.5">
+                  <p-skeleton width="70%" height="0.8rem" />
+                  <p-skeleton width="40%" height="0.7rem" />
+                </div>
+              </div>
+            }
+          </div>
+        } @else if (recentLogs().length) {
+          <ul class="divide-y divide-surface-200 dark:divide-surface-700">
+            @for (log of recentLogs(); track log.bibNumber + log.timestamp) {
+              <li class="flex items-center gap-3 py-2.5">
+                <span class="font-mono text-sm font-semibold w-14 shrink-0">{{
+                  log.bibNumber
+                }}</span>
+                <div class="min-w-0 flex-1">
+                  <p class="text-sm font-medium truncate">{{ log.collectorName || '—' }}</p>
+                  @if (log.performedBy) {
+                    <p class="text-xs text-color-secondary truncate">
+                      by {{ log.performedBy | userName }}
+                    </p>
+                  }
+                </div>
+                <span class="text-[11px] text-color-secondary whitespace-nowrap shrink-0">
+                  {{ log.timestamp | date: 'dd-MMM-yyyy, hh:mm a' }}
+                </span>
+              </li>
+            }
+          </ul>
+        } @else {
+          <div class="flex flex-col items-center justify-center h-56 gap-2 text-color-secondary">
+            <i class="pi pi-inbox text-3xl opacity-40 text-primary"></i>
+            <p class="text-sm">No collections yet</p>
+          </div>
+        }
+      </p-card>
+    }
   </div>
 }

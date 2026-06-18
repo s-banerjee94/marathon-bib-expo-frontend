@@ -1,14 +1,20 @@
-import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
+import { AuthService } from '../../../core/services/auth.service';
+import { EventDashboardSection } from '../../events/event-details/event-dashboard-section/event-dashboard-section';
 
 /**
- * Placeholder distributor dashboard. A distributor does their work on the
- * Distribution screen (which opens straight on their assigned event), so this is
- * a "coming soon" stub until a dedicated dashboard is built.
+ * A distributor is bound to a single event, so their dashboard is simply that
+ * event's dashboard. Reuses the same EventDashboardSection shown in the events
+ * and distribution shells, scoped to the assigned event.
  */
 @Component({
   selector: 'app-distributer-dashboard',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [EventDashboardSection],
   templateUrl: './distributer-dashboard.html',
 })
-export class DistributerDashboard {}
+export class DistributerDashboard {
+  private readonly authService = inject(AuthService);
+  protected readonly eventId = computed(() => this.authService.currentUser()?.eventId ?? null);
+}
