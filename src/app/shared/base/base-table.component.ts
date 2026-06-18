@@ -1,5 +1,5 @@
 import { Directive, inject, OnDestroy, OnInit, signal } from '@angular/core';
-import { DialogService, DynamicDialogRef } from 'primeng/dynamicdialog';
+import { DialogService, DynamicDialogConfig, DynamicDialogRef } from 'primeng/dynamicdialog';
 import { TableLazyLoadEvent } from 'primeng/table';
 import { Subject } from 'rxjs';
 import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
@@ -279,7 +279,12 @@ export abstract class BaseTableComponent<T, F extends TableFilterPreferences>
     this.errorHandler.showError(error, 'Error loading data');
   }
 
-  protected openDialog<C>(component: C, header: string, data: unknown): DynamicDialogRef | null {
+  protected openDialog<C>(
+    component: C,
+    header: string,
+    data: unknown,
+    config?: Partial<DynamicDialogConfig>,
+  ): DynamicDialogRef | null {
     this.dialogRef = this.dialogService.open(component as never, {
       header,
       width: '45vw',
@@ -292,6 +297,7 @@ export abstract class BaseTableComponent<T, F extends TableFilterPreferences>
         '640px': '100vw',
       },
       data,
+      ...config,
     });
 
     return this.dialogRef;

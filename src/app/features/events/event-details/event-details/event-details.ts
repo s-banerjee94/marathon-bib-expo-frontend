@@ -18,10 +18,14 @@ import { SkeletonModule } from 'primeng/skeleton';
 import { Menu } from 'primeng/menu';
 import { ConfirmPopupModule } from 'primeng/confirmpopup';
 import { TooltipModule } from 'primeng/tooltip';
+import { DialogModule } from 'primeng/dialog';
 import { ConfirmationService, MenuItem } from 'primeng/api';
 import { DialogService } from 'primeng/dynamicdialog';
 import { Event, EventStatus } from '../../../../core/models/event.model';
 import { EventService } from '../../../../core/services/event.service';
+import { ImageUploadService } from '../../../../core/services/image-upload.service';
+import { ImageUpload } from '../../../../shared/components/image-upload/image-upload';
+import { EventListBus } from '../../event-list-bus.service';
 import { AuthService } from '../../../../core/services/auth.service';
 import { UserRole } from '../../../../core/models/user.model';
 import { DistributionService } from '../../../../core/services/distribution.service';
@@ -52,11 +56,13 @@ const DEFAULT_TAB = 'dashboard';
     Menu,
     ConfirmPopupModule,
     TooltipModule,
+    DialogModule,
     RouterOutlet,
     RouterLink,
     RouterLinkActive,
     FormatEventDateTimePipe,
     MobileTabBar,
+    ImageUpload,
   ],
   providers: [DialogService, ConfirmationService, EventDetailsState],
   templateUrl: './event-details.html',
@@ -76,6 +82,8 @@ export class EventDetails implements OnInit {
   private destroyRef = inject(DestroyRef);
   private state = inject(EventDetailsState);
   private authService = inject(AuthService);
+  private imageUploadService = inject(ImageUploadService);
+  private eventListBus = inject(EventListBus);
 
   // Billing is visible to ROOT/ADMIN/ORGANIZER_ADMIN only — never ORGANIZER_USER or DISTRIBUTOR.
   protected readonly canViewBilling = this.authService.hasAnyRole([
@@ -94,11 +102,11 @@ export class EventDetails implements OnInit {
   generatingShortUrls = signal(false);
   lastClickTarget: EventTarget | null = null;
 
-  // Logo — file-pick + presigned-URL upload flow (backend endpoint TBD)
+  // Event image — large preview lightbox + presigned-URL upload dialog.
   protected readonly logoLoadError = signal(false);
-  protected readonly logoPreviewUrl = signal<string | null>(null);
   protected readonly uploadingLogo = signal(false);
-  protected selectedLogoFile: File | null = null;
+  protected readonly imagePreviewVisible = signal(false);
+  protected readonly uploadDialogVisible = signal(false);
 
   activeTab = toSignal(
     this.router.events.pipe(
@@ -144,7 +152,6 @@ export class EventDetails implements OnInit {
   loadEventDetails(): void {
     this.isLoading.set(true);
     this.logoLoadError.set(false);
-    this.cancelLogoUpload();
     this.eventService
       .getEventById(this.eventId())
       .pipe(takeUntilDestroyed(this.destroyRef))
@@ -176,6 +183,7 @@ export class EventDetails implements OnInit {
       header: 'Edit Event',
       width: '800px',
       modal: true,
+      showHeader: false,
       data: {
         isEditMode: true,
         eventId: this.eventId(),
@@ -212,37 +220,61 @@ export class EventDetails implements OnInit {
       });
   }
 
-  // ---------- Logo ----------
+  // ---------- Event image ----------
   protected onLogoError(): void {
     this.logoLoadError.set(true);
   }
 
-  protected onLogoFileSelected(e: globalThis.Event): void {
-    const input = e.target as HTMLInputElement;
-    const file = input.files?.[0];
-    if (!file) return;
-    this.selectedLogoFile = file;
-    // Revoke any existing preview object URL to avoid memory leaks.
-    const prev = this.logoPreviewUrl();
-    if (prev) URL.revokeObjectURL(prev);
-    this.logoPreviewUrl.set(URL.createObjectURL(file));
+  protected openImagePreview(): void {
+    if (this.event()?.logoUrl && !this.logoLoadError()) {
+      this.imagePreviewVisible.set(true);
+    }
   }
 
-  protected cancelLogoUpload(): void {
-    const prev = this.logoPreviewUrl();
-    if (prev) URL.revokeObjectURL(prev);
-    this.logoPreviewUrl.set(null);
-    this.selectedLogoFile = null;
+  protected openUploadDialog(): void {
+    this.uploadDialogVisible.set(true);
   }
 
-  protected uploadLogo(): void {
-    if (!this.selectedLogoFile || this.uploadingLogo()) return;
-    // TODO: wire up when the backend provides the presigned-URL endpoint.
-    // Flow:
-    //   1. POST /api/events/{id}/logo/upload-url → { presignedUrl: string; logoUrl: string }
-    //   2. PUT presignedUrl with selectedLogoFile (Content-Type: file.type, NO auth header — direct S3)
-    //   3. Backend auto-saves logoUrl → reload event or patch signal with returned logoUrl
+  protected onLogoSelected(file: File): void {
+    const id = this.eventId();
+    if (!id) return;
     this.uploadingLogo.set(true);
+    this.imageUploadService
+      .replaceEventLogo(id, file)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (event) => this.afterLogoChange(event, 'Image updated'),
+        error: (error) => {
+          this.uploadingLogo.set(false);
+          this.errorHandler.showError(error);
+        },
+      });
+  }
+
+  protected onLogoRemove(): void {
+    const id = this.eventId();
+    if (!id) return;
+    this.uploadingLogo.set(true);
+    this.imageUploadService
+      .removeEventLogo(id)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (event) => this.afterLogoChange(event, 'Image removed'),
+        error: (error) => {
+          this.uploadingLogo.set(false);
+          this.errorHandler.showError(error);
+        },
+      });
+  }
+
+  private afterLogoChange(event: Event, message: string): void {
+    this.uploadingLogo.set(false);
+    this.logoLoadError.set(false);
+    this.event.set(event);
+    this.state.setEvent(event);
+    this.eventListBus.publish({ action: 'updated', event });
+    this.uploadDialogVisible.set(false);
+    this.toast.success(message);
   }
 
   // ---------- Address helper ----------

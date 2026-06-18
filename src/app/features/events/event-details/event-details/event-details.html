@@ -3,6 +3,47 @@
   <p-confirmpopup />
   <p-menu #statusMenu [model]="statusMenuItems()" [popup]="true" appendTo="body" />
 
+  <!-- Event image: large preview lightbox -->
+  <p-dialog
+    [visible]="imagePreviewVisible()"
+    (visibleChange)="imagePreviewVisible.set($event)"
+    [modal]="true"
+    [dismissableMask]="true"
+    [draggable]="false"
+    [resizable]="false"
+    [header]="event()?.eventName ?? 'Event image'"
+    [style]="{ 'max-width': '90vw' }"
+  >
+    @if (event()?.logoUrl) {
+      <img
+        [src]="event()!.logoUrl"
+        [alt]="event()!.eventName"
+        class="block max-w-[80vw] max-h-[75vh] object-contain"
+      />
+    }
+  </p-dialog>
+
+  <!-- Event image: upload / change dialog -->
+  <p-dialog
+    [visible]="uploadDialogVisible()"
+    (visibleChange)="uploadDialogVisible.set($event)"
+    [modal]="true"
+    [draggable]="false"
+    [resizable]="false"
+    header="Event image"
+    [style]="{ width: '24rem', 'max-width': '90vw' }"
+  >
+    <app-image-upload
+      shape="circle"
+      [imageUrl]="event()?.logoUrl"
+      [pending]="uploadingLogo()"
+      alt="Event image"
+      helpText="Square images look best. Large photos are cropped and compressed automatically."
+      (fileSelected)="onLogoSelected($event)"
+      (removeRequested)="onLogoRemove()"
+    />
+  </p-dialog>
+
   <!-- Header -->
   <div class="mb-4">
     <p-button
@@ -31,24 +72,19 @@
     <p-card class="mb-4">
       <!-- Logo + title + action buttons -->
       <div class="flex gap-4 items-start mb-3">
-        <!-- Logo avatar: file picker trigger + preview -->
-        <div class="flex flex-col items-center gap-2 flex-shrink-0">
-          <!-- Hidden file input — triggered by the camera button -->
-          <input
-            #logoFileInput
-            type="file"
-            accept="image/*"
-            class="hidden"
-            (change)="onLogoFileSelected($event)"
-          />
-
-          <div class="relative">
-            <div
-              class="w-20 h-20 rounded-xl overflow-hidden border flex items-center justify-center"
+        <!-- Event image: click to view large, camera to change -->
+        <div class="flex-shrink-0">
+          <div class="relative w-20 h-20">
+            <button
+              type="button"
+              class="w-20 h-20 rounded-full overflow-hidden border flex items-center justify-center"
+              [class.cursor-zoom-in]="event()!.logoUrl && !logoLoadError()"
+              [attr.aria-label]="
+                event()!.logoUrl && !logoLoadError() ? 'View event image' : 'Event image'
+              "
+              (click)="openImagePreview()"
             >
-              @if (logoPreviewUrl()) {
-                <img [src]="logoPreviewUrl()" alt="Preview" class="w-full h-full object-cover" />
-              } @else if (event()!.logoUrl && !logoLoadError()) {
+              @if (event()!.logoUrl && !logoLoadError()) {
                 <img
                   [src]="event()!.logoUrl"
                   [alt]="event()!.eventName"
@@ -60,45 +96,19 @@
                   event()!.eventName.charAt(0).toUpperCase()
                 }}</span>
               }
-            </div>
-            @if (!logoPreviewUrl()) {
-              <div class="absolute -bottom-2 -right-2">
-                <p-button
-                  icon="pi pi-camera"
-                  [rounded]="true"
-                  size="small"
-                  severity="secondary"
-                  pTooltip="Change logo"
-                  tooltipPosition="bottom"
-                  (onClick)="logoFileInput.click()"
-                />
-              </div>
-            }
-          </div>
-
-          <!-- Confirm / cancel row — appears once a file is picked -->
-          @if (logoPreviewUrl()) {
-            <div class="flex gap-1">
+            </button>
+            <div class="absolute -bottom-1 -right-1">
               <p-button
-                icon="pi pi-cloud-upload"
+                icon="pi pi-camera"
+                [rounded]="true"
                 size="small"
-                [loading]="uploadingLogo()"
-                pTooltip="Upload"
-                tooltipPosition="bottom"
-                (onClick)="uploadLogo()"
-              />
-              <p-button
-                icon="pi pi-times"
                 severity="secondary"
-                [outlined]="true"
-                size="small"
-                [disabled]="uploadingLogo()"
-                pTooltip="Cancel"
+                pTooltip="Change image"
                 tooltipPosition="bottom"
-                (onClick)="cancelLogoUpload()"
+                (onClick)="openUploadDialog()"
               />
             </div>
-          }
+          </div>
         </div>
 
         <!-- Name, status tag, and action buttons -->

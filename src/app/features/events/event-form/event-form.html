@@ -29,20 +29,21 @@
   <form
     #eventForm="ngForm"
     (ngSubmit)="onSubmit(eventForm)"
-    [class]="isDialogMode() ? 'flex flex-col gap-4 mt-2' : 'flex flex-col gap-4'"
+    [class]="isDialogMode() ? 'flex flex-col gap-4' : 'flex flex-col gap-4'"
   >
-    <!-- Logo — edit mode only -->
-    @if (isEditMode()) {
-      <div class="flex flex-col gap-2">
-        <span class="text-sm font-medium">Logo</span>
-        <app-image-upload
-          shape="square"
-          [imageUrl]="logoUrl()"
-          [pending]="logoPending()"
-          alt="Event logo"
-          helpText="PNG with a transparent background looks best. Resized to fit 1024px."
-          (fileSelected)="onLogoSelected($event)"
-          (removeRequested)="onLogoRemove()"
+    <!-- Dialog header with close button (dialog mode only; route mode uses the card title) -->
+    @if (isDialogMode()) {
+      <div class="flex items-center justify-between gap-3">
+        <h2 class="text-xl font-bold">{{ getTitle() }}</h2>
+        <p-button
+          (onClick)="handleCancel()"
+          [disabled]="isSubmitting()"
+          [rounded]="true"
+          [text]="true"
+          ariaLabel="Close"
+          icon="pi pi-times"
+          severity="secondary"
+          type="button"
         />
       </div>
     }
@@ -367,9 +368,7 @@
     <!-- Action Buttons -->
     <div
       [class]="
-        isDialogMode()
-          ? 'flex justify-end gap-3 pt-4 border-t'
-          : 'flex justify-between gap-3 pt-4 border-t'
+        isDialogMode() ? 'flex justify-end gap-3 pt-4' : 'flex justify-between gap-3 pt-4 border-t'
       "
     >
       @if (isDialogMode()) {

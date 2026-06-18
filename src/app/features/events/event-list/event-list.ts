@@ -542,15 +542,20 @@ export class EventList extends BaseTableComponent<Event, EventFilterPreferences>
 
   private openCreateDialog(): void {
     const currentUser = this.authService.currentUser();
-    this.openDialog(EventForm, 'Create Event', {
-      isEditMode: false,
-      organizationId: this.isRootOrAdmin ? undefined : currentUser?.organizationId,
-      successMessage: {
-        severity: 'success',
-        summary: 'Created',
-        detail: 'Event created successfully',
+    this.openDialog(
+      EventForm,
+      'Create Event',
+      {
+        isEditMode: false,
+        organizationId: this.isRootOrAdmin ? undefined : currentUser?.organizationId,
+        successMessage: {
+          severity: 'success',
+          summary: 'Created',
+          detail: 'Event created successfully',
+        },
       },
-    });
+      { showHeader: false },
+    );
 
     if (this.dialogRef) {
       this.dialogRef.onClose.subscribe(
@@ -572,15 +577,20 @@ export class EventList extends BaseTableComponent<Event, EventFilterPreferences>
   }
 
   private openEditDialog(eventId: number): void {
-    this.openDialog(EventForm, 'Edit Event', {
-      eventId,
-      isEditMode: true,
-      successMessage: {
-        severity: 'success',
-        summary: 'Updated',
-        detail: 'Event updated successfully',
+    this.openDialog(
+      EventForm,
+      'Edit Event',
+      {
+        eventId,
+        isEditMode: true,
+        successMessage: {
+          severity: 'success',
+          summary: 'Updated',
+          detail: 'Event updated successfully',
+        },
       },
-    });
+      { showHeader: false },
+    );
 
     if (this.dialogRef) {
       this.dialogRef.onClose.subscribe(

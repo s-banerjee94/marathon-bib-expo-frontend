@@ -19,12 +19,14 @@ import { FloatLabelModule } from 'primeng/floatlabel';
 import { MessageModule } from 'primeng/message';
 import { PasswordModule } from 'primeng/password';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
+import { DialogModule } from 'primeng/dialog';
 import { AuthService } from '../../core/services/auth.service';
 import { UserService } from '../../core/services/user.service';
 import { ImageUploadService } from '../../core/services/image-upload.service';
 import { ErrorHandlerService } from '../../core/services/error-handler.service';
 import { ToastService } from '../../core/services/toast.service';
 import { DefaultValuePipe } from '../../shared/pipes/default-value.pipe';
+import { ImageCropDialog } from '../../shared/components/image-crop-dialog/image-crop-dialog';
 import { ROLE_LABELS, UpdateUserRequest, User, UserRole } from '../../core/models/user.model';
 import { buildDirtyPatch, shouldShowError } from '../../shared/utils/form.utils';
 import { getInitials } from '../../shared/utils/initials.util';
@@ -54,7 +56,9 @@ const PASSWORD_MAX = 100;
     MessageModule,
     PasswordModule,
     ProgressSpinnerModule,
+    DialogModule,
     DefaultValuePipe,
+    ImageCropDialog,
   ],
   templateUrl: './profile.html',
 })
@@ -79,6 +83,9 @@ export class Profile implements OnInit {
   savingProfile = signal(false);
   savingPassword = signal(false);
   avatarPending = signal(false);
+  imagePreviewVisible = signal(false);
+  cropVisible = signal(false);
+  cropFile = signal<File | null>(null);
 
   roleLabel = computed(() => {
     const role = this.user()?.role;
@@ -182,11 +189,22 @@ export class Profile implements OnInit {
     this.avatarInput.nativeElement.click();
   }
 
+  openImagePreview(): void {
+    if (this.avatarImage()) this.imagePreviewVisible.set(true);
+  }
+
   onAvatarInputChange(event: Event): void {
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0];
-    if (file) this.onAvatarSelected(file);
+    if (file) {
+      this.cropFile.set(file);
+      this.cropVisible.set(true);
+    }
     input.value = '';
+  }
+
+  onAvatarCropped(file: File): void {
+    this.onAvatarSelected(file);
   }
 
   onAvatarImageError(): void {

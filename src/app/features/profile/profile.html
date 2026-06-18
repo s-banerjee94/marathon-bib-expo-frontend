@@ -15,6 +15,34 @@
     />
   </div>
 
+  <!-- Profile photo: large preview lightbox -->
+  <p-dialog
+    [visible]="imagePreviewVisible()"
+    (visibleChange)="imagePreviewVisible.set($event)"
+    [modal]="true"
+    [dismissableMask]="true"
+    [draggable]="false"
+    [resizable]="false"
+    header="Profile photo"
+    [style]="{ 'max-width': '90vw' }"
+  >
+    @if (avatarImage(); as img) {
+      <img [src]="img" alt="Profile photo" class="block max-w-[80vw] max-h-[75vh] object-contain" />
+    }
+  </p-dialog>
+
+  <!-- Profile photo: crop before upload -->
+  <app-image-crop-dialog
+    [visible]="cropVisible()"
+    (visibleChange)="cropVisible.set($event)"
+    [file]="cropFile()"
+    [aspectRatio]="1"
+    [round]="true"
+    [resizeToWidth]="512"
+    title="Crop photo"
+    (cropped)="onAvatarCropped($event)"
+  />
+
   @if (user(); as u) {
     <div class="flex flex-col gap-6">
       <!-- Identity hero (full-width banner) -->
@@ -22,13 +50,21 @@
         <ng-template pTemplate="content">
           <div class="flex flex-col sm:flex-row sm:items-center gap-5">
             <div class="relative shrink-0">
-              <p-avatar
-                (onImageError)="onAvatarImageError()"
-                [image]="avatarImage()"
-                [label]="avatarImage() ? undefined : avatarLabel()"
-                shape="circle"
-                size="xlarge"
-              />
+              <button
+                type="button"
+                class="rounded-full"
+                [class.cursor-zoom-in]="!!avatarImage()"
+                [attr.aria-label]="avatarImage() ? 'View profile photo' : 'Profile photo'"
+                (click)="openImagePreview()"
+              >
+                <p-avatar
+                  (onImageError)="onAvatarImageError()"
+                  [image]="avatarImage()"
+                  [label]="avatarImage() ? undefined : avatarLabel()"
+                  shape="circle"
+                  size="xlarge"
+                />
+              </button>
               @if (avatarPending()) {
                 <div
                   class="absolute inset-0 flex items-center justify-center rounded-full"

@@ -1,0 +1,75 @@
+<p-dialog
+  [visible]="visible"
+  (visibleChange)="onVisibleChange($event)"
+  [modal]="true"
+  [draggable]="false"
+  [resizable]="false"
+  [header]="title"
+  [style]="{ width: '48rem', 'max-width': '95vw' }"
+>
+  @if (visible && file) {
+    <div class="flex flex-col gap-5">
+      <p class="text-sm" style="color: var(--text-color-secondary)">
+        Move or resize the highlighted area, scroll or use the slider to zoom, and rotate if needed.
+      </p>
+
+      <div
+        class="flex items-center justify-center overflow-hidden rounded-xl border"
+        style="background: var(--surface-ground); border-color: var(--surface-border)"
+        (wheel)="onWheel($event)"
+      >
+        <image-cropper
+          class="h-[50vh] w-full justify-center"
+          style="--cropper-overlay-color: rgba(0, 0, 0, 0.6)"
+          [imageFile]="file"
+          [maintainAspectRatio]="true"
+          [aspectRatio]="aspectRatio"
+          [roundCropper]="round"
+          [resizeToWidth]="resizeToWidth"
+          [onlyScaleDown]="true"
+          [transform]="transform()"
+          [imageQuality]="85"
+          [backgroundColor]="'transparent'"
+          alignImage="center"
+          format="jpeg"
+          output="blob"
+          (imageCropped)="onCropped($event)"
+        />
+      </div>
+
+      <div class="flex items-center gap-4">
+        <i class="pi pi-search-minus" style="color: var(--text-color-secondary)"></i>
+        <p-slider
+          [ngModel]="zoom()"
+          (ngModelChange)="onZoomChange($event)"
+          [min]="minScale"
+          [max]="maxScale"
+          [step]="0.1"
+          class="flex-1"
+        />
+        <i class="pi pi-search-plus" style="color: var(--text-color-secondary)"></i>
+        <p-button
+          (onClick)="rotate()"
+          icon="pi pi-replay"
+          [rounded]="true"
+          [outlined]="true"
+          severity="secondary"
+          size="small"
+          pTooltip="Rotate 90°"
+          tooltipPosition="top"
+          ariaLabel="Rotate 90 degrees"
+        />
+      </div>
+    </div>
+  }
+
+  <ng-template pTemplate="footer">
+    <p-button
+      (onClick)="onVisibleChange(false)"
+      label="Cancel"
+      severity="secondary"
+      [text]="true"
+    />
+    <p-button (onClick)="save()" label="Save" icon="pi pi-check" />
+  </ng-template>
+</p-dialog>

@@ -2,7 +2,12 @@ import { HttpClient, HttpContext } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { from, Observable, switchMap } from 'rxjs';
 import { BASE_URI } from '../../shared/constants/api.constant';
-import { NormalizedImage, normalizeAvatar, normalizeLogo } from '../../shared/utils/image.util';
+import {
+  NormalizedImage,
+  normalizeAvatar,
+  normalizeEventImage,
+  normalizeLogo,
+} from '../../shared/utils/image.util';
 import {
   AttachUploadRequest,
   PresignUploadRequest,
@@ -55,7 +60,7 @@ export class ImageUploadService {
 
   replaceEventLogo(eventId: number, file: File): Observable<Event> {
     const base = `${this.eventsUrl}/${eventId}/logo`;
-    return this.replaceImage<Event>(base, normalizeLogo(file, 1024));
+    return this.replaceImage<Event>(base, normalizeEventImage(file));
   }
 
   removeEventLogo(eventId: number): Observable<Event> {

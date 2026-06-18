@@ -4,8 +4,9 @@
  * The backend stores the exact bytes we PUT to S3 (no server-side resize), so the
  * frontend normalizes every image before upload to keep quality consistent and
  * payloads small:
- *  - Avatars  -> center-cropped to a square and re-encoded as JPEG (photos, no alpha).
- *  - Logos    -> downscaled within a bounding box, aspect preserved, kept as PNG
+ *  - Avatars / event images -> center-cropped to a square and re-encoded as JPEG
+ *                (photos, no alpha).
+ *  - Org logos -> downscaled within a bounding box, aspect preserved, kept as PNG
  *                to retain transparency.
  *
  * JPEG/PNG are used (never WebP) so the chosen Content-Type is always one S3/the
@@ -17,9 +18,10 @@ export interface NormalizedImage {
   contentType: string;
 }
 
+const SQUARE_JPEG_TYPE = 'image/jpeg';
+const SQUARE_JPEG_QUALITY = 0.85;
 const AVATAR_SIZE = 512;
-const AVATAR_TYPE = 'image/jpeg';
-const AVATAR_QUALITY = 0.85;
+const EVENT_IMAGE_SIZE = 1024;
 
 const LOGO_MAX_EDGE = 512;
 const LOGO_TYPE = 'image/png';
@@ -35,7 +37,17 @@ interface Decoded {
 }
 
 /** Avatar: center-crop to a square and emit a 512×512 JPEG. */
-export async function normalizeAvatar(file: File): Promise<NormalizedImage> {
+export function normalizeAvatar(file: File): Promise<NormalizedImage> {
+  return normalizeSquareJpeg(file, AVATAR_SIZE);
+}
+
+/** Event image: center-crop to a square and emit a 1024×1024 JPEG (photo, no alpha). */
+export function normalizeEventImage(file: File): Promise<NormalizedImage> {
+  return normalizeSquareJpeg(file, EVENT_IMAGE_SIZE);
+}
+
+/** Center-crop to a square `size`×`size` and encode as JPEG (photos, no alpha). */
+async function normalizeSquareJpeg(file: File, size: number): Promise<NormalizedImage> {
   assertImage(file);
   const img = await decode(file);
   try {
@@ -43,12 +55,12 @@ export async function normalizeAvatar(file: File): Promise<NormalizedImage> {
     const sx = (img.width - side) / 2;
     const sy = (img.height - side) / 2;
 
-    const canvas = createCanvas(AVATAR_SIZE, AVATAR_SIZE);
+    const canvas = createCanvas(size, size);
     const ctx = get2dContext(canvas);
-    ctx.drawImage(img.source, sx, sy, side, side, 0, 0, AVATAR_SIZE, AVATAR_SIZE);
+    ctx.drawImage(img.source, sx, sy, side, side, 0, 0, size, size);
 
-    const blob = await toBlob(canvas, AVATAR_TYPE, AVATAR_QUALITY);
-    return { blob, contentType: AVATAR_TYPE };
+    const blob = await toBlob(canvas, SQUARE_JPEG_TYPE, SQUARE_JPEG_QUALITY);
+    return { blob, contentType: SQUARE_JPEG_TYPE };
   } finally {
     img.close();
   }
