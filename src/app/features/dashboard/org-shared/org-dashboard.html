@@ -48,12 +48,21 @@
         </div>
       } @else if (organization(); as org) {
         <div class="flex items-center gap-3 h-full">
-          <p-avatar
-            [label]="orgInitials()"
-            shape="square"
-            size="large"
-            styleClass="shrink-0 !w-14 !h-14 !text-lg !rounded-xl"
-          />
+          @if (org.logoUrl) {
+            <p-avatar
+              [image]="org.logoUrl"
+              shape="square"
+              size="large"
+              styleClass="shrink-0 !w-14 !h-14 !rounded-xl"
+            />
+          } @else {
+            <p-avatar
+              [label]="org.organizerName | initials: 2"
+              shape="square"
+              size="large"
+              styleClass="shrink-0 !w-14 !h-14 !text-lg !rounded-xl"
+            />
+          }
           <div class="min-w-0 flex-1 space-y-1">
             <div class="flex items-center gap-2 min-w-0">
               <h2 class="text-lg font-bold tracking-tight truncate">{{ org.organizerName }}</h2>

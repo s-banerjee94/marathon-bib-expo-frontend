@@ -16,6 +16,8 @@ export interface OrgInfoDto {
   subscriptionStartDate?: string;
   createdAt?: string;
   enabled: boolean;
+  /** Short-lived presigned URL for the organization logo; null/undefined if none set. */
+  logoUrl?: string;
 }
 
 export interface CityCountDto {

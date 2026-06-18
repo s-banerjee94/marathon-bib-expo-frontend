@@ -35,6 +35,7 @@ import { AuditLog } from '../../../core/models/audit-log.model';
 import { UserRole } from '../../../core/models/user.model';
 import { DefaultValuePipe } from '../../../shared/pipes/default-value.pipe';
 import { FormatEventDateTimePipe } from '../../../shared/pipes/format-event-date-time-pipe';
+import { InitialsPipe } from '../../../shared/pipes/initials-pipe';
 import { FORM_INPUT_SIZE } from '../../../shared/constants/form.constants';
 import {
   AUDIT_ACTION_LABEL,
@@ -122,6 +123,7 @@ const deepEqual = (a: unknown, b: unknown): boolean => JSON.stringify(a) === JSO
     AvatarModule,
     DefaultValuePipe,
     FormatEventDateTimePipe,
+    InitialsPipe,
   ],
   templateUrl: './org-dashboard.html',
   styleUrl: './org-dashboard.css',
@@ -324,17 +326,6 @@ export class OrgDashboard implements OnInit {
   ].map((qa, i) => ({ ...qa, color: ORG_QUICK_ACTION_COLORS[i] ?? 'blue' }));
 
   // ── Organization profile (header card) ──
-  orgInitials = computed(() => {
-    const name = this.organization()?.organizerName ?? '';
-    return (
-      name
-        .split(/\s+/)
-        .filter(Boolean)
-        .slice(0, 2)
-        .map((w) => w[0]?.toUpperCase() ?? '')
-        .join('') || '?'
-    );
-  });
   orgLocation = computed(() => {
     const org = this.organization();
     return [org?.city, org?.stateProvince, org?.country].filter(Boolean).join(', ');
