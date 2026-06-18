@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { Component, inject, OnInit, signal, ViewChild } from '@angular/core';
 import { FormsModule, NgForm } from '@angular/forms';
 import { InputTextModule } from 'primeng/inputtext';
 import { FloatLabelModule } from 'primeng/floatlabel';
@@ -13,15 +13,21 @@ import {
   User,
   UserRole,
 } from '../../../core/models/user.model';
+import { EventStatus } from '../../../core/models/event.model';
 import { UserService } from '../../../core/services/user.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { ErrorHandlerService } from '../../../core/services/error-handler.service';
 import { ToastService } from '../../../core/services/toast.service';
-import { roleRequiresEmailPhone, roleRequiresOrganization } from './user-form.utils';
+import {
+  roleRequiresEmailPhone,
+  roleRequiresEvent,
+  roleRequiresOrganization,
+} from './user-form.utils';
 import { UserListBus } from '../user-list-bus.service';
 import { shouldShowError } from '../../../shared/utils/form.utils';
 import { FORM_INPUT_SIZE } from '../../../shared/constants/form.constants';
 import { OrganizationSelector } from '../../../layout/organization-selector/organization-selector';
+import { EventSelector } from '../../../layout/event-selector/event-selector';
 
 /**
  * Create-user form, always rendered inside a dialog (DialogService) from UserList.
@@ -39,6 +45,7 @@ import { OrganizationSelector } from '../../../layout/organization-selector/orga
     MessageModule,
     SelectModule,
     OrganizationSelector,
+    EventSelector,
   ],
   templateUrl: './user-form.html',
   styleUrl: './user-form.css',
@@ -46,6 +53,8 @@ import { OrganizationSelector } from '../../../layout/organization-selector/orga
 export class UserForm implements OnInit {
   private dialogConfig = inject(DynamicDialogConfig, { optional: true });
   private dialogRef = inject(DynamicDialogRef, { optional: true });
+
+  @ViewChild(EventSelector) private eventSelector?: EventSelector;
 
   // Form data as a plain object for ngModel binding.
   user: CreateUserRequest = {
@@ -56,11 +65,15 @@ export class UserForm implements OnInit {
     phoneNumber: '',
     role: UserRole.ADMIN,
     organizationId: undefined,
+    eventId: undefined,
   };
   isSubmitting = signal(false);
   currentUserRole = signal<UserRole | null>(null);
   availableRoles = signal<RoleOption[]>([]);
   selectedRole = signal<UserRole | null>(null);
+
+  // Hide completed/cancelled events from the distributor event picker.
+  readonly excludedEventStatuses = [EventStatus.COMPLETED, EventStatus.CANCELLED];
 
   readonly inputSize = FORM_INPUT_SIZE;
   shouldShowError = shouldShowError;
@@ -89,14 +102,24 @@ export class UserForm implements OnInit {
     if (!role) return;
     this.user.role = role;
 
-    // Clear organization selection when role changes.
+    // Clear organization + event selection when role changes.
     this.user.organizationId = undefined;
+    this.user.eventId = undefined;
+    this.eventSelector?.reset();
 
     // Auto-set organizationId for org-scoped current users.
     const currentRole = this.currentUserRole();
     if (currentRole === UserRole.ORGANIZER_ADMIN || currentRole === UserRole.ORGANIZER_USER) {
       this.user.organizationId = this.authService.currentUser()?.organizationId;
     }
+  }
+
+  // ROOT/ADMIN change the organization via the dropdown; clear the dependent event
+  // so a stale selection from another org can't be submitted.
+  onOrganizationChanged(organizationId: number | undefined): void {
+    this.user.organizationId = organizationId;
+    this.user.eventId = undefined;
+    this.eventSelector?.reset();
   }
 
   showOrganizationDropdown(): boolean {
@@ -106,6 +129,11 @@ export class UserForm implements OnInit {
       return this.selectedRole() !== null && roleRequiresOrganization(this.selectedRole());
     }
     return false;
+  }
+
+  // Distributors are bound to one event, so the picker shows for that role only.
+  showEventPicker(): boolean {
+    return roleRequiresEvent(this.selectedRole());
   }
 
   // Email and phone are mandatory for ADMIN and organizer roles (mirrors the backend).
@@ -119,6 +147,12 @@ export class UserForm implements OnInit {
     // Validate organizationId is set when the role requires it.
     if (roleRequiresOrganization(this.selectedRole()) && !this.user.organizationId) {
       this.toast.error('Organization is required. Please select an organization.');
+      return;
+    }
+
+    // A distributor must be bound to an event.
+    if (roleRequiresEvent(this.selectedRole()) && !this.user.eventId) {
+      this.toast.error('Event is required. Please select an event for the distributor.');
       return;
     }
 

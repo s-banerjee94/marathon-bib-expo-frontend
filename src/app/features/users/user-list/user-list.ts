@@ -92,6 +92,8 @@ export class UserList extends BaseTableComponent<User, UserFilterPreferences> {
   // User-specific filters
   filterRole = signal<UserRole | null>(null);
   filterOrganizationId = signal<number | null>(null);
+  // Deep-link only filter (no UI control): /users?eventId=10 lists that event's distributors.
+  filterEventId = signal<number | null>(null);
   // User-specific sort options
   readonly sortOptions = USER_SORT_OPTIONS;
   // Base class requirements
@@ -440,6 +442,10 @@ export class UserList extends BaseTableComponent<User, UserFilterPreferences> {
         params.organizationId = orgId;
       }
     }
+    const eventId = this.filterEventId();
+    if (eventId !== null) {
+      params.eventId = eventId;
+    }
     return params;
   }
 
@@ -474,6 +480,10 @@ export class UserList extends BaseTableComponent<User, UserFilterPreferences> {
 
     const orgId = orgParam ? Number(orgParam) : NaN;
     this.filterOrganizationId.set(Number.isFinite(orgId) ? orgId : null);
+
+    const eventParam = params.get('eventId');
+    const eventId = eventParam ? Number(eventParam) : NaN;
+    this.filterEventId.set(Number.isFinite(eventId) ? eventId : null);
 
     this.selectedSort.set(sortParam);
     this.filterSort.set(sortParam ? [sortParam] : []);

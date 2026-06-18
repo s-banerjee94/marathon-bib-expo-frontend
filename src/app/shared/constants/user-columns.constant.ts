@@ -25,6 +25,8 @@ export const USER_COLUMNS: TableColumn[] = [
     disabled: true,
     visibleFor: [UserRole.ROOT, UserRole.ADMIN],
   },
+  // Populated only for distributors (the event they're bound to); '--' otherwise.
+  { field: 'eventName', header: 'Event' },
   { field: 'enabled', header: 'Enabled' },
   {
     field: 'accountNonExpired',

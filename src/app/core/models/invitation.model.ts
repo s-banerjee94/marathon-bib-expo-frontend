@@ -19,6 +19,8 @@ export type DeliveryChannel = 'WHATSAPP' | 'SMS';
 export interface CreateInvitationRequest {
   role: UserRole;
   organizationId?: number;
+  /** Required when inviting a DISTRIBUTOR — the event they'll be bound to. */
+  eventId?: number;
   deliveryChannels?: DeliveryChannel[];
   recipientPhone?: string;
 }
@@ -50,6 +52,9 @@ export interface InvitationDetailsResponse {
   role: UserRole;
   organizationId?: number;
   organizationName?: string;
+  /** Set for DISTRIBUTOR invites — the fixed event the invitee is assigned to. */
+  eventId?: number;
+  eventName?: string;
   recipientPhone?: string;
   expiresAt: string;
 }

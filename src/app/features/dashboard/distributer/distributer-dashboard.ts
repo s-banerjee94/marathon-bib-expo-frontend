@@ -1,20 +1,14 @@
-import { Component, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { Router } from '@angular/router';
-import { AuthService } from '../../../core/services/auth.service';
+import { ChangeDetectionStrategy, Component } from '@angular/core';
 
+/**
+ * Placeholder distributor dashboard. A distributor does their work on the
+ * Distribution screen (which opens straight on their assigned event), so this is
+ * a "coming soon" stub until a dedicated dashboard is built.
+ */
 @Component({
   selector: 'app-distributer-dashboard',
-  imports: [CommonModule],
+  standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './distributer-dashboard.html',
-  styleUrl: './distributer-dashboard.css',
 })
-export class DistributerDashboard {
-  private authService = inject(AuthService);
-  user = this.authService.currentUser;
-  private router = inject(Router);
-
-  logout() {
-    this.authService.logout().subscribe(() => this.router.navigate(['/login']));
-  }
-}
+export class DistributerDashboard {}

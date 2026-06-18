@@ -39,6 +39,12 @@
               @if (invite.organizationName) {
                 <span class="text-sm opacity-70">{{ invite.organizationName }}</span>
               }
+              @if (invite.eventName || invite.eventId) {
+                <span class="text-sm opacity-70">
+                  <i class="pi pi-calendar text-xs mr-1"></i
+                  >{{ invite.eventName || 'Event #' + invite.eventId }}
+                </span>
+              }
             </div>
             <p-tag [rounded]="true" severity="info" [value]="roleLabels[invite.role]" />
           </div>

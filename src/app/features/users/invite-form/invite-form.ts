@@ -1,4 +1,4 @@
-import { Component, computed, inject, OnInit, signal } from '@angular/core';
+import { Component, computed, inject, OnInit, signal, ViewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
 import { RadioButtonModule } from 'primeng/radiobutton';
@@ -19,14 +19,16 @@ import {
   DeliveryResult,
 } from '../../../core/models/invitation.model';
 import { Organization } from '../../../core/models/organization.model';
+import { EventStatus } from '../../../core/models/event.model';
 import { InvitationService } from '../../../core/services/invitation.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { ErrorHandlerService } from '../../../core/services/error-handler.service';
 import { ToastService } from '../../../core/services/toast.service';
-import { roleRequiresOrganization } from '../user-form/user-form.utils';
+import { roleRequiresEvent, roleRequiresOrganization } from '../user-form/user-form.utils';
 import { shouldShowError } from '../../../shared/utils/form.utils';
 import { FORM_INPUT_SIZE } from '../../../shared/constants/form.constants';
 import { OrganizationSelector } from '../../../layout/organization-selector/organization-selector';
+import { EventSelector } from '../../../layout/event-selector/event-selector';
 
 /**
  * Issue-a-user-invite dialog (opened from the Users list "Create" popover →
@@ -49,6 +51,7 @@ import { OrganizationSelector } from '../../../layout/organization-selector/orga
     MessageModule,
     InputTextModule,
     OrganizationSelector,
+    EventSelector,
   ],
   templateUrl: './invite-form.html',
   styleUrl: './invite-form.css',
@@ -60,9 +63,13 @@ export class InviteForm implements OnInit {
   private toast = inject(ToastService);
   private errorHandler = inject(ErrorHandlerService);
 
+  @ViewChild(EventSelector) private eventSelector?: EventSelector;
+
   readonly inputSize = FORM_INPUT_SIZE;
   readonly roleLabels = ROLE_LABELS;
   readonly canShare = typeof navigator !== 'undefined' && typeof navigator.share === 'function';
+  // Hide completed/cancelled events from the distributor event picker.
+  readonly excludedEventStatuses = [EventStatus.COMPLETED, EventStatus.CANCELLED];
   shouldShowError = shouldShowError;
 
   // Channels the issuer can have the backend deliver the link on (EMAIL is
@@ -82,6 +89,9 @@ export class InviteForm implements OnInit {
   selectedRole = signal<UserRole | null>(null);
   organizationId = signal<number | undefined>(undefined);
   organizationName = signal<string | null>(null);
+  // Event a distributor invite is bound to (required for DISTRIBUTOR only).
+  eventId = signal<number | undefined>(undefined);
+  attemptedIssue = signal(false);
 
   // Delivery: empty = manual (just return the URL). Selecting a channel reveals
   // the recipient-phone field and, with a valid number, has the backend send it.
@@ -113,9 +123,11 @@ export class InviteForm implements OnInit {
 
   onRoleSelected(): void {
     const role = this.selectedRole();
-    // Reset org context whenever the role changes.
+    // Reset org + event context whenever the role changes.
     this.organizationId.set(undefined);
     this.organizationName.set(null);
+    this.eventId.set(undefined);
+    this.eventSelector?.reset();
 
     // Org-scoped issuers can only invite into their own organization.
     const currentRole = this.currentUserRole();
@@ -138,14 +150,24 @@ export class InviteForm implements OnInit {
     return false;
   }
 
+  // Distributors are bound to one event, so the picker shows for that role only.
+  showEventPicker(): boolean {
+    return roleRequiresEvent(this.selectedRole());
+  }
+
   onOrganizationSelected(org: Organization): void {
     this.organizationId.set(org.id);
     this.organizationName.set(org.organizerName);
+    // Org changed — drop any event picked under the previous org.
+    this.eventId.set(undefined);
+    this.eventSelector?.reset();
   }
 
   onOrganizationCleared(): void {
     this.organizationId.set(undefined);
     this.organizationName.set(null);
+    this.eventId.set(undefined);
+    this.eventSelector?.reset();
   }
 
   // "Generate link" — just mint a shareable link, no delivery.
@@ -180,13 +202,21 @@ export class InviteForm implements OnInit {
   private baseRequest(): CreateInvitationRequest | null {
     const role = this.selectedRole();
     if (!role) return null;
+    this.attemptedIssue.set(true);
     if (roleRequiresOrganization(role) && !this.organizationId()) {
       this.toast.error('Organization is required. Please select an organization.');
+      return null;
+    }
+    if (roleRequiresEvent(role) && !this.eventId()) {
+      this.toast.error('Event is required. Please select an event for the distributor.');
       return null;
     }
     const request: CreateInvitationRequest = { role };
     if (roleRequiresOrganization(role)) {
       request.organizationId = this.organizationId();
+    }
+    if (roleRequiresEvent(role)) {
+      request.eventId = this.eventId();
     }
     return request;
   }

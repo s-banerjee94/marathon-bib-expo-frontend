@@ -44,6 +44,34 @@
     </div>
   }
 
+  <!-- EVENT SELECTION — distributor invites are fixed to a single event in their
+       org. Disabled until an organization is resolved; completed/cancelled hidden. -->
+  @if (showEventPicker()) {
+    <div class="flex flex-col gap-1">
+      <app-event-selector
+        (eventIdChange)="eventId.set($event)"
+        [disabled]="!organizationId()"
+        [excludeStatuses]="excludedEventStatuses"
+        [organizationId]="organizationId()"
+        [required]="true"
+        [selectedEventId]="eventId()"
+        [size]="inputSize"
+        inputId="inviteDistributorEvent"
+        label="Event *"
+        placeholder="Select an event for this distributor..."
+      >
+        @if ((inviteFormRef.submitted || attemptedIssue()) && !eventId()) {
+          <p-message error [size]="inputSize" severity="error" variant="simple">
+            Event is required.
+          </p-message>
+        }
+      </app-event-selector>
+      @if (!organizationId()) {
+        <span class="text-xs opacity-60">Select an organization first to choose its events.</span>
+      }
+    </div>
+  }
+
   <!-- INVITE LINK — read-only field plus copy / share / generate on one line.
        The field fills in once a link is issued; generating is always allowed. -->
   <div class="flex flex-col gap-1">

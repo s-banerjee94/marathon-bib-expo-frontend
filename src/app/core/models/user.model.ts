@@ -33,6 +33,9 @@ export interface User {
   profilePictureUrl?: string;
   organizationId?: number;
   organizationName?: string;
+  /** The single event a distributor is bound to; null for every other role. */
+  eventId?: number;
+  eventName?: string;
   enabled: boolean;
   accountNonExpired?: boolean;
   accountNonLocked?: boolean;
@@ -54,6 +57,8 @@ export interface CreateUserRequest {
   phoneNumber: string;
   role: UserRole;
   organizationId?: number;
+  /** Required when role is DISTRIBUTOR — the event the distributor is bound to. */
+  eventId?: number;
 }
 
 /**

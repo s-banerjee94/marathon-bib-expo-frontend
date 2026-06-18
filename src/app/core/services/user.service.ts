@@ -49,6 +49,10 @@ export class UserService {
       httpParams = httpParams.set('organizationId', params.organizationId.toString());
     }
 
+    if (params.eventId !== undefined) {
+      httpParams = httpParams.set('eventId', params.eventId.toString());
+    }
+
     return this.http.get<PageableResponse<User>>(this.apiUrl, { params: httpParams });
   }
 
@@ -62,6 +66,15 @@ export class UserService {
 
   toggleEnabled(id: number): Observable<User> {
     return this.http.patch<User>(`${this.apiUrl}/${id}/toggle-enabled`, {});
+  }
+
+  /**
+   * Reassign a distributor to a different event in the same organization. The
+   * target must be a distributor and the new event must be in-org and not
+   * completed/cancelled (enforced by the backend). Returns the updated user.
+   */
+  reassignDistributorEvent(userId: number, eventId: number): Observable<User> {
+    return this.http.patch<User>(`${this.apiUrl}/${userId}/event`, { eventId });
   }
 
   deleteUser(id: number): Observable<void> {

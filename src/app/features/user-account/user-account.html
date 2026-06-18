@@ -448,6 +448,67 @@
           </ng-template>
         </p-card>
       </div>
+
+      <!-- Assigned event — distributors are bound to a single event and can be
+           moved to another (in the same org) via the reassign endpoint. -->
+      @if (isDistributor()) {
+        <p-card class="shadow-lg">
+          <ng-template pTemplate="content">
+            <div class="flex flex-col gap-5">
+              <div class="flex items-start gap-3">
+                <span
+                  class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg"
+                  style="
+                    background: color-mix(in srgb, var(--primary-color), transparent 90%);
+                    color: var(--primary-color);
+                  "
+                >
+                  <i class="pi pi-calendar text-lg"></i>
+                </span>
+                <div class="min-w-0">
+                  <h2 class="text-lg font-semibold leading-tight">Assigned Event</h2>
+                  <p class="text-sm mt-0.5" style="color: var(--text-color-secondary)">
+                    This distributor can only access the event assigned here.
+                  </p>
+                </div>
+              </div>
+
+              <div class="flex flex-col gap-1">
+                <span
+                  class="text-xs uppercase tracking-wide"
+                  style="color: var(--text-color-secondary)"
+                >
+                  Current event
+                </span>
+                <span class="text-sm font-medium">{{ u.eventName | defaultValue }}</span>
+              </div>
+
+              <div class="flex flex-col gap-3 sm:flex-row sm:items-start">
+                <div class="flex-1 min-w-0">
+                  <app-event-selector
+                    (eventIdChange)="reassignEventId.set($event)"
+                    [excludeStatuses]="excludedEventStatuses"
+                    [organizationId]="u.organizationId"
+                    [selectedEventId]="u.eventId"
+                    [size]="inputSize"
+                    inputId="reassignEvent"
+                    label="Move to event"
+                    placeholder="Select a different event..."
+                  />
+                </div>
+                <p-button
+                  (onClick)="onReassignEvent()"
+                  [disabled]="!canSaveEvent() || savingEvent()"
+                  [loading]="savingEvent()"
+                  icon="pi pi-check"
+                  label="Reassign"
+                  size="small"
+                />
+              </div>
+            </div>
+          </ng-template>
+        </p-card>
+      }
     </div>
   }
 </div>

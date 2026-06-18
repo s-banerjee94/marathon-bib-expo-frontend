@@ -280,6 +280,12 @@
               </span>
             </div>
           }
+          @if (user.eventName) {
+            <div class="flex items-center gap-2">
+              <i class="pi pi-calendar opacity-60 w-4"></i>
+              <span class="truncate">{{ user.eventName }}</span>
+            </div>
+          }
         </div>
       </div>
 

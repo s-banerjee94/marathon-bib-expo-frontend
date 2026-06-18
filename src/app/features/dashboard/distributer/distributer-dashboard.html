@@ -1,34 +1,5 @@
-<div class="dashboard-container">
-  <header class="dashboard-header">
-    <h1>Distributer Dashboard</h1>
-    @if (user(); as userData) {
-      <div class="user-info">
-        <span>Welcome, {{ userData.fullName }} (DISTRIBUTER)</span>
-        <button (click)="logout()" class="btn-logout">Logout</button>
-      </div>
-    }
-  </header>
-
-  <main class="dashboard-content">
-    <section class="dashboard-section">
-      <h2>Bib Distribution</h2>
-      <div class="card-grid">
-        <div class="card">
-          <h3>Assigned Bibs</h3>
-          <p>View your assigned race bibs</p>
-          <button>View Bibs</button>
-        </div>
-        <div class="card">
-          <h3>Distribution Status</h3>
-          <p>Track bib distribution progress</p>
-          <button>View Status</button>
-        </div>
-        <div class="card">
-          <h3>Report</h3>
-          <p>View distribution reports</p>
-          <button>View Reports</button>
-        </div>
-      </div>
-    </section>
-  </main>
+<div class="flex flex-col items-center justify-center text-center min-h-[60vh] gap-3 p-4">
+  <i class="pi pi-clock text-6xl opacity-30"></i>
+  <h2 class="text-2xl font-semibold m-0">Coming soon</h2>
+  <p class="text-color-secondary m-0">Your dashboard is on its way.</p>
 </div>

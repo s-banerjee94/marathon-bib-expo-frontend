@@ -5,7 +5,9 @@
   <div class="mb-6">
     <h1 class="text-3xl font-bold">Distribution Management</h1>
     <p class="mt-2 text-color-secondary">
-      @if (isRestrictedUser()) {
+      @if (isDistributor()) {
+        Manage bib &amp; goodie distribution for your event.
+      } @else if (isRestrictedUser()) {
         Select an event to manage distribution.
       } @else {
         Select an organization and event to manage distribution.
@@ -13,33 +15,35 @@
     </p>
   </div>
 
-  <!-- Filter Section -->
-  <p-card class="mb-6">
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 p-2 md:p-4">
-      @if (!isRestrictedUser()) {
-        <app-organization-selector
-          (organizationIdChange)="onOrganizationChange($event)"
+  <!-- Filter Section — a distributor is locked to one event, so no selectors. -->
+  @if (!isDistributor()) {
+    <p-card class="mb-6">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 p-2 md:p-4">
+        @if (!isRestrictedUser()) {
+          <app-organization-selector
+            (organizationIdChange)="onOrganizationChange($event)"
+            [required]="true"
+            [selectedOrganizationId]="selectedOrganizationId()"
+            label="Organization"
+            placeholder="Type to search organizations..."
+          />
+        }
+        <app-event-selector
+          (eventIdChange)="onEventChange($event)"
+          [disabled]="!selectedOrganizationId()"
+          [organizationId]="selectedOrganizationId()"
           [required]="true"
-          [selectedOrganizationId]="selectedOrganizationId()"
-          label="Organization"
-          placeholder="Type to search organizations..."
+          [selectedEventId]="selectedEventId()"
+          label="Event"
+          placeholder="Type to search events..."
+          [class]="isRestrictedUser() ? 'md:col-span-2' : ''"
         />
-      }
-      <app-event-selector
-        (eventIdChange)="onEventChange($event)"
-        [disabled]="!selectedOrganizationId()"
-        [organizationId]="selectedOrganizationId()"
-        [required]="true"
-        [selectedEventId]="selectedEventId()"
-        label="Event"
-        placeholder="Type to search events..."
-        [class]="isRestrictedUser() ? 'md:col-span-2' : ''"
-      />
-    </div>
-  </p-card>
+      </div>
+    </p-card>
+  }
 
-  <!-- Empty State -->
-  @if (!selectedEventId()) {
+  <!-- Empty State (skipped for distributors — they auto-open their event) -->
+  @if (!selectedEventId() && !isDistributor()) {
     <p-card>
       <div class="p-8 text-center">
         <i class="pi pi-inbox text-6xl mb-4 block text-color-secondary"></i>

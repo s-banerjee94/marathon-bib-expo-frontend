@@ -67,6 +67,10 @@ export class EventSelector implements OnInit {
   @Input() inputId: string = 'eventAutocomplete';
   @Input() selectedEventId?: number;
   @Input() organizationId?: number; // Filter events by organization
+  // Statuses to hide from suggestions (e.g. exclude COMPLETED/CANCELLED when
+  // picking an event to assign a distributor to). Applied client-side alongside
+  // the enabled filter.
+  @Input() excludeStatuses: EventStatus[] = [];
   // Output events
   @Output() eventSelected = new EventEmitter<Event>();
   @Output() eventCleared = new EventEmitter<void>();
@@ -124,9 +128,7 @@ export class EventSelector implements OnInit {
 
     this.eventService.searchEvents(params).subscribe({
       next: (response: PageableResponse<Event>) => {
-        // Filter to only show enabled events
-        const enabledEvents = response.content.filter((event) => event.enabled);
-        this.eventSuggestions.set(enabledEvents);
+        this.eventSuggestions.set(this.filterSuggestions(response.content));
         this.isLoadingEvents.set(false);
       },
       error: (error) => {
@@ -134,6 +136,11 @@ export class EventSelector implements OnInit {
         this.isLoadingEvents.set(false);
       },
     });
+  }
+
+  /** Drop disabled events and any explicitly excluded statuses. */
+  private filterSuggestions(events: Event[]): Event[] {
+    return events.filter((event) => event.enabled && !this.excludeStatuses.includes(event.status));
   }
 
   /**
@@ -242,9 +249,7 @@ export class EventSelector implements OnInit {
 
     this.eventService.searchEvents(params).subscribe({
       next: (response: PageableResponse<Event>) => {
-        // Filter to only show enabled events
-        const enabledEvents = response.content.filter((event) => event.enabled);
-        this.eventSuggestions.set(enabledEvents);
+        this.eventSuggestions.set(this.filterSuggestions(response.content));
         this.isLoadingEvents.set(false);
         this.hasLoadedInitialEvents = true;
       },

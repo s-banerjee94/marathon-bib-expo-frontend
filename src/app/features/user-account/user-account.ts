@@ -27,7 +27,9 @@ import { ErrorHandlerService } from '../../core/services/error-handler.service';
 import { ToastService } from '../../core/services/toast.service';
 import { AuthService } from '../../core/services/auth.service';
 import { DefaultValuePipe } from '../../shared/pipes/default-value.pipe';
-import { ROLE_LABELS, UpdateUserRequest, User } from '../../core/models/user.model';
+import { ROLE_LABELS, UpdateUserRequest, User, UserRole } from '../../core/models/user.model';
+import { EventStatus } from '../../core/models/event.model';
+import { EventSelector } from '../../layout/event-selector/event-selector';
 import { buildDirtyPatch, shouldShowError } from '../../shared/utils/form.utils';
 import { getInitials } from '../../shared/utils/initials.util';
 import { userCanManage } from '../../shared/utils/user-permissions.utils';
@@ -63,6 +65,7 @@ const PASSWORD_MAX = 100;
     ProgressSpinnerModule,
     SkeletonModule,
     DefaultValuePipe,
+    EventSelector,
   ],
   templateUrl: './user-account.html',
   styleUrl: './user-account.css',
@@ -87,6 +90,14 @@ export class UserAccount implements OnInit {
   savingProfile = signal(false);
   savingPassword = signal(false);
   avatarPending = signal(false);
+
+  // Distributor event reassignment (PATCH /users/{id}/event).
+  readonly excludedEventStatuses = [EventStatus.COMPLETED, EventStatus.CANCELLED];
+  reassignEventId = signal<number | undefined>(undefined);
+  savingEvent = signal(false);
+  // Shown for distributor targets — they're the only role bound to an event, and
+  // anyone who can reach this page for a distributor is allowed to reassign them.
+  isDistributor = computed(() => this.user()?.role === UserRole.DISTRIBUTOR);
 
   // Editable form models (kept separate from the loaded user so Reset works).
   profile = { fullName: '', email: '', phoneNumber: '' };
@@ -245,6 +256,35 @@ export class UserAccount implements OnInit {
       next: (user) => this.afterAvatarChange(user, 'Profile picture removed'),
       error: (error) => {
         this.avatarPending.set(false);
+        this.errorHandler.showError(error);
+      },
+    });
+  }
+
+  // ── Distributor event reassignment ──────────────────────────────────────────
+
+  // Enabled once a different event is picked from the current assignment.
+  canSaveEvent = computed(() => {
+    const picked = this.reassignEventId();
+    return picked != null && picked !== this.user()?.eventId;
+  });
+
+  onReassignEvent(): void {
+    const id = this.user()?.id;
+    const eventId = this.reassignEventId();
+    if (id == null || eventId == null || !this.canSaveEvent()) return;
+
+    this.savingEvent.set(true);
+    this.userService.reassignDistributorEvent(id, eventId).subscribe({
+      next: (updated) => {
+        this.savingEvent.set(false);
+        this.reassignEventId.set(undefined);
+        this.user.set(updated);
+        this.userListBus.publish({ action: 'updated', user: updated });
+        this.toast.success('Event reassigned');
+      },
+      error: (error) => {
+        this.savingEvent.set(false);
         this.errorHandler.showError(error);
       },
     });

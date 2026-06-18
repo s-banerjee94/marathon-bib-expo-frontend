@@ -24,7 +24,7 @@
   @if (showOrganizationDropdown()) {
     <div class="flex flex-col gap-1">
       <app-organization-selector
-        (organizationIdChange)="user.organizationId = $event || 0"
+        (organizationIdChange)="onOrganizationChanged($event)"
         [required]="true"
         [selectedOrganizationId]="user.organizationId"
         [size]="inputSize"
@@ -37,6 +37,35 @@
           </p-message>
         }
       </app-organization-selector>
+    </div>
+  }
+
+  <!-- EVENT SELECTION — distributors are bound to a single event in their org.
+       Disabled until an organization is resolved (auto-set for org users; picked
+       above for ROOT/ADMIN). Completed/cancelled events are excluded. -->
+  @if (showEventPicker()) {
+    <div class="flex flex-col gap-1">
+      <app-event-selector
+        (eventIdChange)="user.eventId = $event"
+        [disabled]="!user.organizationId"
+        [excludeStatuses]="excludedEventStatuses"
+        [organizationId]="user.organizationId"
+        [required]="true"
+        [selectedEventId]="user.eventId"
+        [size]="inputSize"
+        inputId="distributorEvent"
+        label="Event *"
+        placeholder="Select an event for this distributor..."
+      >
+        @if (userForm.submitted && !user.eventId) {
+          <p-message error [size]="inputSize" severity="error" variant="simple">
+            Event is required.
+          </p-message>
+        }
+      </app-event-selector>
+      @if (!user.organizationId) {
+        <span class="text-xs opacity-60">Select an organization first to choose its events.</span>
+      }
     </div>
   }
 

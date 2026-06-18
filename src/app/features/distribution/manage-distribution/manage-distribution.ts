@@ -90,6 +90,8 @@ export class ManageDistribution implements OnInit {
   selectedOrganizationId = signal<number | undefined>(undefined);
   selectedEventId = signal<number | undefined>(undefined);
   isRestrictedUser = signal(false);
+  // A distributor is locked to one event — no org/event selectors, jump straight in.
+  isDistributor = signal(false);
 
   // Read-only participant details dialog (opened from any tab's card click).
   readonly isMobile = injectIsMobile();
@@ -178,6 +180,8 @@ export class ManageDistribution implements OnInit {
   selectedGoodiesForDistribute: string[] = [];
 
   ngOnInit(): void {
+    const distributor = this.authService.hasRole(UserRole.DISTRIBUTOR);
+    this.isDistributor.set(distributor);
     const restricted = this.authService.hasAnyRole([
       UserRole.ORGANIZER_ADMIN,
       UserRole.ORGANIZER_USER,
@@ -199,8 +203,15 @@ export class ManageDistribution implements OnInit {
       )
       .subscribe(() => this.applyUrlToState(this.route.snapshot.queryParamMap));
 
-    // If a restricted user landed without URL filters, seed the URL with their org so links stay shareable.
-    if (restricted && !this.route.snapshot.queryParamMap.get('organizationId')) {
+    if (distributor) {
+      // Bound to a single event — go straight to it; there's nothing to select.
+      const eventId = this.authService.currentUser()?.eventId;
+      const eventInUrl = this.route.snapshot.firstChild?.paramMap.get('eventId');
+      if (eventId && !eventInUrl) {
+        this.router.navigate(['/distribution/event', eventId, 'lookup'], { replaceUrl: true });
+      }
+    } else if (restricted && !this.route.snapshot.queryParamMap.get('organizationId')) {
+      // Other restricted users keep the org-seeded, shareable-URL behaviour.
       const orgId = this.authService.currentUser()?.organizationId;
       if (orgId) {
         this.pushStateToUrl({ organizationId: String(orgId) });
