@@ -8,6 +8,7 @@ import {
   Params,
   ParamMap,
   Router,
+  RouterLink,
   RouterOutlet,
 } from '@angular/router';
 import { EMPTY, Subject } from 'rxjs';
@@ -26,6 +27,7 @@ import { Menu } from 'primeng/menu';
 import { Popover, PopoverModule } from 'primeng/popover';
 import { DividerModule } from 'primeng/divider';
 import { FloatLabelModule } from 'primeng/floatlabel';
+import { AvatarModule } from 'primeng/avatar';
 import { ListShell } from '../../../shared/components/list/list-shell/list-shell';
 import { Event, EventStatus } from '../../../core/models/event.model';
 import { PageableParams, PageableResponse } from '../../../core/models/api.model';
@@ -40,6 +42,8 @@ import { EventForm } from '../event-form/event-form';
 import { EventListBus, EventMutation } from '../event-list-bus.service';
 import { DefaultValuePipe } from '../../../shared/pipes/default-value.pipe';
 import { FormatEventDateTimePipe } from '../../../shared/pipes/format-event-date-time-pipe';
+import { InitialsPipe } from '../../../shared/pipes/initials-pipe';
+import { UserSummaryPipe } from '../../../shared/pipes/user-summary-pipe';
 import { BaseTableComponent } from '../../../shared/base/base-table.component';
 import { TableFilterPreferences } from '../../../shared/models/table-config.model';
 import { OrganizationSelector } from '../../../layout/organization-selector/organization-selector';
@@ -71,10 +75,14 @@ interface EventFilterPreferences extends TableFilterPreferences {
     PopoverModule,
     DividerModule,
     FloatLabelModule,
+    AvatarModule,
     DefaultValuePipe,
     FormatEventDateTimePipe,
+    InitialsPipe,
+    UserSummaryPipe,
     OrganizationSelector,
     RouterOutlet,
+    RouterLink,
     ListShell,
   ],
   providers: [DialogService, ConfirmationService],
