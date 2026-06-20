@@ -1,6 +1,6 @@
 import { Component, computed, DestroyRef, inject, signal, ViewChild } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { ActivatedRoute, Params, ParamMap, Router } from '@angular/router';
+import { ActivatedRoute, Params, ParamMap, Router, RouterLink } from '@angular/router';
 import { EMPTY, Subject } from 'rxjs';
 import { catchError, debounceTime, distinctUntilChanged, switchMap } from 'rxjs/operators';
 import { CommonModule } from '@angular/common';
@@ -18,6 +18,7 @@ import { DialogService } from 'primeng/dynamicdialog';
 import { Popover, PopoverModule } from 'primeng/popover';
 import { TagModule } from 'primeng/tag';
 import { FloatLabelModule } from 'primeng/floatlabel';
+import { AvatarModule } from 'primeng/avatar';
 import { ListShell } from '../../../shared/components/list/list-shell/list-shell';
 
 import { Organization } from '../../../core/models/organization.model';
@@ -30,6 +31,8 @@ import { OrganizationForm } from '../organization-form/organization-form';
 import { OrganizationListBus, OrganizationMutation } from '../organization-list-bus.service';
 import { DefaultValuePipe } from '../../../shared/pipes/default-value.pipe';
 import { UserQuotaPipe } from '../../../shared/pipes/user-quota-pipe';
+import { InitialsPipe } from '../../../shared/pipes/initials-pipe';
+import { UserSummaryPipe } from '../../../shared/pipes/user-summary-pipe';
 import { BaseTableComponent } from '../../../shared/base/base-table.component';
 import { TableFilterPreferences } from '../../../shared/models/table-config.model';
 
@@ -55,10 +58,14 @@ interface OrganizationFilterPreferences extends TableFilterPreferences {
     ConfirmPopupModule,
     TagModule,
     FloatLabelModule,
+    AvatarModule,
     DefaultValuePipe,
     UserQuotaPipe,
+    InitialsPipe,
+    UserSummaryPipe,
     PopoverModule,
     ListShell,
+    RouterLink,
   ],
   providers: [DialogService, ConfirmationService],
   templateUrl: './organization-list.html',
