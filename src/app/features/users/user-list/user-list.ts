@@ -36,6 +36,7 @@ import { DefaultValuePipe } from '../../../shared/pipes/default-value.pipe';
 import { EventNamePipe } from '../../../shared/pipes/event-name-pipe';
 import { EventLogoPipe } from '../../../shared/pipes/event-logo-pipe';
 import { InitialsPipe } from '../../../shared/pipes/initials-pipe';
+import { UserSummaryPipe } from '../../../shared/pipes/user-summary-pipe';
 import { BaseTableComponent } from '../../../shared/base/base-table.component';
 import { TableColumn, TableFilterPreferences } from '../../../shared/models/table-config.model';
 import { OrganizationSelector } from '../../../layout/organization-selector/organization-selector';
@@ -80,6 +81,7 @@ interface UserFilterPreferences extends TableFilterPreferences {
     EventNamePipe,
     EventLogoPipe,
     InitialsPipe,
+    UserSummaryPipe,
     OrganizationSelector,
     ListShell,
     RouterLink,

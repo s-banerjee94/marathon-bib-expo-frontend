@@ -217,6 +217,37 @@
                     [severity]="getCellValue(user, col.field) !== false ? 'success' : 'danger'"
                     [value]="getCellValue(user, col.field) !== false ? 'Yes' : 'No'"
                   />
+                } @else if (col.field === 'createdBy' || col.field === 'lastModifiedBy') {
+                  @let auditUser = $any(getCellValue(user, col.field)) | userSummary;
+                  @if (auditUser) {
+                    <div class="flex items-center gap-2">
+                      @if (auditUser.avatarUrl) {
+                        <p-avatar
+                          [image]="auditUser.avatarUrl"
+                          shape="circle"
+                          styleClass="shrink-0 !w-6 !h-6"
+                        />
+                      } @else {
+                        <p-avatar
+                          [label]="auditUser.name | initials: 2"
+                          shape="circle"
+                          styleClass="shrink-0 !w-6 !h-6 !text-xs"
+                        />
+                      }
+                      @if (auditUser.id !== null) {
+                        <a
+                          class="text-primary hover:underline"
+                          [routerLink]="['/users', auditUser.id, 'edit']"
+                        >
+                          {{ auditUser.name }}
+                        </a>
+                      } @else {
+                        <span>{{ auditUser.name }}</span>
+                      }
+                    </div>
+                  } @else {
+                    --
+                  }
                 } @else if (col.type === 'datetime') {
                   {{
                     $any(getCellValue(user, col.field))

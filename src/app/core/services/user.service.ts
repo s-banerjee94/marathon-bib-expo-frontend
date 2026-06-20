@@ -60,6 +60,16 @@ export class UserService {
     return this.http.get<User>(`${this.apiUrl}/${id}`);
   }
 
+  /**
+   * Resolve a user by their username. Used to turn the `createdBy`/`lastModifiedBy`
+   * audit usernames into a display name + avatar. The backend returns 404/403 when
+   * the caller (an org-scoped role) asks for a user outside their organization or a
+   * ROOT/ADMIN user — callers should treat that as "unresolvable", not an error.
+   */
+  getUserByUsername(username: string): Observable<User> {
+    return this.http.get<User>(`${this.apiUrl}/by-username/${encodeURIComponent(username)}`);
+  }
+
   updateUser(id: number, request: UpdateUserRequest): Observable<User> {
     return this.http.patch<User>(`${this.apiUrl}/${id}`, request);
   }
