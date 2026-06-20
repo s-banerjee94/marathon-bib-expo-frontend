@@ -11,6 +11,7 @@ import {
 import { forkJoin } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { DatePipe } from '@angular/common';
+import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
 import { TableModule } from 'primeng/table';
@@ -23,6 +24,7 @@ import { IconFieldModule } from 'primeng/iconfield';
 import { InputIconModule } from 'primeng/inputicon';
 import { FloatLabelModule } from 'primeng/floatlabel';
 import { CardModule } from 'primeng/card';
+import { AvatarModule } from 'primeng/avatar';
 import { TooltipModule } from 'primeng/tooltip';
 import { DistributionLogResponse, LogSearchType } from '../../../../core/models/distribution.model';
 import { User, UserRole } from '../../../../core/models/user.model';
@@ -33,6 +35,8 @@ import { ErrorHandlerService } from '../../../../core/services/error-handler.ser
 import { DefaultValuePipe } from '../../../../shared/pipes/default-value.pipe';
 import { JoinPipe } from '../../../../shared/pipes/join.pipe';
 import { UserNamePipe } from '../../../../shared/pipes/user-name-pipe';
+import { InitialsPipe } from '../../../../shared/pipes/initials-pipe';
+import { UserSummaryPipe } from '../../../../shared/pipes/user-summary-pipe';
 import {
   LOG_ACTION_OPTIONS,
   LOG_SEARCH_TYPES,
@@ -65,10 +69,14 @@ import { injectIsMobile } from '../../../../shared/utils/responsive.utils';
     InputIconModule,
     FloatLabelModule,
     CardModule,
+    AvatarModule,
     TooltipModule,
     DefaultValuePipe,
     JoinPipe,
     UserNamePipe,
+    InitialsPipe,
+    UserSummaryPipe,
+    RouterLink,
   ],
   templateUrl: './activity-logs-tab.html',
 })
