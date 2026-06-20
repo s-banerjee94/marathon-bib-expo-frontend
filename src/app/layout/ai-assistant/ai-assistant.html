@@ -1,0 +1,192 @@
+<!-- Shared chat body, reused by every display mode -->
+<ng-template #chatBody>
+  <div class="flex flex-col h-full min-h-0">
+    <!-- Header -->
+    <div
+      class="flex items-center justify-between gap-2 px-3 py-2 border-b shrink-0"
+      style="border-color: var(--surface-border)"
+    >
+      <div class="flex items-center gap-2">
+        <span
+          class="w-8 h-8 rounded-full flex items-center justify-center"
+          style="background: color-mix(in srgb, var(--primary-color), transparent 88%)"
+        >
+          <i class="pi pi-sparkles" style="color: var(--primary-color)"></i>
+        </span>
+        <span class="font-semibold">AI Assistant</span>
+      </div>
+      <div class="flex items-center gap-1">
+        <p-button
+          (onClick)="assistant.clear()"
+          [disabled]="assistant.messages().length === 0 || assistant.sending()"
+          icon="pi pi-pen-to-square"
+          label="New chat"
+          [text]="true"
+          size="small"
+          styleClass="!text-xs"
+        />
+        <p-button
+          (onClick)="assistant.setOpen(false)"
+          icon="pi pi-times"
+          [rounded]="true"
+          [text]="true"
+          ariaLabel="Close assistant"
+        />
+      </div>
+    </div>
+
+    <!-- Conversation -->
+    <div #scrollArea class="flex-1 min-h-0 overflow-y-auto flex flex-col gap-3 p-3">
+      @if (assistant.loadingHistory()) {
+        <div class="flex items-center justify-center h-full">
+          <i class="pi pi-spinner pi-spin text-2xl" style="color: var(--text-color-secondary)"></i>
+        </div>
+      } @else if (assistant.messages().length === 0 && !assistant.sending()) {
+        <div class="flex flex-col items-center justify-center gap-2 h-full text-center px-4">
+          <span
+            class="w-14 h-14 rounded-full flex items-center justify-center"
+            style="background: color-mix(in srgb, var(--primary-color), transparent 88%)"
+          >
+            <i class="pi pi-sparkles text-2xl" style="color: var(--primary-color)"></i>
+          </span>
+          <p class="font-medium">How can I help?</p>
+          <p class="text-sm" style="color: var(--text-color-secondary)">
+            Ask me to create an event, add a race, invite a distributor, and more — in plain words.
+          </p>
+        </div>
+      }
+
+      @for (msg of assistant.messages(); track msg.id) {
+        @if (msg.role === 'user') {
+          <div class="flex justify-end">
+            <div
+              class="max-w-[85%] rounded-2xl rounded-br-sm px-3 py-2 text-sm whitespace-pre-wrap break-words"
+              style="background: var(--primary-color); color: var(--primary-contrast-color)"
+            >
+              {{ msg.text }}
+            </div>
+          </div>
+        } @else {
+          <div class="flex justify-start gap-2">
+            <span
+              class="w-7 h-7 shrink-0 rounded-full flex items-center justify-center"
+              style="background: color-mix(in srgb, var(--primary-color), transparent 88%)"
+            >
+              <i class="pi pi-sparkles text-sm" style="color: var(--primary-color)"></i>
+            </span>
+            <div
+              class="max-w-[85%] rounded-2xl rounded-bl-sm px-3 py-2 text-sm break-words [&>*:first-child]:!mt-0 [&>*:last-child]:!mb-0 [&_h1]:text-lg [&_h1]:font-semibold [&_h1]:mt-3 [&_h1]:mb-1 [&_h2]:text-base [&_h2]:font-semibold [&_h2]:mt-3 [&_h2]:mb-1 [&_h3]:text-sm [&_h3]:font-semibold [&_h3]:mt-2 [&_h3]:mb-1 [&_p]:my-2 [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:my-2 [&_ol]:list-decimal [&_ol]:pl-5 [&_ol]:my-2 [&_li]:my-1 [&_a]:underline [&_a]:[color:var(--primary-color)] [&_strong]:font-semibold [&_em]:italic [&_code]:rounded [&_code]:px-1 [&_code]:py-0.5 [&_code]:text-[0.85em] [&_code]:[background:var(--surface-border)] [&_pre]:rounded-lg [&_pre]:p-3 [&_pre]:my-2 [&_pre]:overflow-x-auto [&_pre]:[background:var(--surface-border)] [&_pre_code]:p-0 [&_pre_code]:[background:transparent] [&_blockquote]:border-l-4 [&_blockquote]:pl-3 [&_blockquote]:italic [&_blockquote]:[border-color:var(--surface-border)] [&_table]:w-full [&_table]:my-2 [&_table]:text-xs [&_table]:border-collapse [&_th]:border [&_th]:[border-color:var(--surface-border)] [&_th]:px-2 [&_th]:py-1 [&_th]:text-left [&_td]:border [&_td]:[border-color:var(--surface-border)] [&_td]:px-2 [&_td]:py-1 [&_hr]:my-3 [&_hr]:[border-color:var(--surface-border)]"
+              style="background: var(--surface-hover)"
+              [innerHTML]="msg.text | markdown"
+            ></div>
+          </div>
+        }
+      }
+
+      <!-- Typing indicator -->
+      @if (assistant.sending()) {
+        <div class="flex justify-start gap-2">
+          <span
+            class="w-7 h-7 shrink-0 rounded-full flex items-center justify-center"
+            style="background: color-mix(in srgb, var(--primary-color), transparent 88%)"
+          >
+            <i class="pi pi-sparkles text-sm" style="color: var(--primary-color)"></i>
+          </span>
+          <div
+            class="rounded-2xl rounded-bl-sm px-3 py-3 flex items-center gap-1"
+            style="background: var(--surface-hover)"
+          >
+            <span
+              class="w-2 h-2 rounded-full animate-bounce [animation-delay:-0.3s]"
+              style="background: var(--text-color-secondary)"
+            ></span>
+            <span
+              class="w-2 h-2 rounded-full animate-bounce [animation-delay:-0.15s]"
+              style="background: var(--text-color-secondary)"
+            ></span>
+            <span
+              class="w-2 h-2 rounded-full animate-bounce"
+              style="background: var(--text-color-secondary)"
+            ></span>
+          </div>
+        </div>
+      }
+    </div>
+
+    <!-- Composer -->
+    <div class="shrink-0 border-t p-2" style="border-color: var(--surface-border)">
+      <div class="flex items-end gap-2">
+        <textarea
+          pTextarea
+          [ngModel]="draft()"
+          (ngModelChange)="draft.set($event)"
+          (keydown.enter)="onEnter($event)"
+          [maxlength]="assistant.maxMessageLength"
+          rows="1"
+          placeholder="Ask the assistant…"
+          class="flex-1 resize-none max-h-32"
+          [autoResize]="true"
+        ></textarea>
+        <p-button
+          (onClick)="onSend()"
+          [disabled]="!draft().trim() || assistant.sending()"
+          icon="pi pi-send"
+          [rounded]="true"
+          ariaLabel="Send message"
+        />
+      </div>
+    </div>
+  </div>
+</ng-template>
+
+@let mode = layout.aiAssistantMode();
+
+<!-- Overlay + Push: right-edge sliding panel -->
+@if (mode === 'overlay' || mode === 'push') {
+  @if (mode === 'overlay' && assistant.isOpen()) {
+    <div
+      (click)="assistant.setOpen(false)"
+      class="fixed left-0 right-0 bottom-0 top-[var(--topbar-height)] z-[1000]"
+      style="background: var(--maskbg)"
+    ></div>
+  }
+  <aside
+    class="fixed top-[var(--topbar-height)] right-0 bottom-0 z-[1001] w-full sm:w-[28rem] border-l flex flex-col transition-transform duration-300 ease-out"
+    style="background: var(--surface-card); border-color: var(--surface-border)"
+    [class.translate-x-full]="!assistant.isOpen()"
+    [attr.aria-hidden]="!assistant.isOpen()"
+  >
+    <ng-container *ngTemplateOutlet="chatBody" />
+  </aside>
+}
+
+<!-- Popup: draggable bubble + floating window -->
+@if (mode === 'popup') {
+  @if (assistant.isOpen()) {
+    <div
+      class="fixed z-[1001] flex flex-col rounded-2xl border shadow-2xl overflow-hidden w-[22rem] max-w-[calc(100vw-2rem)] h-[35rem] max-h-[70vh]"
+      style="background: var(--surface-card); border-color: var(--surface-border)"
+      [style.left.px]="popupPos().left"
+      [style.top.px]="popupPos().top"
+    >
+      <ng-container *ngTemplateOutlet="chatBody" />
+    </div>
+  }
+  <button
+    type="button"
+    (pointerdown)="onFabPointerDown($event)"
+    (pointermove)="onFabPointerMove($event)"
+    (pointerup)="onFabPointerUp($event)"
+    class="fixed z-[1002] w-14 h-14 rounded-full shadow-lg flex items-center justify-center cursor-grab active:cursor-grabbing touch-none"
+    style="background: var(--primary-color); color: var(--primary-contrast-color)"
+    [style.left.px]="fabPos().x"
+    [style.top.px]="fabPos().y"
+    [attr.aria-label]="assistant.isOpen() ? 'Close AI assistant' : 'Open AI assistant'"
+  >
+    <i
+      class="pi text-xl"
+      [class.pi-times]="assistant.isOpen()"
+      [class.pi-sparkles]="!assistant.isOpen()"
+    ></i>
+  </button>
+}

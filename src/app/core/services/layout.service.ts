@@ -11,6 +11,7 @@ import { LocalStorageService } from './local-storage.service';
 
 export type BorderRadiusMode = 'square' | 'default' | 'rounded';
 export type InputVariant = 'outlined' | 'filled';
+export type AiAssistantMode = 'overlay' | 'push' | 'popup';
 
 const CONFIG_VERSION = 3;
 
@@ -26,6 +27,7 @@ export interface LayoutConfig {
   inputVariant: InputVariant;
   borderRadius: BorderRadiusMode;
   followSystem: boolean;
+  aiAssistantMode: AiAssistantMode;
 }
 
 export interface LayoutState {
@@ -64,6 +66,7 @@ const DEFAULT_CONFIG: LayoutConfig = {
   inputVariant: 'outlined',
   borderRadius: 'default',
   followSystem: false,
+  aiAssistantMode: 'push',
 };
 
 const DEFAULT_LAYOUT_STATE: LayoutState = {
@@ -122,6 +125,7 @@ export class LayoutService {
   inputVariant = computed(() => this.layoutConfig().inputVariant);
   borderRadius = computed(() => this.layoutConfig().borderRadius);
   followSystem = computed(() => this.layoutConfig().followSystem);
+  aiAssistantMode = computed(() => this.layoutConfig().aiAssistantMode);
   isNoirActive = computed(() => this.layoutConfig().primary === 'noir');
   isSidebarActive = computed(() => {
     const state = this.layoutState();
@@ -141,6 +145,11 @@ export class LayoutService {
   menuModeOptions: { label: string; value: 'static' | 'overlay' }[] = [
     { label: 'Static', value: 'static' },
     { label: 'Overlay', value: 'overlay' },
+  ];
+  aiAssistantModeOptions: { label: string; value: AiAssistantMode }[] = [
+    { label: 'Push', value: 'push' },
+    { label: 'Overlay', value: 'overlay' },
+    { label: 'Popup', value: 'popup' },
   ];
   inputVariantOptions: { label: string; value: InputVariant }[] = [
     { label: 'Outlined', value: 'outlined' },
@@ -391,6 +400,10 @@ export class LayoutService {
 
   setMenuMode(mode: 'static' | 'overlay'): void {
     this.layoutConfig.update((state) => ({ ...state, menuMode: mode }));
+  }
+
+  setAiAssistantMode(mode: AiAssistantMode): void {
+    this.layoutConfig.update((state) => ({ ...state, aiAssistantMode: mode }));
   }
 
   setFontScale(scale: number): void {

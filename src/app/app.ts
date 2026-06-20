@@ -9,6 +9,8 @@ import { Navbar } from './layout/navbar/navbar';
 import { SidebarComponent } from './layout/sidebar/sidebar';
 import { LayoutService } from './core/services/layout.service';
 import { AuthService } from './core/services/auth.service';
+import { AiAssistantService } from './core/services/ai-assistant.service';
+import { AiAssistant } from './layout/ai-assistant/ai-assistant';
 import { ImportProgressFloating } from './layout/import-progress-floating/import-progress-floating';
 
 @Component({
@@ -22,6 +24,7 @@ import { ImportProgressFloating } from './layout/import-progress-floating/import
     ToastModule,
     ConfirmDialogModule,
     ImportProgressFloating,
+    AiAssistant,
   ],
   templateUrl: './app.html',
   styleUrl: './app.css',
@@ -29,6 +32,7 @@ import { ImportProgressFloating } from './layout/import-progress-floating/import
 export class App {
   layoutService = inject(LayoutService);
   authService = inject(AuthService);
+  protected aiAssistant = inject(AiAssistantService);
   private router = inject(Router);
   isAuthenticated = this.authService.isAuthenticated;
 
@@ -55,6 +59,7 @@ export class App {
       'layout-static-inactive': state.staticMenuDesktopInactive && config.menuMode === 'static',
       'layout-mobile-active': state.mobileMenuActive,
       'layout-overlay-active': state.overlayMenuActive,
+      'layout-ai-push': config.aiAssistantMode === 'push' && this.aiAssistant.isOpen(),
     };
   });
   private platformId = inject(PLATFORM_ID);

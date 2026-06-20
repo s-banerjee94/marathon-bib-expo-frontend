@@ -159,6 +159,18 @@
             </div>
           </div>
         </p-popover>
+
+        <!-- AI Assistant -->
+        @if (aiAssistant.available()) {
+          <p-button
+            (onClick)="aiAssistant.toggle()"
+            [rounded]="true"
+            [text]="true"
+            icon="pi pi-sparkles"
+            pTooltip="AI Assistant"
+            ariaLabel="Open AI assistant"
+          />
+        }
       }
 
       <!-- User Avatar Menu — only for authenticated users -->

@@ -68,7 +68,9 @@ body.blocked-scroll {
   margin-left: 0;
   min-height: calc(100vh - var(--topbar-height));
   padding-top: var(--topbar-height);
-  transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition:
+    margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    margin-right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .layout-static .layout-main {
@@ -77,6 +79,13 @@ body.blocked-scroll {
 
 .layout-static.layout-static-inactive .layout-main {
   margin-left: 0;
+}
+
+/* AI assistant "push" mode squeezes the content on desktop (matches the panel width) */
+@media (min-width: 640px) {
+  .layout-ai-push .layout-main {
+    margin-right: 28rem;
+  }
 }
 
 .layout-sidebar {

@@ -20,6 +20,7 @@ import type { MenuItem } from 'primeng/api';
 import { AuthService } from '../../core/services/auth.service';
 import { LayoutService } from '../../core/services/layout.service';
 import { NotificationService } from '../../core/services/notification.service';
+import { AiAssistantService } from '../../core/services/ai-assistant.service';
 import { ThemeConfigurator } from '../theme-configurator/theme-configurator';
 import { NotificationCard } from '../../features/notifications/notification-card/notification-card';
 import { NotificationCardSkeleton } from '../../features/notifications/notification-card-skeleton/notification-card-skeleton';
@@ -47,6 +48,7 @@ import { getInitials } from '../../shared/utils/initials.util';
 export class Navbar implements OnDestroy {
   layoutService = inject(LayoutService);
   notificationService = inject(NotificationService);
+  aiAssistant = inject(AiAssistantService);
 
   // Account dropdown: identity header is rendered via the menu's #start template;
   // these are the actionable items below it.

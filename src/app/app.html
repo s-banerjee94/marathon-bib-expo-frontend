@@ -26,6 +26,10 @@
         <router-outlet></router-outlet>
       </div>
     </main>
+
+    @if (aiAssistant.available()) {
+      <app-ai-assistant />
+    }
   </div>
 
   <app-import-progress-floating />
