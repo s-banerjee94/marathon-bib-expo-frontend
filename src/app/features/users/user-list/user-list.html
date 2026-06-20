@@ -218,7 +218,7 @@
                     [value]="getCellValue(user, col.field) !== false ? 'Yes' : 'No'"
                   />
                 } @else if (col.field === 'createdBy' || col.field === 'lastModifiedBy') {
-                  @let auditUser = $any(getCellValue(user, col.field)) | userSummary;
+                  @let auditUser = getCellValue(user, col.field) | userSummary;
                   @if (auditUser) {
                     <div class="flex items-center gap-2">
                       @if (auditUser.avatarUrl) {

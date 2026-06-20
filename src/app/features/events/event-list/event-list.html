@@ -205,7 +205,7 @@
                       }
                     </span>
                   } @else if (col.field === 'createdBy' || col.field === 'lastModifiedBy') {
-                    @let auditUser = $any(getCellValue(event, col.field)) | userSummary;
+                    @let auditUser = getCellValue(event, col.field) | userSummary;
                     @if (auditUser) {
                       <div class="flex items-center gap-2">
                         @if (auditUser.avatarUrl) {

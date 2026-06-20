@@ -21,8 +21,8 @@ import { UserCacheService, UserSummary } from '../../core/services/user-cache.se
 export class UserSummaryPipe implements PipeTransform {
   private cache = inject(UserCacheService);
 
-  transform(username: string | null | undefined): UserSummary | null {
-    if (!username) return null;
+  transform(username: unknown): UserSummary | null {
+    if (typeof username !== 'string' || username.length === 0) return null;
     return this.cache.resolve(username)();
   }
 }
