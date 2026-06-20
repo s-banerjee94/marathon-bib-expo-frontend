@@ -1,5 +1,6 @@
 import { Component, computed, inject, input, OnDestroy, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { Subject } from 'rxjs';
 import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
@@ -14,6 +15,7 @@ import { TooltipModule } from 'primeng/tooltip';
 import { DialogService } from 'primeng/dynamicdialog';
 import { ConfirmationService } from 'primeng/api';
 import { CardModule } from 'primeng/card';
+import { AvatarModule } from 'primeng/avatar';
 import { ConfirmPopupModule } from 'primeng/confirmpopup';
 import { SmsTemplate } from '../../../../core/models/sms-template.model';
 import { SmsTemplateService } from '../../../../core/services/sms-template.service';
@@ -23,6 +25,8 @@ import { SmsTemplateForm } from '../sms-template-form/sms-template-form';
 import { SmsTemplateDetail } from '../sms-template-detail/sms-template-detail';
 import { DefaultValuePipe } from '../../../../shared/pipes/default-value.pipe';
 import { TruncatePipe } from '../../../../shared/pipes/truncate-pipe';
+import { InitialsPipe } from '../../../../shared/pipes/initials-pipe';
+import { UserSummaryPipe } from '../../../../shared/pipes/user-summary-pipe';
 import { TableColumn } from '../../../../shared/models/table-config.model';
 import {
   SMS_TEMPLATE_COLUMNS,
@@ -54,8 +58,12 @@ import { injectIsMobile } from '../../../../shared/utils/responsive.utils';
     TooltipModule,
     ConfirmPopupModule,
     CardModule,
+    AvatarModule,
     DefaultValuePipe,
     TruncatePipe,
+    InitialsPipe,
+    UserSummaryPipe,
+    RouterLink,
   ],
   providers: [DialogService, ConfirmationService],
   templateUrl: './sms-template-section.html',
