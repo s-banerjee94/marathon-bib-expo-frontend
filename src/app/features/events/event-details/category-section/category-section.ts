@@ -1,11 +1,13 @@
 import { Component, computed, effect, inject, input, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
 import { SelectModule } from 'primeng/select';
 import { MultiSelectModule } from 'primeng/multiselect';
 import { TagModule } from 'primeng/tag';
+import { AvatarModule } from 'primeng/avatar';
 import { SkeletonModule } from 'primeng/skeleton';
 import { TooltipModule } from 'primeng/tooltip';
 import { DialogService } from 'primeng/dynamicdialog';
@@ -36,6 +38,8 @@ import {
   saveColumnPreferences,
 } from '../../../../shared/utils/column.utils';
 import { injectIsMobile } from '../../../../shared/utils/responsive.utils';
+import { InitialsPipe } from '../../../../shared/pipes/initials-pipe';
+import { UserSummaryPipe } from '../../../../shared/pipes/user-summary-pipe';
 
 const DEFAULT_CATEGORY_FIELDS = ['id', 'categoryName', 'createdBy', 'createdAt'];
 
@@ -53,6 +57,10 @@ const DEFAULT_CATEGORY_FIELDS = ['id', 'categoryName', 'createdBy', 'createdAt']
     TooltipModule,
     ConfirmPopupModule,
     CardModule,
+    AvatarModule,
+    InitialsPipe,
+    UserSummaryPipe,
+    RouterLink,
   ],
   providers: [DialogService, ConfirmationService],
   templateUrl: './category-section.html',

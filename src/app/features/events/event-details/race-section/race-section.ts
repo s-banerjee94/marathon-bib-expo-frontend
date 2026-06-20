@@ -1,5 +1,6 @@
 import { Component, computed, inject, input, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
@@ -7,6 +8,7 @@ import { InputTextModule } from 'primeng/inputtext';
 import { MultiSelectModule } from 'primeng/multiselect';
 import { CardModule } from 'primeng/card';
 import { TagModule } from 'primeng/tag';
+import { AvatarModule } from 'primeng/avatar';
 import { SkeletonModule } from 'primeng/skeleton';
 import { TooltipModule } from 'primeng/tooltip';
 import { DialogService } from 'primeng/dynamicdialog';
@@ -19,6 +21,8 @@ import { ToastService } from '../../../../core/services/toast.service';
 import { EventDetailsState } from '../event-details-state.service';
 import { RaceForm } from '../race-form/race-form';
 import { DefaultValuePipe } from '../../../../shared/pipes/default-value.pipe';
+import { InitialsPipe } from '../../../../shared/pipes/initials-pipe';
+import { UserSummaryPipe } from '../../../../shared/pipes/user-summary-pipe';
 import { TableRowSelectEvent } from 'primeng/table';
 import { TableColumn } from '../../../../shared/models/table-config.model';
 import {
@@ -51,7 +55,11 @@ import { formatUtcInstantInZone } from '../../../../shared/utils/timezone.utils'
     TooltipModule,
     ConfirmPopupModule,
     CardModule,
+    AvatarModule,
     DefaultValuePipe,
+    InitialsPipe,
+    UserSummaryPipe,
+    RouterLink,
   ],
   providers: [DialogService, ConfirmationService],
   templateUrl: './race-section.html',
