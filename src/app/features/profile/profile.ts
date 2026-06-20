@@ -26,6 +26,9 @@ import { ImageUploadService } from '../../core/services/image-upload.service';
 import { ErrorHandlerService } from '../../core/services/error-handler.service';
 import { ToastService } from '../../core/services/toast.service';
 import { DefaultValuePipe } from '../../shared/pipes/default-value.pipe';
+import { EventNamePipe } from '../../shared/pipes/event-name-pipe';
+import { EventLogoPipe } from '../../shared/pipes/event-logo-pipe';
+import { InitialsPipe } from '../../shared/pipes/initials-pipe';
 import { ImageCropDialog } from '../../shared/components/image-crop-dialog/image-crop-dialog';
 import { ROLE_LABELS, UpdateUserRequest, User, UserRole } from '../../core/models/user.model';
 import { buildDirtyPatch, shouldShowError } from '../../shared/utils/form.utils';
@@ -58,6 +61,9 @@ const PASSWORD_MAX = 100;
     ProgressSpinnerModule,
     DialogModule,
     DefaultValuePipe,
+    EventNamePipe,
+    EventLogoPipe,
+    InitialsPipe,
     ImageCropDialog,
   ],
   templateUrl: './profile.html',
@@ -111,7 +117,8 @@ export class Profile implements OnInit {
   });
 
   get newPasswordValid(): boolean {
-    const value = this.passwords.newPassword;
+    // form.resetForm() writes null back into the bound model, so guard against it.
+    const value = this.passwords.newPassword ?? '';
     return value.length >= PASSWORD_MIN && value.length <= PASSWORD_MAX;
   }
 

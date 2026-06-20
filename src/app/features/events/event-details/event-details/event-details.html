@@ -34,11 +34,11 @@
     [style]="{ width: '24rem', 'max-width': '90vw' }"
   >
     <app-image-upload
-      shape="circle"
+      shape="square"
       [imageUrl]="event()?.logoUrl"
       [pending]="uploadingLogo()"
-      alt="Event image"
-      helpText="Square images look best. Large photos are cropped and compressed automatically."
+      alt="Event logo"
+      helpText="PNG with a transparent background looks best. The whole image is kept (never cropped) and resized to fit 512px."
       (fileSelected)="onLogoSelected($event)"
       (removeRequested)="onLogoRemove()"
     />
@@ -77,7 +77,7 @@
           <div class="relative w-20 h-20">
             <button
               type="button"
-              class="w-20 h-20 rounded-full overflow-hidden border flex items-center justify-center"
+              class="w-20 h-20 rounded-lg overflow-hidden border flex items-center justify-center"
               [class.cursor-zoom-in]="event()!.logoUrl && !logoLoadError()"
               [attr.aria-label]="
                 event()!.logoUrl && !logoLoadError() ? 'View event image' : 'Event image'
@@ -88,7 +88,7 @@
                 <img
                   [src]="event()!.logoUrl"
                   [alt]="event()!.eventName"
-                  class="w-full h-full object-cover"
+                  class="w-full h-full object-contain p-1"
                   (error)="onLogoError()"
                 />
               } @else {

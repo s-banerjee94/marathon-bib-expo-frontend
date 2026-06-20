@@ -13,7 +13,7 @@
   [isMobile]="isMobile()"
   [items]="entities()"
   [pageSize]="pageSize()"
-  [rowsPerPageOptions]="[5, 10, 20, 50]"
+  [rowsPerPageOptions]="[20, 30, 50, 100]"
   [searchTerm]="searchTerm()"
   [totalRecords]="totalRecords()"
   emptyIcon="pi pi-users"
@@ -94,7 +94,7 @@
       [first]="currentPage() * pageSize()"
       [lazy]="true"
       [paginator]="true"
-      [rowsPerPageOptions]="[5, 10, 20, 50]"
+      [rowsPerPageOptions]="[20, 30, 50, 100]"
       [rows]="pageSize()"
       [scrollable]="true"
       [size]="inputSize"
@@ -153,6 +153,34 @@
                   >
                     {{ getCellValue(user, col.field) | defaultValue }}
                   </span>
+                } @else if (col.field === 'eventName') {
+                  @if (user.eventId) {
+                    <div class="flex items-center gap-2">
+                      @let eventLogoUrl = user.eventId | eventLogo;
+                      @if (eventLogoUrl) {
+                        <p-avatar
+                          [image]="eventLogoUrl"
+                          shape="circle"
+                          styleClass="shrink-0 !w-6 !h-6"
+                          [pt]="{ image: { class: 'object-contain' } }"
+                        />
+                      } @else {
+                        <p-avatar
+                          [label]="user.eventId | eventName | initials: 2"
+                          shape="circle"
+                          styleClass="shrink-0 !w-6 !h-6 !text-xs"
+                        />
+                      }
+                      <a
+                        class="text-primary hover:underline"
+                        [routerLink]="['/events', user.eventId]"
+                      >
+                        {{ user.eventId | eventName }}
+                      </a>
+                    </div>
+                  } @else {
+                    --
+                  }
                 } @else if (col.field === 'enabled') {
                   @if (togglingUserId() === user.id) {
                     <p-skeleton height="1.5rem" width="5rem" />
@@ -280,10 +308,29 @@
               </span>
             </div>
           }
-          @if (user.eventName) {
+          @if (user.eventId) {
             <div class="flex items-center gap-2">
-              <i class="pi pi-calendar opacity-60 w-4"></i>
-              <span class="truncate">{{ user.eventName }}</span>
+              @let mobileEventLogoUrl = user.eventId | eventLogo;
+              @if (mobileEventLogoUrl) {
+                <p-avatar
+                  [image]="mobileEventLogoUrl"
+                  shape="circle"
+                  styleClass="shrink-0 !w-6 !h-6"
+                  [pt]="{ image: { class: 'object-contain' } }"
+                />
+              } @else {
+                <p-avatar
+                  [label]="user.eventId | eventName | initials: 2"
+                  shape="circle"
+                  styleClass="shrink-0 !w-6 !h-6 !text-xs"
+                />
+              }
+              <a
+                class="truncate text-primary hover:underline"
+                [routerLink]="['/events', user.eventId]"
+              >
+                {{ user.eventId | eventName }}
+              </a>
             </div>
           }
         </div>

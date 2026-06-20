@@ -1,6 +1,6 @@
 import { Component, computed, DestroyRef, inject, signal, ViewChild } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { ActivatedRoute, Params, ParamMap, Router } from '@angular/router';
+import { ActivatedRoute, Params, ParamMap, Router, RouterLink } from '@angular/router';
 import { EMPTY, Subject } from 'rxjs';
 import { catchError, debounceTime, distinctUntilChanged, switchMap } from 'rxjs/operators';
 import { TableLazyLoadEvent, TableModule } from 'primeng/table';
@@ -16,6 +16,7 @@ import { CardModule } from 'primeng/card';
 import { CheckboxModule } from 'primeng/checkbox';
 import { SelectModule } from 'primeng/select';
 import { TagModule } from 'primeng/tag';
+import { AvatarModule } from 'primeng/avatar';
 import { FloatLabelModule } from 'primeng/floatlabel';
 import { MenuModule } from 'primeng/menu';
 import { MenuItem } from 'primeng/api';
@@ -32,6 +33,9 @@ import { UserForm } from '../user-form/user-form';
 import { InviteForm } from '../invite-form/invite-form';
 import { UserListBus, UserMutation } from '../user-list-bus.service';
 import { DefaultValuePipe } from '../../../shared/pipes/default-value.pipe';
+import { EventNamePipe } from '../../../shared/pipes/event-name-pipe';
+import { EventLogoPipe } from '../../../shared/pipes/event-logo-pipe';
+import { InitialsPipe } from '../../../shared/pipes/initials-pipe';
 import { BaseTableComponent } from '../../../shared/base/base-table.component';
 import { TableColumn, TableFilterPreferences } from '../../../shared/models/table-config.model';
 import { OrganizationSelector } from '../../../layout/organization-selector/organization-selector';
@@ -71,9 +75,14 @@ interface UserFilterPreferences extends TableFilterPreferences {
     TagModule,
     FloatLabelModule,
     MenuModule,
+    AvatarModule,
     DefaultValuePipe,
+    EventNamePipe,
+    EventLogoPipe,
+    InitialsPipe,
     OrganizationSelector,
     ListShell,
+    RouterLink,
   ],
   providers: [DialogService, ConfirmationService],
   templateUrl: './user-list.html',
@@ -122,7 +131,7 @@ export class UserList extends BaseTableComponent<User, UserFilterPreferences> {
   private loadTrigger = new Subject<void>();
   // Default page size — kept consistent with BaseTableComponent's initial pageSize signal so
   // the URL stays clean (?size=… is only emitted when the user picks a non-default size).
-  private readonly DEFAULT_PAGE_SIZE = 5;
+  private readonly DEFAULT_PAGE_SIZE = 20;
 
   constructor() {
     super();

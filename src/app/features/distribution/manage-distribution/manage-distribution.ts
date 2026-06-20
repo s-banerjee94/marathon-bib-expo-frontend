@@ -138,7 +138,12 @@ export class ManageDistribution implements OnInit {
     ]),
   );
   canViewLogs = computed(() =>
-    this.authService.hasAnyRole([UserRole.ROOT, UserRole.ADMIN, UserRole.ORGANIZER_ADMIN]),
+    this.authService.hasAnyRole([
+      UserRole.ROOT,
+      UserRole.ADMIN,
+      UserRole.ORGANIZER_ADMIN,
+      UserRole.ORGANIZER_USER,
+    ]),
   );
 
   // Mobile bottom tab bar — ids match the child route paths and mirror the desktop

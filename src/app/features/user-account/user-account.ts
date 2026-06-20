@@ -118,7 +118,8 @@ export class UserAccount implements OnInit {
   contactRequired = computed(() => roleRequiresEmailPhone(this.user()?.role ?? null));
 
   get newPasswordValid(): boolean {
-    const value = this.passwords.newPassword;
+    // form.resetForm() writes null back into the bound model, so guard against it.
+    const value = this.passwords.newPassword ?? '';
     return value.length >= PASSWORD_MIN && value.length <= PASSWORD_MAX;
   }
 

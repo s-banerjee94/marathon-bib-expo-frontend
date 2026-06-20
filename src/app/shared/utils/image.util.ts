@@ -4,10 +4,9 @@
  * The backend stores the exact bytes we PUT to S3 (no server-side resize), so the
  * frontend normalizes every image before upload to keep quality consistent and
  * payloads small:
- *  - Avatars / event images -> center-cropped to a square and re-encoded as JPEG
- *                (photos, no alpha).
- *  - Org logos -> downscaled within a bounding box, aspect preserved, kept as PNG
- *                to retain transparency.
+ *  - Avatars -> center-cropped to a square and re-encoded as JPEG (photos, no alpha).
+ *  - Org / event logos -> downscaled within a bounding box, aspect preserved (never
+ *                cropped), kept as PNG to retain transparency.
  *
  * JPEG/PNG are used (never WebP) so the chosen Content-Type is always one S3/the
  * backend accept, regardless of the source file the user picked.
@@ -21,7 +20,6 @@ export interface NormalizedImage {
 const SQUARE_JPEG_TYPE = 'image/jpeg';
 const SQUARE_JPEG_QUALITY = 0.85;
 const AVATAR_SIZE = 512;
-const EVENT_IMAGE_SIZE = 1024;
 
 const LOGO_MAX_EDGE = 512;
 const LOGO_TYPE = 'image/png';
@@ -39,11 +37,6 @@ interface Decoded {
 /** Avatar: center-crop to a square and emit a 512×512 JPEG. */
 export function normalizeAvatar(file: File): Promise<NormalizedImage> {
   return normalizeSquareJpeg(file, AVATAR_SIZE);
-}
-
-/** Event image: center-crop to a square and emit a 1024×1024 JPEG (photo, no alpha). */
-export function normalizeEventImage(file: File): Promise<NormalizedImage> {
-  return normalizeSquareJpeg(file, EVENT_IMAGE_SIZE);
 }
 
 /** Center-crop to a square `size`×`size` and encode as JPEG (photos, no alpha). */
