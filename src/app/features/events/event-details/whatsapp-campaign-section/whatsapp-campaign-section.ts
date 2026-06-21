@@ -16,8 +16,10 @@ import { TagModule } from 'primeng/tag';
 import { SkeletonModule } from 'primeng/skeleton';
 import { TooltipModule } from 'primeng/tooltip';
 import { CardModule } from 'primeng/card';
+import { AvatarModule } from 'primeng/avatar';
 import { ConfirmPopupModule } from 'primeng/confirmpopup';
 import { FormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import { DialogService } from 'primeng/dynamicdialog';
 import { ConfirmationService } from 'primeng/api';
 import { WhatsAppCampaign } from '../../../../core/models/whatsapp-campaign.model';
@@ -31,6 +33,8 @@ import { DefaultValuePipe } from '../../../../shared/pipes/default-value.pipe';
 import { FormatEventDateTimePipe } from '../../../../shared/pipes/format-event-date-time-pipe';
 import { SmsTriggerLabelPipe } from '../../../../shared/pipes/sms-trigger-label-pipe';
 import { SmsTargetLabelPipe } from '../../../../shared/pipes/sms-target-label-pipe';
+import { InitialsPipe } from '../../../../shared/pipes/initials-pipe';
+import { UserSummaryPipe } from '../../../../shared/pipes/user-summary-pipe';
 import { TableColumn } from '../../../../shared/models/table-config.model';
 import {
   WHATSAPP_CAMPAIGN_COLUMNS,
@@ -60,12 +64,16 @@ import { getCampaignStatusSeverity } from '../../../../shared/utils/campaign-sta
     TagModule,
     SkeletonModule,
     TooltipModule,
+    AvatarModule,
     ConfirmPopupModule,
     CardModule,
+    RouterLink,
     DefaultValuePipe,
     FormatEventDateTimePipe,
     SmsTriggerLabelPipe,
     SmsTargetLabelPipe,
+    InitialsPipe,
+    UserSummaryPipe,
   ],
   providers: [DialogService, ConfirmationService],
   templateUrl: './whatsapp-campaign-section.html',

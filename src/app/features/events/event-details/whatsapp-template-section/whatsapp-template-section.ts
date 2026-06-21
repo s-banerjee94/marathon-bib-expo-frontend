@@ -1,6 +1,7 @@
 import { Component, computed, inject, input, OnDestroy, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import { Subject } from 'rxjs';
 import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
 import { TableModule } from 'primeng/table';
@@ -12,6 +13,7 @@ import { MultiSelectModule } from 'primeng/multiselect';
 import { SkeletonModule } from 'primeng/skeleton';
 import { TooltipModule } from 'primeng/tooltip';
 import { TagModule } from 'primeng/tag';
+import { AvatarModule } from 'primeng/avatar';
 import { DialogService } from 'primeng/dynamicdialog';
 import { ConfirmationService } from 'primeng/api';
 import { CardModule } from 'primeng/card';
@@ -24,6 +26,8 @@ import { WhatsappTemplateForm } from '../whatsapp-template-form/whatsapp-templat
 import { WhatsappTemplateDetail } from '../whatsapp-template-detail/whatsapp-template-detail';
 import { DefaultValuePipe } from '../../../../shared/pipes/default-value.pipe';
 import { TruncatePipe } from '../../../../shared/pipes/truncate-pipe';
+import { InitialsPipe } from '../../../../shared/pipes/initials-pipe';
+import { UserSummaryPipe } from '../../../../shared/pipes/user-summary-pipe';
 import { TableColumn } from '../../../../shared/models/table-config.model';
 import {
   WHATSAPP_TEMPLATE_COLUMNS,
@@ -54,10 +58,14 @@ import { injectIsMobile } from '../../../../shared/utils/responsive.utils';
     SkeletonModule,
     TooltipModule,
     TagModule,
+    AvatarModule,
     ConfirmPopupModule,
     CardModule,
+    RouterLink,
     DefaultValuePipe,
     TruncatePipe,
+    InitialsPipe,
+    UserSummaryPipe,
   ],
   providers: [DialogService, ConfirmationService],
   templateUrl: './whatsapp-template-section.html',

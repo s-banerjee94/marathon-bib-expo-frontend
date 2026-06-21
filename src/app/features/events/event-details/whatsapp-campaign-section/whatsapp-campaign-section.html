@@ -60,64 +60,93 @@
             <td class="text-color-secondary whitespace-nowrap" pFrozenColumn>{{ rowIndex + 1 }}</td>
             @for (col of visibleCols(); track col.field) {
               <td class="whitespace-nowrap">
-                @switch (col.field) {
-                  @case ('id') {
-                    {{ campaign.id }}
-                  }
-                  @case ('name') {
-                    {{ campaign.name | defaultValue }}
-                  }
-                  @case ('whatsAppTemplateName') {
-                    {{ campaign.whatsAppTemplateName | defaultValue }}
-                  }
-                  @case ('triggerType') {
-                    {{ campaign.triggerType | smsTriggerLabel }}
-                  }
-                  @case ('targetFilter') {
-                    {{ campaign.targetFilter | smsTargetLabel }}
-                  }
-                  @case ('scheduledDate') {
-                    <span class="whitespace-nowrap">
-                      {{
-                        campaign.scheduledDate
-                          | formatEventDateTime: campaign.scheduledTime : eventTimezone()
-                      }}
-                      @if (eventTimezone()) {
-                        ({{
-                          campaign.scheduledDate
-                            | formatEventDateTime
-                              : campaign.scheduledTime
-                              : eventTimezone()
-                              : 'abbr'
-                        }})
+                @if (col.field === 'createdBy' || col.field === 'lastModifiedBy') {
+                  @let auditUser =
+                    (col.field === 'createdBy' ? campaign.createdBy : campaign.lastModifiedBy)
+                      | userSummary;
+                  @if (auditUser) {
+                    <div class="flex items-center gap-2">
+                      @if (auditUser.avatarUrl) {
+                        <p-avatar
+                          [image]="auditUser.avatarUrl"
+                          shape="circle"
+                          styleClass="shrink-0 !w-6 !h-6"
+                        />
+                      } @else {
+                        <p-avatar
+                          [label]="auditUser.name | initials: 2"
+                          shape="circle"
+                          styleClass="shrink-0 !w-6 !h-6 !text-xs"
+                        />
                       }
-                    </span>
+                      @if (auditUser.id !== null) {
+                        <a
+                          class="text-primary hover:underline"
+                          [routerLink]="['/users', auditUser.id, 'edit']"
+                        >
+                          {{ auditUser.name }}
+                        </a>
+                      } @else {
+                        <span>{{ auditUser.name }}</span>
+                      }
+                    </div>
+                  } @else {
+                    --
                   }
-                  @case ('status') {
-                    @if (actionLoadingId() === campaign.id) {
-                      <p-skeleton height="1.5rem" width="4rem" />
-                    } @else {
-                      <p-tag
-                        [value]="campaign.status"
-                        [severity]="statusSeverity(campaign.status)"
-                        [rounded]="true"
-                      />
+                } @else {
+                  @switch (col.field) {
+                    @case ('id') {
+                      {{ campaign.id }}
                     }
-                  }
-                  @case ('sentCount') {
-                    {{ campaign.sentCount ?? 0 }}
-                  }
-                  @case ('createdAt') {
-                    {{ campaign.createdAt | date: 'dd-MMM-yyyy, hh:mm a' | defaultValue }}
-                  }
-                  @case ('updatedAt') {
-                    {{ campaign.updatedAt | date: 'dd-MMM-yyyy, hh:mm a' | defaultValue }}
-                  }
-                  @case ('createdBy') {
-                    {{ campaign.createdBy | defaultValue }}
-                  }
-                  @case ('lastModifiedBy') {
-                    {{ campaign.lastModifiedBy | defaultValue }}
+                    @case ('name') {
+                      {{ campaign.name | defaultValue }}
+                    }
+                    @case ('whatsAppTemplateName') {
+                      {{ campaign.whatsAppTemplateName | defaultValue }}
+                    }
+                    @case ('triggerType') {
+                      {{ campaign.triggerType | smsTriggerLabel }}
+                    }
+                    @case ('targetFilter') {
+                      {{ campaign.targetFilter | smsTargetLabel }}
+                    }
+                    @case ('scheduledDate') {
+                      <span class="whitespace-nowrap">
+                        {{
+                          campaign.scheduledDate
+                            | formatEventDateTime: campaign.scheduledTime : eventTimezone()
+                        }}
+                        @if (eventTimezone()) {
+                          ({{
+                            campaign.scheduledDate
+                              | formatEventDateTime
+                                : campaign.scheduledTime
+                                : eventTimezone()
+                                : 'abbr'
+                          }})
+                        }
+                      </span>
+                    }
+                    @case ('status') {
+                      @if (actionLoadingId() === campaign.id) {
+                        <p-skeleton height="1.5rem" width="4rem" />
+                      } @else {
+                        <p-tag
+                          [value]="campaign.status"
+                          [severity]="statusSeverity(campaign.status)"
+                          [rounded]="true"
+                        />
+                      }
+                    }
+                    @case ('sentCount') {
+                      {{ campaign.sentCount ?? 0 }}
+                    }
+                    @case ('createdAt') {
+                      {{ campaign.createdAt | date: 'dd-MMM-yyyy, hh:mm a' | defaultValue }}
+                    }
+                    @case ('updatedAt') {
+                      {{ campaign.updatedAt | date: 'dd-MMM-yyyy, hh:mm a' | defaultValue }}
+                    }
                   }
                 }
               </td>

@@ -87,37 +87,68 @@
             <td class="text-color-secondary whitespace-nowrap" pFrozenColumn>{{ rowIndex + 1 }}</td>
             @for (col of visibleCols(); track col.field) {
               <td class="whitespace-nowrap">
-                @switch (col.field) {
-                  @case ('name') {
-                    {{ template.name | defaultValue }}
-                  }
-                  @case ('contentSid') {
-                    <span class="font-mono text-sm">{{ template.contentSid | truncate: 18 }}</span>
-                  }
-                  @case ('body') {
-                    <div class="max-w-md truncate" [title]="template.body">
-                      {{ template.body | truncate: 40 | defaultValue }}
+                @if (col.field === 'createdBy' || col.field === 'lastModifiedBy') {
+                  @let auditUser =
+                    (col.field === 'createdBy' ? template.createdBy : template.lastModifiedBy)
+                      | userSummary;
+                  @if (auditUser) {
+                    <div class="flex items-center gap-2">
+                      @if (auditUser.avatarUrl) {
+                        <p-avatar
+                          [image]="auditUser.avatarUrl"
+                          shape="circle"
+                          styleClass="shrink-0 !w-6 !h-6"
+                        />
+                      } @else {
+                        <p-avatar
+                          [label]="auditUser.name | initials: 2"
+                          shape="circle"
+                          styleClass="shrink-0 !w-6 !h-6 !text-xs"
+                        />
+                      }
+                      @if (auditUser.id !== null) {
+                        <a
+                          class="text-primary hover:underline"
+                          [routerLink]="['/users', auditUser.id, 'edit']"
+                        >
+                          {{ auditUser.name }}
+                        </a>
+                      } @else {
+                        <span>{{ auditUser.name }}</span>
+                      }
                     </div>
+                  } @else {
+                    --
                   }
-                  @case ('bodyVariables') {
-                    {{ template.bodyVariables?.length || 0 }}
-                  }
-                  @case ('note') {
-                    <div class="max-w-[50ch] truncate" [title]="template.note">
-                      {{ template.note | defaultValue }}
-                    </div>
-                  }
-                  @case ('createdAt') {
-                    {{ template.createdAt | date: 'dd-MMM-yyyy, hh:mm a' }}
-                  }
-                  @case ('updatedAt') {
-                    {{ template.updatedAt | date: 'dd-MMM-yyyy, hh:mm a' }}
-                  }
-                  @case ('createdBy') {
-                    {{ template.createdBy | defaultValue }}
-                  }
-                  @case ('lastModifiedBy') {
-                    {{ template.lastModifiedBy | defaultValue }}
+                } @else {
+                  @switch (col.field) {
+                    @case ('name') {
+                      {{ template.name | defaultValue }}
+                    }
+                    @case ('contentSid') {
+                      <span class="font-mono text-sm">{{
+                        template.contentSid | truncate: 18
+                      }}</span>
+                    }
+                    @case ('body') {
+                      <div class="max-w-md truncate" [title]="template.body">
+                        {{ template.body | truncate: 40 | defaultValue }}
+                      </div>
+                    }
+                    @case ('bodyVariables') {
+                      {{ template.bodyVariables?.length || 0 }}
+                    }
+                    @case ('note') {
+                      <div class="max-w-[50ch] truncate" [title]="template.note">
+                        {{ template.note | defaultValue }}
+                      </div>
+                    }
+                    @case ('createdAt') {
+                      {{ template.createdAt | date: 'dd-MMM-yyyy, hh:mm a' }}
+                    }
+                    @case ('updatedAt') {
+                      {{ template.updatedAt | date: 'dd-MMM-yyyy, hh:mm a' }}
+                    }
                   }
                 }
               </td>
