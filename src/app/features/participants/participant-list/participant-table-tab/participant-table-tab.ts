@@ -13,7 +13,7 @@ import { forkJoin, of } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { TableModule } from 'primeng/table';
+import { TableModule, TableLazyLoadEvent } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
 import { ButtonModule, ButtonSeverity } from 'primeng/button';
 import { TooltipModule } from 'primeng/tooltip';
@@ -190,6 +190,14 @@ export class ParticipantTableTab {
   // Skeleton rows for initial loading state
   skeletonRows = Array(5).fill({});
 
+  // Virtual scroll: fixed row height (px). Must match the body <tr> height so the
+  // scroller's geometry stays accurate (px, not rem, since the app scales the root
+  // font-size). Only the visible window of rows is ever in the DOM.
+  protected readonly virtualRowHeight = 48;
+  // Prefetch the next cursor page once the user scrolls within this many rows of the
+  // end of the currently-loaded set.
+  private readonly virtualScrollPrefetch = 15;
+
   isInitialLoading = computed(() => this.isLoading() && this.participants().length === 0);
   isLoadingMore = computed(() => this.isLoading() && this.participants().length > 0);
 
@@ -362,6 +370,18 @@ export class ParticipantTableTab {
       this.loadMoreLookupResults();
     } else {
       this.loadParticipants(true);
+    }
+  }
+
+  // Virtual scroll fires this as the visible window moves. We use it purely as a
+  // near-end trigger for cursor-based infinite loading (not offset paging): once the
+  // last visible row is within `virtualScrollPrefetch` of the loaded set, fetch the
+  // next page. loadMore() itself guards hasMore/isLoading and routes search vs default.
+  onVirtualScroll(event: TableLazyLoadEvent): void {
+    if (this.isInitialLoading()) return;
+    const last = event.last ?? 0;
+    if (last >= this.participants().length - this.virtualScrollPrefetch) {
+      this.loadMore();
     }
   }
 

@@ -30,6 +30,7 @@ import { ConfirmationService } from 'primeng/api';
 import { ImportMode, Participant } from '../../../core/models/participant.model';
 import { ParticipantService } from '../../../core/services/participant.service';
 import { AuthService } from '../../../core/services/auth.service';
+import { BreakpointService } from '../../../core/services/breakpoint.service';
 import { UserRole } from '../../../core/models/user.model';
 import { EventStatus } from '../../../core/models/event.model';
 import { ErrorHandlerService } from '../../../core/services/error-handler.service';
@@ -166,8 +167,8 @@ export class ParticipantList implements OnInit {
   }
 
   // Viewport tracking — drives dialog sizing (full-screen on mobile, modal on desktop).
-  private mediaQuery = window.matchMedia('(max-width: 768px)');
-  isMobile = signal(this.mediaQuery.matches);
+  // Backed by the shared BreakpointService (one app-wide signal/listener).
+  isMobile = inject(BreakpointService).isMobile;
 
   // Dialogs are signal-driven overlays (not routes): opening/closing one never
   // unmounts the participant table behind it, so closing is instant — no re-render,
@@ -197,15 +198,6 @@ export class ParticipantList implements OnInit {
       UserRole.ORGANIZER_USER,
     ]);
     this.isOrganizerUser.set(isOrgUser);
-
-    // Viewport tracking — keeps dialog sizing (mobile full-screen vs desktop modal) current.
-    const onViewportChange = (event: MediaQueryListEvent) => {
-      this.isMobile.set(event.matches);
-    };
-    this.mediaQuery.addEventListener('change', onViewportChange);
-    this.destroyRef.onDestroy(() => {
-      this.mediaQuery.removeEventListener('change', onViewportChange);
-    });
 
     // Keep selectedOrganizationId / selectedEventId in sync with the URL (org/event
     // filters live in query params; the active event also comes from the :eventId path).
