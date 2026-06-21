@@ -291,15 +291,15 @@
     >
       <ng-template pTemplate="header">
         <tr>
-          <th class="whitespace-nowrap">Invoice No.</th>
-          <th class="whitespace-nowrap">Event</th>
-          <th class="whitespace-nowrap">Organizer</th>
-          <th class="text-center whitespace-nowrap">Type</th>
-          <th class="text-center whitespace-nowrap">Status</th>
-          <th class="text-center whitespace-nowrap">Payment Status</th>
-          <th class="whitespace-nowrap">Bill Date</th>
-          <th class="text-right whitespace-nowrap">Amount (₹)</th>
-          <th class="text-center whitespace-nowrap">Actions</th>
+          <th scope="col" class="whitespace-nowrap">Invoice No.</th>
+          <th scope="col" class="whitespace-nowrap">Event</th>
+          <th scope="col" class="whitespace-nowrap">Organizer</th>
+          <th scope="col" class="text-center whitespace-nowrap">Type</th>
+          <th scope="col" class="text-center whitespace-nowrap">Status</th>
+          <th scope="col" class="text-center whitespace-nowrap">Payment Status</th>
+          <th scope="col" class="whitespace-nowrap">Bill Date</th>
+          <th scope="col" class="text-right whitespace-nowrap">Amount (₹)</th>
+          <th scope="col" class="text-center whitespace-nowrap">Actions</th>
         </tr>
       </ng-template>
       <ng-template pTemplate="body" let-bill>
@@ -329,6 +329,7 @@
             <div class="flex justify-center gap-1">
               <p-button
                 icon="pi pi-eye"
+                ariaLabel="View bills"
                 [text]="true"
                 [rounded]="true"
                 [size]="buttonSize"
@@ -338,6 +339,7 @@
               />
               <p-button
                 icon="pi pi-ellipsis-v"
+                ariaLabel="More actions"
                 [text]="true"
                 [rounded]="true"
                 severity="secondary"

@@ -21,10 +21,10 @@
     <p-table [value]="events()" [tableStyle]="{ 'min-width': '50rem' }">
       <ng-template pTemplate="header">
         <tr>
-          <th>Event Name</th>
-          <th>Venue</th>
-          <th>Start Date</th>
-          <th>Status</th>
+          <th scope="col">Event Name</th>
+          <th scope="col">Venue</th>
+          <th scope="col">Start Date</th>
+          <th scope="col">Status</th>
         </tr>
       </ng-template>
       <ng-template pTemplate="body" let-event>

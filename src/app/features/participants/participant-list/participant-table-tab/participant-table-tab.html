@@ -202,7 +202,9 @@
     <p class="text-sm text-gray-500 mt-1">
       @if (isSearchMode()) {
         Try adjusting your search or
-        <a class="underline cursor-pointer" (click)="clearSearch()">clear it</a>
+        <button type="button" class="underline cursor-pointer" (click)="clearSearch()">
+          clear it
+        </button>
         to see all participants.
       } @else if (showActionToolbar()) {
         Import a CSV or add participants manually.
@@ -228,85 +230,85 @@
       <tr>
         <!-- Frozen Left: Checkbox -->
         @if (showSelectionColumn()) {
-          <th pFrozenColumn style="width: 60px">
+          <th scope="col" pFrozenColumn style="width: 60px">
             <p-tableHeaderCheckbox />
           </th>
         }
 
         <!-- Frozen Left: BIB Number -->
         @if (isColumnVisible('bibNumber')) {
-          <th pFrozenColumn style="width: 250px">BIB Number</th>
+          <th scope="col" pFrozenColumn style="width: 250px">BIB Number</th>
         }
 
         <!-- Frozen Left: Full Name -->
         @if (isColumnVisible('fullName')) {
-          <th pFrozenColumn style="min-width: 200px">Full Name</th>
+          <th scope="col" pFrozenColumn style="min-width: 200px">Full Name</th>
         }
 
         <!-- Scrollable Columns -->
         @if (isColumnVisible('chipNumber')) {
-          <th style="min-width: 120px">Chip Number</th>
+          <th scope="col" style="min-width: 120px">Chip Number</th>
         }
         @if (isColumnVisible('raceName')) {
-          <th style="min-width: 150px">Race</th>
+          <th scope="col" style="min-width: 150px">Race</th>
         }
         @if (isColumnVisible('categoryName')) {
-          <th style="min-width: 150px">Category</th>
+          <th scope="col" style="min-width: 150px">Category</th>
         }
         @if (isColumnVisible('gender')) {
-          <th style="min-width: 100px">Gender</th>
+          <th scope="col" style="min-width: 100px">Gender</th>
         }
         @if (isColumnVisible('email')) {
-          <th style="min-width: 200px">Email</th>
+          <th scope="col" style="min-width: 200px">Email</th>
         }
         @if (isColumnVisible('phoneNumber')) {
-          <th style="min-width: 150px">Phone</th>
+          <th scope="col" style="min-width: 150px">Phone</th>
         }
         @if (isColumnVisible('age')) {
-          <th style="min-width: 80px">Age</th>
+          <th scope="col" style="min-width: 80px">Age</th>
         }
         @if (isColumnVisible('dateOfBirth')) {
-          <th style="min-width: 120px">Date of Birth</th>
+          <th scope="col" style="min-width: 120px">Date of Birth</th>
         }
         @if (isColumnVisible('city')) {
-          <th style="min-width: 150px">City</th>
+          <th scope="col" style="min-width: 150px">City</th>
         }
         @if (isColumnVisible('country')) {
-          <th style="min-width: 150px">Country</th>
+          <th scope="col" style="min-width: 150px">Country</th>
         }
         @if (isColumnVisible('bibCollectedAt')) {
-          <th style="min-width: 120px">BIB Collected</th>
+          <th scope="col" style="min-width: 120px">BIB Collected</th>
         }
         @if (isColumnVisible('bibCollectedByName')) {
-          <th style="min-width: 150px">Collected By</th>
+          <th scope="col" style="min-width: 150px">Collected By</th>
         }
         @if (isColumnVisible('bibCollectedByPhone')) {
-          <th style="min-width: 140px">Collector Phone</th>
+          <th scope="col" style="min-width: 140px">Collector Phone</th>
         }
         @if (isColumnVisible('goodies')) {
-          <th style="min-width: 150px">Goodies</th>
+          <th scope="col" style="min-width: 150px">Goodies</th>
         }
         @if (isColumnVisible('goodiesDistribution')) {
-          <th style="min-width: 150px">Goodies Status</th>
+          <th scope="col" style="min-width: 150px">Goodies Status</th>
         }
         @if (isColumnVisible('emergencyContactName')) {
-          <th style="min-width: 180px">Emergency Contact</th>
+          <th scope="col" style="min-width: 180px">Emergency Contact</th>
         }
         @if (isColumnVisible('emergencyContactPhone')) {
-          <th style="min-width: 160px">Emergency Phone</th>
+          <th scope="col" style="min-width: 160px">Emergency Phone</th>
         }
         @if (isColumnVisible('notes')) {
-          <th style="min-width: 200px">Notes</th>
+          <th scope="col" style="min-width: 200px">Notes</th>
         }
         @if (isColumnVisible('createdAt')) {
-          <th style="min-width: 160px">Created At</th>
+          <th scope="col" style="min-width: 160px">Created At</th>
         }
         @if (isColumnVisible('updatedAt')) {
-          <th style="min-width: 160px">Updated At</th>
+          <th scope="col" style="min-width: 160px">Updated At</th>
         }
 
         <!-- Frozen Right: Actions (Always Visible) -->
-        <th pFrozenColumn alignFrozen="right" style="width: 200px">Actions</th>
+        <th scope="col" pFrozenColumn alignFrozen="right" style="width: 200px">Actions</th>
       </tr>
     </ng-template>
 
@@ -543,6 +545,9 @@
               @if (participant.goodies && getGoodiesCount(participant.goodies) > 0) {
                 <p-button
                   (onClick)="goodiesPopover.toggle($event)"
+                  [ariaLabel]="
+                    getGoodiesCount(participant.goodies) + ' goodie item(s), view details'
+                  "
                   [rounded]="true"
                   [text]="true"
                   [size]="buttonSize"
@@ -588,6 +593,13 @@
               @if (participant.goodies && getGoodiesCount(participant.goodies) > 0) {
                 <p-button
                   (onClick)="goodiesStatusPopover.toggle($event)"
+                  [ariaLabel]="
+                    'Goodies distribution ' +
+                    getDistributedCount(participant) +
+                    ' of ' +
+                    getGoodiesCount(participant.goodies) +
+                    ', view status'
+                  "
                   [rounded]="true"
                   [text]="true"
                   [size]="buttonSize"
@@ -662,6 +674,7 @@
             <div class="flex gap-2">
               <p-button
                 (onClick)="detailsRequested.emit(participant)"
+                ariaLabel="View / edit participant details"
                 [rounded]="true"
                 [size]="buttonSize"
                 [text]="true"
@@ -672,6 +685,7 @@
               ></p-button>
               <p-button
                 (onClick)="onDelete(participant)"
+                ariaLabel="Delete participant"
                 [rounded]="true"
                 [size]="buttonSize"
                 [text]="true"

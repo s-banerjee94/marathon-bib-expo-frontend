@@ -73,6 +73,7 @@
       @if (isSearchMode()) {
         <p-button
           icon="pi pi-times"
+          ariaLabel="Clear search"
           severity="secondary"
           [outlined]="true"
           [size]="buttonSize"
@@ -109,6 +110,7 @@
             <p-button
               label="Refresh"
               icon="pi pi-refresh"
+              ariaLabel="Refresh"
               severity="secondary"
               [outlined]="true"
               [size]="buttonSize"
@@ -121,15 +123,15 @@
 
       <ng-template pTemplate="header">
         <tr>
-          <th pFrozenColumn style="width: 60px" class="text-center">#</th>
-          <th pFrozenColumn style="min-width: 175px">Timestamp</th>
-          <th style="min-width: 120px">BIB</th>
-          <th style="min-width: 190px">Action</th>
-          <th style="min-width: 150px">Item</th>
-          <th style="min-width: 160px">Performed By</th>
-          <th style="min-width: 160px">Collector Name</th>
-          <th style="min-width: 160px">Collector Phone</th>
-          <th style="min-width: 200px">Details</th>
+          <th scope="col" pFrozenColumn style="width: 60px" class="text-center">#</th>
+          <th scope="col" pFrozenColumn style="min-width: 175px">Timestamp</th>
+          <th scope="col" style="min-width: 120px">BIB</th>
+          <th scope="col" style="min-width: 190px">Action</th>
+          <th scope="col" style="min-width: 150px">Item</th>
+          <th scope="col" style="min-width: 160px">Performed By</th>
+          <th scope="col" style="min-width: 160px">Collector Name</th>
+          <th scope="col" style="min-width: 160px">Collector Phone</th>
+          <th scope="col" style="min-width: 200px">Details</th>
         </tr>
       </ng-template>
 
@@ -231,6 +233,7 @@
       </h3>
       <p-button
         icon="pi pi-refresh"
+        ariaLabel="Refresh"
         severity="secondary"
         [outlined]="true"
         [size]="buttonSize"

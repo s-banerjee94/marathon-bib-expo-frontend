@@ -103,16 +103,21 @@
     >
       <ng-template pTemplate="header">
         <tr>
-          <th class="w-16 whitespace-nowrap" pFrozenColumn>Sl. No</th>
+          <th scope="col" class="w-16 whitespace-nowrap" pFrozenColumn>Sl. No</th>
           @for (col of visibleCols; track col.field) {
-            <th [class]="getColumnAlignment(col.field) + ' whitespace-nowrap'">
+            <th scope="col" [class]="getColumnAlignment(col.field) + ' whitespace-nowrap'">
               <span>{{ col.header }}</span>
               @if (isSorted(col.field)) {
                 <i [class]="getSortIcon(col.field)" class="ml-2"></i>
               }
             </th>
           }
-          <th class="text-center w-28 whitespace-nowrap" pFrozenColumn alignFrozen="right">
+          <th
+            scope="col"
+            class="text-center w-28 whitespace-nowrap"
+            pFrozenColumn
+            alignFrozen="right"
+          >
             Details
           </th>
         </tr>
@@ -191,6 +196,7 @@
                 @if (bill.downloadUrl) {
                   <p-button
                     icon="pi pi-download"
+                    ariaLabel="Download PDF"
                     [text]="true"
                     [rounded]="true"
                     size="small"
@@ -262,6 +268,7 @@
             <p-button
               label="Download PDF"
               icon="pi pi-download"
+              ariaLabel="Download PDF"
               [text]="true"
               size="small"
               (onClick)="downloadBill(bill)"

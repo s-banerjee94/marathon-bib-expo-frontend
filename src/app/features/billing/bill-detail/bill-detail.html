@@ -54,12 +54,12 @@
     <p-table [value]="lineItems()" dataKey="id" [size]="inputSize">
       <ng-template pTemplate="header">
         <tr>
-          <th>Item</th>
-          <th class="text-right whitespace-nowrap">Qty</th>
-          <th class="text-right whitespace-nowrap">Unit price</th>
-          <th class="text-right whitespace-nowrap">Amount</th>
+          <th scope="col">Item</th>
+          <th scope="col" class="text-right whitespace-nowrap">Qty</th>
+          <th scope="col" class="text-right whitespace-nowrap">Unit price</th>
+          <th scope="col" class="text-right whitespace-nowrap">Amount</th>
           @if (editable()) {
-            <th class="w-20 text-center">Actions</th>
+            <th scope="col" class="w-20 text-center">Actions</th>
           }
         </tr>
       </ng-template>
@@ -87,6 +87,7 @@
               <div class="flex justify-center gap-1">
                 <p-button
                   icon="pi pi-pencil"
+                  ariaLabel="Edit"
                   [text]="true"
                   [rounded]="true"
                   size="small"
@@ -97,6 +98,7 @@
                 />
                 <p-button
                   icon="pi pi-trash"
+                  ariaLabel="Remove line item"
                   [text]="true"
                   [rounded]="true"
                   size="small"

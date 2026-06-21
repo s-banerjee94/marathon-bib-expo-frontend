@@ -86,16 +86,21 @@
     >
       <ng-template pTemplate="header">
         <tr>
-          <th class="w-16 whitespace-nowrap" pFrozenColumn>Sl. No</th>
+          <th scope="col" class="w-16 whitespace-nowrap" pFrozenColumn>Sl. No</th>
           @for (col of visibleCols; track col.field) {
-            <th [class]="getColumnAlignment(col.field) + ' whitespace-nowrap'">
+            <th scope="col" [class]="getColumnAlignment(col.field) + ' whitespace-nowrap'">
               <span>{{ col.header }}</span>
               @if (isSorted(col.field)) {
                 <i [class]="getSortIcon(col.field)" class="ml-2"></i>
               }
             </th>
           }
-          <th class="text-center w-36 whitespace-nowrap" pFrozenColumn alignFrozen="right">
+          <th
+            scope="col"
+            class="text-center w-36 whitespace-nowrap"
+            pFrozenColumn
+            alignFrozen="right"
+          >
             Actions
           </th>
         </tr>
@@ -244,6 +249,7 @@
                   [size]="inputSize"
                   [text]="true"
                   icon="pi pi-pencil"
+                  ariaLabel="Edit"
                   pTooltip="Edit"
                   severity="info"
                   tooltipPosition="top"
@@ -265,6 +271,7 @@
                   [size]="inputSize"
                   [text]="true"
                   icon="pi pi-trash"
+                  ariaLabel="Delete"
                   pTooltip="Delete"
                   severity="danger"
                   tooltipPosition="top"
@@ -355,6 +362,7 @@
               [size]="inputSize"
               [text]="true"
               icon="pi pi-pencil"
+              ariaLabel="Edit"
               severity="info"
             />
             <p-button
@@ -372,6 +380,7 @@
               [size]="inputSize"
               [text]="true"
               icon="pi pi-trash"
+              ariaLabel="Delete"
               severity="danger"
             />
           </div>

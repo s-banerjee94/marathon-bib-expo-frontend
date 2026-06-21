@@ -21,11 +21,11 @@
     <p-table [value]="organizations()" [tableStyle]="{ 'min-width': '50rem' }">
       <ng-template pTemplate="header">
         <tr>
-          <th>Name</th>
-          <th>Phone</th>
-          <th>Email</th>
-          <th>Subscription</th>
-          <th>Status</th>
+          <th scope="col">Name</th>
+          <th scope="col">Phone</th>
+          <th scope="col">Email</th>
+          <th scope="col">Subscription</th>
+          <th scope="col">Status</th>
         </tr>
       </ng-template>
       <ng-template pTemplate="body" let-org>

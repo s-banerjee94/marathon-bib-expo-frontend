@@ -24,6 +24,7 @@
             <p-button
               label="Refresh"
               icon="pi pi-refresh"
+              ariaLabel="Refresh"
               severity="secondary"
               [outlined]="true"
               [size]="buttonSize"
@@ -36,15 +37,15 @@
 
       <ng-template pTemplate="header">
         <tr>
-          <th pFrozenColumn style="width: 60px" class="text-center">#</th>
-          <th pFrozenColumn style="min-width: 130px">BIB</th>
-          <th style="min-width: 200px">Full Name</th>
-          <th style="min-width: 140px">Phone</th>
-          <th style="min-width: 150px">Race</th>
-          <th style="min-width: 150px">Category</th>
-          <th style="min-width: 180px">BIB Collected At</th>
-          <th style="min-width: 220px">Pending Items</th>
-          <th pFrozenColumn alignFrozen="right" style="width: 100px">Actions</th>
+          <th scope="col" pFrozenColumn style="width: 60px" class="text-center">#</th>
+          <th scope="col" pFrozenColumn style="min-width: 130px">BIB</th>
+          <th scope="col" style="min-width: 200px">Full Name</th>
+          <th scope="col" style="min-width: 140px">Phone</th>
+          <th scope="col" style="min-width: 150px">Race</th>
+          <th scope="col" style="min-width: 150px">Category</th>
+          <th scope="col" style="min-width: 180px">BIB Collected At</th>
+          <th scope="col" style="min-width: 220px">Pending Items</th>
+          <th scope="col" pFrozenColumn alignFrozen="right" style="width: 100px">Actions</th>
         </tr>
       </ng-template>
 
@@ -88,6 +89,7 @@
               <div class="flex gap-1">
                 <p-button
                   (onClick)="parent.openDistributeGoodiesDialog(participant)"
+                  ariaLabel="Distribute goodies"
                   [rounded]="true"
                   [text]="true"
                   [size]="buttonSize"
@@ -124,6 +126,7 @@
       </h3>
       <p-button
         icon="pi pi-refresh"
+        ariaLabel="Refresh"
         severity="secondary"
         [outlined]="true"
         [size]="buttonSize"

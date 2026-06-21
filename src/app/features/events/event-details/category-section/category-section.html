@@ -61,11 +61,13 @@
       >
         <ng-template pTemplate="header">
           <tr>
-            <th class="w-16 whitespace-nowrap" pFrozenColumn>Sl. No</th>
+            <th scope="col" class="w-16 whitespace-nowrap" pFrozenColumn>Sl. No</th>
             @for (col of visibleCols(); track col.field) {
-              <th class="whitespace-nowrap">{{ col.header }}</th>
+              <th scope="col" class="whitespace-nowrap">{{ col.header }}</th>
             }
-            <th class="w-32 whitespace-nowrap" pFrozenColumn alignFrozen="right">Actions</th>
+            <th scope="col" class="w-32 whitespace-nowrap" pFrozenColumn alignFrozen="right">
+              Actions
+            </th>
           </tr>
         </ng-template>
 
@@ -135,6 +137,7 @@
               <div class="flex gap-1">
                 <p-button
                   icon="pi pi-pencil"
+                  ariaLabel="Edit"
                   [text]="true"
                   [rounded]="true"
                   severity="info"
@@ -145,6 +148,7 @@
                 />
                 <p-button
                   icon="pi pi-trash"
+                  ariaLabel="Delete"
                   [text]="true"
                   [rounded]="true"
                   severity="danger"
@@ -209,6 +213,7 @@
                 <div class="flex justify-end gap-1">
                   <p-button
                     icon="pi pi-pencil"
+                    ariaLabel="Edit"
                     [text]="true"
                     [rounded]="true"
                     severity="info"
@@ -217,6 +222,7 @@
                   />
                   <p-button
                     icon="pi pi-trash"
+                    ariaLabel="Delete"
                     [text]="true"
                     [rounded]="true"
                     severity="danger"

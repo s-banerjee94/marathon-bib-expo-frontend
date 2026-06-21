@@ -38,6 +38,7 @@
           <p-button
             (onClick)="minimize()"
             (mousedown)="$event.stopPropagation()"
+            ariaLabel="Minimize"
             [rounded]="true"
             [text]="true"
             icon="pi pi-minus"
@@ -47,6 +48,7 @@
           <p-button
             (onClick)="onDismiss()"
             (mousedown)="$event.stopPropagation()"
+            ariaLabel="Dismiss"
             [rounded]="true"
             [text]="true"
             icon="pi pi-times"

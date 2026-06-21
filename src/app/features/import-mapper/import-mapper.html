@@ -99,7 +99,7 @@
                 <ng-template pTemplate="header" let-columns>
                   <tr>
                     @for (col of columns; track col) {
-                      <th class="whitespace-nowrap">{{ col }}</th>
+                      <th scope="col" class="whitespace-nowrap">{{ col }}</th>
                     }
                   </tr>
                 </ng-template>

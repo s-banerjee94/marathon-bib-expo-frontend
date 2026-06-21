@@ -226,6 +226,7 @@
       <div class="flex items-center gap-1">
         <p-button
           (onClick)="shareDetails()"
+          ariaLabel="Copy shareable link"
           [rounded]="true"
           [text]="true"
           icon="pi pi-share-alt"
@@ -236,6 +237,7 @@
         />
         <p-button
           (onClick)="openDetailsInNewTab()"
+          ariaLabel="Open in new tab"
           [rounded]="true"
           [text]="true"
           icon="pi pi-external-link"

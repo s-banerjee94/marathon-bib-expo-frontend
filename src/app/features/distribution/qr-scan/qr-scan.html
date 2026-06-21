@@ -78,6 +78,7 @@
     </p-floatlabel>
     <p-button
       (onClick)="performSearch()"
+      ariaLabel="Search"
       [disabled]="!searchValue() || searchValue().trim().length < 2"
       [loading]="isInitialLoading()"
       [size]="buttonSize"
@@ -87,6 +88,7 @@
     @if (isSearched()) {
       <p-button
         (onClick)="clearResults()"
+        ariaLabel="Clear"
         [size]="buttonSize"
         [outlined]="true"
         icon="pi pi-times"

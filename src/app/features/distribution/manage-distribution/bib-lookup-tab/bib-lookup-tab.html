@@ -74,6 +74,7 @@
       @if (isSearched()) {
         <p-button
           (onClick)="clearSearch()"
+          ariaLabel="Clear search"
           [outlined]="true"
           [size]="buttonSize"
           icon="pi pi-times"
@@ -84,6 +85,7 @@
       @if (isMobile()) {
         <p-button
           (onClick)="openScanDialog()"
+          ariaLabel="Scan QR code"
           [outlined]="true"
           [size]="buttonSize"
           icon="pi pi-qrcode"
@@ -113,15 +115,15 @@
       >
         <ng-template pTemplate="header">
           <tr>
-            <th pFrozenColumn style="min-width: 130px">BIB</th>
-            <th style="min-width: 120px">Chip</th>
-            <th style="min-width: 200px">Full Name</th>
-            <th style="min-width: 140px">Phone</th>
-            <th style="min-width: 150px">Race</th>
-            <th style="min-width: 150px">Category</th>
-            <th style="min-width: 130px">BIB Status</th>
-            <th style="min-width: 140px">Goodies</th>
-            <th pFrozenColumn alignFrozen="right" style="width: 170px">Actions</th>
+            <th scope="col" pFrozenColumn style="min-width: 130px">BIB</th>
+            <th scope="col" style="min-width: 120px">Chip</th>
+            <th scope="col" style="min-width: 200px">Full Name</th>
+            <th scope="col" style="min-width: 140px">Phone</th>
+            <th scope="col" style="min-width: 150px">Race</th>
+            <th scope="col" style="min-width: 150px">Category</th>
+            <th scope="col" style="min-width: 130px">BIB Status</th>
+            <th scope="col" style="min-width: 140px">Goodies</th>
+            <th scope="col" pFrozenColumn alignFrozen="right" style="width: 170px">Actions</th>
           </tr>
         </ng-template>
 
@@ -197,6 +199,7 @@
                   @if (!getBibStatus(participant)) {
                     <p-button
                       (onClick)="parent.openCollectBibDialog(participant)"
+                      ariaLabel="Collect BIB"
                       [rounded]="true"
                       [text]="true"
                       [size]="buttonSize"
@@ -209,6 +212,7 @@
                   @if (getBibStatus(participant) && hasPendingGoodies(participant)) {
                     <p-button
                       (onClick)="parent.openDistributeGoodiesDialog(participant)"
+                      ariaLabel="Distribute goodies"
                       [rounded]="true"
                       [text]="true"
                       [size]="buttonSize"
@@ -221,6 +225,7 @@
                   @if (getBibStatus(participant) && canUndoBib()) {
                     <p-button
                       (onClick)="parent.confirmUndoBib(participant)"
+                      ariaLabel="Undo BIB"
                       [rounded]="true"
                       [text]="true"
                       [size]="buttonSize"

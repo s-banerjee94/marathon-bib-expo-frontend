@@ -12,6 +12,10 @@
           <input
             #chipNumber="ngModel"
             [(ngModel)]="participant.chipNumber"
+            [attr.aria-describedby]="
+              shouldShowError(chipNumber, form.submitted) ? 'chipNumber-error' : null
+            "
+            [attr.aria-invalid]="shouldShowError(chipNumber, form.submitted)"
             [disabled]="inputsDisabled()"
             [invalid]="shouldShowError(chipNumber, form.submitted)"
             [pSize]="inputSize"
@@ -27,6 +31,7 @@
 
         @if (shouldShowError(chipNumber, form.submitted)) {
           <p-message
+            id="chipNumber-error"
             [size]="inputSize"
             severity="error"
             variant="simple"
@@ -43,6 +48,10 @@
           <input
             #bibNumber="ngModel"
             [(ngModel)]="participant.bibNumber"
+            [attr.aria-describedby]="
+              shouldShowError(bibNumber, form.submitted) ? 'bibNumber-error' : null
+            "
+            [attr.aria-invalid]="shouldShowError(bibNumber, form.submitted)"
             [disabled]="inputsDisabled() || isEditMode()"
             [invalid]="shouldShowError(bibNumber, form.submitted)"
             [pSize]="inputSize"
@@ -58,6 +67,7 @@
 
         @if (shouldShowError(bibNumber, form.submitted)) {
           <p-message
+            id="bibNumber-error"
             [size]="inputSize"
             severity="error"
             variant="simple"
@@ -74,6 +84,10 @@
           <input
             #fullName="ngModel"
             [(ngModel)]="participant.fullName"
+            [attr.aria-describedby]="
+              shouldShowError(fullName, form.submitted) ? 'fullName-error' : null
+            "
+            [attr.aria-invalid]="shouldShowError(fullName, form.submitted)"
             [disabled]="inputsDisabled()"
             [invalid]="shouldShowError(fullName, form.submitted)"
             [pSize]="inputSize"
@@ -89,6 +103,7 @@
 
         @if (shouldShowError(fullName, form.submitted)) {
           <p-message
+            id="fullName-error"
             [size]="inputSize"
             severity="error"
             variant="simple"
@@ -114,6 +129,12 @@
             [(ngModel)]="participant.raceId"
             [disabled]="inputsDisabled() || isLoadingRaces()"
             [invalid]="shouldShowError(raceId, form.submitted)"
+            [pt]="{
+              root: {
+                'aria-invalid': shouldShowError(raceId, form.submitted),
+                'aria-describedby': shouldShowError(raceId, form.submitted) ? 'raceId-error' : null,
+              },
+            }"
             [loading]="isLoadingRaces()"
             [options]="races()"
             [size]="inputSize"
@@ -129,6 +150,7 @@
 
         @if (shouldShowError(raceId, form.submitted)) {
           <p-message
+            id="raceId-error"
             [size]="inputSize"
             severity="error"
             variant="simple"
@@ -148,6 +170,14 @@
             [(ngModel)]="participant.categoryId"
             [disabled]="!participant.raceId || isLoadingCategories()"
             [invalid]="shouldShowError(categoryId, form.submitted)"
+            [pt]="{
+              root: {
+                'aria-invalid': shouldShowError(categoryId, form.submitted),
+                'aria-describedby': shouldShowError(categoryId, form.submitted)
+                  ? 'categoryId-error'
+                  : null,
+              },
+            }"
             [loading]="isLoadingCategories()"
             [options]="categories()"
             [size]="inputSize"
@@ -163,6 +193,7 @@
 
         @if (shouldShowError(categoryId, form.submitted)) {
           <p-message
+            id="categoryId-error"
             [size]="inputSize"
             severity="error"
             variant="simple"
@@ -181,6 +212,12 @@
             (onChange)="notifySubmitState()"
             [(ngModel)]="participant.gender"
             [invalid]="shouldShowError(gender, form.submitted)"
+            [pt]="{
+              root: {
+                'aria-invalid': shouldShowError(gender, form.submitted),
+                'aria-describedby': shouldShowError(gender, form.submitted) ? 'gender-error' : null,
+              },
+            }"
             [options]="genderOptions"
             [size]="inputSize"
             fluid="true"
@@ -193,6 +230,7 @@
 
         @if (shouldShowError(gender, form.submitted)) {
           <p-message
+            id="gender-error"
             [size]="inputSize"
             severity="error"
             variant="simple"
@@ -233,6 +271,8 @@
           <input
             #email="ngModel"
             [(ngModel)]="participant.email"
+            [attr.aria-describedby]="shouldShowError(email, form.submitted) ? 'email-error' : null"
+            [attr.aria-invalid]="shouldShowError(email, form.submitted)"
             [invalid]="shouldShowError(email, form.submitted)"
             [pSize]="inputSize"
             autocomplete="email"
@@ -248,6 +288,7 @@
 
         @if (shouldShowError(email, form.submitted)) {
           <p-message
+            id="email-error"
             [size]="inputSize"
             severity="error"
             variant="simple"

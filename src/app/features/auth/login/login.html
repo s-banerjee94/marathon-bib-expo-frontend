@@ -9,11 +9,13 @@
       </ng-template>
 
       <ng-template pTemplate="content">
-        @if (errorMessage()) {
-          <p-message severity="error" styleClass="w-full mb-4">
-            {{ errorMessage() }}
-          </p-message>
-        }
+        <div aria-live="assertive">
+          @if (errorMessage()) {
+            <p-message severity="error" styleClass="w-full mb-4">
+              {{ errorMessage() }}
+            </p-message>
+          }
+        </div>
 
         <form #loginForm="ngForm" (ngSubmit)="onLogin()" class="flex flex-col gap-2" novalidate>
           <div class="flex flex-col gap-1">
@@ -21,6 +23,14 @@
             <input
               #usernameField="ngModel"
               (ngModelChange)="username.set($event)"
+              [attr.aria-describedby]="
+                usernameField.invalid && (usernameField.touched || loginForm.submitted)
+                  ? 'username-error'
+                  : null
+              "
+              [attr.aria-invalid]="
+                usernameField.invalid && (usernameField.touched || loginForm.submitted)
+              "
               [ngModel]="username()"
               fluid="true"
               id="username"
@@ -30,7 +40,7 @@
               required
             />
             @if (usernameField.invalid && (usernameField.touched || loginForm.submitted)) {
-              <p-message [size]="inputSize" severity="error" variant="simple"
+              <p-message id="username-error" [size]="inputSize" severity="error" variant="simple"
                 >Username is required.
               </p-message>
             }
@@ -42,7 +52,20 @@
               #passwordField="ngModel"
               (ngModelChange)="password.set($event)"
               [feedback]="false"
+              [invalid]="passwordField.invalid && (passwordField.touched || loginForm.submitted)"
               [ngModel]="password()"
+              [pt]="{
+                pcInputText: {
+                  root: {
+                    'aria-invalid':
+                      passwordField.invalid && (passwordField.touched || loginForm.submitted),
+                    'aria-describedby':
+                      passwordField.invalid && (passwordField.touched || loginForm.submitted)
+                        ? 'password-error'
+                        : null,
+                  },
+                },
+              }"
               [toggleMask]="true"
               fluid="true"
               inputId="password"
@@ -51,7 +74,7 @@
               required
             ></p-password>
             @if (passwordField.invalid && (passwordField.touched || loginForm.submitted)) {
-              <p-message [size]="inputSize" severity="error" variant="simple"
+              <p-message id="password-error" [size]="inputSize" severity="error" variant="simple"
                 >Password is required.
               </p-message>
             }
