@@ -17,15 +17,33 @@ npm install
 
 ### 2. Configure API Base URL
 
-Open `src/app/shared/constants/api.constant.ts` and set the backend URL:
+You normally **don't** need to change anything. The API base URL comes from the
+environment files, not a hand-edited constant:
+
+- `src/environments/environment.ts` — development
+- `src/environments/environment.prod.ts` — production (swapped in at build time via the `fileReplacements` in `angular.json`)
+
+Both default to the **relative, same-origin path `/api`**:
 
 ```typescript
-// For local backend
-export const BASE_URI = 'http://localhost:8080/api';
-
-// For network backend
-// export const BASE_URI = 'http://192.168.0.106:8080/api';
+// src/environments/environment.ts
+export const environment = {
+  production: false,
+  apiBaseUrl: '/api',
+};
 ```
+
+A relative path is intentional and means **one build artifact works on any host**:
+
+- **Dev** — the dev server proxies `/api/*` (and `/s/*`) to the backend at `http://localhost:8080` via `proxy.conf.json`.
+- **Prod** — nginx serves the built app and proxies `/api` (and `/s`) to the Spring Boot backend on the same box.
+
+Keeping the frontend and backend **same-origin** is what lets the HttpOnly refresh
+cookie and the readable CSRF cookie work — including over plain HTTP from another
+device (e.g. your phone) on the LAN. **Avoid pointing `apiBaseUrl` at an absolute
+cross-origin URL** (e.g. `http://192.168.0.106:8080/api`); that breaks the cookie
+auth model. To reach a backend on a different machine in dev, change the `target`
+in `proxy.conf.json` instead.
 
 ### 3. Start the Development Server
 
@@ -34,8 +52,6 @@ npm start
 ```
 
 The application starts at **http://localhost:4200**.
-
-> The dev server proxies `/api/*` requests to `http://localhost:8080` via `proxy.conf.json`.
 
 ---
 
