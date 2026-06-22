@@ -14,6 +14,8 @@ import { ConnectivityService } from './core/services/connectivity.service';
 import { AiAssistantService } from './core/services/ai-assistant.service';
 import { AiAssistant } from './layout/ai-assistant/ai-assistant';
 import { CommandPalette } from './layout/command-palette/command-palette';
+import { KeyboardShortcutsHelp } from './layout/keyboard-shortcuts-help/keyboard-shortcuts-help';
+import { KeyboardService } from './core/services/keyboard.service';
 import { ImportProgressFloating } from './layout/import-progress-floating/import-progress-floating';
 
 @Component({
@@ -30,6 +32,7 @@ import { ImportProgressFloating } from './layout/import-progress-floating/import
     ImportProgressFloating,
     AiAssistant,
     CommandPalette,
+    KeyboardShortcutsHelp,
   ],
   templateUrl: './app.html',
   styleUrl: './app.css',
@@ -39,6 +42,9 @@ export class App {
   authService = inject(AuthService);
   protected aiAssistant = inject(AiAssistantService);
   private connectivity = inject(ConnectivityService);
+  // Instantiated app-load so its document-level keydown listener is attached;
+  // the service itself gates on auth before acting.
+  private keyboard = inject(KeyboardService);
   private router = inject(Router);
   isAuthenticated = this.authService.isAuthenticated;
 
