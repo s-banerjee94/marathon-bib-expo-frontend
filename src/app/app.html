@@ -6,6 +6,7 @@
 } @else {
   <div [ngClass]="layoutClasses()" class="layout-wrapper">
     <app-navbar></app-navbar>
+    <app-offline-banner />
 
     @if (isAuthenticated()) {
       <app-sidebar></app-sidebar>

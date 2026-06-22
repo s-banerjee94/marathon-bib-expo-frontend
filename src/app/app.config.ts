@@ -14,9 +14,13 @@ import { DialogService } from 'primeng/dynamicdialog';
 import { routes } from './app.routes';
 import { AuthService } from './core/services/auth.service';
 import { LayoutService } from './core/services/layout.service';
+import { PwaUpdateService } from './core/services/pwa-update.service';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
+import { offlineInterceptor } from './core/interceptors/offline-interceptor';
 import { authInterceptor } from './core/interceptors/auth-interceptor';
 import { errorInterceptor } from './core/interceptors/error-interceptor';
+import { provideServiceWorker } from '@angular/service-worker';
+import { environment } from '../environments/environment';
 
 const NoirAura = definePreset(Aura, {
   semantic: {
@@ -75,7 +79,7 @@ export const appConfig: ApplicationConfig = {
       withComponentInputBinding(),
       withRouterConfig({ paramsInheritanceStrategy: 'always' }),
     ),
-    provideHttpClient(withInterceptors([authInterceptor, errorInterceptor])),
+    provideHttpClient(withInterceptors([offlineInterceptor, authInterceptor, errorInterceptor])),
     AuthService,
     MessageService,
     ConfirmationService,
@@ -95,7 +99,12 @@ export const appConfig: ApplicationConfig = {
     }),
     provideAppInitializer(() => {
       inject(LayoutService).initializeTheme();
+      inject(PwaUpdateService).init();
       return inject(AuthService).bootstrap();
+    }),
+    provideServiceWorker('ngsw-worker.js', {
+      enabled: environment.production,
+      registrationStrategy: 'registerWhenStable:30000',
     }),
   ],
 };

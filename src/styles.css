@@ -35,6 +35,8 @@
   --sidebar-width: 250px;
   --sidebar-width-mobile: 320px;
   --topbar-height: 56px;
+  /* Height reserved above the topbar for the offline banner; 0 unless offline. */
+  --banner-height: 0px;
 }
 
 :root.app-dark {
@@ -64,10 +66,20 @@ body.blocked-scroll {
   min-height: 100vh;
 }
 
+/* When offline, the offline banner occupies a strip above the topbar; push the
+   topbar down and reserve room so it sits above (not over) the topbar. */
+.layout-wrapper.offline-active {
+  --banner-height: 32px;
+}
+
+.layout-wrapper.offline-active .layout-topbar {
+  top: var(--banner-height);
+}
+
 .layout-main {
   margin-left: 0;
-  min-height: calc(100vh - var(--topbar-height));
-  padding-top: var(--topbar-height);
+  min-height: calc(100vh - var(--topbar-height) - var(--banner-height));
+  padding-top: calc(var(--topbar-height) + var(--banner-height));
   transition:
     margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1),
     margin-right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -89,12 +101,12 @@ body.blocked-scroll {
 }
 
 .layout-sidebar {
-  top: var(--topbar-height);
+  top: calc(var(--topbar-height) + var(--banner-height));
   width: var(--sidebar-width);
   /* 100vh extends behind the mobile system nav bar (clipping the bottom-pinned item);
      dvh tracks the visible viewport. vh kept as a fallback for older browsers. */
-  height: calc(100vh - var(--topbar-height));
-  height: calc(100dvh - var(--topbar-height));
+  height: calc(100vh - var(--topbar-height) - var(--banner-height));
+  height: calc(100dvh - var(--topbar-height) - var(--banner-height));
   padding-bottom: calc(1rem + env(safe-area-inset-bottom));
 }
 

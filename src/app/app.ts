@@ -6,9 +6,11 @@ import { filter, map } from 'rxjs';
 import { ToastModule } from 'primeng/toast';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { Navbar } from './layout/navbar/navbar';
+import { OfflineBanner } from './layout/offline-banner/offline-banner';
 import { SidebarComponent } from './layout/sidebar/sidebar';
 import { LayoutService } from './core/services/layout.service';
 import { AuthService } from './core/services/auth.service';
+import { ConnectivityService } from './core/services/connectivity.service';
 import { AiAssistantService } from './core/services/ai-assistant.service';
 import { AiAssistant } from './layout/ai-assistant/ai-assistant';
 import { ImportProgressFloating } from './layout/import-progress-floating/import-progress-floating';
@@ -20,6 +22,7 @@ import { ImportProgressFloating } from './layout/import-progress-floating/import
     CommonModule,
     RouterOutlet,
     Navbar,
+    OfflineBanner,
     SidebarComponent,
     ToastModule,
     ConfirmDialogModule,
@@ -33,6 +36,7 @@ export class App {
   layoutService = inject(LayoutService);
   authService = inject(AuthService);
   protected aiAssistant = inject(AiAssistantService);
+  private connectivity = inject(ConnectivityService);
   private router = inject(Router);
   isAuthenticated = this.authService.isAuthenticated;
 
@@ -60,6 +64,8 @@ export class App {
       'layout-mobile-active': state.mobileMenuActive,
       'layout-overlay-active': state.overlayMenuActive,
       'layout-ai-push': config.aiAssistantMode === 'push' && this.aiAssistant.isOpen(),
+      // Offline banner sits above the topbar; this offsets the topbar/sidebar/main down.
+      'offline-active': !this.connectivity.isOnline(),
     };
   });
   private platformId = inject(PLATFORM_ID);
