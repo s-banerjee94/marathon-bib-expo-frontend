@@ -42,6 +42,7 @@ import { STORAGE_KEYS } from '../../../shared/constants/storage-keys.constant';
 import { DefaultValuePipe } from '../../../shared/pipes/default-value.pipe';
 import { BillDetailDialog } from '../../billing/bill-detail-dialog/bill-detail-dialog';
 import { OrganizationAccountState } from '../organization-account-state.service';
+import { EmptyIllustration } from '../../../shared/illustrations/empty-illustration';
 
 interface OrgBillFilterPreferences extends TableFilterPreferences {
   enabled: boolean;
@@ -75,6 +76,7 @@ interface OrgBillFilterPreferences extends TableFilterPreferences {
     DefaultValuePipe,
     ListShell,
     BillDetailDialog,
+    EmptyIllustration,
   ],
   providers: [DialogService],
   templateUrl: './organization-billing-section.html',

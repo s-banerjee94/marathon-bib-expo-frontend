@@ -209,7 +209,7 @@
         <tr>
           <td colspan="9" class="text-center py-10">
             @if (!loading()) {
-              <i class="pi pi-list text-4xl mb-3 block text-color-secondary"></i>
+              <app-empty-illustration name="no-data" [size]="88" class="inline-block mb-3" />
               <p class="text-color-secondary">
                 @if (isSearchMode()) {
                   No logs found for this search.
@@ -254,7 +254,7 @@
       </div>
     } @else if (logs().length === 0) {
       <div class="flex flex-col items-center justify-center py-12">
-        <i class="pi pi-list text-5xl mb-4 opacity-30"></i>
+        <app-empty-illustration name="no-data" [size]="104" class="mb-4" />
         <p class="font-medium">
           @if (isSearchMode()) {
             No logs found for this search.

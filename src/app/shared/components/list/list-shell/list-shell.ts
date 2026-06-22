@@ -5,6 +5,7 @@ import { MultiSelectModule } from 'primeng/multiselect';
 import { TableLazyLoadEvent } from 'primeng/table';
 import { FORM_INPUT_SIZE } from '../../../constants/form.constants';
 import { TableColumn } from '../../../models/table-config.model';
+import { EmptyIllustrationName } from '../../../illustrations/empty-illustration';
 import { ListSearch } from '../list-search/list-search';
 import { ListFilterPanel } from '../list-filter-panel/list-filter-panel';
 import { MobileCardList } from '../mobile-card-list/mobile-card-list';
@@ -73,6 +74,7 @@ export class ListShell<T = unknown> {
   pageSize = input<number>(5);
   rowsPerPageOptions = input<number[]>([5, 10, 20, 50]);
   emptyIcon = input<string>('pi pi-inbox');
+  emptyIllustration = input<EmptyIllustrationName>('no-data');
   emptyMessage = input<string>('No results found');
   emptyHint = input<string>('Try adjusting your search or filters');
   pageChange = output<TableLazyLoadEvent>();

@@ -27,6 +27,7 @@ import {
   TrendedMoney,
 } from '../../../core/models/billing.model';
 import { formatMoney } from '../../../shared/utils/currency.utils';
+import { EmptyIllustration } from '../../../shared/illustrations/empty-illustration';
 import {
   billReasonLabel,
   billReasonSeverity,
@@ -88,6 +89,7 @@ interface LegendRow {
     TagModule,
     TooltipModule,
     OrgNamePipe,
+    EmptyIllustration,
   ],
   templateUrl: './billing-overview.html',
   styleUrl: './billing-overview.css',

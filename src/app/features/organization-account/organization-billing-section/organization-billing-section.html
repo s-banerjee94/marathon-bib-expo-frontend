@@ -15,6 +15,7 @@
   [searchTerm]="searchTerm()"
   [totalRecords]="totalRecords()"
   emptyIcon="pi pi-receipt"
+  emptyIllustration="no-data"
   emptyMessage="No bills yet"
   emptyHint="Invoices appear here once an event is completed or cancelled"
   searchPlaceholder="Search event or invoice (min 2 chars)..."
@@ -216,7 +217,7 @@
           <td [attr.colspan]="visibleCols.length + 2">
             @if (!isLoading()) {
               <div class="flex flex-col items-center justify-center py-12 px-4 text-center">
-                <i class="pi pi-receipt text-6xl mb-4 opacity-30"></i>
+                <app-empty-illustration name="no-data" [size]="112" class="mb-4" />
                 <p class="text-lg font-medium mb-1">No bills yet</p>
                 <p class="text-sm opacity-60">
                   Invoices appear here once an event is completed or cancelled.

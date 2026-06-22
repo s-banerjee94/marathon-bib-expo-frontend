@@ -36,6 +36,7 @@ import { UserRole } from '../../../core/models/user.model';
 import { DefaultValuePipe } from '../../../shared/pipes/default-value.pipe';
 import { FormatEventDateTimePipe } from '../../../shared/pipes/format-event-date-time-pipe';
 import { InitialsPipe } from '../../../shared/pipes/initials-pipe';
+import { EmptyIllustration } from '../../../shared/illustrations/empty-illustration';
 import { FORM_INPUT_SIZE } from '../../../shared/constants/form.constants';
 import {
   AUDIT_ACTION_LABEL,
@@ -124,6 +125,7 @@ const deepEqual = (a: unknown, b: unknown): boolean => JSON.stringify(a) === JSO
     DefaultValuePipe,
     FormatEventDateTimePipe,
     InitialsPipe,
+    EmptyIllustration,
   ],
   templateUrl: './org-dashboard.html',
   styleUrl: './org-dashboard.css',

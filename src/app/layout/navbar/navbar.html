@@ -133,16 +133,8 @@
                   <app-notification-card-skeleton />
                 }
               } @else if (notificationService.notifications().length === 0) {
-                <div class="flex flex-col items-center justify-center gap-1 h-32">
-                  <span
-                    class="w-12 h-12 rounded-full flex items-center justify-center"
-                    style="background: var(--surface-hover)"
-                  >
-                    <i
-                      class="pi pi-bell-slash text-xl"
-                      style="color: var(--text-color-secondary)"
-                    ></i>
-                  </span>
+                <div class="flex flex-col items-center justify-center gap-1 py-6">
+                  <app-empty-illustration name="no-notifications" [size]="72" class="mb-1" />
                   <p class="text-sm font-medium">All caught up</p>
                   <p class="text-xs" style="color: var(--text-color-secondary)">
                     No notifications yet

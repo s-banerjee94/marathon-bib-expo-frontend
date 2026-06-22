@@ -50,6 +50,7 @@ import {
 } from '../../../../shared/constants/form.constants';
 import { DistributionDialogState } from '../distribution-dialog-state.service';
 import { injectIsMobile } from '../../../../shared/utils/responsive.utils';
+import { EmptyIllustration } from '../../../../shared/illustrations/empty-illustration';
 
 @Component({
   selector: 'app-activity-logs-tab',
@@ -77,6 +78,7 @@ import { injectIsMobile } from '../../../../shared/utils/responsive.utils';
     InitialsPipe,
     UserSummaryPipe,
     RouterLink,
+    EmptyIllustration,
   ],
   templateUrl: './activity-logs-tab.html',
 })

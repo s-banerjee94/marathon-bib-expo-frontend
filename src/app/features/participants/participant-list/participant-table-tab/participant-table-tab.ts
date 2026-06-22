@@ -53,6 +53,7 @@ import {
 import { STORAGE_KEYS } from '../../../../shared/constants/storage-keys.constant';
 import { TableColumn } from '../../../../shared/models/table-config.model';
 import { ParticipantListState } from '../participant-list-state.service';
+import { EmptyIllustration } from '../../../../shared/illustrations/empty-illustration';
 
 @Component({
   selector: 'app-participant-table-tab',
@@ -76,6 +77,7 @@ import { ParticipantListState } from '../participant-list-state.service';
     PopoverModule,
     DividerModule,
     DefaultValuePipe,
+    EmptyIllustration,
   ],
 })
 export class ParticipantTableTab {

@@ -43,6 +43,7 @@ import { PARTICIPANT_COLUMNS } from '../../../shared/constants/participant-colum
 import { BUTTON_SIZE } from '../../../shared/constants/form.constants';
 import { TableColumn } from '../../../shared/models/table-config.model';
 import { MobileTabBar, TabItem } from '../../../shared/components/mobile-tab-bar/mobile-tab-bar';
+import { EmptyIllustration } from '../../../shared/illustrations/empty-illustration';
 
 // Child components
 import { ParticipantExportDialog } from './participant-export-dialog/participant-export-dialog';
@@ -71,6 +72,7 @@ import { ParticipantListState } from './participant-list-state.service';
     RouterLink,
     RouterLinkActive,
     MobileTabBar,
+    EmptyIllustration,
   ],
   providers: [ConfirmationService, ParticipantListState],
 })

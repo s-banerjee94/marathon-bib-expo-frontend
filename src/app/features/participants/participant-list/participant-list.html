@@ -41,7 +41,7 @@
   @if (!canShowTabs()) {
     <p-card class="text-center">
       <div class="p-8">
-        <i class="pi pi-users text-6xl mb-4 block"></i>
+        <app-empty-illustration name="no-events" [size]="112" class="inline-block mb-4" />
         <h3 class="text-xl font-semibold mb-2">No Event Selected</h3>
         <p>
           @if (isOrganizerUser()) {

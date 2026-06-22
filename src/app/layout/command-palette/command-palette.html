@@ -95,24 +95,30 @@
       } @else {
         <!-- Empty states -->
         <div class="flex flex-col items-center justify-center gap-2 py-12 px-4 text-center">
-          <span
-            class="w-12 h-12 rounded-full flex items-center justify-center"
-            style="background: var(--surface-hover)"
-          >
-            <i
-              [class]="palette.loading() ? 'pi pi-spin pi-spinner' : 'pi pi-search'"
-              class="text-xl"
-              style="color: var(--text-color-secondary)"
-            ></i>
-          </span>
           @if (palette.loading()) {
+            <span
+              class="w-12 h-12 rounded-full flex items-center justify-center"
+              style="background: var(--surface-hover)"
+            >
+              <i
+                class="pi pi-spin pi-spinner text-xl"
+                style="color: var(--text-color-secondary)"
+              ></i>
+            </span>
             <p class="text-sm font-medium">Searching…</p>
           } @else if (!canSearch()) {
+            <span
+              class="w-12 h-12 rounded-full flex items-center justify-center"
+              style="background: var(--surface-hover)"
+            >
+              <i class="pi pi-search text-xl" style="color: var(--text-color-secondary)"></i>
+            </span>
             <p class="text-sm font-medium">Search everything</p>
             <p class="text-xs" style="color: var(--text-color-secondary)">
               {{ palette.searchHint() }}
             </p>
           } @else {
+            <app-empty-illustration name="no-search-results" [size]="80" class="mb-1" />
             <p class="text-sm font-medium">No results found</p>
             <p class="text-xs" style="color: var(--text-color-secondary)">
               Nothing matches “{{ palette.query() }}”

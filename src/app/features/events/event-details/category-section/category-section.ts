@@ -40,6 +40,7 @@ import {
 import { injectIsMobile } from '../../../../shared/utils/responsive.utils';
 import { InitialsPipe } from '../../../../shared/pipes/initials-pipe';
 import { UserSummaryPipe } from '../../../../shared/pipes/user-summary-pipe';
+import { EmptyIllustration } from '../../../../shared/illustrations/empty-illustration';
 
 const DEFAULT_CATEGORY_FIELDS = ['id', 'categoryName', 'createdBy', 'createdAt'];
 
@@ -61,6 +62,7 @@ const DEFAULT_CATEGORY_FIELDS = ['id', 'categoryName', 'createdBy', 'createdAt']
     InitialsPipe,
     UserSummaryPipe,
     RouterLink,
+    EmptyIllustration,
   ],
   providers: [DialogService, ConfirmationService],
   templateUrl: './category-section.html',

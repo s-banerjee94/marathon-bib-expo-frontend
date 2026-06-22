@@ -14,6 +14,7 @@ import { InputIconModule } from 'primeng/inputicon';
 import { InputTextModule } from 'primeng/inputtext';
 import { ProgressBarModule } from 'primeng/progressbar';
 import { CommandPaletteService, CommandResult } from '../../core/services/command-palette.service';
+import { EmptyIllustration } from '../../shared/illustrations/empty-illustration';
 
 /**
  * Global Cmd/Ctrl+K command palette. A modal, centered overlay that searches
@@ -25,7 +26,14 @@ import { CommandPaletteService, CommandResult } from '../../core/services/comman
 @Component({
   selector: 'app-command-palette',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DialogModule, IconFieldModule, InputIconModule, InputTextModule, ProgressBarModule],
+  imports: [
+    DialogModule,
+    IconFieldModule,
+    InputIconModule,
+    InputTextModule,
+    ProgressBarModule,
+    EmptyIllustration,
+  ],
   templateUrl: './command-palette.html',
 })
 export class CommandPalette {

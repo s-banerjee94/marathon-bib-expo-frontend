@@ -51,6 +51,7 @@ import {
 } from '../../../../shared/utils/column.utils';
 import { injectIsMobile } from '../../../../shared/utils/responsive.utils';
 import { getCampaignStatusSeverity } from '../../../../shared/utils/campaign-status.utils';
+import { EmptyIllustration } from '../../../../shared/illustrations/empty-illustration';
 
 @Component({
   selector: 'app-sms-campaign-section',
@@ -74,6 +75,7 @@ import { getCampaignStatusSeverity } from '../../../../shared/utils/campaign-sta
     InitialsPipe,
     UserSummaryPipe,
     RouterLink,
+    EmptyIllustration,
   ],
   providers: [DialogService, ConfirmationService],
   templateUrl: './sms-campaign-section.html',

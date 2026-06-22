@@ -5,6 +5,44 @@
 /* Tailwind dark variant — class-contains match (Sakai pattern) for flexibility */
 @custom-variant dark (&:where([class*="app-dark"], [class*="app-dark"] *));
 
+/* Empty-state illustration motion. Exposed as `animate-illustration-*` utilities;
+ * always paired with the `motion-safe:` variant at the call site so they go static
+ * under prefers-reduced-motion. */
+@theme {
+  --animate-illustration-fade-in: illustration-fade-in 0.5s ease-out both;
+  --animate-illustration-float: illustration-float 3.6s ease-in-out 0.5s infinite;
+  --animate-illustration-twinkle: illustration-twinkle 2.6s ease-in-out infinite;
+
+  @keyframes illustration-fade-in {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  @keyframes illustration-float {
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-4px);
+    }
+  }
+  @keyframes illustration-twinkle {
+    0%,
+    100% {
+      opacity: 0.5;
+    }
+    50% {
+      opacity: 0.12;
+    }
+  }
+}
+
 /* Semantic alias layer (Sakai pattern)
  * Maps PrimeNG --p-* tokens to unprefixed semantic names so app CSS stays readable
  * and decoupled from PrimeNG's CSS variable naming.

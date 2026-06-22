@@ -54,6 +54,7 @@ import { EventLogoPipe } from '../../../shared/pipes/event-logo-pipe';
 import { InitialsPipe } from '../../../shared/pipes/initials-pipe';
 import { OrganizationSelector } from '../../../layout/organization-selector/organization-selector';
 import { BillDetailDialog } from '../bill-detail-dialog/bill-detail-dialog';
+import { EmptyIllustration } from '../../../shared/illustrations/empty-illustration';
 
 interface BillFilterPreferences extends TableFilterPreferences {
   enabled: boolean;
@@ -92,6 +93,7 @@ interface BillFilterPreferences extends TableFilterPreferences {
     EventLogoPipe,
     InitialsPipe,
     OrganizationSelector,
+    EmptyIllustration,
     ListShell,
     BillDetailDialog,
   ],

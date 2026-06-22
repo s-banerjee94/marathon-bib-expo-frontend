@@ -17,6 +17,7 @@ import { ParticipantService } from '../../../../core/services/participant.servic
 import { ErrorHandlerService } from '../../../../core/services/error-handler.service';
 import { LabelizePipe } from '../../../../shared/pipes/labelize-pipe';
 import { ParticipantListState } from '../participant-list-state.service';
+import { EmptyIllustration } from '../../../../shared/illustrations/empty-illustration';
 
 const IMPORT_ERRORS_PAGE_SIZE = 50;
 
@@ -25,7 +26,7 @@ const IMPORT_ERRORS_PAGE_SIZE = 50;
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './import-history-tab.html',
-  imports: [TableModule, TagModule, ButtonModule, SkeletonModule, LabelizePipe],
+  imports: [TableModule, TagModule, ButtonModule, SkeletonModule, LabelizePipe, EmptyIllustration],
 })
 export class ImportHistoryTab {
   private participantService = inject(ParticipantService);

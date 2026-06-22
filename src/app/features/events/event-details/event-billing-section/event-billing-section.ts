@@ -25,6 +25,7 @@ import { BUTTON_SIZE, FORM_INPUT_SIZE } from '../../../../shared/constants/form.
 import { injectIsMobile } from '../../../../shared/utils/responsive.utils';
 import { billStatusLabel } from '../../../../shared/utils/billing.utils';
 import { BillDetail } from '../../../billing/bill-detail/bill-detail';
+import { EmptyIllustration } from '../../../../shared/illustrations/empty-illustration';
 
 @Component({
   selector: 'app-event-billing-section',
@@ -36,6 +37,7 @@ import { BillDetail } from '../../../billing/bill-detail/bill-detail';
     TooltipModule,
     ConfirmPopupModule,
     BillDetail,
+    EmptyIllustration,
   ],
   providers: [ConfirmationService],
   templateUrl: './event-billing-section.html',

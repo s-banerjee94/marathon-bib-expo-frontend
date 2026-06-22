@@ -17,6 +17,7 @@
   [searchTerm]="searchTerm()"
   [totalRecords]="totalRecords()"
   emptyIcon="pi pi-building"
+  emptyIllustration="no-organizations"
   emptyMessage="No organizations found"
   searchPlaceholder="Search organizations (min 2 chars)..."
   subtitle="Manage organizations and their subscriptions"
@@ -287,7 +288,7 @@
           <td [attr.colspan]="visibleCols.length + 2">
             @if (!isLoading()) {
               <div class="flex flex-col items-center justify-center py-12 px-4">
-                <i class="pi pi-building text-6xl mb-4 opacity-30"></i>
+                <app-empty-illustration name="no-organizations" [size]="112" class="mb-4" />
                 <p class="text-lg font-medium mb-1">No organizations found</p>
                 <p class="text-sm opacity-60">Try adjusting your search or filters</p>
               </div>

@@ -20,6 +20,7 @@ import { TagModule } from 'primeng/tag';
 import { FloatLabelModule } from 'primeng/floatlabel';
 import { AvatarModule } from 'primeng/avatar';
 import { ListShell } from '../../../shared/components/list/list-shell/list-shell';
+import { EmptyIllustration } from '../../../shared/illustrations/empty-illustration';
 
 import { Organization } from '../../../core/models/organization.model';
 import { PageableParams, PageableResponse } from '../../../core/models/api.model';
@@ -65,6 +66,7 @@ interface OrganizationFilterPreferences extends TableFilterPreferences {
     UserSummaryPipe,
     PopoverModule,
     ListShell,
+    EmptyIllustration,
     RouterLink,
   ],
   providers: [DialogService, ConfirmationService],

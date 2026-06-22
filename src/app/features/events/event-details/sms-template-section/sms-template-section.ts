@@ -42,6 +42,7 @@ import {
   saveColumnPreferences,
 } from '../../../../shared/utils/column.utils';
 import { injectIsMobile } from '../../../../shared/utils/responsive.utils';
+import { EmptyIllustration } from '../../../../shared/illustrations/empty-illustration';
 
 @Component({
   selector: 'app-sms-template-section',
@@ -64,6 +65,7 @@ import { injectIsMobile } from '../../../../shared/utils/responsive.utils';
     InitialsPipe,
     UserSummaryPipe,
     RouterLink,
+    EmptyIllustration,
   ],
   providers: [DialogService, ConfirmationService],
   templateUrl: './sms-template-section.html',

@@ -46,6 +46,7 @@ import { DistributionDialogState } from '../distribution-dialog-state.service';
 import { ManageDistribution } from '../manage-distribution';
 import { injectIsMobile } from '../../../../shared/utils/responsive.utils';
 import { ParticipantDistributionCard } from '../participant-distribution-card/participant-distribution-card';
+import { EmptyIllustration } from '../../../../shared/illustrations/empty-illustration';
 
 interface BarcodeDetectorResult {
   rawValue: string;
@@ -79,6 +80,7 @@ interface BarcodeDetectorStatic {
     DialogModule,
     DefaultValuePipe,
     ParticipantDistributionCard,
+    EmptyIllustration,
   ],
   templateUrl: './bib-lookup-tab.html',
 })

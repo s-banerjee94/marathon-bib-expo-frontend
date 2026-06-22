@@ -44,6 +44,7 @@ import { DistributionDialogState } from './distribution-dialog-state.service';
 import { ParticipantDetails } from '../../participants/participant-details/participant-details';
 import { injectIsMobile } from '../../../shared/utils/responsive.utils';
 import { MobileTabBar, TabItem } from '../../../shared/components/mobile-tab-bar/mobile-tab-bar';
+import { EmptyIllustration } from '../../../shared/illustrations/empty-illustration';
 
 /** Minimal shape shared by Participant and ParticipantDistributionResponse for dialog usage */
 type DistributionTarget = Participant | ParticipantDistributionResponse;
@@ -68,6 +69,7 @@ type DistributionTarget = Participant | ParticipantDistributionResponse;
     EventSelector,
     ParticipantDetails,
     MobileTabBar,
+    EmptyIllustration,
   ],
   providers: [ConfirmationService, DistributionDialogState],
   templateUrl: './manage-distribution.html',

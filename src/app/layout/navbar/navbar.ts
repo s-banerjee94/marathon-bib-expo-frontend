@@ -24,6 +24,7 @@ import { CommandPaletteService } from '../../core/services/command-palette.servi
 import { ThemeConfigurator } from '../theme-configurator/theme-configurator';
 import { NotificationCard } from '../../features/notifications/notification-card/notification-card';
 import { NotificationCardSkeleton } from '../../features/notifications/notification-card-skeleton/notification-card-skeleton';
+import { EmptyIllustration } from '../../shared/illustrations/empty-illustration';
 import { ROLE_LABELS } from '../../core/models/user.model';
 import { getInitials } from '../../shared/utils/initials.util';
 
@@ -42,6 +43,7 @@ import { getInitials } from '../../shared/utils/initials.util';
     ThemeConfigurator,
     NotificationCard,
     NotificationCardSkeleton,
+    EmptyIllustration,
   ],
 })
 export class Navbar implements OnDestroy {

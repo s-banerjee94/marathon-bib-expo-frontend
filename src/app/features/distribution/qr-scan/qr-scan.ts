@@ -31,6 +31,7 @@ import { UserRole } from '../../../core/models/user.model';
 import { ParticipantDistributionCard } from '../manage-distribution/participant-distribution-card/participant-distribution-card';
 import { DistributionDialogState } from '../manage-distribution/distribution-dialog-state.service';
 import { ManageDistribution } from '../manage-distribution/manage-distribution';
+import { EmptyIllustration } from '../../../shared/illustrations/empty-illustration';
 import {
   BUTTON_SIZE,
   FORM_INPUT_SIZE,
@@ -64,6 +65,7 @@ interface BarcodeDetectorStatic {
     MessageModule,
     PopoverModule,
     ParticipantDistributionCard,
+    EmptyIllustration,
   ],
   templateUrl: './qr-scan.html',
 })

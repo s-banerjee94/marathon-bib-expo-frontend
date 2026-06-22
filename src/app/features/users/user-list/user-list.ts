@@ -49,6 +49,7 @@ import { userCanManage } from '../../../shared/utils/user-permissions.utils';
 import { ConfirmationService } from 'primeng/api';
 import { DialogService } from 'primeng/dynamicdialog';
 import { ListShell } from '../../../shared/components/list/list-shell/list-shell';
+import { EmptyIllustration } from '../../../shared/illustrations/empty-illustration';
 
 interface UserFilterPreferences extends TableFilterPreferences {
   enabled: boolean;
@@ -84,6 +85,7 @@ interface UserFilterPreferences extends TableFilterPreferences {
     UserSummaryPipe,
     OrganizationSelector,
     ListShell,
+    EmptyIllustration,
     RouterLink,
   ],
   providers: [DialogService, ConfirmationService],

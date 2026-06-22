@@ -40,6 +40,7 @@ import {
 } from '../../../../shared/utils/column.utils';
 import { injectIsMobile } from '../../../../shared/utils/responsive.utils';
 import { formatUtcInstantInZone } from '../../../../shared/utils/timezone.utils';
+import { EmptyIllustration } from '../../../../shared/illustrations/empty-illustration';
 
 @Component({
   selector: 'app-race-section',
@@ -60,6 +61,7 @@ import { formatUtcInstantInZone } from '../../../../shared/utils/timezone.utils'
     InitialsPipe,
     UserSummaryPipe,
     RouterLink,
+    EmptyIllustration,
   ],
   providers: [DialogService, ConfirmationService],
   templateUrl: './race-section.html',

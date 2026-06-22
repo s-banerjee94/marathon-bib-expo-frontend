@@ -194,7 +194,8 @@
       <ng-template pTemplate="emptymessage">
         <tr>
           <td [attr.colspan]="visibleCols().length + 2" class="text-center py-8">
-            No SMS templates found. Click "Create SMS Template" to add one.
+            <app-empty-illustration name="no-templates" [size]="88" class="inline-block mb-3" />
+            <p>No SMS templates found. Click "Create SMS Template" to add one.</p>
           </td>
         </tr>
       </ng-template>
@@ -213,7 +214,7 @@
       </div>
     } @else if (smsTemplates().length === 0) {
       <div class="flex flex-col items-center justify-center py-12 px-4">
-        <i class="pi pi-envelope text-6xl mb-4 opacity-30"></i>
+        <app-empty-illustration name="no-templates" [size]="112" class="mb-4" />
         <p class="text-lg font-medium mb-1">No SMS templates found</p>
         <p class="text-sm opacity-60">Tap + to create a template</p>
       </div>

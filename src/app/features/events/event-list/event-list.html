@@ -21,6 +21,7 @@
     [searchTerm]="searchTerm()"
     [totalRecords]="totalRecords()"
     emptyIcon="pi pi-calendar"
+    emptyIllustration="no-events"
     emptyMessage="No events found"
     searchPlaceholder="Search events (min 2 chars)..."
     [subtitle]="
@@ -338,7 +339,7 @@
             <td [attr.colspan]="visibleCols.length + 2">
               @if (!isLoading()) {
                 <div class="flex flex-col items-center justify-center py-12 px-4">
-                  <i class="pi pi-calendar text-6xl mb-4 opacity-30"></i>
+                  <app-empty-illustration name="no-events" [size]="112" class="mb-4" />
                   <p class="text-lg font-medium mb-1">No events found</p>
                   <p class="text-sm opacity-60">Try adjusting your search or filters</p>
                 </div>

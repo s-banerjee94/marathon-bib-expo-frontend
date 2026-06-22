@@ -46,7 +46,7 @@
   @if (!selectedEventId() && !isDistributor()) {
     <p-card>
       <div class="p-8 text-center">
-        <i class="pi pi-inbox text-6xl mb-4 block text-color-secondary"></i>
+        <app-empty-illustration name="no-events" [size]="112" class="inline-block mb-4" />
         <h3 class="text-xl font-semibold mb-2">No Event Selected</h3>
         <p class="text-color-secondary">
           @if (isRestrictedUser()) {

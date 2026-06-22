@@ -29,6 +29,7 @@ import { DividerModule } from 'primeng/divider';
 import { FloatLabelModule } from 'primeng/floatlabel';
 import { AvatarModule } from 'primeng/avatar';
 import { ListShell } from '../../../shared/components/list/list-shell/list-shell';
+import { EmptyIllustration } from '../../../shared/illustrations/empty-illustration';
 import { Event, EventStatus } from '../../../core/models/event.model';
 import { PageableParams, PageableResponse } from '../../../core/models/api.model';
 import { EventService } from '../../../core/services/event.service';
@@ -84,6 +85,7 @@ interface EventFilterPreferences extends TableFilterPreferences {
     RouterOutlet,
     RouterLink,
     ListShell,
+    EmptyIllustration,
   ],
   providers: [DialogService, ConfirmationService],
   templateUrl: './event-list.html',

@@ -64,7 +64,7 @@
   } @else if (!isLoading()) {
     <!-- No errors -->
     <div class="text-center py-16 rounded-lg border">
-      <i class="pi pi-check-circle text-4xl block mb-3"></i>
+      <app-empty-illustration name="all-caught-up" [size]="96" class="inline-block mb-3" />
       <p class="font-medium text-lg">No errors from latest import</p>
       <p class="text-sm mt-2">The last CSV import completed without any row-level errors.</p>
     </div>

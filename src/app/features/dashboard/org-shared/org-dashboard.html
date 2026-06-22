@@ -387,7 +387,10 @@
           </ng-template>
           <ng-template pTemplate="emptymessage">
             <tr>
-              <td colspan="4" class="text-center py-6 text-color-secondary">No events found.</td>
+              <td colspan="4" class="text-center py-8 text-color-secondary">
+                <app-empty-illustration name="no-events" [size]="88" class="inline-block mb-2" />
+                <p>No events found.</p>
+              </td>
             </tr>
           </ng-template>
         </p-table>

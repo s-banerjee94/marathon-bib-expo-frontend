@@ -43,6 +43,7 @@ import { DefaultValuePipe } from '../../../shared/pipes/default-value.pipe';
 import { OrganizationSelector } from '../../../layout/organization-selector/organization-selector';
 import { UserSelector } from '../../../layout/user-selector/user-selector';
 import { ListFilterPanel } from '../../../shared/components/list/list-filter-panel/list-filter-panel';
+import { EmptyIllustration } from '../../../shared/illustrations/empty-illustration';
 import { injectIsMobile } from '../../../shared/utils/responsive.utils';
 
 function lastNDays(days: number): Date[] {
@@ -87,6 +88,7 @@ function endOfToday(): Date {
     OrganizationSelector,
     UserSelector,
     ListFilterPanel,
+    EmptyIllustration,
   ],
   templateUrl: './audit-log-list.html',
 })

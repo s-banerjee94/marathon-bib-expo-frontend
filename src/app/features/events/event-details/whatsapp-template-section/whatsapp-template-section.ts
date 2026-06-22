@@ -43,6 +43,7 @@ import {
   saveColumnPreferences,
 } from '../../../../shared/utils/column.utils';
 import { injectIsMobile } from '../../../../shared/utils/responsive.utils';
+import { EmptyIllustration } from '../../../../shared/illustrations/empty-illustration';
 
 @Component({
   selector: 'app-whatsapp-template-section',
@@ -66,6 +67,7 @@ import { injectIsMobile } from '../../../../shared/utils/responsive.utils';
     TruncatePipe,
     InitialsPipe,
     UserSummaryPipe,
+    EmptyIllustration,
   ],
   providers: [DialogService, ConfirmationService],
   templateUrl: './whatsapp-template-section.html',

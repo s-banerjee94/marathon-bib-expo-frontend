@@ -14,6 +14,7 @@ import { NotificationService } from '../../../core/services/notification.service
 import { ErrorHandlerService } from '../../../core/services/error-handler.service';
 import { NotificationCard } from '../notification-card/notification-card';
 import { NotificationCardSkeleton } from '../notification-card-skeleton/notification-card-skeleton';
+import { EmptyIllustration } from '../../../shared/illustrations/empty-illustration';
 
 interface NotificationGroup {
   label: string;
@@ -23,7 +24,7 @@ interface NotificationGroup {
 @Component({
   selector: 'app-notifications-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ButtonModule, NotificationCard, NotificationCardSkeleton],
+  imports: [ButtonModule, NotificationCard, NotificationCardSkeleton, EmptyIllustration],
   templateUrl: './notifications-page.html',
 })
 export class NotificationsPage implements OnInit {

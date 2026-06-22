@@ -3,7 +3,7 @@
     <app-event-dashboard-section [assignedEventId]="id" />
   } @else {
     <div class="flex flex-col items-center justify-center text-center min-h-[60vh] gap-3 p-4">
-      <i class="pi pi-info-circle text-6xl opacity-30"></i>
+      <app-empty-illustration name="no-events" [size]="120" class="inline-block" />
       <h2 class="text-2xl font-semibold m-0">No event assigned</h2>
       <p class="text-color-secondary m-0">You haven't been assigned to an event yet.</p>
     </div>
