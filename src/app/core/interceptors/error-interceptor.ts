@@ -7,7 +7,7 @@ import {
 } from '@angular/common/http';
 import { inject } from '@angular/core';
 import { Router } from '@angular/router';
-import { BehaviorSubject, catchError, filter, Observable, switchMap, take, throwError } from 'rxjs';
+import { catchError, finalize, Observable, shareReplay, switchMap, throwError } from 'rxjs';
 import { AuthService } from '../services/auth.service';
 import { CSRF_HEADER_NAME, getCsrfToken, isMutatingMethod } from '../utils/csrf.util';
 
@@ -15,10 +15,9 @@ const AUTH_PATH_LOGIN = '/auth/login';
 const AUTH_PATH_REFRESH = '/auth/refresh';
 const AUTH_PATH_LOGOUT = '/auth/logout';
 
-// Module-level single-flight refresh state. Shared across all in-flight requests
-// so a burst of concurrent 401s triggers exactly one /refresh call.
-let refreshInFlight = false;
-const refreshedToken$ = new BehaviorSubject<string | null>(null);
+// Module-level single-flight refresh: a burst of concurrent 401s shares exactly one
+// /refresh call (and its outcome — token or error) via this replayed observable.
+let refresh$: Observable<string> | null = null;
 
 function isAuthEndpoint(url: string): boolean {
   return (
@@ -77,31 +76,27 @@ function handle401(
   authService: AuthService,
   router: Router,
 ): Observable<HttpEvent<unknown>> {
-  if (refreshInFlight) {
-    return refreshedToken$.pipe(
-      filter((token): token is string => token !== null),
-      take(1),
-      switchMap((token) => next(attachToken(request, token))),
-    );
-  }
-
-  refreshInFlight = true;
-  refreshedToken$.next(null);
-
-  return authService.refresh().pipe(
-    switchMap((token) => {
-      refreshInFlight = false;
-      refreshedToken$.next(token);
-      return next(attachToken(request, token));
-    }),
+  // First 401 of a burst kicks off the shared refresh; concurrent ones reuse it.
+  refresh$ ??= authService.refresh().pipe(
     catchError((refreshError: HttpErrorResponse) => {
-      refreshInFlight = false;
-      refreshedToken$.next(null);
-      authService.handleSessionInvalidated();
-      router.navigate(['/login']);
+      // End the session ONLY when the backend genuinely rejects the refresh token
+      // (401/403). Network errors (status 0), timeouts, and server errors (5xx) must
+      // NOT log the user out — a transient blip should never evict a valid session.
+      if (refreshError.status === 401 || refreshError.status === 403) {
+        authService.handleSessionInvalidated();
+        router.navigate(['/login']);
+      }
       return throwError(() => refreshError);
     }),
+    finalize(() => {
+      refresh$ = null;
+    }),
+    shareReplay({ bufferSize: 1, refCount: true }),
   );
+
+  // Each waiting request retries with the refreshed token; on refresh failure they all
+  // receive the same error (no hang) and surface it through their own handlers.
+  return refresh$.pipe(switchMap((token) => next(attachToken(request, token))));
 }
 
 function logError(error: HttpErrorResponse): void {
