@@ -71,6 +71,7 @@
 
   /* Layout primitives */
   --sidebar-width: 250px;
+  --sidebar-width-collapsed: 4.5rem;
   --sidebar-width-mobile: 320px;
   --topbar-height: 56px;
   /* Height reserved above the topbar for the offline banner; 0 unless offline. */
@@ -131,6 +132,43 @@ body.blocked-scroll {
   margin-left: 0;
 }
 
+/* Icon-only rail — desktop static, collapsed. Sidebar shrinks to icon width,
+   labels/badges/chevrons hide, and each item centers its icon. Scoped to
+   desktop so the mobile overlay always shows the full labelled menu. */
+@media (min-width: 992px) {
+  .layout-static-collapsed .layout-sidebar {
+    width: var(--sidebar-width-collapsed);
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+  }
+
+  .layout-static-collapsed .layout-main {
+    margin-left: var(--sidebar-width-collapsed);
+  }
+
+  .layout-static-collapsed .menu-link {
+    justify-content: center;
+    padding-left: 0;
+    padding-right: 0;
+    padding-top: 0.85rem;
+    padding-bottom: 0.85rem;
+  }
+
+  .layout-static-collapsed .menu-link > span,
+  .layout-static-collapsed .menu-link > .pi-angle-down {
+    display: none;
+  }
+
+  .layout-static-collapsed .menu-link > i {
+    margin-right: 0;
+    font-size: 1.5rem;
+  }
+
+  .layout-static-collapsed app-menuitem > li {
+    margin-bottom: 0.5rem;
+  }
+}
+
 /* AI assistant "push" mode squeezes the content on desktop (matches the panel width) */
 @media (min-width: 640px) {
   .layout-ai-push .layout-main {
@@ -146,6 +184,7 @@ body.blocked-scroll {
   height: calc(100vh - var(--topbar-height) - var(--banner-height));
   height: calc(100dvh - var(--topbar-height) - var(--banner-height));
   padding-bottom: calc(1rem + env(safe-area-inset-bottom));
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 @media (max-width: 991px) {
@@ -182,9 +221,44 @@ body.blocked-scroll {
 }
 
 .menu-link.active-route {
+  position: relative;
   color: var(--primary-color);
   font-weight: 700;
   background-color: color-mix(in srgb, var(--primary-color), transparent 90%);
+}
+
+/* 3px accent bar pinned to the active item's left edge. The shared
+   view-transition-name lets the Router's view transition slide it from the
+   previous active item to the new one on navigation (withViewTransitions in
+   app.config.ts). Only one menu item is active at a time, so the name stays
+   unique within a snapshot. */
+.menu-link.active-route::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  inset-block: 0.5rem;
+  width: 3px;
+  border-radius: 9999px;
+  background-color: var(--primary-color);
+  view-transition-name: sidebar-active-indicator;
+}
+
+::view-transition-group(sidebar-active-indicator) {
+  animation-duration: 200ms;
+  animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* During route navigation the page content swaps instantly — only the
+   active-nav indicator above animates. */
+:root.route-transition::view-transition-old(root),
+:root.route-transition::view-transition-new(root) {
+  animation: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(sidebar-active-indicator) {
+    animation: none;
+  }
 }
 
 /* View Transitions API — smooth crossfade when toggling dark mode (Sakai pattern) */

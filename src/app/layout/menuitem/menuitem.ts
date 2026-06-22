@@ -2,6 +2,7 @@ import { CommonModule } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
+  computed,
   effect,
   HostBinding,
   inject,
@@ -14,6 +15,7 @@ import { RippleModule } from 'primeng/ripple';
 import { TooltipModule } from 'primeng/tooltip';
 import { AppMenuItem } from '../../shared/models/menu.model';
 import { LayoutService } from '../../core/services/layout.service';
+import { injectIsMobile } from '../../shared/utils/responsive.utils';
 
 @Component({
   selector: 'app-menuitem',
@@ -29,6 +31,9 @@ export class MenuitemComponent {
   parentKey = input<string>('');
   isActive = signal(false);
   isExpanded = signal(false);
+  // Rail mode (desktop static + collapsed) replaces labels with hover tooltips.
+  private isMobile = injectIsMobile(991);
+  showTooltip = computed(() => this.layoutService.isSidebarCollapsed() && !this.isMobile());
   private router = inject(Router);
 
   constructor() {

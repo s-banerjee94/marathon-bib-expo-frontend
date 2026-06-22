@@ -12,6 +12,10 @@
         [routerLink]="item().routerLink"
         routerLinkActive="active-route"
         [routerLinkActiveOptions]="{ exact: false }"
+        [attr.aria-label]="item().label"
+        [pTooltip]="item().label"
+        tooltipPosition="right"
+        [tooltipDisabled]="!showTooltip()"
         class="menu-link flex items-center py-3 px-4 rounded-lg no-underline cursor-pointer transition-colors duration-150 max-[991px]:min-h-12 max-[991px]:py-3.5"
         pRipple
       >
@@ -37,6 +41,10 @@
       <a
         (click)="onItemClick($event)"
         [ngClass]="{ 'active-route': isActive() }"
+        [attr.aria-label]="item().label"
+        [pTooltip]="item().label"
+        tooltipPosition="right"
+        [tooltipDisabled]="!showTooltip()"
         class="menu-link flex items-center py-3 px-4 rounded-lg no-underline cursor-pointer transition-colors duration-150 max-[991px]:min-h-12 max-[991px]:py-3.5"
         pRipple
       >

@@ -4,8 +4,14 @@ import {
   provideAppInitializer,
   provideBrowserGlobalErrorListeners,
 } from '@angular/core';
+import { DOCUMENT } from '@angular/common';
 import { provideAnimations } from '@angular/platform-browser/animations';
-import { provideRouter, withComponentInputBinding, withRouterConfig } from '@angular/router';
+import {
+  provideRouter,
+  withComponentInputBinding,
+  withRouterConfig,
+  withViewTransitions,
+} from '@angular/router';
 import { providePrimeNG } from 'primeng/config';
 import { definePreset } from '@primeuix/themes';
 import Aura from '@primeuix/themes/aura';
@@ -78,6 +84,17 @@ export const appConfig: ApplicationConfig = {
       routes,
       withComponentInputBinding(),
       withRouterConfig({ paramsInheritanceStrategy: 'always' }),
+      withViewTransitions({
+        skipInitialTransition: true,
+        onViewTransitionCreated: ({ transition }) => {
+          // Tag the route transition so CSS keeps the page swap instant and only
+          // animates the active-nav indicator (see styles.css). The dark-mode
+          // toggle runs its own startViewTransition without this marker.
+          const root = inject(DOCUMENT).documentElement;
+          root.classList.add('route-transition');
+          transition.finished.finally(() => root.classList.remove('route-transition'));
+        },
+      }),
     ),
     provideHttpClient(withInterceptors([offlineInterceptor, authInterceptor, errorInterceptor])),
     AuthService,

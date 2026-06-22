@@ -28,6 +28,8 @@ export interface LayoutConfig {
   borderRadius: BorderRadiusMode;
   followSystem: boolean;
   aiAssistantMode: AiAssistantMode;
+  // Desktop static mode only: when true the sidebar shows as an icon-only rail.
+  sidebarCollapsed: boolean;
 }
 
 export interface LayoutState {
@@ -67,6 +69,7 @@ const DEFAULT_CONFIG: LayoutConfig = {
   borderRadius: 'default',
   followSystem: false,
   aiAssistantMode: 'push',
+  sidebarCollapsed: false,
 };
 
 const DEFAULT_LAYOUT_STATE: LayoutState = {
@@ -126,6 +129,7 @@ export class LayoutService {
   borderRadius = computed(() => this.layoutConfig().borderRadius);
   followSystem = computed(() => this.layoutConfig().followSystem);
   aiAssistantMode = computed(() => this.layoutConfig().aiAssistantMode);
+  isSidebarCollapsed = computed(() => this.layoutConfig().sidebarCollapsed);
   isNoirActive = computed(() => this.layoutConfig().primary === 'noir');
   isSidebarActive = computed(() => {
     const state = this.layoutState();
@@ -445,9 +449,10 @@ export class LayoutService {
 
     if (this.isDesktop()) {
       if (mode === 'static') {
-        this.layoutState.update((state) => ({
-          ...state,
-          staticMenuDesktopInactive: !state.staticMenuDesktopInactive,
+        // Desktop static: collapse to / expand from the icon-only rail.
+        this.layoutConfig.update((config) => ({
+          ...config,
+          sidebarCollapsed: !config.sidebarCollapsed,
         }));
       } else {
         // overlay desktop: toggle the slide-in panel

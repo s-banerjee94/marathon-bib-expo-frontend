@@ -69,6 +69,7 @@ export class App {
       'layout-static': config.menuMode === 'static',
       'layout-overlay': config.menuMode === 'overlay',
       'layout-static-inactive': state.staticMenuDesktopInactive && config.menuMode === 'static',
+      'layout-static-collapsed': config.sidebarCollapsed && config.menuMode === 'static',
       'layout-mobile-active': state.mobileMenuActive,
       'layout-overlay-active': state.overlayMenuActive,
       'layout-ai-push': config.aiAssistantMode === 'push' && this.aiAssistant.isOpen(),
