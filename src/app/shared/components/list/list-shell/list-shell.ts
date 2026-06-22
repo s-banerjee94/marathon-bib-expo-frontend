@@ -40,9 +40,7 @@ import { MobileCardList } from '../mobile-card-list/mobile-card-list';
   styleUrl: './list-shell.css',
 })
 export class ListShell<T = unknown> {
-  // Header — title is optional: omit it when the page already has a heading
-  // (e.g. a tabbed shell) so the list doesn't render a second <h1>.
-  title = input<string>('');
+  heading = input<string>('');
   subtitle = input<string>('');
 
   // Viewport
