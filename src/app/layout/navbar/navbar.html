@@ -13,7 +13,6 @@
           [rounded]="true"
           [text]="true"
           icon="pi pi-bars"
-          pTooltip="Toggle menu"
           ariaLabel="Toggle navigation menu"
         />
       }
@@ -23,11 +22,35 @@
 
   <ng-template pTemplate="end">
     <div class="flex items-center gap-2 pr-4">
+      <!-- Command Palette search trigger (first item) — opens the global Ctrl/Cmd+K search -->
+      @if (isAuthenticated() && commandPalette.available()) {
+        <p-button
+          (onClick)="commandPalette.open()"
+          [outlined]="true"
+          severity="secondary"
+          styleClass="!gap-2 !px-2.5 !py-1.5"
+          ariaLabel="Open search command palette"
+        >
+          <i class="pi pi-search text-sm"></i>
+          <span class="hidden md:inline text-sm" style="color: var(--text-color-secondary)"
+            >Search</span
+          >
+          <kbd
+            class="hidden md:inline-flex items-center h-5 px-1.5 rounded border text-[11px] font-semibold"
+            style="
+              background: var(--surface-hover);
+              border-color: var(--surface-border);
+              color: var(--text-color-secondary);
+            "
+            >{{ commandPalette.shortcutLabel }}</kbd
+          >
+        </p-button>
+      }
+
       <!-- Dark Mode Toggle -->
       <p-button
         (onClick)="layoutService.toggleDarkMode()"
         [icon]="layoutService.isDarkTheme() ? 'pi pi-moon' : 'pi pi-sun'"
-        [pTooltip]="layoutService.isDarkTheme() ? 'Switch to light mode' : 'Switch to dark mode'"
         [ariaLabel]="layoutService.isDarkTheme() ? 'Switch to light mode' : 'Switch to dark mode'"
         [rounded]="true"
         [text]="true"
@@ -40,7 +63,6 @@
           [rounded]="true"
           [text]="true"
           icon="pi pi-palette"
-          pTooltip="Theme settings"
           ariaLabel="Open theme settings"
         />
         <p-popover #themePopover appendTo="body">
@@ -52,7 +74,6 @@
           (onClick)="notifPopover.toggle($event)"
           [rounded]="true"
           [text]="true"
-          pTooltip="Notifications"
           [ariaLabel]="
             notificationService.unreadCount() > 0
               ? 'Notifications, ' + notificationService.unreadCount() + ' unread'
@@ -167,7 +188,6 @@
             [rounded]="true"
             [text]="true"
             icon="pi pi-sparkles"
-            pTooltip="AI Assistant"
             ariaLabel="Open AI assistant"
           />
         }

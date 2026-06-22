@@ -1,0 +1,163 @@
+<p-dialog
+  [visible]="palette.isOpen()"
+  (visibleChange)="onVisibleChange($event)"
+  (onShow)="onShow()"
+  [modal]="true"
+  [showHeader]="false"
+  [dismissableMask]="true"
+  [draggable]="false"
+  [resizable]="false"
+  [closeOnEscape]="true"
+  appendTo="body"
+  contentStyleClass="!p-0"
+  [style]="{ width: '90vw', maxWidth: '600px' }"
+>
+  <div class="flex flex-col" (keydown)="onKeydown($event)">
+    <!-- Search field -->
+    <div class="p-2 border-b" style="border-color: var(--surface-border)">
+      <p-iconfield>
+        <p-inputicon class="pi pi-search" />
+        <input
+          #searchInput
+          type="text"
+          pInputText
+          class="w-full"
+          [placeholder]="palette.searchPlaceholder()"
+          [value]="palette.query()"
+          (input)="onInput($event)"
+          aria-label="Search everything"
+          autocomplete="off"
+          spellcheck="false"
+        />
+      </p-iconfield>
+    </div>
+
+    <!-- Indeterminate loading bar while a search is in flight -->
+    @if (palette.loading()) {
+      <p-progressbar mode="indeterminate" [showValue]="false" [style]="{ height: '2px' }" />
+    }
+
+    <!-- Results -->
+    <div
+      #scrollArea
+      class="overflow-y-auto max-h-[60vh]"
+      role="listbox"
+      aria-label="Search results"
+    >
+      @if (palette.hasResults()) {
+        @for (group of displayGroups(); track group.type) {
+          <div
+            class="flex items-center gap-2 px-3 pt-3 pb-1 text-xs font-semibold uppercase tracking-wide"
+            style="color: var(--text-color-secondary)"
+          >
+            <i [class]="group.icon" class="text-[11px]"></i>
+            <span>{{ group.label }}</span>
+          </div>
+          <ul class="pb-1">
+            @for (result of group.results; track result.key) {
+              <li
+                [attr.data-index]="result.flatIndex"
+                role="option"
+                [attr.aria-selected]="result.flatIndex === activeIndex()"
+                (click)="select(result)"
+                (mouseenter)="activeIndex.set(result.flatIndex)"
+                class="flex items-center gap-3 px-3 py-2 cursor-pointer"
+                [style.background]="
+                  result.flatIndex === activeIndex()
+                    ? 'color-mix(in srgb, var(--primary-color), transparent 90%)'
+                    : 'transparent'
+                "
+              >
+                <span
+                  class="w-8 h-8 rounded-md flex items-center justify-center shrink-0"
+                  style="background: var(--surface-hover)"
+                >
+                  <i [class]="result.icon" style="color: var(--text-color-secondary)"></i>
+                </span>
+                <span class="flex flex-col min-w-0">
+                  <span class="text-sm font-medium truncate">{{ result.title }}</span>
+                  @if (result.subtitle) {
+                    <span class="text-xs truncate" style="color: var(--text-color-secondary)">
+                      {{ result.subtitle }}
+                    </span>
+                  }
+                </span>
+                @if (result.flatIndex === activeIndex()) {
+                  <i
+                    class="pi pi-arrow-right ml-auto text-xs"
+                    style="color: var(--text-color-secondary)"
+                  ></i>
+                }
+              </li>
+            }
+          </ul>
+        }
+      } @else {
+        <!-- Empty states -->
+        <div class="flex flex-col items-center justify-center gap-2 py-12 px-4 text-center">
+          <span
+            class="w-12 h-12 rounded-full flex items-center justify-center"
+            style="background: var(--surface-hover)"
+          >
+            <i
+              [class]="palette.loading() ? 'pi pi-spin pi-spinner' : 'pi pi-search'"
+              class="text-xl"
+              style="color: var(--text-color-secondary)"
+            ></i>
+          </span>
+          @if (palette.loading()) {
+            <p class="text-sm font-medium">Searching…</p>
+          } @else if (!canSearch()) {
+            <p class="text-sm font-medium">Search everything</p>
+            <p class="text-xs" style="color: var(--text-color-secondary)">
+              {{ palette.searchHint() }}
+            </p>
+          } @else {
+            <p class="text-sm font-medium">No results found</p>
+            <p class="text-xs" style="color: var(--text-color-secondary)">
+              Nothing matches “{{ palette.query() }}”
+            </p>
+          }
+        </div>
+      }
+    </div>
+
+    <!-- Keyboard hints -->
+    <div
+      class="flex items-center gap-4 px-3 py-2 border-t text-xs"
+      style="border-color: var(--surface-border); color: var(--text-color)"
+    >
+      <span class="flex items-center gap-1.5">
+        <kbd
+          class="inline-flex items-center justify-center h-5 w-5 rounded border text-[11px] font-semibold"
+          style="background: var(--surface-hover); border-color: var(--surface-border)"
+        >
+          <i class="pi pi-arrow-up text-[10px]"></i>
+        </kbd>
+        <kbd
+          class="inline-flex items-center justify-center h-5 w-5 rounded border text-[11px] font-semibold"
+          style="background: var(--surface-hover); border-color: var(--surface-border)"
+        >
+          <i class="pi pi-arrow-down text-[10px]"></i>
+        </kbd>
+        Navigate
+      </span>
+      <span class="flex items-center gap-1.5">
+        <kbd
+          class="inline-flex items-center justify-center h-5 px-1.5 rounded border text-[11px] font-semibold"
+          style="background: var(--surface-hover); border-color: var(--surface-border)"
+          >Enter</kbd
+        >
+        Open
+      </span>
+      <span class="flex items-center gap-1.5">
+        <kbd
+          class="inline-flex items-center justify-center h-5 px-1.5 rounded border text-[11px] font-semibold"
+          style="background: var(--surface-hover); border-color: var(--surface-border)"
+          >Esc</kbd
+        >
+        Close
+      </span>
+    </div>
+  </div>
+</p-dialog>
