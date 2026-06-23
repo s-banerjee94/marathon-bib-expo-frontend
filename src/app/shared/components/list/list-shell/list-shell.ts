@@ -9,6 +9,7 @@ import { EmptyIllustrationName } from '../../../illustrations/empty-illustration
 import { ListSearch } from '../list-search/list-search';
 import { ListFilterPanel } from '../list-filter-panel/list-filter-panel';
 import { MobileCardList } from '../mobile-card-list/mobile-card-list';
+import { PrintHeader } from '../../print-header/print-header';
 
 /**
  * One-stop page shell for paginated list views.
@@ -36,6 +37,7 @@ import { MobileCardList } from '../mobile-card-list/mobile-card-list';
     ListSearch,
     ListFilterPanel,
     MobileCardList,
+    PrintHeader,
   ],
   templateUrl: './list-shell.html',
   styleUrl: './list-shell.css',
@@ -43,6 +45,9 @@ import { MobileCardList } from '../mobile-card-list/mobile-card-list';
 export class ListShell<T = unknown> {
   heading = input<string>('');
   subtitle = input<string>('');
+  /** When set, renders a print-only page header (title + "Printed at"). Opt-in
+   *  so only screens meant to be printed get one. */
+  printTitle = input<string>('');
 
   // Viewport
   isMobile = input<boolean>(false);

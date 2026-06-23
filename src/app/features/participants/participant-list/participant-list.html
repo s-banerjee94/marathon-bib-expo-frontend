@@ -1,6 +1,15 @@
 <div class="p-2 sm:p-3 md:p-4">
+  <app-print-header [title]="selectedEvent()?.eventName || 'Participants'">
+    @if (selectedEvent(); as ev) {
+      {{ ev.eventStartDate | formatEventDateTime: ev.eventStartTime : ev.timezone }}
+      @if (ev.eventEndDate && ev.eventEndDate !== ev.eventStartDate) {
+        – {{ ev.eventEndDate | formatEventDateTime: ev.eventEndTime : ev.timezone }}
+      }
+    }
+  </app-print-header>
+
   <!-- Header -->
-  <div class="mb-6">
+  <div class="mb-6 print:hidden">
     <h1 class="text-3xl font-bold">Participant Management</h1>
     <p class="mt-2">
       @if (isOrganizerUser()) {
@@ -12,7 +21,7 @@
   </div>
 
   <!-- Filter Section -->
-  <p-card class="mb-6">
+  <p-card class="mb-6 print:hidden">
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 p-2 md:p-4">
       @if (!isOrganizerUser()) {
         <app-organization-selector
@@ -58,7 +67,7 @@
   @if (canShowTabs()) {
     <p-card>
       <!-- Page-level actions (outside the tabbed content) -->
-      <div class="flex flex-col sm:flex-row gap-2 mb-4">
+      <div class="flex flex-col sm:flex-row gap-2 mb-4 print:hidden">
         @if (canFullImport()) {
           <p-button
             (onClick)="startImport('IMPORT')"
@@ -109,7 +118,7 @@
       }
 
       <!-- Desktop tab strip hides on mobile; the bottom tab bar replaces it. -->
-      <div class="hidden md:block">
+      <div class="hidden md:block print:hidden">
         <p-tabs [value]="activeTab()">
           <p-tablist>
             <p-tab
@@ -136,7 +145,7 @@
 
       <div class="pt-4">
         <!-- Refresh sits with the table (under the tabs); reloads the active tab's data. -->
-        <div class="flex justify-end mb-3">
+        <div class="flex justify-end mb-3 print:hidden">
           <p-button
             (onClick)="refreshList()"
             [outlined]="true"

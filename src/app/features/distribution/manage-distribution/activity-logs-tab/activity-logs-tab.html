@@ -1,6 +1,18 @@
 <div class="py-4">
+  <app-print-header [title]="event()?.eventName || 'Event #' + eventId()">
+    <p class="font-medium">Distribution Activity Logs</p>
+    @if (event(); as ev) {
+      <p>
+        {{ ev.eventStartDate | formatEventDateTime: ev.eventStartTime : ev.timezone }}
+        @if (ev.eventEndDate && ev.eventEndDate !== ev.eventStartDate) {
+          – {{ ev.eventEndDate | formatEventDateTime: ev.eventEndTime : ev.timezone }}
+        }
+      </p>
+    }
+  </app-print-header>
+
   <!-- Search Section -->
-  <div class="grid grid-cols-1 md:grid-cols-12 gap-4 mb-4">
+  <div class="grid grid-cols-1 md:grid-cols-12 gap-4 mb-4 print:hidden">
     <div class="md:col-span-3">
       <p-floatlabel variant="on">
         <p-select
@@ -101,7 +113,7 @@
       size="small"
     >
       <ng-template #caption>
-        <div class="flex items-center justify-between">
+        <div class="flex items-center justify-between print:hidden">
           <h3 class="text-lg font-semibold m-0">Distribution Activity Logs</h3>
           <div class="flex items-center gap-3">
             @if (loaded()) {
@@ -324,7 +336,7 @@
   }
 
   <!-- Load More -->
-  <div class="text-center mt-4">
+  <div class="text-center mt-4 print:hidden">
     @if (hasMore() && !loading()) {
       <p-button
         (onClick)="loadMore()"

@@ -28,8 +28,10 @@ import { AvatarModule } from 'primeng/avatar';
 import { TooltipModule } from 'primeng/tooltip';
 import { DistributionLogResponse, LogSearchType } from '../../../../core/models/distribution.model';
 import { User, UserRole } from '../../../../core/models/user.model';
+import { Event } from '../../../../core/models/event.model';
 import { DistributionService } from '../../../../core/services/distribution.service';
 import { UserService } from '../../../../core/services/user.service';
+import { EventService } from '../../../../core/services/event.service';
 import { AuthService } from '../../../../core/services/auth.service';
 import { ErrorHandlerService } from '../../../../core/services/error-handler.service';
 import { DefaultValuePipe } from '../../../../shared/pipes/default-value.pipe';
@@ -51,6 +53,8 @@ import {
 import { DistributionDialogState } from '../distribution-dialog-state.service';
 import { injectIsMobile } from '../../../../shared/utils/responsive.utils';
 import { EmptyIllustration } from '../../../../shared/illustrations/empty-illustration';
+import { PrintHeader } from '../../../../shared/components/print-header/print-header';
+import { FormatEventDateTimePipe } from '../../../../shared/pipes/format-event-date-time-pipe';
 
 @Component({
   selector: 'app-activity-logs-tab',
@@ -79,15 +83,21 @@ import { EmptyIllustration } from '../../../../shared/illustrations/empty-illust
     UserSummaryPipe,
     RouterLink,
     EmptyIllustration,
+    PrintHeader,
+    FormatEventDateTimePipe,
   ],
   templateUrl: './activity-logs-tab.html',
 })
 export class ActivityLogsTab {
   private distributionService = inject(DistributionService);
   private userService = inject(UserService);
+  private eventService = inject(EventService);
   private authService = inject(AuthService);
   private errorHandler = inject(ErrorHandlerService);
   private dialogState = inject(DistributionDialogState);
+
+  /** Resolved event for the print-only report header (name + date); null until loaded. */
+  event = signal<Event | null>(null);
 
   eventId = input.required<number, string>({ transform: (v) => Number(v) });
   organizationId = input<number>();
@@ -152,8 +162,10 @@ export class ActivityLogsTab {
           if (eid) {
             this.resetAndLoad();
             this.loadOrgUsers();
+            this.loadEvent(eid);
           } else {
             this.orgUsers.set([]);
+            this.event.set(null);
           }
         });
       },
@@ -289,6 +301,14 @@ export class ActivityLogsTab {
         this.error.set('Failed to load activity logs. Please try again.');
         this.errorHandler.showError(err, 'Failed to load activity logs');
       },
+    });
+  }
+
+  // Background fetch for the print header only — non-fatal, no toast on failure.
+  private loadEvent(eventId: number): void {
+    this.eventService.getEventById(eventId).subscribe({
+      next: (e) => this.event.set(e),
+      error: () => this.event.set(null),
     });
   }
 

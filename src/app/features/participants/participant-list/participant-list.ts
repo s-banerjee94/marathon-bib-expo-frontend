@@ -44,6 +44,8 @@ import { BUTTON_SIZE } from '../../../shared/constants/form.constants';
 import { TableColumn } from '../../../shared/models/table-config.model';
 import { MobileTabBar, TabItem } from '../../../shared/components/mobile-tab-bar/mobile-tab-bar';
 import { EmptyIllustration } from '../../../shared/illustrations/empty-illustration';
+import { PrintHeader } from '../../../shared/components/print-header/print-header';
+import { FormatEventDateTimePipe } from '../../../shared/pipes/format-event-date-time-pipe';
 
 // Child components
 import { ParticipantExportDialog } from './participant-export-dialog/participant-export-dialog';
@@ -73,6 +75,8 @@ import { ParticipantListState } from './participant-list-state.service';
     RouterLinkActive,
     MobileTabBar,
     EmptyIllustration,
+    PrintHeader,
+    FormatEventDateTimePipe,
   ],
   providers: [ConfirmationService, ParticipantListState],
 })

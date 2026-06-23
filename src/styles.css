@@ -267,3 +267,128 @@ body.blocked-scroll {
   animation-duration: 250ms;
   mix-blend-mode: normal;
 }
+
+/* ───────────────────────────────────────────────────────────────────────────
+ * Print stylesheet — list & report screens ("Print to PDF")
+ *
+ * Per-screen chrome (search, filters, action buttons, tabs, page header) is
+ * hidden in the templates with Tailwind's `print:hidden` / `hidden print:block`
+ * utilities. The rules here own everything a feature component cannot reach: the
+ * app shell, PrimeNG overlays, and the table internals that have to be reflowed
+ * so the table fits the page width with intact rows. Lives in the global sheet
+ * (which is already all custom CSS) rather than component styles by necessity —
+ * scoped component CSS can't target the topbar/sidebar or PrimeNG's DOM.
+ * ────────────────────────────────────────────────────────────────────────── */
+@media print {
+  @page {
+    margin: 1.2cm;
+  }
+
+  /* Ink-friendly: white page, solid black text. */
+  body {
+    background: #fff !important;
+    color: #000 !important;
+  }
+
+  /* App shell — lives outside the routed content, so it can only be hidden here. */
+  app-navbar,
+  app-sidebar,
+  app-offline-banner,
+  app-mobile-tab-bar,
+  app-floating-progress,
+  app-import-progress-floating,
+  app-ai-assistant,
+  app-command-palette,
+  app-keyboard-shortcuts-help,
+  .layout-topbar,
+  .layout-sidebar {
+    display: none !important;
+  }
+
+  /* Reclaim the full printable width once the sidebar/topbar are gone. */
+  .layout-main {
+    margin: 0 !important;
+    padding: 0 !important;
+    min-height: 0 !important;
+  }
+
+  /* Overlays, toasts and interactive controls never belong on paper. */
+  p-toast,
+  p-confirmdialog,
+  p-confirmpopup,
+  .p-toast,
+  .p-tooltip,
+  .p-confirmpopup,
+  .p-popover,
+  .p-dialog-mask,
+  .p-paginator,
+  .p-button,
+  .p-checkbox,
+  .p-multiselect {
+    display: none !important;
+  }
+
+  /* Let the table escape its fixed-height scroll / virtual viewport and flow
+     onto the page instead of being trapped in a scrollbox. (Virtual-scrolled
+     tables still only render their loaded window of rows.) */
+  .p-datatable-table-container,
+  .p-datatable-wrapper,
+  .p-scroller,
+  .p-virtualscroller,
+  .cdk-virtual-scroll-viewport {
+    overflow: visible !important;
+    height: auto !important;
+    max-height: none !important;
+  }
+  .p-scroller-content,
+  .p-virtualscroller-content {
+    transform: none !important;
+    position: static !important;
+  }
+  .p-datatable-virtualscroller-spacer {
+    display: none !important;
+  }
+
+  /* Frozen columns rely on sticky offsets that misalign on paper — drop them
+     back into the normal table flow. */
+  .p-datatable-frozen-column {
+    position: static !important;
+    left: auto !important;
+    right: auto !important;
+    z-index: auto !important;
+  }
+
+  /* Reflow wide tables to the page width: shed min-widths, allow wrapping,
+     shrink type so every column fits inside the margins. */
+  .p-datatable-table {
+    min-width: 0 !important;
+    width: 100% !important;
+    table-layout: auto !important;
+  }
+  .p-datatable-table th,
+  .p-datatable-table td {
+    min-width: 0 !important;
+    max-width: none !important;
+    white-space: normal !important;
+    word-break: break-word;
+    color: #000 !important;
+    border: 1px solid #000 !important;
+    font-size: 10px !important;
+    padding: 2px 4px !important;
+  }
+
+  /* Repeat the header on every page; keep each row whole across page breaks. */
+  .p-datatable-thead {
+    display: table-header-group;
+  }
+  .p-datatable-table tr {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  /* Strip card/table shadows so they don't print as grey boxes. */
+  .p-card,
+  .p-datatable {
+    box-shadow: none !important;
+  }
+}

@@ -30,6 +30,7 @@
         : 'Manage marathon and race events for your organization'
     "
     heading="Events"
+    printTitle="Events"
   >
     <ng-template #actions>
       <p-button
@@ -113,7 +114,7 @@
             }
             <th
               scope="col"
-              class="text-center w-36 whitespace-nowrap"
+              class="text-center w-36 whitespace-nowrap print:hidden"
               pFrozenColumn
               alignFrozen="right"
             >
@@ -131,7 +132,11 @@
                   <p-skeleton />
                 </td>
               }
-              <td class="text-center whitespace-nowrap" pFrozenColumn alignFrozen="right">
+              <td
+                class="text-center whitespace-nowrap print:hidden"
+                pFrozenColumn
+                alignFrozen="right"
+              >
                 <p-skeleton height="2rem" width="5rem" />
               </td>
             } @else {
@@ -293,7 +298,11 @@
                 </td>
               }
 
-              <td class="text-center whitespace-nowrap" pFrozenColumn alignFrozen="right">
+              <td
+                class="text-center whitespace-nowrap print:hidden"
+                pFrozenColumn
+                alignFrozen="right"
+              >
                 <div class="flex items-center justify-center gap-1">
                   <p-button
                     (click)="onView(event)"

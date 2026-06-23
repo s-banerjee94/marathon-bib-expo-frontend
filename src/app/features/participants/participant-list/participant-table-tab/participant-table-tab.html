@@ -1,5 +1,5 @@
 <!-- Search Section -->
-<div class="mb-4">
+<div class="mb-4 print:hidden">
   <div class="grid grid-cols-1 md:grid-cols-12 gap-4">
     <!-- Search Type Dropdown -->
     <div class="md:col-span-3">
@@ -114,7 +114,7 @@
 </div>
 
 <!-- Action Buttons -->
-<div class="mb-4 flex flex-col gap-4">
+<div class="mb-4 flex flex-col gap-4 print:hidden">
   <!-- Top Row: primary actions (import/add/export) are host-controlled via showActionToolbar;
        bulk delete shows independently whenever rows are selected. -->
   @if (showActionToolbar() || (showSelectionColumn() && hasSelection())) {
@@ -222,7 +222,7 @@
     [dataKey]="'bibNumber'"
     [scrollable]="true"
     [value]="isInitialLoading() ? skeletonRows : participants()"
-    [virtualScroll]="true"
+    [virtualScroll]="!printing()"
     [virtualScrollItemSize]="virtualRowHeight"
     [lazy]="true"
     [lazyLoadOnInit]="false"
@@ -709,7 +709,7 @@
 
 <!-- Load More / End Message -->
 @if (participants().length > 0 || isLoadingMore()) {
-  <div class="text-center mt-4">
+  <div class="text-center mt-4 print:hidden">
     @if (hasMore() && !isLoading()) {
       <p-button
         (onClick)="loadMore()"

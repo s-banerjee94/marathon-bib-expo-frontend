@@ -2,7 +2,7 @@
 
 <div class="p-2 sm:p-3 md:p-4">
   <!-- Header -->
-  <div class="mb-6">
+  <div class="mb-6 print:hidden">
     <h1 class="text-3xl font-bold">Distribution Management</h1>
     <p class="mt-2 text-color-secondary">
       @if (isDistributor()) {
@@ -17,7 +17,7 @@
 
   <!-- Filter Section — a distributor is locked to one event, so no selectors. -->
   @if (!isDistributor()) {
-    <p-card class="mb-6">
+    <p-card class="mb-6 print:hidden">
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4 p-2 md:p-4">
         @if (!isRestrictedUser()) {
           <app-organization-selector
@@ -63,7 +63,7 @@
   @if (selectedEventId()) {
     <p-card>
       <!-- Desktop tab strip hides on mobile; the bottom tab bar replaces it. -->
-      <div class="hidden md:block">
+      <div class="hidden md:block print:hidden">
         <p-tabs [value]="activeTab()">
           <p-tablist>
             <p-tab

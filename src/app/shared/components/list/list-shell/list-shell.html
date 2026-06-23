@@ -1,6 +1,10 @@
 <div class="p-2 sm:p-3 md:p-4">
+  @if (printTitle()) {
+    <app-print-header [title]="printTitle()" />
+  }
+
   @if (heading()) {
-    <div class="mb-6">
+    <div class="mb-6 print:hidden">
       <h1 class="text-3xl font-bold mb-2">{{ heading() }}</h1>
       @if (subtitle()) {
         <p class="text-color-secondary">{{ subtitle() }}</p>
@@ -9,7 +13,7 @@
   }
 
   <!-- Search + Actions -->
-  <div class="mb-4 flex flex-wrap items-center justify-between gap-4">
+  <div class="mb-4 flex flex-wrap items-center justify-between gap-4 print:hidden">
     <app-list-search
       (valueChange)="searchChange.emit($event)"
       (cleared)="searchClear.emit()"
@@ -36,7 +40,10 @@
 
   <!-- Filters + Column Selector — hidden on mobile when the Filters button is inlined onto the search row -->
   @if (!(isMobile() && inlineMobileFilters())) {
-    <div class="mb-4 flex flex-wrap items-center gap-4" [class.justify-end]="isMobile()">
+    <div
+      class="mb-4 flex flex-wrap items-center gap-4 print:hidden"
+      [class.justify-end]="isMobile()"
+    >
       <app-list-filter-panel
         [isMobile]="isMobile()"
         [activeFilterCount]="activeFilterCount()"

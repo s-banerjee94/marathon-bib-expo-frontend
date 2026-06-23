@@ -1,8 +1,10 @@
 import {
+  ApplicationRef,
   ChangeDetectionStrategy,
   Component,
   computed,
   effect,
+  HostListener,
   inject,
   input,
   output,
@@ -88,6 +90,7 @@ export class ParticipantTableTab {
   private storage = inject(LocalStorageService);
   private confirmationService = inject(ConfirmationService);
   private listState = inject(ParticipantListState);
+  private appRef = inject(ApplicationRef);
 
   // Router-bound input — the parent route is `event/:eventId`. Accepts string (from
   // router path params) or number (when bound directly by a host component).
@@ -199,6 +202,11 @@ export class ParticipantTableTab {
   // Prefetch the next cursor page once the user scrolls within this many rows of the
   // end of the currently-loaded set.
   private readonly virtualScrollPrefetch = 15;
+
+  // Virtual scroll keeps only the visible row window in the DOM, so a print snapshot
+  // comes out empty. While printing we drop virtual scroll (see [virtualScroll] in the
+  // template) so every loaded row renders as a plain table the print stylesheet reflows.
+  protected readonly printing = signal(false);
 
   isInitialLoading = computed(() => this.isLoading() && this.participants().length === 0);
   isLoadingMore = computed(() => this.isLoading() && this.participants().length > 0);
@@ -385,6 +393,19 @@ export class ParticipantTableTab {
     if (last >= this.participants().length - this.virtualScrollPrefetch) {
       this.loadMore();
     }
+  }
+
+  @HostListener('window:beforeprint')
+  protected onBeforePrint(): void {
+    this.printing.set(true);
+    // print() snapshots synchronously without awaiting microtasks, so force change
+    // detection now to get the de-virtualized table into the DOM before the snapshot.
+    this.appRef.tick();
+  }
+
+  @HostListener('window:afterprint')
+  protected onAfterPrint(): void {
+    this.printing.set(false);
   }
 
   private loadMoreLookupResults(): void {
