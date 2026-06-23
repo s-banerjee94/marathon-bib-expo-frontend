@@ -159,7 +159,7 @@
                         '--p-tag-font-size': '0.75rem',
                         '--p-tag-padding': '0.25rem 0.5rem',
                       }"
-                      [value]="$any(getCellValue(org, col.field))"
+                      [value]="getSubscriptionTierLabel($any(getCellValue(org, col.field)))"
                     />
                   } @else {
                     {{ getCellValue(org, col.field) | defaultValue }}
@@ -173,7 +173,7 @@
                         '--p-tag-font-size': '0.75rem',
                         '--p-tag-padding': '0.25rem 0.5rem',
                       }"
-                      [value]="$any(getCellValue(org, col.field))"
+                      [value]="getSubscriptionStatusLabel($any(getCellValue(org, col.field)))"
                     />
                   } @else {
                     {{ getCellValue(org, col.field) | defaultValue }}
@@ -351,14 +351,14 @@
               <p-tag
                 [rounded]="true"
                 [severity]="getSubscriptionTierSeverity(org.subscriptionTier)"
-                [value]="org.subscriptionTier"
+                [value]="getSubscriptionTierLabel(org.subscriptionTier)"
               />
             }
             @if (org.subscriptionStatus) {
               <p-tag
                 [rounded]="true"
                 [severity]="getSubscriptionStatusSeverity(org.subscriptionStatus)"
-                [value]="org.subscriptionStatus"
+                [value]="getSubscriptionStatusLabel(org.subscriptionStatus)"
               />
             }
             @if (org.deleted) {

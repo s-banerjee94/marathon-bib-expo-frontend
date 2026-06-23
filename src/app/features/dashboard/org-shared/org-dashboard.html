@@ -68,7 +68,7 @@
               <h2 class="text-lg font-bold tracking-tight truncate">{{ org.organizerName }}</h2>
               <p-tag
                 [value]="orgStatusLabel()"
-                [severity]="orgIsActive() ? 'success' : 'danger'"
+                [severity]="orgStatusSeverity()"
                 styleClass="shrink-0"
               />
             </div>
@@ -88,6 +88,12 @@
               @if (memberSince(); as since) {
                 <span class="text-xs text-color-secondary">
                   Member since {{ since | date: 'dd MMM yyyy' }}
+                </span>
+              }
+              @if (planExpiryDate(); as expiry) {
+                <span class="flex items-center gap-1 text-xs text-color-secondary">
+                  <i class="pi pi-clock text-primary"></i>
+                  {{ planExpiryLabel() }} {{ expiry | date: 'dd MMM yyyy' }}
                 </span>
               }
             </div>

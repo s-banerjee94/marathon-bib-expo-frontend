@@ -61,7 +61,7 @@ export class OrganizationForm {
       organizerUsers: { max: 1 },
       distributors: { max: 3 },
     },
-    subscriptionTier: SubscriptionTier.FREE,
+    subscriptionTier: SubscriptionTier.PAY_AS_YOU_GO,
     billingEmail: '',
   };
   isSubmitting = signal(false);

@@ -386,6 +386,41 @@
                     </p-floatlabel>
                   </div>
 
+                  @if (org.subscriptionStatus || org.subscriptionEndDate) {
+                    <div class="flex flex-wrap items-center gap-x-4 gap-y-2 -mt-2">
+                      @if (org.subscriptionStatus) {
+                        <div class="flex items-center gap-2">
+                          <span
+                            class="text-xs uppercase tracking-wide"
+                            style="color: var(--text-color-secondary)"
+                          >
+                            Status
+                          </span>
+                          <p-tag
+                            [rounded]="true"
+                            [severity]="statusSeverity(org.subscriptionStatus)"
+                            [value]="statusLabel(org.subscriptionStatus)"
+                          />
+                        </div>
+                      }
+                      @if (org.subscriptionStartDate || org.subscriptionEndDate) {
+                        <div class="flex items-center gap-2">
+                          <span
+                            class="text-xs uppercase tracking-wide"
+                            style="color: var(--text-color-secondary)"
+                          >
+                            Period
+                          </span>
+                          <span class="text-sm font-medium">
+                            {{ org.subscriptionStartDate | date: 'dd MMM yyyy' | defaultValue }}
+                            &ndash;
+                            {{ org.subscriptionEndDate | date: 'dd MMM yyyy' | defaultValue }}
+                          </span>
+                        </div>
+                      }
+                    </div>
+                  }
+
                   <div class="flex flex-col gap-1">
                     <p-floatlabel variant="on">
                       <input
@@ -474,12 +509,29 @@
                         <span class="text-sm font-medium">--</span>
                       }
                       @if (org.subscriptionStatus) {
-                        <span class="text-sm" style="color: var(--text-color-secondary)">
-                          {{ org.subscriptionStatus }}
-                        </span>
+                        <p-tag
+                          [rounded]="true"
+                          [severity]="statusSeverity(org.subscriptionStatus)"
+                          [value]="statusLabel(org.subscriptionStatus)"
+                        />
                       }
                     </div>
                   </div>
+
+                  @if (org.subscriptionStartDate || org.subscriptionEndDate) {
+                    <div class="flex flex-col gap-1">
+                      <span
+                        class="text-xs uppercase tracking-wide"
+                        style="color: var(--text-color-secondary)"
+                      >
+                        Subscription Period
+                      </span>
+                      <span class="text-sm font-medium">
+                        {{ org.subscriptionStartDate | date: 'dd MMM yyyy' | defaultValue }} &ndash;
+                        {{ org.subscriptionEndDate | date: 'dd MMM yyyy' | defaultValue }}
+                      </span>
+                    </div>
+                  }
 
                   <div class="flex flex-col gap-1">
                     <span

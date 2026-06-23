@@ -1,10 +1,17 @@
-import { User } from './user.model';
-
 export enum SubscriptionTier {
-  FREE = 'FREE',
-  BASIC = 'BASIC',
+  PAY_AS_YOU_GO = 'PAY_AS_YOU_GO',
   PREMIUM = 'PREMIUM',
-  ENTERPRISE = 'ENTERPRISE',
+  PARTNER = 'PARTNER',
+}
+
+/**
+ * Read-only status derived from the tier: ACTIVE/EXPIRED for committed plans
+ * (PREMIUM, PARTNER); FREE on the PAY_AS_YOU_GO baseline.
+ */
+export enum SubscriptionStatus {
+  ACTIVE = 'ACTIVE',
+  EXPIRED = 'EXPIRED',
+  FREE = 'FREE',
 }
 
 export interface RoleQuotaRequest {
@@ -45,12 +52,11 @@ export interface Organization {
   /** Short-lived presigned URL for the organization logo; null/undefined if none set. */
   logoUrl?: string;
   userQuota?: UserQuotaDto;
-  subscriptionTier?: string;
-  subscriptionStatus?: string;
+  subscriptionTier?: SubscriptionTier;
+  subscriptionStatus?: SubscriptionStatus;
   subscriptionStartDate?: Date;
   subscriptionEndDate?: Date;
   billingEmail?: string;
-  orgAdmin?: User;
   enabled: boolean;
   deleted?: boolean;
   createdAt?: Date;

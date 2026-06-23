@@ -10,8 +10,7 @@ export interface SubscriptionTierOption {
 }
 
 export const SUBSCRIPTION_TIER_OPTIONS: SubscriptionTierOption[] = [
-  { label: 'Free', value: SubscriptionTier.FREE },
-  { label: 'Basic', value: SubscriptionTier.BASIC },
+  { label: 'Pay As You Go', value: SubscriptionTier.PAY_AS_YOU_GO },
   { label: 'Premium', value: SubscriptionTier.PREMIUM },
-  { label: 'Enterprise', value: SubscriptionTier.ENTERPRISE },
+  { label: 'Partner', value: SubscriptionTier.PARTNER },
 ];

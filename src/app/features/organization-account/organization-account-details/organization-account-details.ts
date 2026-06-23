@@ -33,6 +33,10 @@ import { ROLE_LABELS, UserRole } from '../../../core/models/user.model';
 import { buildDirtyPatch, shouldShowError } from '../../../shared/utils/form.utils';
 import { FORM_INPUT_SIZE } from '../../../shared/constants/form.constants';
 import { SUBSCRIPTION_TIER_OPTIONS } from '../../../shared/constants/subscription.constant';
+import {
+  getSubscriptionStatusLabel,
+  getSubscriptionStatusSeverity,
+} from '../../../shared/utils/subscription-status.utils';
 import { OrganizationAccountState } from '../organization-account-state.service';
 
 /**
@@ -111,6 +115,9 @@ export class OrganizationAccountDetails implements OnInit {
     const tier = this.organization()?.subscriptionTier;
     return this.subscriptionTiers.find((o) => o.value === tier)?.label ?? tier ?? '--';
   });
+
+  protected readonly statusSeverity = getSubscriptionStatusSeverity;
+  protected readonly statusLabel = getSubscriptionStatusLabel;
 
   // Read-only usage rows for the quota card: label, "used / max" text, and a
   // fill percentage for the progress bar (0 when the quota is unlimited).
@@ -253,7 +260,7 @@ export class OrganizationAccountDetails implements OnInit {
       registrationNumber: org.registrationNumber ?? '',
     };
     this.governance = {
-      subscriptionTier: (org.subscriptionTier as SubscriptionTier | undefined) ?? undefined,
+      subscriptionTier: org.subscriptionTier,
       billingEmail: org.billingEmail ?? '',
       maxAdmins: org.userQuota?.admins?.max ?? null,
       maxOrganizerUsers: org.userQuota?.organizerUsers?.max ?? null,

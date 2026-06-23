@@ -76,3 +76,71 @@ export const EVENTS_BY_CITY_COLORS = [
   'indigo',
   'rose',
 ];
+
+// ── Platform dashboard (ROOT / ADMIN) ──
+
+export interface PlatformGrowthMetricOption {
+  label: string;
+  value: 'users' | 'organizations' | 'events';
+}
+
+// Toggle options for the full-width Platform Growth line chart.
+export const PLATFORM_GROWTH_METRICS: PlatformGrowthMetricOption[] = [
+  { label: 'Users', value: 'users' },
+  { label: 'Organizations', value: 'organizations' },
+  { label: 'Events', value: 'events' },
+];
+
+// Per-stat-card accent colour keys, keyed by KPI key. Drives each card's icon
+// chip and its sparkline so every card reads as its own colour.
+export const PLATFORM_STAT_CARD_COLORS: Record<string, string> = {
+  organizations: 'blue',
+  events: 'teal',
+  users: 'violet',
+  activeEvents: 'green',
+  cities: 'orange',
+};
+
+// Accent colour for the Platform Growth line + the Revenue bars.
+export const PLATFORM_GROWTH_COLOR = 'indigo';
+export const PLATFORM_REVENUE_COLOR = 'indigo';
+
+// User Role Mix doughnut. ROOT sees the Admins slice; ADMIN omits it. Labels and
+// colours are index-aligned; the ADMIN variant is the ROOT variant without the
+// first entry.
+export const PLATFORM_ROLE_LABELS_ROOT = ['Admins', 'Org Admins', 'Org Users', 'Distributors'];
+export const PLATFORM_ROLE_LABELS_ADMIN = ['Org Admins', 'Org Users', 'Distributors'];
+export const PLATFORM_ROLE_COLORS_ROOT = ['cyan', 'violet', 'blue', 'teal'];
+export const PLATFORM_ROLE_COLORS_ADMIN = ['violet', 'blue', 'teal'];
+
+// Semantic colours for the Subscription Status doughnut, keyed by status. The
+// API emits ACTIVE / EXPIRED / FREE today; the rest are kept for forward-compat.
+// Keys are data-driven, so any unknown status falls back to the categorical
+// cycle below.
+export const PLATFORM_SUB_STATUS_COLORS: Record<string, string> = {
+  ACTIVE: 'green',
+  EXPIRED: 'red',
+  FREE: 'slate',
+  TRIAL: 'amber',
+  CANCELLED: 'slate',
+  PENDING: 'amber',
+  PAST_DUE: 'orange',
+};
+
+// Generic categorical cycle for data-driven doughnuts (tiers, unknown statuses).
+export const PLATFORM_CATEGORICAL_COLORS = [
+  'blue',
+  'violet',
+  'teal',
+  'orange',
+  'green',
+  'cyan',
+  'amber',
+  'pink',
+  'indigo',
+  'rose',
+  'slate',
+];
+
+// Per-quick-action accent colour keys (index-aligned with the quick-action order).
+export const PLATFORM_QUICK_ACTION_COLORS = ['blue', 'cyan', 'violet', 'teal', 'green', 'orange'];

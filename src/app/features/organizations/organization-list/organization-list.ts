@@ -36,6 +36,12 @@ import { InitialsPipe } from '../../../shared/pipes/initials-pipe';
 import { UserSummaryPipe } from '../../../shared/pipes/user-summary-pipe';
 import { BaseTableComponent } from '../../../shared/base/base-table.component';
 import { TableFilterPreferences } from '../../../shared/models/table-config.model';
+import {
+  getSubscriptionStatusLabel,
+  getSubscriptionStatusSeverity,
+  getSubscriptionTierLabel,
+  getSubscriptionTierSeverity,
+} from '../../../shared/utils/subscription-status.utils';
 
 interface OrganizationFilterPreferences extends TableFilterPreferences {
   enabled: boolean;
@@ -170,38 +176,12 @@ export class OrganizationList extends BaseTableComponent<
     }
   }
 
-  getSubscriptionTierSeverity(tier: string): 'danger' | 'success' | 'info' | 'warn' | 'secondary' {
-    switch (tier?.toUpperCase()) {
-      case 'ENTERPRISE':
-        return 'danger';
-      case 'PREMIUM':
-        return 'success';
-      case 'BASIC':
-        return 'info';
-      case 'FREE':
-        return 'secondary';
-      default:
-        return 'secondary';
-    }
-  }
-
-  getSubscriptionStatusSeverity(
-    status: string,
-  ): 'danger' | 'success' | 'info' | 'warn' | 'secondary' {
-    switch (status?.toUpperCase()) {
-      case 'ACTIVE':
-        return 'success';
-      case 'EXPIRED':
-      case 'CANCELLED':
-        return 'danger';
-      case 'TRIAL':
-        return 'info';
-      case 'PENDING':
-        return 'warn';
-      default:
-        return 'secondary';
-    }
-  }
+  // Delegate to the shared helpers so tier/status colours + labels stay
+  // consistent across the org list, the org-account view, and the dashboard.
+  getSubscriptionTierSeverity = getSubscriptionTierSeverity;
+  getSubscriptionStatusSeverity = getSubscriptionStatusSeverity;
+  getSubscriptionTierLabel = getSubscriptionTierLabel;
+  getSubscriptionStatusLabel = getSubscriptionStatusLabel;
 
   getColumnAlignment(field: string): string {
     // Center alignment for status/tag columns

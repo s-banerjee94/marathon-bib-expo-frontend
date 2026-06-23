@@ -60,6 +60,11 @@ import {
   getEventStatusSeverity,
 } from '../../../shared/utils/event-status.utils';
 import {
+  getSubscriptionStatusLabel,
+  getSubscriptionStatusSeverity,
+  getSubscriptionTierLabel,
+} from '../../../shared/utils/subscription-status.utils';
+import {
   paletteAlpha,
   paletteRef,
   paletteResolve,
@@ -332,20 +337,32 @@ export class OrgDashboard implements OnInit {
     const org = this.organization();
     return [org?.city, org?.stateProvince, org?.country].filter(Boolean).join(', ');
   });
-  planLabel = computed(() => {
-    const tier = this.organization()?.subscriptionTier || 'FREE';
-    return `${tier.charAt(0).toUpperCase()}${tier.slice(1).toLowerCase()} Plan`;
-  });
+  planLabel = computed(
+    () =>
+      `${getSubscriptionTierLabel(this.organization()?.subscriptionTier || 'PAY_AS_YOU_GO')} Plan`,
+  );
   memberSince = computed(
     () => this.organization()?.createdAt ?? this.organization()?.subscriptionStartDate ?? null,
   );
-  orgIsActive = computed(() => {
+  // Subscription status drives the header badge. Falls back to the enabled flag
+  // only when the org carries no status (e.g. legacy data).
+  orgStatusLabel = computed(() => {
     const org = this.organization();
-    const status = org?.subscriptionStatus?.toUpperCase();
-    return status ? status === 'ACTIVE' : !!org?.enabled;
+    if (org?.subscriptionStatus) return getSubscriptionStatusLabel(org.subscriptionStatus);
+    return org?.enabled ? 'Active' : 'Inactive';
   });
-  orgStatusLabel = computed(
-    () => this.organization()?.subscriptionStatus || (this.orgIsActive() ? 'Active' : 'Inactive'),
+  orgStatusSeverity = computed(() => {
+    const org = this.organization();
+    if (org?.subscriptionStatus) return getSubscriptionStatusSeverity(org.subscriptionStatus);
+    return org?.enabled ? ('success' as const) : ('danger' as const);
+  });
+  // End-of-term date for committed plans (PREMIUM/PARTNER); null on the
+  // PAY_AS_YOU_GO baseline, where there's nothing to expire.
+  planExpiryDate = computed(() => this.organization()?.subscriptionEndDate ?? null);
+  planExpiryLabel = computed(() =>
+    this.organization()?.subscriptionStatus?.toUpperCase() === 'EXPIRED'
+      ? 'Plan expired on'
+      : 'Plan expires on',
   );
 
   // ── Chart options ──
