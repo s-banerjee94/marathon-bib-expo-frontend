@@ -219,11 +219,25 @@
                     [value]="user.role"
                   />
                 } @else if (col.field === 'accountNonLocked') {
-                  <p-tag
-                    [rounded]="true"
-                    [severity]="user.accountNonLocked === false ? 'danger' : 'success'"
-                    [value]="user.accountNonLocked === false ? 'Locked' : 'Unlocked'"
-                  />
+                  @if (togglingLockUserId() === user.id) {
+                    <p-skeleton height="1.5rem" width="5rem" />
+                  } @else if (canLockUser(user)) {
+                    <p-tag
+                      (click)="toggleUserLocked($event, user)"
+                      [rounded]="true"
+                      [severity]="user.accountNonLocked === false ? 'danger' : 'success'"
+                      [value]="user.accountNonLocked === false ? 'Locked' : 'Unlocked'"
+                      pTooltip="Click to lock or unlock"
+                      styleClass="cursor-pointer hover:opacity-80 transition-opacity"
+                      tooltipPosition="top"
+                    />
+                  } @else {
+                    <p-tag
+                      [rounded]="true"
+                      [severity]="user.accountNonLocked === false ? 'danger' : 'success'"
+                      [value]="user.accountNonLocked === false ? 'Locked' : 'Unlocked'"
+                    />
+                  }
                 } @else if (col.field === 'createdBy' || col.field === 'lastModifiedBy') {
                   @let auditUser = getCellValue(user, col.field) | userSummary;
                   @if (auditUser) {

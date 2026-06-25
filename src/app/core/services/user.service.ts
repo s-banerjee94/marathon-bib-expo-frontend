@@ -79,6 +79,15 @@ export class UserService {
   }
 
   /**
+   * Lock or unlock a user (ROOT/ADMIN only; org roles get 403). No body — each
+   * call flips the current state. The returned user's `accountNonLocked` is the
+   * new state: `true` = unlocked, `false` = locked (locked users cannot log in).
+   */
+  toggleLocked(id: number): Observable<User> {
+    return this.http.patch<User>(`${this.apiUrl}/${id}/toggle-locked`, {});
+  }
+
+  /**
    * Reassign a distributor to a different event in the same organization. The
    * target must be a distributor and the new event must be in-org and not
    * completed/cancelled (enforced by the backend). Returns the updated user.

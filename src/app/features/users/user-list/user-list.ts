@@ -100,6 +100,8 @@ export class UserList extends BaseTableComponent<User, UserFilterPreferences> {
   currentOrganizationDetails = signal<Organization | null>(null);
   // Toggle enabled state
   togglingUserId = signal<number | null>(null);
+  // Toggle locked state (ROOT/ADMIN only)
+  togglingLockUserId = signal<number | null>(null);
   // Delete state
   deletingUserId = signal<number | null>(null);
   // User-specific filters
@@ -341,6 +343,55 @@ export class UserList extends BaseTableComponent<User, UserFilterPreferences> {
 
   canManageUser(user: User): boolean {
     return userCanManage(this.authService.currentUser(), user);
+  }
+
+  // Locking is ROOT/ADMIN-only and stricter than enable/disable. Reuse the
+  // management hierarchy on top so an ADMIN still can't lock itself, a ROOT, or
+  // another ADMIN.
+  canLockUser(user: User): boolean {
+    return this.authService.hasAnyRole([UserRole.ROOT, UserRole.ADMIN]) && this.canManageUser(user);
+  }
+
+  toggleUserLocked(event: Event, user: User): void {
+    const locked = user.accountNonLocked === false;
+
+    this.confirmationService.confirm({
+      target: event.currentTarget as EventTarget,
+      message: locked
+        ? `Unlock ${user.username}? They will be able to log in again.`
+        : `Lock ${user.username}? They won't be able to log in until the account is unlocked.`,
+      icon: 'pi pi-exclamation-triangle',
+      acceptButtonProps: {
+        label: locked ? 'Unlock' : 'Lock',
+        severity: locked ? 'success' : 'danger',
+      },
+      rejectButtonProps: {
+        label: 'Cancel',
+        severity: 'secondary',
+        outlined: true,
+      },
+      accept: () => {
+        this.togglingLockUserId.set(user.id);
+
+        this.userService.toggleLocked(user.id).subscribe({
+          next: (updatedUser) => {
+            this.entities.set(
+              this.entities().map((u) => (u.id === updatedUser.id ? updatedUser : u)),
+            );
+            this.togglingLockUserId.set(null);
+
+            this.toast.success(
+              `User ${updatedUser.accountNonLocked === false ? 'locked' : 'unlocked'} successfully`,
+              'Updated',
+            );
+          },
+          error: (error) => {
+            this.togglingLockUserId.set(null);
+            this.errorHandler.showError(error, 'Failed to toggle lock status');
+          },
+        });
+      },
+    });
   }
 
   onDelete(event: Event, user: User): void {
