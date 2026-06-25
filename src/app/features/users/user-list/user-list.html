@@ -1,7 +1,30 @@
 <p-confirmpopup />
 
 <!-- Shared popup menu for the per-row actions kebab (desktop table + mobile cards). -->
-<p-menu #rowMenu [model]="rowMenuItems" [popup]="true" appendTo="body" />
+<p-menu #rowMenu [model]="rowMenuItems" [popup]="true" appendTo="body" styleClass="min-w-56 w-max">
+  <ng-template #start>
+    @if (actionUser(); as au) {
+      <div
+        class="flex items-center gap-3 px-3 py-3 border-b"
+        style="border-color: var(--surface-border)"
+      >
+        @if (au.profilePictureUrl) {
+          <p-avatar [image]="au.profilePictureUrl" shape="circle" styleClass="shrink-0" />
+        } @else {
+          <p-avatar
+            [label]="au.fullName || au.username | initials: 2"
+            shape="circle"
+            styleClass="shrink-0"
+          />
+        }
+        <div class="flex flex-col items-start gap-1 min-w-0">
+          <span class="font-semibold truncate max-w-56">{{ au.fullName || au.username }}</span>
+          <p-tag [rounded]="true" [severity]="getRoleSeverity(au.role)" [value]="au.role" />
+        </div>
+      </div>
+    }
+  </ng-template>
+</p-menu>
 
 <app-list-shell
   (columnSelectionChange)="onColumnSelectionChange()"

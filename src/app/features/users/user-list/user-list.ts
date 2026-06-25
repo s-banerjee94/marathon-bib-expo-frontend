@@ -97,6 +97,8 @@ export class UserList extends BaseTableComponent<User, UserFilterPreferences> {
   // Shared popup menu for the per-row actions kebab (one instance, reused by every row).
   @ViewChild('rowMenu') rowMenu!: Menu;
   rowMenuItems: MenuItem[] = [];
+  // The row the open menu acts on — drives the menu's identity header.
+  actionUser = signal<User | null>(null);
   // The kebab button the menu opened from — used to anchor the confirm popups.
   private actionAnchor: EventTarget | null = null;
   // Organization popover state
@@ -367,6 +369,7 @@ export class UserList extends BaseTableComponent<User, UserFilterPreferences> {
   // chosen action raises points back at the kebab button.
   openRowMenu(event: Event, user: User): void {
     this.actionAnchor = event.currentTarget;
+    this.actionUser.set(user);
     this.rowMenuItems = this.buildRowMenu(user);
     this.rowMenu.toggle(event);
   }
