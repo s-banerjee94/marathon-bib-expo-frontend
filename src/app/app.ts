@@ -1,5 +1,5 @@
 import { Component, computed, effect, inject, PLATFORM_ID } from '@angular/core';
-import { CommonModule, isPlatformBrowser } from '@angular/common';
+import { CommonModule, DOCUMENT, isPlatformBrowser } from '@angular/common';
 import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { filter, map } from 'rxjs';
@@ -48,17 +48,22 @@ export class App {
   private router = inject(Router);
   isAuthenticated = this.authService.isAuthenticated;
 
-  // Public routes (e.g. /s/:shortCode) render bare — no navbar, sidebar, or layout chrome.
+  private document = inject(DOCUMENT);
+
+  // Bare routes (login + public links like /s/:shortCode) render with no navbar,
+  // sidebar, or layout chrome — just the routed page filling the viewport.
+  // Seed from the real browser path (not router.url, which is still '/' before the
+  // initial navigation resolves) so bare routes never flash the layout chrome on load.
   private currentUrl = toSignal(
     this.router.events.pipe(
       filter((e): e is NavigationEnd => e instanceof NavigationEnd),
       map((e) => e.urlAfterRedirects),
     ),
-    { initialValue: this.router.url },
+    { initialValue: this.document.location?.pathname ?? this.router.url },
   );
   isPublicRoute = computed(() => {
     const url = this.currentUrl().split('?')[0];
-    return url === '/s' || url.startsWith('/s/') || url === '/accept-invite';
+    return url === '/login' || url === '/s' || url.startsWith('/s/') || url === '/accept-invite';
   });
 
   layoutClasses = computed(() => {

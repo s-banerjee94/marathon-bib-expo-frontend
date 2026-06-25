@@ -1,18 +1,124 @@
-<div class="min-h-screen flex items-center justify-center p-4">
-  <div class="w-full max-w-md">
-    <p-card>
-      <ng-template pTemplate="header">
-        <div class="text-center pt-6 px-6">
-          <img
-            src="logo.png"
-            alt="Marathon Bib Expo"
-            class="h-12 w-auto mx-auto mb-3 invert dark:invert-0"
-          />
-          <p class="text-base m-0 opacity-70">Sign in to your account</p>
-        </div>
-      </ng-template>
+<div
+  class="relative min-h-screen w-full flex items-center justify-center overflow-hidden p-4"
+  style="
+    background: radial-gradient(
+      120% 90% at 50% -10%,
+      var(--p-surface-800) 0%,
+      var(--p-surface-950) 55%,
+      var(--p-surface-950) 100%
+    );
+  "
+>
+  <!-- Noir backdrop: full-bleed motion lines + faint arcs behind the card -->
+  <svg
+    class="pointer-events-none absolute inset-0 h-full w-full select-none"
+    viewBox="0 0 1440 900"
+    preserveAspectRatio="xMidYMid slice"
+    fill="none"
+    aria-hidden="true"
+    style="color: var(--p-surface-0)"
+  >
+    <g stroke="currentColor" stroke-width="1.5" opacity="0.04" stroke-linecap="round">
+      <path d="M-120 700 C 320 540 760 800 1560 460" />
+      <path d="M-120 760 C 340 600 780 860 1580 520" />
+      <path d="M-120 820 C 360 660 800 920 1600 580" />
+      <path d="M-120 880 C 380 720 820 980 1620 640" />
+    </g>
+    <g stroke="currentColor" stroke-width="1.5" opacity="0.03">
+      <circle cx="150" cy="170" r="230" />
+      <circle cx="150" cy="170" r="320" />
+      <circle cx="1300" cy="760" r="260" />
+    </g>
+  </svg>
 
-      <ng-template pTemplate="content">
+  <div
+    class="relative w-full max-w-5xl overflow-hidden rounded-2xl border shadow-2xl flex flex-col"
+    style="background-color: var(--surface-card); border-color: var(--surface-border)"
+  >
+    <div class="grid md:grid-cols-2">
+      <!-- ─────────────── Branding panel (always dark hero) ─────────────── -->
+      <section
+        class="relative hidden md:flex flex-col justify-between gap-10 overflow-hidden p-10"
+        style="background-color: var(--p-surface-950)"
+      >
+        <!-- Decorative motion-track lines + arcs filling the dark panel -->
+        <svg
+          class="pointer-events-none absolute inset-0 h-full w-full select-none"
+          viewBox="0 0 600 560"
+          preserveAspectRatio="xMidYMid slice"
+          fill="none"
+          aria-hidden="true"
+          style="color: var(--p-surface-0)"
+        >
+          <g stroke="currentColor" stroke-width="1.5" opacity="0.07" stroke-linecap="round">
+            <path d="M-40 430 C 150 350 300 470 380 420 C 480 360 560 405 700 320" />
+            <path d="M-40 472 C 160 392 312 512 400 452 C 500 392 576 437 716 352" />
+            <path d="M-40 514 C 170 434 324 554 420 484 C 520 424 592 469 732 384" />
+            <path d="M-40 556 C 180 476 336 596 440 516 C 540 456 608 501 748 416" />
+          </g>
+          <g stroke="currentColor" stroke-width="1.5" opacity="0.05">
+            <circle cx="548" cy="96" r="118" />
+            <circle cx="548" cy="96" r="168" />
+            <circle cx="548" cy="96" r="218" />
+          </g>
+        </svg>
+
+        <div class="relative">
+          <img src="logo.png" alt="Marathon Bib Expo" class="h-12 w-auto" />
+        </div>
+
+        <div class="relative flex flex-col gap-8">
+          <div class="flex flex-col gap-2">
+            <h2 class="m-0 text-2xl font-bold" style="color: var(--p-surface-0)">
+              Your Race. Your Moment.
+            </h2>
+            <p class="m-0 max-w-sm text-sm leading-relaxed" style="color: var(--p-surface-400)">
+              Manage bibs, participants, and expo activities seamlessly. Let's make it an
+              unforgettable experience!
+            </p>
+          </div>
+
+          <ul class="flex flex-col gap-5 m-0 p-0 list-none">
+            @for (feature of features; track feature.title) {
+              <li class="flex items-start gap-4">
+                <span
+                  class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg"
+                  style="background-color: var(--p-surface-800); color: var(--p-surface-0)"
+                >
+                  <i [class]="feature.icon" class="text-base"></i>
+                </span>
+                <div class="flex flex-col gap-0.5">
+                  <span class="text-sm font-semibold" style="color: var(--p-surface-0)">{{
+                    feature.title
+                  }}</span>
+                  <span class="text-xs leading-relaxed" style="color: var(--p-surface-400)">{{
+                    feature.description
+                  }}</span>
+                </div>
+              </li>
+            }
+          </ul>
+        </div>
+      </section>
+
+      <!-- ─────────────────────── Sign-in form panel ─────────────────────── -->
+      <section
+        class="flex flex-col justify-center p-8 sm:p-10 md:border-l"
+        style="border-color: var(--surface-border)"
+      >
+        <img
+          src="logo.png"
+          alt="Marathon Bib Expo"
+          class="mb-8 h-12 w-auto self-center invert md:hidden dark:invert-0"
+        />
+
+        <div class="mb-6 flex flex-col gap-1">
+          <h1 class="m-0 text-2xl font-bold">Welcome Back!</h1>
+          <p class="m-0 text-sm" style="color: var(--text-color-secondary)">
+            Sign in to your Marathon Bib Expo account
+          </p>
+        </div>
+
         <div aria-live="assertive">
           @if (errorMessage()) {
             <p-message severity="error" styleClass="w-full mb-4">
@@ -21,28 +127,32 @@
           }
         </div>
 
-        <form #loginForm="ngForm" (ngSubmit)="onLogin()" class="flex flex-col gap-2" novalidate>
-          <div class="flex flex-col gap-1">
-            <label class="font-semibold" for="username">Username</label>
-            <input
-              #usernameField="ngModel"
-              (ngModelChange)="username.set($event)"
-              [attr.aria-describedby]="
-                usernameField.invalid && (usernameField.touched || loginForm.submitted)
-                  ? 'username-error'
-                  : null
-              "
-              [attr.aria-invalid]="
-                usernameField.invalid && (usernameField.touched || loginForm.submitted)
-              "
-              [ngModel]="username()"
-              fluid="true"
-              id="username"
-              name="username"
-              pInputText
-              placeholder="Enter your username"
-              required
-            />
+        <form #loginForm="ngForm" (ngSubmit)="onLogin()" class="flex flex-col gap-4" novalidate>
+          <div class="flex flex-col gap-1.5">
+            <label class="text-sm font-semibold" for="username">Username</label>
+            <p-iconfield styleClass="w-full">
+              <p-inputicon class="pi pi-user" />
+              <input
+                #usernameField="ngModel"
+                (ngModelChange)="username.set($event)"
+                [attr.aria-describedby]="
+                  usernameField.invalid && (usernameField.touched || loginForm.submitted)
+                    ? 'username-error'
+                    : null
+                "
+                [attr.aria-invalid]="
+                  usernameField.invalid && (usernameField.touched || loginForm.submitted)
+                "
+                [ngModel]="username()"
+                autocomplete="username"
+                fluid="true"
+                id="username"
+                name="username"
+                pInputText
+                placeholder="Enter your username"
+                required
+              />
+            </p-iconfield>
             @if (usernameField.invalid && (usernameField.touched || loginForm.submitted)) {
               <p-message id="username-error" [size]="inputSize" severity="error" variant="simple"
                 >Username is required.
@@ -50,33 +160,43 @@
             }
           </div>
 
-          <div class="flex flex-col gap-1">
-            <label class="font-semibold" for="password">Password</label>
-            <p-password
-              #passwordField="ngModel"
-              (ngModelChange)="password.set($event)"
-              [feedback]="false"
-              [invalid]="passwordField.invalid && (passwordField.touched || loginForm.submitted)"
-              [ngModel]="password()"
-              [pt]="{
-                pcInputText: {
-                  root: {
-                    'aria-invalid':
-                      passwordField.invalid && (passwordField.touched || loginForm.submitted),
-                    'aria-describedby':
-                      passwordField.invalid && (passwordField.touched || loginForm.submitted)
-                        ? 'password-error'
-                        : null,
+          <div class="flex flex-col gap-1.5">
+            <label class="text-sm font-semibold" for="password">Password</label>
+            <div class="relative">
+              <i
+                class="pi pi-lock absolute left-3 top-1/2 z-10 -translate-y-1/2 pointer-events-none"
+                style="color: var(--text-color-secondary)"
+                aria-hidden="true"
+              ></i>
+              <p-password
+                #passwordField="ngModel"
+                (ngModelChange)="password.set($event)"
+                [feedback]="false"
+                [invalid]="passwordField.invalid && (passwordField.touched || loginForm.submitted)"
+                [ngModel]="password()"
+                [pt]="{
+                  pcInputText: {
+                    root: {
+                      class: 'pl-10',
+                      autocomplete: 'current-password',
+                      'aria-invalid':
+                        passwordField.invalid && (passwordField.touched || loginForm.submitted),
+                      'aria-describedby':
+                        passwordField.invalid && (passwordField.touched || loginForm.submitted)
+                          ? 'password-error'
+                          : null,
+                    },
                   },
-                },
-              }"
-              [toggleMask]="true"
-              fluid="true"
-              inputId="password"
-              name="password"
-              placeholder="Enter your password"
-              required
-            ></p-password>
+                }"
+                [toggleMask]="true"
+                fluid="true"
+                inputId="password"
+                name="password"
+                placeholder="Enter your password"
+                required
+                styleClass="w-full"
+              ></p-password>
+            </div>
             @if (passwordField.invalid && (passwordField.touched || loginForm.submitted)) {
               <p-message id="password-error" [size]="inputSize" severity="error" variant="simple"
                 >Password is required.
@@ -84,15 +204,43 @@
             }
           </div>
 
+          <div class="flex justify-end -mt-1">
+            <p-button
+              (onClick)="onForgotPassword()"
+              [link]="true"
+              label="Forgot password?"
+              size="small"
+              styleClass="!p-0"
+              type="button"
+            ></p-button>
+          </div>
+
           <p-button
             [disabled]="!isFormValid() || isLoading()"
-            [label]="isLoading() ? 'Logging in...' : 'Login'"
+            [label]="isLoading() ? 'Signing in...' : 'Sign In'"
             [loading]="isLoading()"
-            styleClass="w-full mt-2"
+            icon="pi pi-arrow-right"
+            iconPos="right"
+            styleClass="w-full"
             type="submit"
           ></p-button>
         </form>
-      </ng-template>
-    </p-card>
+
+        <p class="mt-6 text-center text-xs" style="color: var(--text-color-secondary)">
+          Need help? Contact your administrator.
+        </p>
+      </section>
+    </div>
+
+    <!-- ───────────────────── Secure-access footer strip ───────────────────── -->
+    <div
+      class="flex items-center justify-center gap-2 border-t px-6 py-3"
+      style="border-color: var(--surface-border)"
+    >
+      <i class="pi pi-shield text-sm" style="color: var(--text-color-secondary)"></i>
+      <span class="text-xs" style="color: var(--text-color-secondary)">
+        Secure access to your event management system
+      </span>
+    </div>
   </div>
 </div>
