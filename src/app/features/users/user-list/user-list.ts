@@ -208,15 +208,7 @@ export class UserList extends BaseTableComponent<User, UserFilterPreferences> {
 
   getColumnAlignment(field: string): string {
     // Center alignment for status/tag columns
-    if (
-      [
-        'enabled',
-        'role',
-        'accountNonExpired',
-        'accountNonLocked',
-        'credentialsNonExpired',
-      ].includes(field)
-    ) {
+    if (['enabled', 'role', 'accountNonLocked'].includes(field)) {
       return 'text-center';
     }
     // Right alignment for numeric columns

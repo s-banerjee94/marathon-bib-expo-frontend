@@ -37,9 +37,7 @@ export interface User {
   eventId?: number;
   eventName?: string;
   enabled: boolean;
-  accountNonExpired?: boolean;
   accountNonLocked?: boolean;
-  credentialsNonExpired?: boolean;
   createdAt?: Date;
   updatedAt?: Date;
   createdBy?: string;

@@ -29,18 +29,8 @@ export const USER_COLUMNS: TableColumn[] = [
   { field: 'eventName', header: 'Event' },
   { field: 'enabled', header: 'Enabled' },
   {
-    field: 'accountNonExpired',
-    header: 'Account Non-Expired',
-    visibleFor: [UserRole.ROOT, UserRole.ADMIN],
-  },
-  {
     field: 'accountNonLocked',
     header: 'Account Non-Locked',
-    visibleFor: [UserRole.ROOT, UserRole.ADMIN],
-  },
-  {
-    field: 'credentialsNonExpired',
-    header: 'Credentials Non-Expired',
     visibleFor: [UserRole.ROOT, UserRole.ADMIN],
   },
   { field: 'createdAt', header: 'Created At', type: 'datetime' },

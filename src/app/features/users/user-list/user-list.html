@@ -218,11 +218,7 @@
                     [severity]="getRoleSeverity(user.role)"
                     [value]="user.role"
                   />
-                } @else if (
-                  col.field === 'accountNonExpired' ||
-                  col.field === 'accountNonLocked' ||
-                  col.field === 'credentialsNonExpired'
-                ) {
+                } @else if (col.field === 'accountNonLocked') {
                   <p-tag
                     [rounded]="true"
                     [severity]="getCellValue(user, col.field) !== false ? 'success' : 'danger'"
