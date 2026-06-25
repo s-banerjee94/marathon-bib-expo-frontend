@@ -23,7 +23,7 @@ import { ListShell } from '../../../shared/components/list/list-shell/list-shell
 import { EmptyIllustration } from '../../../shared/illustrations/empty-illustration';
 
 import { Organization } from '../../../core/models/organization.model';
-import { PageableParams, PageableResponse } from '../../../core/models/api.model';
+import { PageableResponse } from '../../../core/models/api.model';
 import { OrganizationService } from '../../../core/services/organization.service';
 import { ORGANIZATION_COLUMNS } from '../../../shared/constants/organization-columns.constant';
 import { STORAGE_KEYS } from '../../../shared/constants/storage-keys.constant';
@@ -45,7 +45,6 @@ import {
 
 interface OrganizationFilterPreferences extends TableFilterPreferences {
   enabled: boolean;
-  deleted: boolean;
   sort: string[];
 }
 
@@ -91,8 +90,6 @@ export class OrganizationList extends BaseTableComponent<
     this.quotaPopover.toggle(event);
   }
 
-  // Organization-specific filter
-  filterDeleted = signal(false);
   // Organization-specific sort options
   readonly sortOptions = ORGANIZATION_SORT_OPTIONS;
   // Base class requirements
@@ -100,6 +97,7 @@ export class OrganizationList extends BaseTableComponent<
   protected override filterPreferenceKey = STORAGE_KEYS.ORG_TABLE_FILTERS;
   protected override allColumns = ORGANIZATION_COLUMNS;
   togglingOrgId = signal<number | null>(null);
+  deletingOrgId = signal<number | null>(null);
   private organizationService = inject(OrganizationService);
   private confirmationService = inject(ConfirmationService);
   private router = inject(Router);
@@ -110,7 +108,6 @@ export class OrganizationList extends BaseTableComponent<
   activeFilterCount = computed(() => {
     let count = 0;
     if (!this.filterEnabled()) count++;
-    if (this.filterDeleted()) count++;
     if (this.selectedSort() !== null) count++;
     return count;
   });
@@ -134,7 +131,7 @@ export class OrganizationList extends BaseTableComponent<
       .pipe(
         switchMap(() => {
           this.isLoading.set(true);
-          const params = this.buildOrganizationSearchParams();
+          const params = this.buildPageableParams();
           return this.organizationService.searchOrganizations(params).pipe(
             catchError((error) => {
               this.handleLoadError(error);
@@ -185,11 +182,11 @@ export class OrganizationList extends BaseTableComponent<
 
   getColumnAlignment(field: string): string {
     // Center alignment for status/tag columns
-    if (['enabled', 'deleted', 'subscriptionTier', 'subscriptionStatus'].includes(field)) {
+    if (['enabled', 'subscriptionTier', 'subscriptionStatus'].includes(field)) {
       return 'text-center';
     }
     // Right alignment for numeric columns
-    if (['id', 'maxEvents', 'maxParticipantsPerEvent'].includes(field)) {
+    if (field === 'id') {
       return 'text-right';
     }
     // Left alignment for all other columns (default)
@@ -236,6 +233,42 @@ export class OrganizationList extends BaseTableComponent<
     });
   }
 
+  onDelete(event: Event, org: Organization): void {
+    this.confirmationService.confirm({
+      target: event.currentTarget as EventTarget,
+      message: `Delete "${org.organizerName}"? This permanently removes the organization and all of its users, and cannot be undone.`,
+      icon: 'pi pi-exclamation-triangle',
+      acceptButtonProps: {
+        label: 'Delete',
+        severity: 'danger',
+      },
+      rejectButtonProps: {
+        label: 'Cancel',
+        severity: 'secondary',
+        outlined: true,
+      },
+      accept: () => {
+        this.deletingOrgId.set(org.id);
+
+        this.organizationService.deleteOrganization(org.id).subscribe({
+          next: () => {
+            this.entities.set(this.entities().filter((o) => o.id !== org.id));
+            this.totalRecords.set(Math.max(0, this.totalRecords() - 1));
+            this.deletingOrgId.set(null);
+            this.toast.success(
+              `Organization "${org.organizerName}" deleted successfully`,
+              'Deleted',
+            );
+          },
+          error: (error) => {
+            this.deletingOrgId.set(null);
+            this.errorHandler.showError(error);
+          },
+        });
+      },
+    });
+  }
+
   onCreate(): void {
     this.openCreateDialog();
   }
@@ -262,7 +295,6 @@ export class OrganizationList extends BaseTableComponent<
   override onFilterChange(): void {
     this.pushStateToUrl({
       enabled: this.filterEnabled() ? null : 'false',
-      deleted: this.filterDeleted() ? 'true' : null,
       page: null,
     });
   }
@@ -287,14 +319,6 @@ export class OrganizationList extends BaseTableComponent<
     this.loadTrigger.next();
   }
 
-  private buildOrganizationSearchParams(): PageableParams {
-    const params = this.buildPageableParams();
-    if (this.filterDeleted()) {
-      params.deleted = true;
-    }
-    return params;
-  }
-
   private pushStateToUrl(updates: Params): void {
     this.router.navigate([], {
       relativeTo: this.route,
@@ -309,7 +333,6 @@ export class OrganizationList extends BaseTableComponent<
     const pageParam = Number(params.get('page'));
     const sizeParam = Number(params.get('size'));
     const enabledParam = params.get('enabled');
-    const deletedParam = params.get('deleted');
     const sortParam = params.get('sort');
 
     this.searchTerm.set(q);
@@ -319,7 +342,6 @@ export class OrganizationList extends BaseTableComponent<
       Number.isFinite(sizeParam) && sizeParam > 0 ? sizeParam : this.DEFAULT_PAGE_SIZE,
     );
     this.filterEnabled.set(enabledParam !== 'false');
-    this.filterDeleted.set(deletedParam === 'true');
 
     this.selectedSort.set(sortParam);
     this.filterSort.set(sortParam ? [sortParam] : []);
@@ -337,7 +359,6 @@ export class OrganizationList extends BaseTableComponent<
   protected override getDefaultFilterPreferences(): OrganizationFilterPreferences {
     return {
       enabled: true,
-      deleted: false,
       sort: [],
     };
   }
@@ -345,14 +366,12 @@ export class OrganizationList extends BaseTableComponent<
   protected override getCurrentFilterPreferences(): OrganizationFilterPreferences {
     return {
       enabled: this.filterEnabled(),
-      deleted: this.filterDeleted(),
       sort: this.filterSort(),
     };
   }
 
   protected override applyFilterPreferences(prefs: OrganizationFilterPreferences): void {
     this.filterEnabled.set(prefs.enabled);
-    this.filterDeleted.set(prefs.deleted);
     this.filterSort.set(prefs.sort);
   }
 }

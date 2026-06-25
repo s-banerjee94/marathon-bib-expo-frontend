@@ -58,11 +58,31 @@ export interface Organization {
   subscriptionEndDate?: Date;
   billingEmail?: string;
   enabled: boolean;
-  deleted?: boolean;
   createdAt?: Date;
   updatedAt?: Date;
   createdBy?: string;
   lastModifiedBy?: string;
+}
+
+/**
+ * The contact/address/business fields shared by the create dialog and the edit
+ * page, rendered by the `OrganizationFieldsForm` sub-form. Both
+ * `CreateOrganizationRequest` and the edit page's `details` model are structurally
+ * assignable to this, so the same field markup drives both screens.
+ */
+export interface OrganizationFieldsModel {
+  organizerName: string;
+  email: string;
+  phoneNumber?: string;
+  website?: string;
+  addressLine1?: string;
+  addressLine2?: string;
+  city?: string;
+  stateProvince?: string;
+  postalCode?: string;
+  country?: string;
+  taxId?: string;
+  registrationNumber?: string;
 }
 
 export interface CreateOrganizationRequest {

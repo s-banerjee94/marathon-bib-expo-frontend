@@ -1,3 +1,5 @@
+<p-confirmpopup />
+
 <div class="p-2 sm:p-3 md:p-4">
   <!-- Page header -->
   <div class="mb-6 flex items-start justify-between gap-3">
@@ -13,14 +15,27 @@
         }
       </p>
     </div>
-    <p-button
-      (onClick)="goBack()"
-      [text]="true"
-      icon="pi pi-arrow-left"
-      label="Back"
-      severity="secondary"
-      size="small"
-    />
+    <div class="flex items-center gap-2 shrink-0">
+      @if (canEditGovernance && organization()) {
+        <p-button
+          (click)="onDelete($event)"
+          [loading]="isDeleting()"
+          [text]="true"
+          icon="pi pi-trash"
+          label="Delete"
+          severity="danger"
+          size="small"
+        />
+      }
+      <p-button
+        (onClick)="goBack()"
+        [text]="true"
+        icon="pi pi-arrow-left"
+        label="Back"
+        severity="secondary"
+        size="small"
+      />
+    </div>
   </div>
 
   @if (isLoading()) {

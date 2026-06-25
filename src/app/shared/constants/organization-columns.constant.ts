@@ -26,7 +26,6 @@ export const ORGANIZATION_COLUMNS: TableColumn[] = [
   { field: 'subscriptionEndDate', header: 'Subscription End Date', type: 'date' },
   { field: 'billingEmail', header: 'Billing Email' },
   { field: 'enabled', header: 'Enabled' },
-  { field: 'deleted', header: 'Deleted' },
   { field: 'createdAt', header: 'Created At', type: 'datetime' },
   { field: 'updatedAt', header: 'Updated At', type: 'datetime' },
   { field: 'createdBy', header: 'Created By' },

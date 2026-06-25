@@ -24,6 +24,7 @@ import { ToastService } from '../../../core/services/toast.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { ImageUpload } from '../../../shared/components/image-upload/image-upload';
 import { DefaultValuePipe } from '../../../shared/pipes/default-value.pipe';
+import { OrganizationFieldsForm } from '../../organizations/organization-fields-form/organization-fields-form';
 import {
   Organization,
   SubscriptionTier,
@@ -63,6 +64,7 @@ import { OrganizationAccountState } from '../organization-account-state.service'
     InputNumberModule,
     ImageUpload,
     DefaultValuePipe,
+    OrganizationFieldsForm,
   ],
   templateUrl: './organization-account-details.html',
   styleUrl: './organization-account-details.css',

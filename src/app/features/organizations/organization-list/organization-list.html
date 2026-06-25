@@ -44,16 +44,6 @@
       <label class="cursor-pointer" for="filterEnabled">Show Enabled Only</label>
     </div>
 
-    <div class="flex items-center gap-2">
-      <p-checkbox
-        (ngModelChange)="filterDeleted.set($event); onFilterChange()"
-        [binary]="true"
-        [ngModel]="filterDeleted()"
-        inputId="filterDeleted"
-      />
-      <label class="cursor-pointer" for="filterDeleted">Show Deleted</label>
-    </div>
-
     <p-floatlabel variant="on">
       <p-select
         (ngModelChange)="onSortChange($event)"
@@ -188,16 +178,6 @@
                     }"
                     [value]="org.enabled ? 'Enabled' : 'Disabled'"
                   />
-                } @else if (col.field === 'deleted') {
-                  <p-tag
-                    [rounded]="true"
-                    [severity]="org.deleted ? 'danger' : 'success'"
-                    [style]="{
-                      '--p-tag-font-size': '0.75rem',
-                      '--p-tag-padding': '0.25rem 0.5rem',
-                    }"
-                    [value]="org.deleted ? 'Deleted' : 'Active'"
-                  />
                 } @else if (col.field === 'userQuota') {
                   <span
                     class="font-mono text-xs whitespace-nowrap cursor-pointer hover:underline"
@@ -277,6 +257,9 @@
                   tooltipPosition="top"
                 />
                 <p-button
+                  (click)="onDelete($event, org)"
+                  [disabled]="deletingOrgId() === org.id"
+                  [loading]="deletingOrgId() === org.id"
                   [rounded]="true"
                   [size]="inputSize"
                   [text]="true"
@@ -361,9 +344,6 @@
                 [value]="getSubscriptionStatusLabel(org.subscriptionStatus)"
               />
             }
-            @if (org.deleted) {
-              <p-tag [rounded]="true" severity="danger" value="Deleted" />
-            }
           </div>
           <div class="flex items-center gap-1">
             <p-button
@@ -386,6 +366,9 @@
               [text]="true"
             />
             <p-button
+              (click)="onDelete($event, org)"
+              [disabled]="deletingOrgId() === org.id"
+              [loading]="deletingOrgId() === org.id"
               [rounded]="true"
               [size]="inputSize"
               [text]="true"

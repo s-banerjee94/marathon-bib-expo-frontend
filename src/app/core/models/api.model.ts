@@ -23,7 +23,6 @@ export interface PageableParams {
   sort?: string[];
   search?: string;
   enabled?: boolean;
-  deleted?: boolean;
   subscriptionTier?: string;
   role?: string;
   organizationId?: number;

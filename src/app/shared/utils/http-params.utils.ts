@@ -31,9 +31,6 @@ export function buildHttpParams(params: PageableParams): HttpParams {
   if (params.enabled !== undefined) {
     httpParams = httpParams.set('enabled', params.enabled.toString());
   }
-  if (params.deleted !== undefined) {
-    httpParams = httpParams.set('deleted', params.deleted.toString());
-  }
   if (params.role) {
     httpParams = httpParams.set('role', params.role);
   }

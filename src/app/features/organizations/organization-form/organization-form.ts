@@ -18,6 +18,7 @@ import { ToastService } from '../../../core/services/toast.service';
 import { FORM_INPUT_SIZE } from '../../../shared/constants/form.constants';
 import { SUBSCRIPTION_TIER_OPTIONS } from '../../../shared/constants/subscription.constant';
 import { OrganizationListBus } from '../organization-list-bus.service';
+import { OrganizationFieldsForm } from '../organization-fields-form/organization-fields-form';
 
 /**
  * Create-organization form, always rendered inside a dialog (DialogService) from
@@ -35,6 +36,7 @@ import { OrganizationListBus } from '../organization-list-bus.service';
     MessageModule,
     SelectModule,
     InputNumberModule,
+    OrganizationFieldsForm,
   ],
   templateUrl: './organization-form.html',
   styleUrl: './organization-form.css',

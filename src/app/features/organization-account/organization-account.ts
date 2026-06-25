@@ -13,8 +13,11 @@ import {
 import { TabsModule } from 'primeng/tabs';
 import { ButtonModule } from 'primeng/button';
 import { SkeletonModule } from 'primeng/skeleton';
+import { ConfirmPopupModule } from 'primeng/confirmpopup';
+import { ConfirmationService } from 'primeng/api';
 import { OrganizationService } from '../../core/services/organization.service';
 import { ErrorHandlerService } from '../../core/services/error-handler.service';
+import { ToastService } from '../../core/services/toast.service';
 import { AuthService } from '../../core/services/auth.service';
 import { UserRole } from '../../core/models/user.model';
 import { MobileTabBar, TabItem } from '../../shared/components/mobile-tab-bar/mobile-tab-bar';
@@ -38,18 +41,21 @@ const DEFAULT_TAB = 'account';
     TabsModule,
     ButtonModule,
     SkeletonModule,
+    ConfirmPopupModule,
     RouterOutlet,
     RouterLink,
     RouterLinkActive,
     MobileTabBar,
   ],
-  providers: [OrganizationAccountState],
+  providers: [OrganizationAccountState, ConfirmationService],
   templateUrl: './organization-account.html',
   styleUrl: './organization-account.css',
 })
 export class OrganizationAccount implements OnInit {
   private organizationService = inject(OrganizationService);
   private errorHandler = inject(ErrorHandlerService);
+  private toast = inject(ToastService);
+  private confirmationService = inject(ConfirmationService);
   private authService = inject(AuthService);
   private location = inject(Location);
   private route = inject(ActivatedRoute);
@@ -62,6 +68,7 @@ export class OrganizationAccount implements OnInit {
 
   readonly organization = this.state.organization;
   isLoading = signal(true);
+  isDeleting = signal(false);
 
   // Set from the route param when ROOT/ADMIN edit a specific org; null = "my org".
   private orgId: number | null = null;
@@ -112,5 +119,44 @@ export class OrganizationAccount implements OnInit {
 
   goBack(): void {
     this.location.back();
+  }
+
+  // ROOT/ADMIN only. Permanent hard delete; the backend rejects (400) when the
+  // organization still has events. On success we leave this page for the list.
+  onDelete(event: Event): void {
+    const org = this.organization();
+    if (!org) return;
+
+    this.confirmationService.confirm({
+      target: event.currentTarget as EventTarget,
+      message: `Delete "${org.organizerName}"? This permanently removes the organization and all of its users, and cannot be undone.`,
+      icon: 'pi pi-exclamation-triangle',
+      acceptButtonProps: {
+        label: 'Delete',
+        severity: 'danger',
+      },
+      rejectButtonProps: {
+        label: 'Cancel',
+        severity: 'secondary',
+        outlined: true,
+      },
+      accept: () => {
+        this.isDeleting.set(true);
+        this.organizationService.deleteOrganization(org.id).subscribe({
+          next: () => {
+            this.isDeleting.set(false);
+            this.toast.success(
+              `Organization "${org.organizerName}" deleted successfully`,
+              'Deleted',
+            );
+            this.router.navigate(['/organizations']);
+          },
+          error: (error) => {
+            this.isDeleting.set(false);
+            this.errorHandler.showError(error);
+          },
+        });
+      },
+    });
   }
 }
