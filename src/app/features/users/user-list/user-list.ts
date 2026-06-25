@@ -18,8 +18,9 @@ import { SelectModule } from 'primeng/select';
 import { TagModule } from 'primeng/tag';
 import { AvatarModule } from 'primeng/avatar';
 import { FloatLabelModule } from 'primeng/floatlabel';
-import { Menu, MenuModule } from 'primeng/menu';
+import { MenuModule } from 'primeng/menu';
 import { MenuItem } from 'primeng/api';
+import { ToggleSwitchModule } from 'primeng/toggleswitch';
 
 import { User, UserRole } from '../../../core/models/user.model';
 import { PageableParams, PageableResponse } from '../../../core/models/api.model';
@@ -77,6 +78,7 @@ interface UserFilterPreferences extends TableFilterPreferences {
     TagModule,
     FloatLabelModule,
     MenuModule,
+    ToggleSwitchModule,
     AvatarModule,
     DefaultValuePipe,
     EventNamePipe,
@@ -94,13 +96,23 @@ interface UserFilterPreferences extends TableFilterPreferences {
 })
 export class UserList extends BaseTableComponent<User, UserFilterPreferences> {
   @ViewChild('orgPopover') orgPopover!: Popover;
-  // Shared popup menu for the per-row actions kebab (one instance, reused by every row).
-  @ViewChild('rowMenu') rowMenu!: Menu;
-  rowMenuItems: MenuItem[] = [];
-  // The row the open menu acts on — drives the menu's identity header.
+  // Shared action panel for the per-row kebab (one instance, reused by every row).
+  @ViewChild('rowActions') rowActions!: Popover;
+  // The row the open panel acts on — drives its header and switch states.
   actionUser = signal<User | null>(null);
-  // The kebab button the menu opened from — used to anchor the confirm popups.
+  // The kebab button the panel opened from — used to anchor the confirm popups.
   private actionAnchor: EventTarget | null = null;
+
+  // Status switches read green when "good" (enabled / unlocked) and red when not,
+  // via scoped design tokens (palette tokens, no custom CSS).
+  readonly switchStatusDt = {
+    background: 'var(--p-red-500)',
+    hover: { background: 'var(--p-red-600)' },
+    checked: {
+      background: 'var(--p-green-500)',
+      hover: { background: 'var(--p-green-600)' },
+    },
+  };
   // Organization popover state
   organizationCache = new Map<number, Organization>();
   loadingOrganizationId = signal<number | null>(null);
@@ -365,45 +377,29 @@ export class UserList extends BaseTableComponent<User, UserFilterPreferences> {
     return this.canManageUser(user);
   }
 
-  // Open the shared kebab menu for this row, anchored so any confirm popup the
-  // chosen action raises points back at the kebab button.
-  openRowMenu(event: Event, user: User): void {
+  // Open the shared action panel for this row, remembering the kebab button so any
+  // confirm popup the chosen action raises points back at that same spot.
+  openRowActions(event: Event, user: User): void {
     this.actionAnchor = event.currentTarget;
     this.actionUser.set(user);
-    this.rowMenuItems = this.buildRowMenu(user);
-    this.rowMenu.toggle(event);
+    this.rowActions.toggle(event);
   }
 
-  private buildRowMenu(user: User): MenuItem[] {
-    const items: MenuItem[] = [];
+  // A switch/delete inside the panel: close the panel, then raise the confirm at
+  // the kebab (the existing toggle/delete handlers anchor to `actionAnchor`).
+  requestToggleEnabled(user: User): void {
+    this.rowActions.hide();
+    this.toggleUserEnabled(this.actionAnchor, user);
+  }
 
-    if (this.canManageUser(user)) {
-      items.push({
-        label: user.enabled ? 'Disable' : 'Enable',
-        icon: user.enabled ? 'pi pi-ban' : 'pi pi-check-circle',
-        command: () => this.toggleUserEnabled(this.actionAnchor, user),
-      });
-    }
+  requestToggleLocked(user: User): void {
+    this.rowActions.hide();
+    this.toggleUserLocked(this.actionAnchor, user);
+  }
 
-    if (this.canLockUser(user)) {
-      const locked = user.accountNonLocked === false;
-      items.push({
-        label: locked ? 'Unlock' : 'Lock',
-        icon: locked ? 'pi pi-lock-open' : 'pi pi-lock',
-        command: () => this.toggleUserLocked(this.actionAnchor, user),
-      });
-    }
-
-    if (this.canManageUser(user)) {
-      items.push({ separator: true });
-      items.push({
-        label: 'Delete',
-        icon: 'pi pi-trash',
-        command: () => this.onDelete(this.actionAnchor, user),
-      });
-    }
-
-    return items;
+  requestDelete(user: User): void {
+    this.rowActions.hide();
+    this.onDelete(this.actionAnchor, user);
   }
 
   toggleUserLocked(target: EventTarget | null, user: User): void {

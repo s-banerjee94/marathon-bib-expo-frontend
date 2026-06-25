@@ -101,6 +101,16 @@ export class UserAccount implements OnInit {
   savingEnabled = signal(false);
   savingLocked = signal(false);
 
+  // Green when "good" (enabled / unlocked), red otherwise — scoped design tokens.
+  readonly switchStatusDt = {
+    background: 'var(--p-red-500)',
+    hover: { background: 'var(--p-red-600)' },
+    checked: {
+      background: 'var(--p-green-500)',
+      hover: { background: 'var(--p-green-600)' },
+    },
+  };
+
   // Enabling/disabling follows the management hierarchy (already guaranteed by the
   // page guard). Locking is ROOT/ADMIN-only and stricter.
   canToggleEnabled = computed(() => {

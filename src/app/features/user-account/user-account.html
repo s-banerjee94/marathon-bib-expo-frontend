@@ -409,6 +409,7 @@
                         </span>
                       </div>
                       <p-toggleswitch
+                        [dt]="switchStatusDt"
                         [ngModel]="enabledModel()"
                         (ngModelChange)="onToggleEnabled($event)"
                         [disabled]="savingEnabled()"
@@ -425,6 +426,7 @@
                         </span>
                       </div>
                       <p-toggleswitch
+                        [dt]="switchStatusDt"
                         [ngModel]="unlockedModel()"
                         (ngModelChange)="onToggleLocked($event)"
                         [disabled]="savingLocked()"
