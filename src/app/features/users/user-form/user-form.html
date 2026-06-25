@@ -1,23 +1,28 @@
 <form #userForm="ngForm" (ngSubmit)="onSubmit(userForm)" class="flex flex-col gap-4 mt-2">
-  <!-- ROLE SELECTION -->
-  <div class="flex flex-col gap-1">
-    <p-floatlabel variant="on">
-      <p-select
-        (onChange)="onRoleSelected()"
-        [(ngModel)]="selectedRole"
-        [checkmark]="true"
-        [options]="availableRoles() || []"
-        [size]="inputSize"
-        fluid="true"
-        id="roleSelect"
-        name="roleSelect"
-        optionLabel="label"
-        optionValue="value"
-        placeholder="Choose a role..."
-        required
-      ></p-select>
-      <label for="roleSelect">Role *</label>
-    </p-floatlabel>
+  <!-- ROLE SELECTION — the set of creatable roles is fixed per the current user's
+       role, so a radio group fits better than a dropdown. Starts unchecked for a
+       generic create; preselected when launched from a dashboard quick-create. -->
+  <div class="flex flex-col gap-2">
+    <span class="text-sm font-medium">Role *</span>
+    <div class="grid grid-cols-2 gap-x-6 gap-y-3 sm:flex sm:flex-wrap">
+      @for (role of availableRoles(); track role.value) {
+        <div class="flex items-center gap-2">
+          <p-radiobutton
+            (ngModelChange)="onRoleChange($event)"
+            [inputId]="'userRole-' + role.value"
+            [ngModel]="selectedRole()"
+            [value]="role.value"
+            name="userRole"
+          />
+          <label class="cursor-pointer" [for]="'userRole-' + role.value">{{ role.label }}</label>
+        </div>
+      }
+    </div>
+    @if (userForm.submitted && !selectedRole()) {
+      <p-message [size]="inputSize" severity="error" variant="simple">
+        Please select a role.
+      </p-message>
+    }
   </div>
 
   <!-- ORGANIZATION SELECTION -->
@@ -235,9 +240,9 @@
   </div>
 
   <!-- Submit -->
-  <div class="flex justify-end gap-3 pt-4 border-t">
+  <div class="flex justify-end gap-3 pt-2">
     <p-button
-      [disabled]="isSubmitting() || userForm.invalid"
+      [disabled]="isSubmitting() || userForm.invalid || !selectedRole()"
       [label]="isSubmitting() ? 'Creating...' : 'Create User'"
       [loading]="isSubmitting()"
       [size]="inputSize"

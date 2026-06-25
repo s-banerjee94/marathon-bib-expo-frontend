@@ -4,7 +4,7 @@ import { InputTextModule } from 'primeng/inputtext';
 import { FloatLabelModule } from 'primeng/floatlabel';
 import { ButtonModule } from 'primeng/button';
 import { MessageModule } from 'primeng/message';
-import { SelectModule } from 'primeng/select';
+import { RadioButtonModule } from 'primeng/radiobutton';
 import { DynamicDialogConfig, DynamicDialogRef } from 'primeng/dynamicdialog';
 import {
   CreateUserRequest,
@@ -43,7 +43,7 @@ import { EventSelector } from '../../../layout/event-selector/event-selector';
     FloatLabelModule,
     ButtonModule,
     MessageModule,
-    SelectModule,
+    RadioButtonModule,
     OrganizationSelector,
     EventSelector,
   ],
@@ -90,10 +90,17 @@ export class UserForm implements OnInit {
     const roles = role ? (ROLE_AVAILABILITY[role] ?? []) : [];
     this.availableRoles.set(roles);
 
-    // Preselect a role: the one passed via dialog data (if valid), else the first available.
+    // Preselect a role ONLY when one was passed via dialog data (the dashboard
+    // quick-create shortcuts do this). Opening the generic "Create User" from the
+    // users route passes no role, so the radios start with nothing checked.
     const requested = this.dialogConfig?.data?.role as UserRole | undefined;
-    const initial = roles.find((r) => r.value === requested)?.value ?? roles[0]?.value ?? null;
+    const initial = roles.find((r) => r.value === requested)?.value ?? null;
     this.selectedRole.set(initial);
+    this.onRoleSelected();
+  }
+
+  onRoleChange(role: UserRole): void {
+    this.selectedRole.set(role);
     this.onRoleSelected();
   }
 
@@ -143,6 +150,9 @@ export class UserForm implements OnInit {
 
   onSubmit(form: NgForm): void {
     if (form.invalid) return;
+
+    // A role must be picked (the radios start unchecked for the generic create).
+    if (!this.selectedRole()) return;
 
     // Validate organizationId is set when the role requires it.
     if (roleRequiresOrganization(this.selectedRole()) && !this.user.organizationId) {
