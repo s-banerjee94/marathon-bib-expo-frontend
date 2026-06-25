@@ -18,7 +18,7 @@ import { SelectModule } from 'primeng/select';
 import { TagModule } from 'primeng/tag';
 import { AvatarModule } from 'primeng/avatar';
 import { FloatLabelModule } from 'primeng/floatlabel';
-import { MenuModule } from 'primeng/menu';
+import { Menu, MenuModule } from 'primeng/menu';
 import { MenuItem } from 'primeng/api';
 
 import { User, UserRole } from '../../../core/models/user.model';
@@ -94,6 +94,11 @@ interface UserFilterPreferences extends TableFilterPreferences {
 })
 export class UserList extends BaseTableComponent<User, UserFilterPreferences> {
   @ViewChild('orgPopover') orgPopover!: Popover;
+  // Shared popup menu for the per-row actions kebab (one instance, reused by every row).
+  @ViewChild('rowMenu') rowMenu!: Menu;
+  rowMenuItems: MenuItem[] = [];
+  // The kebab button the menu opened from — used to anchor the confirm popups.
+  private actionAnchor: EventTarget | null = null;
   // Organization popover state
   organizationCache = new Map<number, Organization>();
   loadingOrganizationId = signal<number | null>(null);
@@ -262,11 +267,11 @@ export class UserList extends BaseTableComponent<User, UserFilterPreferences> {
     });
   }
 
-  toggleUserEnabled(event: Event, user: User): void {
+  toggleUserEnabled(target: EventTarget | null, user: User): void {
     const action = user.enabled ? 'disable' : 'enable';
 
     this.confirmationService.confirm({
-      target: event.currentTarget as EventTarget,
+      target: target ?? undefined,
       message: `Do you want to ${action} ${user.username}?`,
       icon: 'pi pi-exclamation-triangle',
       acceptButtonProps: {
@@ -352,11 +357,57 @@ export class UserList extends BaseTableComponent<User, UserFilterPreferences> {
     return this.authService.hasAnyRole([UserRole.ROOT, UserRole.ADMIN]) && this.canManageUser(user);
   }
 
-  toggleUserLocked(event: Event, user: User): void {
+  // The action kebab only appears when at least one item would be available.
+  // canLockUser implies canManageUser, so this collapses to canManageUser.
+  hasRowActions(user: User): boolean {
+    return this.canManageUser(user);
+  }
+
+  // Open the shared kebab menu for this row, anchored so any confirm popup the
+  // chosen action raises points back at the kebab button.
+  openRowMenu(event: Event, user: User): void {
+    this.actionAnchor = event.currentTarget;
+    this.rowMenuItems = this.buildRowMenu(user);
+    this.rowMenu.toggle(event);
+  }
+
+  private buildRowMenu(user: User): MenuItem[] {
+    const items: MenuItem[] = [];
+
+    if (this.canManageUser(user)) {
+      items.push({
+        label: user.enabled ? 'Disable' : 'Enable',
+        icon: user.enabled ? 'pi pi-ban' : 'pi pi-check-circle',
+        command: () => this.toggleUserEnabled(this.actionAnchor, user),
+      });
+    }
+
+    if (this.canLockUser(user)) {
+      const locked = user.accountNonLocked === false;
+      items.push({
+        label: locked ? 'Unlock' : 'Lock',
+        icon: locked ? 'pi pi-lock-open' : 'pi pi-lock',
+        command: () => this.toggleUserLocked(this.actionAnchor, user),
+      });
+    }
+
+    if (this.canManageUser(user)) {
+      items.push({ separator: true });
+      items.push({
+        label: 'Delete',
+        icon: 'pi pi-trash',
+        command: () => this.onDelete(this.actionAnchor, user),
+      });
+    }
+
+    return items;
+  }
+
+  toggleUserLocked(target: EventTarget | null, user: User): void {
     const locked = user.accountNonLocked === false;
 
     this.confirmationService.confirm({
-      target: event.currentTarget as EventTarget,
+      target: target ?? undefined,
       message: locked
         ? `Unlock ${user.username}? They will be able to log in again.`
         : `Lock ${user.username}? They won't be able to log in until the account is unlocked.`,
@@ -394,9 +445,9 @@ export class UserList extends BaseTableComponent<User, UserFilterPreferences> {
     });
   }
 
-  onDelete(event: Event, user: User): void {
+  onDelete(target: EventTarget | null, user: User): void {
     this.confirmationService.confirm({
-      target: event.currentTarget as EventTarget,
+      target: target ?? undefined,
       message: `Delete user ${user.username}? This cannot be undone.`,
       icon: 'pi pi-exclamation-triangle',
       acceptButtonProps: {

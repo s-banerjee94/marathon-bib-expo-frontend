@@ -21,6 +21,7 @@ import { MessageModule } from 'primeng/message';
 import { PasswordModule } from 'primeng/password';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
 import { SkeletonModule } from 'primeng/skeleton';
+import { ToggleSwitchModule } from 'primeng/toggleswitch';
 import { UserService } from '../../core/services/user.service';
 import { ImageUploadService } from '../../core/services/image-upload.service';
 import { ErrorHandlerService } from '../../core/services/error-handler.service';
@@ -64,6 +65,7 @@ const PASSWORD_MAX = 100;
     PasswordModule,
     ProgressSpinnerModule,
     SkeletonModule,
+    ToggleSwitchModule,
     DefaultValuePipe,
     EventSelector,
   ],
@@ -90,6 +92,29 @@ export class UserAccount implements OnInit {
   savingProfile = signal(false);
   savingPassword = signal(false);
   avatarPending = signal(false);
+
+  // Account-status switches. The models mirror the loaded user but flip
+  // optimistically on toggle and reconcile from the API response (or revert on
+  // error). enabled = can sign in; unlocked = NOT locked (accountNonLocked).
+  enabledModel = signal(false);
+  unlockedModel = signal(false);
+  savingEnabled = signal(false);
+  savingLocked = signal(false);
+
+  // Enabling/disabling follows the management hierarchy (already guaranteed by the
+  // page guard). Locking is ROOT/ADMIN-only and stricter.
+  canToggleEnabled = computed(() => {
+    const u = this.user();
+    return !!u && userCanManage(this.authService.currentUser(), u);
+  });
+  canToggleLock = computed(() => {
+    const u = this.user();
+    return (
+      !!u &&
+      this.authService.hasAnyRole([UserRole.ROOT, UserRole.ADMIN]) &&
+      userCanManage(this.authService.currentUser(), u)
+    );
+  });
 
   // Distributor event reassignment (PATCH /users/{id}/event).
   readonly excludedEventStatuses = [EventStatus.COMPLETED, EventStatus.CANCELLED];
@@ -150,9 +175,61 @@ export class UserAccount implements OnInit {
         }
         this.user.set(user);
         this.populateProfile(user);
+        this.syncAccountStatus(user);
       },
       error: (error) => {
         this.isLoading.set(false);
+        this.errorHandler.showError(error);
+      },
+    });
+  }
+
+  // ── Account status (enable/disable, lock/unlock) ────────────────────────────
+
+  private syncAccountStatus(user: User): void {
+    this.enabledModel.set(user.enabled);
+    this.unlockedModel.set(user.accountNonLocked !== false);
+  }
+
+  onToggleEnabled(next: boolean): void {
+    const u = this.user();
+    if (!u || this.savingEnabled()) return;
+
+    this.enabledModel.set(next); // optimistic; reconciled below
+    this.savingEnabled.set(true);
+    this.userService.toggleEnabled(u.id).subscribe({
+      next: (updated) => {
+        this.savingEnabled.set(false);
+        this.user.set(updated);
+        this.enabledModel.set(updated.enabled);
+        this.userListBus.publish({ action: 'updated', user: updated });
+        this.toast.success(updated.enabled ? 'User enabled' : 'User disabled');
+      },
+      error: (error) => {
+        this.savingEnabled.set(false);
+        this.enabledModel.set(u.enabled); // revert
+        this.errorHandler.showError(error);
+      },
+    });
+  }
+
+  onToggleLocked(next: boolean): void {
+    const u = this.user();
+    if (!u || this.savingLocked()) return;
+
+    this.unlockedModel.set(next); // optimistic; reconciled below
+    this.savingLocked.set(true);
+    this.userService.toggleLocked(u.id).subscribe({
+      next: (updated) => {
+        this.savingLocked.set(false);
+        this.user.set(updated);
+        this.unlockedModel.set(updated.accountNonLocked !== false);
+        this.userListBus.publish({ action: 'updated', user: updated });
+        this.toast.success(updated.accountNonLocked === false ? 'User locked' : 'User unlocked');
+      },
+      error: (error) => {
+        this.savingLocked.set(false);
+        this.unlockedModel.set(u.accountNonLocked !== false); // revert
         this.errorHandler.showError(error);
       },
     });

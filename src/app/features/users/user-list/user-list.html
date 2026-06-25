@@ -1,5 +1,8 @@
 <p-confirmpopup />
 
+<!-- Shared popup menu for the per-row actions kebab (desktop table + mobile cards). -->
+<p-menu #rowMenu [model]="rowMenuItems" [popup]="true" appendTo="body" />
+
 <app-list-shell
   (columnSelectionChange)="onColumnSelectionChange()"
   (pageChange)="onPageChange($event)"
@@ -195,16 +198,6 @@
                 } @else if (col.field === 'enabled') {
                   @if (togglingUserId() === user.id) {
                     <p-skeleton height="1.5rem" width="5rem" />
-                  } @else if (canManageUser(user)) {
-                    <p-tag
-                      (click)="toggleUserEnabled($event, user)"
-                      [rounded]="true"
-                      [severity]="user.enabled ? 'success' : 'danger'"
-                      [value]="user.enabled ? 'Enabled' : 'Disabled'"
-                      pTooltip="Click to toggle status"
-                      styleClass="cursor-pointer hover:opacity-80 transition-opacity"
-                      tooltipPosition="top"
-                    />
                   } @else {
                     <p-tag
                       [rounded]="true"
@@ -221,16 +214,6 @@
                 } @else if (col.field === 'accountNonLocked') {
                   @if (togglingLockUserId() === user.id) {
                     <p-skeleton height="1.5rem" width="5rem" />
-                  } @else if (canLockUser(user)) {
-                    <p-tag
-                      (click)="toggleUserLocked($event, user)"
-                      [rounded]="true"
-                      [severity]="user.accountNonLocked === false ? 'danger' : 'success'"
-                      [value]="user.accountNonLocked === false ? 'Locked' : 'Unlocked'"
-                      pTooltip="Click to lock or unlock"
-                      styleClass="cursor-pointer hover:opacity-80 transition-opacity"
-                      tooltipPosition="top"
-                    />
                   } @else {
                     <p-tag
                       [rounded]="true"
@@ -288,28 +271,28 @@
               alignFrozen="right"
             >
               <div class="flex items-center justify-center gap-1">
-                @if (canManageUser(user)) {
+                @if (hasRowActions(user)) {
                   <p-button
                     (click)="onEdit(user)"
                     [rounded]="true"
                     [size]="inputSize"
                     [text]="true"
-                    icon="pi pi-pencil"
-                    ariaLabel="Edit"
-                    pTooltip="Edit"
+                    icon="pi pi-eye"
+                    ariaLabel="View"
+                    pTooltip="View"
                     severity="info"
                     tooltipPosition="top"
                   />
                   <p-button
-                    (click)="onDelete($event, user)"
+                    (click)="openRowMenu($event, user)"
                     [loading]="deletingUserId() === user.id"
                     [rounded]="true"
                     [size]="inputSize"
                     [text]="true"
-                    icon="pi pi-trash"
-                    ariaLabel="Delete"
-                    pTooltip="Delete"
-                    severity="danger"
+                    icon="pi pi-ellipsis-v"
+                    ariaLabel="More actions"
+                    pTooltip="More actions"
+                    severity="secondary"
                     tooltipPosition="top"
                   />
                 }
@@ -394,7 +377,7 @@
         </div>
       </div>
 
-      @if (canManageUser(user)) {
+      @if (hasRowActions(user)) {
         <ng-template #footer>
           <div class="flex items-center justify-end gap-1">
             <p-button
@@ -402,19 +385,19 @@
               [rounded]="true"
               [size]="inputSize"
               [text]="true"
-              icon="pi pi-pencil"
-              ariaLabel="Edit"
+              icon="pi pi-eye"
+              ariaLabel="View"
               severity="info"
             />
             <p-button
-              (click)="onDelete($event, user)"
+              (click)="openRowMenu($event, user)"
               [loading]="deletingUserId() === user.id"
               [rounded]="true"
               [size]="inputSize"
               [text]="true"
-              icon="pi pi-trash"
-              ariaLabel="Delete"
-              severity="danger"
+              icon="pi pi-ellipsis-v"
+              ariaLabel="More actions"
+              severity="secondary"
             />
           </div>
         </ng-template>

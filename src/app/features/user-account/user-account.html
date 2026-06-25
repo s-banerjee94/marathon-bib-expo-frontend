@@ -60,6 +60,9 @@
                   [severity]="u.enabled ? 'success' : 'danger'"
                   [value]="u.enabled ? 'Enabled' : 'Disabled'"
                 />
+                @if (u.accountNonLocked === false) {
+                  <p-tag severity="danger" value="Locked" />
+                }
               </div>
               <span class="text-sm" style="color: var(--text-color-secondary)">
                 &#64;{{ u.username }}
@@ -388,12 +391,54 @@
                 <div class="min-w-0">
                   <h2 class="text-lg font-semibold leading-tight">Account</h2>
                   <p class="text-sm mt-0.5" style="color: var(--text-color-secondary)">
-                    Read-only account information.
+                    Status and account details.
                   </p>
                 </div>
               </div>
 
-              <div class="flex flex-col gap-5">
+              <!-- Account status controls. Enable/disable follows the role hierarchy;
+                   lock/unlock is ROOT/ADMIN only. Each switch toggles immediately. -->
+              @if (canToggleEnabled() || canToggleLock()) {
+                <div class="flex flex-col gap-4">
+                  @if (canToggleEnabled()) {
+                    <div class="flex items-center justify-between gap-3">
+                      <div class="flex flex-col min-w-0">
+                        <span class="text-sm font-medium">Enabled</span>
+                        <span class="text-xs" style="color: var(--text-color-secondary)">
+                          Allow this user to sign in.
+                        </span>
+                      </div>
+                      <p-toggleswitch
+                        [ngModel]="enabledModel()"
+                        (ngModelChange)="onToggleEnabled($event)"
+                        [disabled]="savingEnabled()"
+                        ariaLabel="Toggle enabled"
+                      />
+                    </div>
+                  }
+                  @if (canToggleLock()) {
+                    <div class="flex items-center justify-between gap-3">
+                      <div class="flex flex-col min-w-0">
+                        <span class="text-sm font-medium">Unlocked</span>
+                        <span class="text-xs" style="color: var(--text-color-secondary)">
+                          A locked account can't sign in until unlocked.
+                        </span>
+                      </div>
+                      <p-toggleswitch
+                        [ngModel]="unlockedModel()"
+                        (ngModelChange)="onToggleLocked($event)"
+                        [disabled]="savingLocked()"
+                        ariaLabel="Toggle locked"
+                      />
+                    </div>
+                  }
+                </div>
+              }
+
+              <div
+                class="flex flex-col gap-5 pt-5 border-t"
+                style="border-color: var(--surface-border)"
+              >
                 <div class="flex flex-col gap-1">
                   <span
                     class="text-xs uppercase tracking-wide"
