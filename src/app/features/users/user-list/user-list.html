@@ -221,8 +221,8 @@
                 } @else if (col.field === 'accountNonLocked') {
                   <p-tag
                     [rounded]="true"
-                    [severity]="getCellValue(user, col.field) !== false ? 'success' : 'danger'"
-                    [value]="getCellValue(user, col.field) !== false ? 'Yes' : 'No'"
+                    [severity]="user.accountNonLocked === false ? 'danger' : 'success'"
+                    [value]="user.accountNonLocked === false ? 'Locked' : 'Unlocked'"
                   />
                 } @else if (col.field === 'createdBy' || col.field === 'lastModifiedBy') {
                   @let auditUser = getCellValue(user, col.field) | userSummary;
