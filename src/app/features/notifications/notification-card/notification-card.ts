@@ -42,6 +42,16 @@ const ENTITY_LABELS: Record<NotificationEntityType, string> = {
   CAMPAIGN: 'Campaign',
 };
 
+// Roster-related notifications deep-link to the event's Participant List tab —
+// that's where their outcome is visible, and /events/{id} alone lands on the
+// dashboard tab, which is a silent same-URL no-op when the user is already
+// viewing that event (the common case right after running an import).
+const PARTICIPANT_TAB_TYPES = new Set<NotificationType>([
+  'IMPORT_COMPLETED',
+  'IMPORT_FAILED',
+  'SHORT_URLS_COMPLETED',
+]);
+
 @Component({
   selector: 'app-notification-card',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -72,14 +82,16 @@ export class NotificationCard {
     return type ? ENTITY_LABELS[type] : null;
   });
 
-  // EVENT routes by id; CAMPAIGN has no route reachable from the campaign id alone
-  // (campaigns are nested under an event), so it stays unroutable until the payload
-  // carries the parent eventId.
+  // EVENT routes by id — to the Participant List tab for roster notifications,
+  // else the event dashboard. CAMPAIGN has no route reachable from the campaign id
+  // alone (campaigns are nested under an event), so it stays unroutable until the
+  // payload carries the parent eventId.
   private readonly route = computed<unknown[] | null>(() => {
     const notif = this.notification();
-    if (!notif.entityType || !notif.entityId) return null;
-    if (notif.entityType === 'EVENT') return ['/events', notif.entityId];
-    return null;
+    if (notif.entityType !== 'EVENT' || !notif.entityId) return null;
+    return PARTICIPANT_TAB_TYPES.has(notif.type)
+      ? ['/events', notif.entityId, 'participants']
+      : ['/events', notif.entityId];
   });
   readonly routable = computed(() => this.route() !== null);
 
