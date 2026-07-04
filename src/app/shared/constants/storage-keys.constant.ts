@@ -33,6 +33,9 @@ export const STORAGE_KEYS = {
   // Layout preferences
   LAYOUT_CONFIG: 'marathon_layout_config',
 
+  // AI assistant approval mode (ask | agent | auto)
+  AI_AGENT_MODE: 'marathon_ai_agent_mode',
+
   // In-flight imports (for reload-proof progress widgets)
   ACTIVE_IMPORTS: 'marathon_active_imports',
 } as const;

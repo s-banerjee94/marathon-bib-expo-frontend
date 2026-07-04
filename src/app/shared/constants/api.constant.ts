@@ -6,3 +6,11 @@ export const BASE_URI = environment.apiBaseUrl;
 // Host root, outside the `/api` prefix. Public (no-auth) endpoints live here,
 // e.g. the participant verification short link: GET /s/{shortCode}.
 export const PUBLIC_BASE_URI = BASE_URI.replace(/\/api\/?$/, '');
+
+// The AI agent service (Python FastAPI) is a SEPARATE service from the Java API:
+// its routes are /chat, /chat/resume, /chat/stream, /chat/history, /chat/usage,
+// /chat/memory — NOT under the `/api` Java prefix. It uses Bearer-token auth (no
+// cookies), so its base can be an absolute cross-origin URL: in dev we hit it
+// directly at :8000 (bypassing the dev proxy so SSE isn't buffered); in prod it
+// is the same-origin host root. Sourced from environment.aiBaseUrl.
+export const AI_BASE_URI = environment.aiBaseUrl;

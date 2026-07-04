@@ -6,4 +6,7 @@ export const environment = {
   // localhost:8080. Same-origin means no CORS, no cross-site cookies, and the
   // HttpOnly refresh + readable csrfToken cookies work — even over plain HTTP.
   apiBaseUrl: '/api',
+  // AI agent service at the host root in prod — nginx proxies /chat* to the Python
+  // service (with response buffering OFF so SSE streams). Bearer auth, no cookies.
+  aiBaseUrl: '',
 };
