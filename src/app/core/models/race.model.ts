@@ -6,7 +6,11 @@ export interface Race {
   id: number;
   raceName: string;
   raceDescription?: string;
-  /** Reporting time as a UTC instant (ISO-8601); interpreted in the parent event's timezone. */
+  /** Race-day reporting date (yyyy-MM-dd) as local wall-clock in the parent
+   * event's timezone; null when unset. Always paired with reportingTime. */
+  reportingDate?: string;
+  /** Race-day reporting time (HH:mm, 24h) as local wall-clock in the parent
+   * event's timezone; null when unset. Always paired with reportingDate. */
   reportingTime?: string;
   eventId: number;
   organizationId?: number;
@@ -17,14 +21,18 @@ export interface Race {
   lastModifiedBy?: string;
 }
 
+// reportingDate + reportingTime are local wall-clock (the server interprets them
+// in the event's timezone — no client TZ math). Send both or neither.
 export interface CreateRaceRequest {
   raceName: string;
   raceDescription?: string;
+  reportingDate?: string;
   reportingTime?: string;
 }
 
 export interface UpdateRaceRequest {
   raceName?: string;
   raceDescription?: string;
+  reportingDate?: string;
   reportingTime?: string;
 }
