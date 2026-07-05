@@ -1,4 +1,5 @@
-// Response from the public short-link endpoint: GET /s/{shortCode} (no auth).
+// Response from the public short-link endpoint:
+// GET /api/public/short-links/{shortCode} (no auth).
 // Matches the backend ParticipantVerificationResponse DTO.
 export interface ParticipantVerificationResponse {
   // Event
