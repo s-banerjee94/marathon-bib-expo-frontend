@@ -92,7 +92,11 @@ export const appConfig: ApplicationConfig = {
           // toggle runs its own startViewTransition without this marker.
           const root = inject(DOCUMENT).documentElement;
           root.classList.add('route-transition');
-          transition.finished.finally(() => root.classList.remove('route-transition'));
+          transition.finished
+            .finally(() => root.classList.remove('route-transition'))
+            // Rapid navigations abort the previous transition; `finished` then
+            // rejects and would otherwise surface as an unhandled-promise error.
+            .catch(() => {});
         },
       }),
     ),
