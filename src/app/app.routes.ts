@@ -15,6 +15,22 @@ export const routes: Routes = [
     title: pageTitle('Login'),
   },
   {
+    // Public "forgot password" page (no auth, no app shell), linked from login.
+    path: 'forgot-password',
+    loadComponent: () =>
+      import('./features/auth/forgot-password/forgot-password').then((m) => m.ForgotPassword),
+    title: pageTitle('Forgot Password'),
+  },
+  {
+    // Public reset-password page (no auth, no app shell). Reached via the
+    // /reset-password?token=… link issued by "forgot password" or an admin.
+    // The path mirrors the backend's PASSWORD_RESET_PATH — keep the two in sync.
+    path: 'reset-password',
+    loadComponent: () =>
+      import('./features/auth/reset-password/reset-password').then((m) => m.ResetPassword),
+    title: pageTitle('Reset Password'),
+  },
+  {
     path: 'dashboard',
     loadComponent: () => import('./features/dashboard/dashboard').then((m) => m.Dashboard),
     canActivate: [authGuard],

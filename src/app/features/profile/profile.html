@@ -312,6 +312,31 @@
               </div>
 
               <div class="flex flex-col gap-4">
+                <!-- Current password -->
+                <div class="flex flex-col gap-1">
+                  <p-floatlabel variant="on">
+                    <p-password
+                      #currentPassword="ngModel"
+                      [(ngModel)]="passwords.currentPassword"
+                      [feedback]="false"
+                      [fluid]="true"
+                      [maxlength]="100"
+                      [toggleMask]="true"
+                      autocomplete="current-password"
+                      inputId="currentPassword"
+                      name="currentPassword"
+                      required
+                      size="small"
+                    />
+                    <label for="currentPassword">Current Password *</label>
+                  </p-floatlabel>
+                  @if (shouldShowError(currentPassword, passwordForm.submitted)) {
+                    <p-message [size]="inputSize" severity="error" variant="simple">
+                      Current password is required.
+                    </p-message>
+                  }
+                </div>
+
                 <!-- New password -->
                 <div class="flex flex-col gap-1">
                   <p-floatlabel variant="on">
@@ -375,7 +400,7 @@
                 style="border-color: var(--surface-border)"
               >
                 <p-button
-                  [disabled]="savingPassword() || !newPasswordValid || !passwordsMatch"
+                  [disabled]="savingPassword() || !canSavePassword"
                   [loading]="savingPassword()"
                   icon="pi pi-check"
                   label="Update"

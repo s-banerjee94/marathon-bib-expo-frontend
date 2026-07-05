@@ -15,7 +15,7 @@ export function buildHttpParams(params: PageableParams): HttpParams {
     httpParams = httpParams.set('size', params.size.toString());
   }
   if (params.search) {
-    httpParams = httpParams.set('search', params.search);
+    httpParams = httpParams.set('search', params.search.trim());
   }
   if (params.sort && params.sort.length > 0) {
     params.sort.forEach((sortParam) => {
@@ -27,6 +27,9 @@ export function buildHttpParams(params: PageableParams): HttpParams {
   }
   if (params.organizationId !== undefined) {
     httpParams = httpParams.set('organizationId', params.organizationId.toString());
+  }
+  if (params.eventId !== undefined) {
+    httpParams = httpParams.set('eventId', params.eventId.toString());
   }
   if (params.enabled !== undefined) {
     httpParams = httpParams.set('enabled', params.enabled.toString());

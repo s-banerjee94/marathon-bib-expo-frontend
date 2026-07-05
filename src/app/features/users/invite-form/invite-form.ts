@@ -26,6 +26,11 @@ import { ErrorHandlerService } from '../../../core/services/error-handler.servic
 import { ToastService } from '../../../core/services/toast.service';
 import { roleRequiresEvent, roleRequiresOrganization } from '../user-form/user-form.utils';
 import { shouldShowError } from '../../../shared/utils/form.utils';
+import { canNativeShare, copyToClipboard, shareUrl } from '../../../shared/utils/clipboard.utils';
+import {
+  DELIVERY_CHANNEL_META,
+  DELIVERY_CHANNEL_OPTIONS,
+} from '../../../shared/constants/delivery-channels.constant';
 import { FORM_INPUT_SIZE } from '../../../shared/constants/form.constants';
 import { OrganizationSelector } from '../../../layout/organization-selector/organization-selector';
 import { EventSelector } from '../../../layout/event-selector/event-selector';
@@ -67,22 +72,15 @@ export class InviteForm implements OnInit {
 
   readonly inputSize = FORM_INPUT_SIZE;
   readonly roleLabels = ROLE_LABELS;
-  readonly canShare = typeof navigator !== 'undefined' && typeof navigator.share === 'function';
+  readonly canShare = canNativeShare();
   // Hide completed/cancelled events from the distributor event picker.
   readonly excludedEventStatuses = [EventStatus.COMPLETED, EventStatus.CANCELLED];
   shouldShowError = shouldShowError;
 
   // Channels the issuer can have the backend deliver the link on (EMAIL is
   // delivery-only and never offered here). Display metadata is keyed by channel.
-  readonly channelOptions: { label: string; value: DeliveryChannel; icon: string }[] = [
-    { label: 'WhatsApp', value: 'WHATSAPP', icon: 'pi pi-whatsapp' },
-    { label: 'SMS', value: 'SMS', icon: 'pi pi-comment' },
-  ];
-  readonly channelMeta: Record<string, { label: string; icon: string }> = {
-    WHATSAPP: { label: 'WhatsApp', icon: 'pi pi-whatsapp' },
-    SMS: { label: 'SMS', icon: 'pi pi-comment' },
-    EMAIL: { label: 'Email', icon: 'pi pi-envelope' },
-  };
+  readonly channelOptions = DELIVERY_CHANNEL_OPTIONS;
+  readonly channelMeta = DELIVERY_CHANNEL_META;
 
   currentUserRole = signal<UserRole | null>(null);
   availableRoles = signal<RoleOption[]>([]);
@@ -239,59 +237,23 @@ export class InviteForm implements OnInit {
   async copyLink(): Promise<void> {
     const url = this.inviteUrl();
     if (!url) return;
-    const copied = await this.writeToClipboard(url);
-    if (copied) {
+    if (await copyToClipboard(url)) {
       this.toast.success('Invite link copied to clipboard');
     } else {
       this.toast.error('Could not copy the link');
     }
   }
 
-  // navigator.clipboard only exists in secure contexts (https/localhost), so on a
-  // phone hitting the dev server over plain-http LAN it's undefined — fall back to
-  // the legacy execCommand path via a temporary textarea.
-  private async writeToClipboard(text: string): Promise<boolean> {
-    if (navigator.clipboard?.writeText) {
-      try {
-        await navigator.clipboard.writeText(text);
-        return true;
-      } catch {
-        // Permission/context failure — try the legacy path below.
-      }
-    }
-    try {
-      const textarea = document.createElement('textarea');
-      textarea.value = text;
-      textarea.setAttribute('readonly', '');
-      textarea.style.position = 'fixed';
-      textarea.style.top = '0';
-      textarea.style.opacity = '0';
-      document.body.appendChild(textarea);
-      textarea.focus();
-      textarea.select();
-      textarea.setSelectionRange(0, text.length);
-      const ok = document.execCommand('copy');
-      document.body.removeChild(textarea);
-      return ok;
-    } catch {
-      return false;
-    }
-  }
-
   async shareLink(): Promise<void> {
     const url = this.inviteUrl();
     if (!url) return;
-    try {
-      await navigator.share({
-        title: 'User invite',
-        text: 'Use this link to create your account',
-        url,
-      });
-    } catch (err) {
-      // The user dismissed the share sheet — don't fall back to copy.
-      if (err instanceof DOMException && err.name === 'AbortError') return;
-      await this.copyLink();
-    }
+    const outcome = await shareUrl({
+      title: 'User invite',
+      text: 'Use this link to create your account',
+      url,
+    });
+    // The user dismissing the share sheet is not a failure — don't also copy.
+    if (outcome === 'failed') await this.copyLink();
   }
 
   close(): void {

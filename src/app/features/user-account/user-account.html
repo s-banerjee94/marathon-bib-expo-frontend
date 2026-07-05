@@ -101,8 +101,8 @@
         </ng-template>
       </p-card>
 
-      <!-- Three equal-height columns -->
-      <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+      <!-- Two equal-height columns -->
+      <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
         <!-- Personal information -->
         <p-card
           class="h-full shadow-lg"
@@ -258,115 +258,6 @@
           </ng-template>
         </p-card>
 
-        <!-- Password -->
-        <p-card
-          class="h-full shadow-lg"
-          styleClass="h-full"
-          [pt]="{
-            body: { class: 'flex h-full flex-col' },
-            content: { class: 'flex flex-1 flex-col' },
-          }"
-        >
-          <ng-template pTemplate="content">
-            <form
-              #passwordForm="ngForm"
-              (ngSubmit)="onSavePassword(passwordForm)"
-              class="flex flex-1 flex-col gap-5"
-            >
-              <div class="flex items-start gap-3">
-                <span
-                  class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg"
-                  style="
-                    background: color-mix(in srgb, var(--primary-color), transparent 90%);
-                    color: var(--primary-color);
-                  "
-                >
-                  <i class="pi pi-lock text-lg"></i>
-                </span>
-                <div class="min-w-0">
-                  <h2 class="text-lg font-semibold leading-tight">Reset Password</h2>
-                  <p class="text-sm mt-0.5" style="color: var(--text-color-secondary)">
-                    Set a new password for this user.
-                  </p>
-                </div>
-              </div>
-
-              <div class="flex flex-col gap-4">
-                <!-- New password -->
-                <div class="flex flex-col gap-1">
-                  <p-floatlabel variant="on">
-                    <p-password
-                      #newPassword="ngModel"
-                      [(ngModel)]="passwords.newPassword"
-                      [feedback]="true"
-                      [fluid]="true"
-                      [maxlength]="100"
-                      [toggleMask]="true"
-                      appendTo="body"
-                      autocomplete="new-password"
-                      inputId="newPassword"
-                      name="newPassword"
-                      size="small"
-                    />
-                    <label for="newPassword">New Password *</label>
-                  </p-floatlabel>
-                  @if (
-                    (newPassword.touched || passwordForm.submitted) &&
-                    passwords.newPassword.length > 0 &&
-                    !newPasswordValid
-                  ) {
-                    <p-message [size]="inputSize" severity="error" variant="simple">
-                      Password must be at least 8 characters.
-                    </p-message>
-                  }
-                </div>
-
-                <!-- Confirm password -->
-                <div class="flex flex-col gap-1">
-                  <p-floatlabel variant="on">
-                    <p-password
-                      #confirmPassword="ngModel"
-                      [(ngModel)]="passwords.confirmPassword"
-                      [feedback]="false"
-                      [fluid]="true"
-                      [maxlength]="100"
-                      [toggleMask]="true"
-                      autocomplete="new-password"
-                      inputId="confirmPassword"
-                      name="confirmPassword"
-                      size="small"
-                    />
-                    <label for="confirmPassword">Confirm Password *</label>
-                  </p-floatlabel>
-                  @if (
-                    (confirmPassword.touched || passwordForm.submitted) &&
-                    passwords.confirmPassword.length > 0 &&
-                    !passwordsMatch
-                  ) {
-                    <p-message [size]="inputSize" severity="error" variant="simple">
-                      Passwords do not match.
-                    </p-message>
-                  }
-                </div>
-              </div>
-
-              <div
-                class="flex justify-end pt-4 mt-auto border-t"
-                style="border-color: var(--surface-border)"
-              >
-                <p-button
-                  [disabled]="savingPassword() || !newPasswordValid || !passwordsMatch"
-                  [loading]="savingPassword()"
-                  icon="pi pi-check"
-                  label="Update"
-                  size="small"
-                  type="submit"
-                />
-              </div>
-            </form>
-          </ng-template>
-        </p-card>
-
         <!-- Account (read-only) -->
         <p-card
           class="h-full shadow-lg"
@@ -396,7 +287,7 @@
                 </div>
               </div>
 
-              <!-- Account status controls. Enable/disable follows the role hierarchy;
+              <!-- Account status controls. Never shown for your own account;
                    lock/unlock is ROOT/ADMIN only. Each switch toggles immediately. -->
               @if (canToggleEnabled() || canToggleLock()) {
                 <div class="flex flex-col gap-4">
@@ -431,6 +322,25 @@
                         (ngModelChange)="onToggleLocked($event)"
                         [disabled]="savingLocked()"
                         ariaLabel="Toggle locked"
+                      />
+                    </div>
+                  }
+
+                  @if (canSendResetLink()) {
+                    <div class="flex items-center justify-between gap-3">
+                      <div class="flex flex-col min-w-0">
+                        <span class="text-sm font-medium">Password</span>
+                        <span class="text-xs" style="color: var(--text-color-secondary)">
+                          Issue a one-time link for this user to set a new password.
+                        </span>
+                      </div>
+                      <p-button
+                        (onClick)="openResetLinkDialog()"
+                        [size]="inputSize"
+                        icon="pi pi-key"
+                        label="Send reset link"
+                        severity="secondary"
+                        styleClass="whitespace-nowrap"
                       />
                     </div>
                   }

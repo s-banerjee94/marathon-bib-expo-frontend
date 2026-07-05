@@ -41,6 +41,7 @@ import { ParticipantForm } from '../participant-form/participant-form';
 import { ParticipantDetails } from '../participant-details/participant-details';
 import { PARTICIPANT_COLUMNS } from '../../../shared/constants/participant-columns.constant';
 import { BUTTON_SIZE } from '../../../shared/constants/form.constants';
+import { copyToClipboard, shareUrl } from '../../../shared/utils/clipboard.utils';
 import { TableColumn } from '../../../shared/models/table-config.model';
 import { MobileTabBar, TabItem } from '../../../shared/components/mobile-tab-bar/mobile-tab-bar';
 import { EmptyIllustration } from '../../../shared/illustrations/empty-illustration';
@@ -325,21 +326,14 @@ export class ParticipantList implements OnInit {
     const url = this.detailsShareUrl();
     if (!url) return;
 
-    if (navigator.share) {
-      try {
-        await navigator.share({ title: 'Participant details', url });
-        return;
-      } catch (err) {
-        // The user dismissed the share sheet — leave it at that, don't also copy.
-        if (err instanceof DOMException && err.name === 'AbortError') return;
-        // Any other failure falls through to the clipboard copy below.
-      }
-    }
+    // Shared or dismissed by the user — done either way; only a real share
+    // failure (or no Web Share API) falls back to the clipboard copy.
+    const outcome = await shareUrl({ title: 'Participant details', url });
+    if (outcome !== 'failed') return;
 
-    try {
-      await navigator.clipboard.writeText(url);
+    if (await copyToClipboard(url)) {
       this.toast.success('Shareable link copied to clipboard');
-    } catch {
+    } else {
       this.toast.error('Could not copy the link');
     }
   }

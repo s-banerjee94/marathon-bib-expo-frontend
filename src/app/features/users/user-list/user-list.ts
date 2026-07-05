@@ -1,8 +1,15 @@
 import { Component, computed, DestroyRef, inject, signal, ViewChild } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { ActivatedRoute, Params, ParamMap, Router, RouterLink } from '@angular/router';
+import {
+  ActivatedRoute,
+  NavigationEnd,
+  Params,
+  ParamMap,
+  Router,
+  RouterLink,
+} from '@angular/router';
 import { EMPTY, Subject } from 'rxjs';
-import { catchError, debounceTime, distinctUntilChanged, switchMap } from 'rxjs/operators';
+import { catchError, debounceTime, distinctUntilChanged, filter, switchMap } from 'rxjs/operators';
 import { TableLazyLoadEvent, TableModule } from 'primeng/table';
 import { CommonModule } from '@angular/common';
 import { Popover, PopoverModule } from 'primeng/popover';
@@ -32,6 +39,7 @@ import { STORAGE_KEYS } from '../../../shared/constants/storage-keys.constant';
 import { USER_SORT_OPTIONS } from '../../../shared/constants/sort-options.constant';
 import { UserForm } from '../user-form/user-form';
 import { InviteForm } from '../invite-form/invite-form';
+import { ResetLinkForm } from '../reset-link-form/reset-link-form';
 import { UserListBus, UserMutation } from '../user-list-bus.service';
 import { DefaultValuePipe } from '../../../shared/pipes/default-value.pipe';
 import { EventNamePipe } from '../../../shared/pipes/event-name-pipe';
@@ -46,7 +54,13 @@ import {
   FULL_ROLE_FILTER_OPTIONS,
   ORG_ROLE_FILTER_OPTIONS,
 } from '../../../shared/constants/role-filter-options.constant';
-import { userCanManage } from '../../../shared/utils/user-permissions.utils';
+import {
+  userCanIssueResetLink,
+  userCanManage,
+  userCanToggleEnabled,
+  userCanToggleLocked,
+} from '../../../shared/utils/user-permissions.utils';
+import { consumeCreateNavigationState } from '../../../shared/utils/navigation-state.utils';
 import { ConfirmationService } from 'primeng/api';
 import { DialogService } from 'primeng/dynamicdialog';
 import { ListShell } from '../../../shared/components/list/list-shell/list-shell';
@@ -197,6 +211,23 @@ export class UserList extends BaseTableComponent<User, UserFilterPreferences> {
     this.userListBus.mutations$
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((mutation) => this.applyUserMutation(mutation));
+
+    // Dashboards and the `n u` shortcut deep-link here with { create: true,
+    // createRole? } in the navigation state. NavigationEnd covers both arriving
+    // from another page and re-triggering while already on this one (the caller
+    // navigates with onSameUrlNavigation: 'reload').
+    this.router.events
+      .pipe(
+        filter((event) => event instanceof NavigationEnd),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe(() => this.consumeCreateRequest());
+  }
+
+  private consumeCreateRequest(): void {
+    const request = consumeCreateNavigationState();
+    if (!request) return;
+    this.openCreateDialog((request.createRole as UserRole | null) ?? undefined);
   }
 
   private applyUserMutation(mutation: UserMutation): void {
@@ -364,17 +395,27 @@ export class UserList extends BaseTableComponent<User, UserFilterPreferences> {
     return userCanManage(this.authService.currentUser(), user);
   }
 
-  // Locking is ROOT/ADMIN-only and stricter than enable/disable. Reuse the
-  // management hierarchy on top so an ADMIN still can't lock itself, a ROOT, or
-  // another ADMIN.
-  canLockUser(user: User): boolean {
-    return this.authService.hasAnyRole([UserRole.ROOT, UserRole.ADMIN]) && this.canManageUser(user);
+  // Enable/disable and lock follow their own backend rules (user-permissions.utils):
+  // never yourself, ROOT may target any other user (even another ROOT), locking is
+  // additionally ROOT/ADMIN-only.
+  canToggleEnabled(user: User): boolean {
+    return userCanToggleEnabled(this.authService.currentUser(), user);
+  }
+
+  canToggleLocked(user: User): boolean {
+    return userCanToggleLocked(this.authService.currentUser(), user);
+  }
+
+  // Reset links follow their own backend rule: userCanManage plus self-service
+  // (except DISTRIBUTOR), and ROOT may target anyone including other ROOTs.
+  canSendResetLink(user: User): boolean {
+    return userCanIssueResetLink(this.authService.currentUser(), user);
   }
 
   // The action kebab only appears when at least one item would be available.
-  // canLockUser implies canManageUser, so this collapses to canManageUser.
+  // canToggleLocked implies canToggleEnabled, so it doesn't need its own check.
   hasRowActions(user: User): boolean {
-    return this.canManageUser(user);
+    return this.canManageUser(user) || this.canToggleEnabled(user) || this.canSendResetLink(user);
   }
 
   // Open the shared action panel for this row, remembering the kebab button so any
@@ -400,6 +441,13 @@ export class UserList extends BaseTableComponent<User, UserFilterPreferences> {
   requestDelete(user: User): void {
     this.rowActions.hide();
     this.onDelete(this.actionAnchor, user);
+  }
+
+  // "Send reset link": close the panel and collect the one-time link (and any
+  // delivery outcome) in a dialog that mirrors the invite-link design.
+  requestResetLink(user: User): void {
+    this.rowActions.hide();
+    this.openDialog(ResetLinkForm, 'Send Reset Link', { user });
   }
 
   toggleUserLocked(target: EventTarget | null, user: User): void {
@@ -595,15 +643,6 @@ export class UserList extends BaseTableComponent<User, UserFilterPreferences> {
     this.filterSort.set(sortParam ? [sortParam] : []);
 
     this.loadData();
-
-    // Dashboards deep-link here with ?create=true (optionally &createRole=…) to start
-    // a new user. createRole is distinct from the `role` filter param above so the
-    // two don't collide. Strip the flags from the URL and open the create dialog.
-    if (params.get('create') === 'true') {
-      const createRole = params.get('createRole') as UserRole | null;
-      this.pushStateToUrl({ create: null, createRole: null });
-      this.openCreateDialog(createRole ?? undefined);
-    }
   }
 
   protected override getDefaultFilterPreferences(): UserFilterPreferences {

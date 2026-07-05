@@ -15,6 +15,7 @@ import { EventService } from '../../core/services/event.service';
 import { ImportProgressService } from '../../core/services/import-progress.service';
 import { Event } from '../../core/models/event.model';
 import { ImportMode } from '../../core/models/participant.model';
+import { copyToClipboard } from '../../shared/utils/clipboard.utils';
 import { ColumnMapper } from './column-mapper/column-mapper';
 import {
   BUCKET_FIELDS,
@@ -272,10 +273,9 @@ export class ImportMapper {
   }
 
   protected async copyJson(): Promise<void> {
-    try {
-      await navigator.clipboard.writeText(this.mappingConfigJson());
+    if (await copyToClipboard(this.mappingConfigJson())) {
       this.toast.success('Mapping JSON copied to clipboard.');
-    } catch {
+    } else {
       this.toast.error('Could not copy to clipboard.');
     }
   }

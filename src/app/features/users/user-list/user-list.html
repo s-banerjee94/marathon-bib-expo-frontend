@@ -6,48 +6,71 @@
     <div class="flex flex-col" style="min-width: 14rem">
       <!-- Status switches: label/icon left, switch right. Flipping one closes the
            panel and raises a confirm at the kebab. -->
-      <div class="flex flex-col p-1.5">
-        <div class="flex items-center justify-between gap-4 px-2 py-1.5">
-          <span class="flex items-center gap-2 text-sm">
-            <i class="pi pi-check-circle"></i>
-            {{ au.enabled ? 'Enabled' : 'Disabled' }}
-          </span>
-          <p-toggleswitch
-            [dt]="switchStatusDt"
-            [ngModel]="au.enabled"
-            (ngModelChange)="requestToggleEnabled(au)"
-            ariaLabel="Toggle enabled"
-          />
-        </div>
-
-        @if (canLockUser(au)) {
+      @if (canToggleEnabled(au)) {
+        <div class="flex flex-col p-1.5">
           <div class="flex items-center justify-between gap-4 px-2 py-1.5">
             <span class="flex items-center gap-2 text-sm">
-              <i [class]="au.accountNonLocked === false ? 'pi pi-lock' : 'pi pi-lock-open'"></i>
-              {{ au.accountNonLocked === false ? 'Locked' : 'Unlocked' }}
+              <i class="pi pi-check-circle"></i>
+              {{ au.enabled ? 'Enabled' : 'Disabled' }}
             </span>
             <p-toggleswitch
               [dt]="switchStatusDt"
-              [ngModel]="au.accountNonLocked !== false"
-              (ngModelChange)="requestToggleLocked(au)"
-              ariaLabel="Toggle locked"
+              [ngModel]="au.enabled"
+              (ngModelChange)="requestToggleEnabled(au)"
+              ariaLabel="Toggle enabled"
             />
           </div>
-        }
-      </div>
+
+          @if (canToggleLocked(au)) {
+            <div class="flex items-center justify-between gap-4 px-2 py-1.5">
+              <span class="flex items-center gap-2 text-sm">
+                <i [class]="au.accountNonLocked === false ? 'pi pi-lock' : 'pi pi-lock-open'"></i>
+                {{ au.accountNonLocked === false ? 'Locked' : 'Unlocked' }}
+              </span>
+              <p-toggleswitch
+                [dt]="switchStatusDt"
+                [ngModel]="au.accountNonLocked !== false"
+                (ngModelChange)="requestToggleLocked(au)"
+                ariaLabel="Toggle locked"
+              />
+            </div>
+          }
+        </div>
+      }
+
+      <!-- Send reset link -->
+      @if (canSendResetLink(au)) {
+        <div
+          [class.border-t]="canToggleEnabled(au)"
+          class="p-1.5"
+          style="border-color: var(--surface-border)"
+        >
+          <p-button
+            (onClick)="requestResetLink(au)"
+            [text]="true"
+            icon="pi pi-key"
+            label="Send reset link"
+            severity="secondary"
+            size="small"
+            styleClass="w-full !justify-start"
+          />
+        </div>
+      }
 
       <!-- Delete -->
-      <div class="border-t p-1.5" style="border-color: var(--surface-border)">
-        <p-button
-          (onClick)="requestDelete(au)"
-          [text]="true"
-          icon="pi pi-trash"
-          label="Delete"
-          severity="danger"
-          size="small"
-          styleClass="w-full !justify-start"
-        />
-      </div>
+      @if (canManageUser(au)) {
+        <div class="border-t p-1.5" style="border-color: var(--surface-border)">
+          <p-button
+            (onClick)="requestDelete(au)"
+            [text]="true"
+            icon="pi pi-trash"
+            label="Delete"
+            severity="danger"
+            size="small"
+            styleClass="w-full !justify-start"
+          />
+        </div>
+      }
     </div>
   }
 </p-popover>
@@ -320,7 +343,7 @@
               alignFrozen="right"
             >
               <div class="flex items-center justify-center gap-1">
-                @if (hasRowActions(user)) {
+                @if (canManageUser(user)) {
                   <p-button
                     (click)="onEdit(user)"
                     [rounded]="true"
@@ -332,6 +355,8 @@
                     severity="info"
                     tooltipPosition="top"
                   />
+                }
+                @if (hasRowActions(user)) {
                   <p-button
                     (click)="openRowActions($event, user)"
                     [loading]="deletingUserId() === user.id"
@@ -429,15 +454,17 @@
       @if (hasRowActions(user)) {
         <ng-template #footer>
           <div class="flex items-center justify-end gap-1">
-            <p-button
-              (click)="onEdit(user)"
-              [rounded]="true"
-              [size]="inputSize"
-              [text]="true"
-              icon="pi pi-eye"
-              ariaLabel="View"
-              severity="info"
-            />
+            @if (canManageUser(user)) {
+              <p-button
+                (click)="onEdit(user)"
+                [rounded]="true"
+                [size]="inputSize"
+                [text]="true"
+                icon="pi pi-eye"
+                ariaLabel="View"
+                severity="info"
+              />
+            }
             <p-button
               (click)="openRowActions($event, user)"
               [loading]="deletingUserId() === user.id"

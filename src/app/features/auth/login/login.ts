@@ -3,7 +3,6 @@ import { DOCUMENT, isPlatformBrowser } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
-import { ToastService } from '../../../core/services/toast.service';
 import { InputTextModule } from 'primeng/inputtext';
 import { IconFieldModule } from 'primeng/iconfield';
 import { InputIconModule } from 'primeng/inputicon';
@@ -62,7 +61,6 @@ export class Login implements OnInit, OnDestroy {
   ];
 
   private readonly authService = inject(AuthService);
-  private readonly toast = inject(ToastService);
   // Access loading state from auth service
   isLoading = this.authService.isLoading;
   private readonly router = inject(Router);
@@ -115,6 +113,6 @@ export class Login implements OnInit, OnDestroy {
   }
 
   onForgotPassword(): void {
-    this.toast.info('Contact your administrator to reset your password.', 'Forgot password?');
+    this.router.navigate(['/forgot-password']);
   }
 }

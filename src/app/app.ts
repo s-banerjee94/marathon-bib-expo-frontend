@@ -61,9 +61,15 @@ export class App {
     ),
     { initialValue: this.document.location?.pathname ?? this.router.url },
   );
+  private readonly publicPaths = [
+    '/login',
+    '/accept-invite',
+    '/forgot-password',
+    '/reset-password',
+  ];
   isPublicRoute = computed(() => {
     const url = this.currentUrl().split('?')[0];
-    return url === '/login' || url === '/s' || url.startsWith('/s/') || url === '/accept-invite';
+    return this.publicPaths.includes(url) || url === '/s' || url.startsWith('/s/');
   });
 
   layoutClasses = computed(() => {

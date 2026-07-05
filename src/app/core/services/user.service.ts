@@ -1,9 +1,16 @@
-import { HttpClient, HttpParams } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
-import { CreateUserRequest, UpdateUserRequest, User } from '../models/user.model';
+import {
+  ChangePasswordRequest,
+  CreateUserRequest,
+  UpdateUserRequest,
+  User,
+} from '../models/user.model';
 import { PageableParams, PageableResponse } from '../models/api.model';
+import { IssueResetLinkRequest, PasswordResetLinkResponse } from '../models/password-reset.model';
 import { BASE_URI } from '../../shared/constants/api.constant';
+import { buildHttpParams } from '../../shared/utils/http-params.utils';
 
 @Injectable({
   providedIn: 'root',
@@ -17,43 +24,7 @@ export class UserService {
   }
 
   searchUsers(params: PageableParams): Observable<PageableResponse<User>> {
-    let httpParams = new HttpParams();
-
-    if (params.page !== undefined) {
-      httpParams = httpParams.set('page', params.page.toString());
-    }
-
-    if (params.size !== undefined) {
-      httpParams = httpParams.set('size', params.size.toString());
-    }
-
-    if (params.sort && params.sort.length > 0) {
-      params.sort.forEach((sortParam) => {
-        httpParams = httpParams.append('sort', sortParam);
-      });
-    }
-
-    if (params.search) {
-      httpParams = httpParams.set('search', params.search.trim());
-    }
-
-    if (params.enabled !== undefined) {
-      httpParams = httpParams.set('enabled', params.enabled.toString());
-    }
-
-    if (params.role) {
-      httpParams = httpParams.set('role', params.role);
-    }
-
-    if (params.organizationId !== undefined) {
-      httpParams = httpParams.set('organizationId', params.organizationId.toString());
-    }
-
-    if (params.eventId !== undefined) {
-      httpParams = httpParams.set('eventId', params.eventId.toString());
-    }
-
-    return this.http.get<PageableResponse<User>>(this.apiUrl, { params: httpParams });
+    return this.http.get<PageableResponse<User>>(this.apiUrl, { params: buildHttpParams(params) });
   }
 
   getUserById(id: number): Observable<User> {
@@ -72,6 +43,29 @@ export class UserService {
 
   updateUser(id: number, request: UpdateUserRequest): Observable<User> {
     return this.http.patch<User>(`${this.apiUrl}/${id}`, request);
+  }
+
+  /**
+   * Change the current user's own password (any role). Requires the current
+   * password; the backend responds 204 with no body and the session stays valid.
+   */
+  changeMyPassword(request: ChangePasswordRequest): Observable<void> {
+    return this.http.put<void>(`${this.apiUrl}/me/password`, request);
+  }
+
+  /**
+   * Issue a one-time, short-lived password-reset link for a user (admin flow).
+   * The link is always returned for manual sharing; supplying deliveryChannels
+   * also sends it to the user's own registered phone.
+   */
+  issueResetLink(
+    userId: number,
+    request: IssueResetLinkRequest = {},
+  ): Observable<PasswordResetLinkResponse> {
+    return this.http.post<PasswordResetLinkResponse>(
+      `${this.apiUrl}/${userId}/password-reset-link`,
+      request,
+    );
   }
 
   toggleEnabled(id: number): Observable<User> {

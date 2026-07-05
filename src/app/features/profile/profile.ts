@@ -30,13 +30,15 @@ import { EventNamePipe } from '../../shared/pipes/event-name-pipe';
 import { EventLogoPipe } from '../../shared/pipes/event-logo-pipe';
 import { InitialsPipe } from '../../shared/pipes/initials-pipe';
 import { ImageCropDialog } from '../../shared/components/image-crop-dialog/image-crop-dialog';
-import { ROLE_LABELS, UpdateUserRequest, User, UserRole } from '../../core/models/user.model';
+import { ROLE_LABELS, UpdateUserRequest, User } from '../../core/models/user.model';
 import { buildDirtyPatch, shouldShowError } from '../../shared/utils/form.utils';
 import { getInitials } from '../../shared/utils/initials.util';
-import { FORM_INPUT_SIZE } from '../../shared/constants/form.constants';
-
-const PASSWORD_MIN = 8;
-const PASSWORD_MAX = 100;
+import { roleRequiresEmailPhone } from '../users/user-form/user-form.utils';
+import {
+  FORM_INPUT_SIZE,
+  PASSWORD_MAX_LENGTH,
+  PASSWORD_MIN_LENGTH,
+} from '../../shared/constants/form.constants';
 
 /**
  * Account/settings page for the currently authenticated user. Lets a user view
@@ -84,7 +86,7 @@ export class Profile implements OnInit {
 
   // Editable form models (kept separate from the cached user so Reset works).
   profile = { fullName: '', email: '', phoneNumber: '' };
-  passwords = { newPassword: '', confirmPassword: '' };
+  passwords = { currentPassword: '', newPassword: '', confirmPassword: '' };
 
   savingProfile = signal(false);
   savingPassword = signal(false);
@@ -105,25 +107,21 @@ export class Profile implements OnInit {
     const valid = url && url.trim() ? url : undefined;
     return valid && valid !== this.failedAvatarUrl() ? valid : undefined;
   });
-  // Email/phone are mandatory for ADMIN and organizer roles, optional for ROOT and
-  // DISTRIBUTOR (mirrors the backend's ROLES_REQUIRING_EMAIL_PHONE).
-  contactRequired = computed(() => {
-    const role = this.user()?.role;
-    return (
-      role === UserRole.ADMIN ||
-      role === UserRole.ORGANIZER_ADMIN ||
-      role === UserRole.ORGANIZER_USER
-    );
-  });
+  // Email/phone are mandatory for ADMIN and organizer roles (mirrors the backend).
+  contactRequired = computed(() => roleRequiresEmailPhone(this.user()?.role ?? null));
 
   get newPasswordValid(): boolean {
     // form.resetForm() writes null back into the bound model, so guard against it.
     const value = this.passwords.newPassword ?? '';
-    return value.length >= PASSWORD_MIN && value.length <= PASSWORD_MAX;
+    return value.length >= PASSWORD_MIN_LENGTH && value.length <= PASSWORD_MAX_LENGTH;
   }
 
   get passwordsMatch(): boolean {
     return this.passwords.newPassword === this.passwords.confirmPassword;
+  }
+
+  get canSavePassword(): boolean {
+    return !!this.passwords.currentPassword && this.newPasswordValid && this.passwordsMatch;
   }
 
   ngOnInit(): void {
@@ -170,23 +168,26 @@ export class Profile implements OnInit {
   // ── Password ───────────────────────────────────────────────────────────────
 
   onSavePassword(form: NgForm): void {
-    if (!this.newPasswordValid || !this.passwordsMatch) return;
-    const id = this.user()?.id;
-    if (id == null) return;
+    if (!this.canSavePassword) return;
 
     this.savingPassword.set(true);
-    this.userService.updateUser(id, { password: this.passwords.newPassword }).subscribe({
-      next: () => {
-        this.savingPassword.set(false);
-        this.passwords = { newPassword: '', confirmPassword: '' };
-        form.resetForm();
-        this.toast.success('Password updated');
-      },
-      error: (error) => {
-        this.savingPassword.set(false);
-        this.errorHandler.showError(error);
-      },
-    });
+    this.userService
+      .changeMyPassword({
+        currentPassword: this.passwords.currentPassword,
+        newPassword: this.passwords.newPassword,
+      })
+      .subscribe({
+        next: () => {
+          this.savingPassword.set(false);
+          this.passwords = { currentPassword: '', newPassword: '', confirmPassword: '' };
+          form.resetForm();
+          this.toast.success('Password updated');
+        },
+        error: (error) => {
+          this.savingPassword.set(false);
+          this.errorHandler.showError(error);
+        },
+      });
   }
 
   // ── Avatar ─────────────────────────────────────────────────────────────────

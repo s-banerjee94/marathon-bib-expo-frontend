@@ -19,6 +19,17 @@ export const ROLE_LABELS: Record<UserRole, string> = {
   [UserRole.DISTRIBUTOR]: 'Distributor',
 };
 
+/** Roles that manage events, users and participants — everyone except DISTRIBUTOR. */
+export const EVENT_MANAGEMENT_ROLES = [
+  UserRole.ROOT,
+  UserRole.ADMIN,
+  UserRole.ORGANIZER_ADMIN,
+  UserRole.ORGANIZER_USER,
+];
+
+/** Platform-level roles that manage organizations and billing. */
+export const PLATFORM_ADMIN_ROLES = [UserRole.ROOT, UserRole.ADMIN];
+
 /**
  * User model matching backend UserResponse
  */
@@ -60,14 +71,22 @@ export interface CreateUserRequest {
 }
 
 /**
- * Update User Request DTO — only profile fields (password, email, fullName, phoneNumber)
- * Role, username, and organization cannot be changed via this endpoint.
+ * Update User Request DTO — only profile fields (email, fullName, phoneNumber).
+ * Role, username, and organization cannot be changed via this endpoint, and
+ * passwords are changed only through the dedicated password endpoints.
  */
 export interface UpdateUserRequest {
-  password?: string;
   email?: string;
   fullName?: string;
   phoneNumber?: string;
+}
+
+/**
+ * Change Own Password Request DTO — PUT /users/me/password.
+ */
+export interface ChangePasswordRequest {
+  currentPassword: string;
+  newPassword: string;
 }
 
 /**
