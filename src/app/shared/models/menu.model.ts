@@ -3,16 +3,6 @@ import { UserRole } from '../../core/models/user.model';
 export interface AppMenuItem {
   label: string;
   icon?: string;
-  routerLink?: string;
-  items?: AppMenuItem[];
+  routerLink: string;
   roles?: UserRole[];
-  separator?: boolean;
-  badge?: string;
-  badgeClass?: string;
-  mobileOnly?: boolean;
-}
-
-export interface AppMenuItemCommand {
-  originalEvent: Event;
-  item: AppMenuItem;
 }

@@ -8,7 +8,13 @@ import { AuthService } from './auth.service';
 import { EventService } from './event.service';
 import { OrganizationService } from './organization.service';
 import { UserService } from './user.service';
-import { ROLE_LABELS, User, UserRole } from '../models/user.model';
+import {
+  EVENT_MANAGEMENT_ROLES,
+  PLATFORM_ADMIN_ROLES,
+  ROLE_LABELS,
+  User,
+  UserRole,
+} from '../models/user.model';
 
 /** Entity kinds the palette can surface, each navigating to its own detail route. */
 export type CommandResultType = 'event' | 'organization' | 'user';
@@ -36,15 +42,6 @@ export interface CommandResultGroup {
 const SEARCH_DEBOUNCE_MS = 200;
 const MIN_QUERY_LENGTH = 2;
 const MAX_PER_GROUP = 5;
-
-const EVENT_ROLES = [
-  UserRole.ROOT,
-  UserRole.ADMIN,
-  UserRole.ORGANIZER_ADMIN,
-  UserRole.ORGANIZER_USER,
-];
-const ORGANIZATION_ROLES = [UserRole.ROOT, UserRole.ADMIN];
-const USER_ROLES = EVENT_ROLES;
 
 const ROLE_ICONS: Record<UserRole, string> = {
   [UserRole.ROOT]: 'pi pi-crown',
@@ -99,9 +96,9 @@ export class CommandPaletteService {
    */
   readonly searchableScopes = computed<string[]>(() => {
     const scopes: string[] = [];
-    if (this.auth.hasAnyRole(EVENT_ROLES)) scopes.push('events');
-    if (this.auth.hasAnyRole(ORGANIZATION_ROLES)) scopes.push('organizations');
-    if (this.auth.hasAnyRole(USER_ROLES)) scopes.push('users');
+    if (this.auth.hasAnyRole(EVENT_MANAGEMENT_ROLES)) scopes.push('events');
+    if (this.auth.hasAnyRole(PLATFORM_ADMIN_ROLES)) scopes.push('organizations');
+    if (this.auth.hasAnyRole(EVENT_MANAGEMENT_ROLES)) scopes.push('users');
     return scopes;
   });
 
@@ -204,9 +201,9 @@ export class CommandPaletteService {
   private runSearch(term: string): Observable<CommandResultGroup[]> {
     const streams: Observable<CommandResultGroup | null>[] = [];
 
-    if (this.auth.hasAnyRole(EVENT_ROLES)) streams.push(this.searchEvents(term));
-    if (this.auth.hasAnyRole(ORGANIZATION_ROLES)) streams.push(this.searchOrganizations(term));
-    if (this.auth.hasAnyRole(USER_ROLES)) streams.push(this.searchUsers(term));
+    if (this.auth.hasAnyRole(EVENT_MANAGEMENT_ROLES)) streams.push(this.searchEvents(term));
+    if (this.auth.hasAnyRole(PLATFORM_ADMIN_ROLES)) streams.push(this.searchOrganizations(term));
+    if (this.auth.hasAnyRole(EVENT_MANAGEMENT_ROLES)) streams.push(this.searchUsers(term));
 
     if (streams.length === 0) return of([]);
     return forkJoin(streams).pipe(

@@ -163,13 +163,14 @@ export class OrganizerDashboard implements OnInit {
     });
   }
 
+  // Quick-create travels as navigation state (see navigation-state.utils.ts).
   goToCreateUser(): void {
-    this.router.navigate(['/users'], { queryParams: { create: 'true' } });
+    this.router.navigate(['/users'], { state: { create: true } });
   }
 
   goToCreateDistributor(): void {
     this.router.navigate(['/users'], {
-      queryParams: { create: 'true', createRole: UserRole.DISTRIBUTOR },
+      state: { create: true, createRole: UserRole.DISTRIBUTOR },
     });
   }
 

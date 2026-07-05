@@ -2,7 +2,7 @@ import { computed, inject, Injectable, PLATFORM_ID, signal } from '@angular/core
 import { DOCUMENT, isPlatformBrowser } from '@angular/common';
 import { Router } from '@angular/router';
 import { AuthService } from './auth.service';
-import { UserRole } from '../models/user.model';
+import { EVENT_MANAGEMENT_ROLES, PLATFORM_ADMIN_ROLES, UserRole } from '../models/user.model';
 
 /** Logical grouping of shortcuts, used as section headings in the help overlay. */
 export type ShortcutGroup = 'Navigation' | 'Actions' | 'General';
@@ -27,15 +27,6 @@ const CHORD_TIMEOUT_MS = 500;
 
 // Marker the in-page primary search field opts in with, focused by `/`.
 const SEARCH_FIELD_SELECTOR = 'input[data-keyboard-search]';
-
-const EVENT_ROLES = [
-  UserRole.ROOT,
-  UserRole.ADMIN,
-  UserRole.ORGANIZER_ADMIN,
-  UserRole.ORGANIZER_USER,
-];
-const ORGANIZATION_ROLES = [UserRole.ROOT, UserRole.ADMIN];
-const BILLING_ROLES = [UserRole.ROOT, UserRole.ADMIN];
 
 /**
  * Owns the app-wide keyboard shortcut system. A root singleton that attaches a
@@ -90,7 +81,7 @@ export class KeyboardService {
       keys: ['g', 'u'],
       label: 'Go to Users',
       group: 'Navigation',
-      available: () => this.auth.hasAnyRole(EVENT_ROLES),
+      available: () => this.auth.hasAnyRole(EVENT_MANAGEMENT_ROLES),
       run: () => this.router.navigate(['/users']),
     },
     {
@@ -98,7 +89,7 @@ export class KeyboardService {
       keys: ['g', 'o'],
       label: 'Go to Organizations',
       group: 'Navigation',
-      available: () => this.auth.hasAnyRole(ORGANIZATION_ROLES),
+      available: () => this.auth.hasAnyRole(PLATFORM_ADMIN_ROLES),
       run: () => this.router.navigate(['/organizations']),
     },
     {
@@ -106,7 +97,7 @@ export class KeyboardService {
       keys: ['g', 'e'],
       label: 'Go to Events',
       group: 'Navigation',
-      available: () => this.auth.hasAnyRole(EVENT_ROLES),
+      available: () => this.auth.hasAnyRole(EVENT_MANAGEMENT_ROLES),
       run: () => this.router.navigate(['/events']),
     },
     {
@@ -114,7 +105,7 @@ export class KeyboardService {
       keys: ['g', 'p'],
       label: 'Go to Participants',
       group: 'Navigation',
-      available: () => this.auth.hasAnyRole(EVENT_ROLES),
+      available: () => this.auth.hasAnyRole(EVENT_MANAGEMENT_ROLES),
       run: () => this.router.navigate(['/participants']),
     },
     {
@@ -130,7 +121,7 @@ export class KeyboardService {
       keys: ['g', 'b'],
       label: 'Go to Billing',
       group: 'Navigation',
-      available: () => this.auth.hasAnyRole(BILLING_ROLES),
+      available: () => this.auth.hasAnyRole(PLATFORM_ADMIN_ROLES),
       run: () => this.router.navigate(['/billing']),
     },
     {
@@ -138,7 +129,7 @@ export class KeyboardService {
       keys: ['g', 'a'],
       label: 'Go to Audit logs',
       group: 'Navigation',
-      available: () => this.auth.hasAnyRole(EVENT_ROLES),
+      available: () => this.auth.hasAnyRole(EVENT_MANAGEMENT_ROLES),
       run: () => this.router.navigate(['/audit-logs']),
     },
     {
@@ -154,23 +145,33 @@ export class KeyboardService {
       keys: ['n', 'u'],
       label: 'New user',
       group: 'Actions',
-      available: () => this.auth.hasAnyRole(EVENT_ROLES),
-      run: () => this.router.navigate(['/users'], { queryParams: { create: 'true' } }),
+      available: () => this.auth.hasAnyRole(EVENT_MANAGEMENT_ROLES),
+      // Quick-create travels as navigation state (see navigation-state.utils.ts);
+      // 'reload' lets the chord work when the list page is already open.
+      run: () =>
+        this.router.navigate(['/users'], {
+          state: { create: true },
+          onSameUrlNavigation: 'reload',
+        }),
     },
     {
       sequence: ['n', 'o'],
       keys: ['n', 'o'],
       label: 'New organization',
       group: 'Actions',
-      available: () => this.auth.hasAnyRole(ORGANIZATION_ROLES),
-      run: () => this.router.navigate(['/organizations'], { queryParams: { create: 'true' } }),
+      available: () => this.auth.hasAnyRole(PLATFORM_ADMIN_ROLES),
+      run: () =>
+        this.router.navigate(['/organizations'], {
+          state: { create: true },
+          onSameUrlNavigation: 'reload',
+        }),
     },
     {
       sequence: ['n', 'e'],
       keys: ['n', 'e'],
       label: 'New event',
       group: 'Actions',
-      available: () => this.auth.hasAnyRole(EVENT_ROLES),
+      available: () => this.auth.hasAnyRole(EVENT_MANAGEMENT_ROLES),
       run: () => this.router.navigate(['/events/new']),
     },
     {

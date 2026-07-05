@@ -800,12 +800,13 @@ export class PlatformDashboard implements OnInit {
   goToAuditLogs(): void {
     this.router.navigate(['/audit-logs']);
   }
+  // Quick-create travels as navigation state (see navigation-state.utils.ts).
   goToCreateOrg(): void {
-    this.router.navigate(['/organizations'], { queryParams: { create: 'true' } });
+    this.router.navigate(['/organizations'], { state: { create: true } });
   }
   goToCreateAdmin(): void {
     this.router.navigate(['/users'], {
-      queryParams: { create: 'true', createRole: UserRole.ADMIN },
+      state: { create: true, createRole: UserRole.ADMIN },
     });
   }
   goToOrgDetails(org: TopOrgDto | OrgListItemDto): void {

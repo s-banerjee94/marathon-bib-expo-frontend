@@ -1,8 +1,15 @@
 import { Component, computed, DestroyRef, inject, signal, ViewChild } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { ActivatedRoute, Params, ParamMap, Router, RouterLink } from '@angular/router';
+import {
+  ActivatedRoute,
+  NavigationEnd,
+  Params,
+  ParamMap,
+  Router,
+  RouterLink,
+} from '@angular/router';
 import { EMPTY, Subject } from 'rxjs';
-import { catchError, debounceTime, distinctUntilChanged, switchMap } from 'rxjs/operators';
+import { catchError, debounceTime, distinctUntilChanged, filter, switchMap } from 'rxjs/operators';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TableLazyLoadEvent, TableModule } from 'primeng/table';
@@ -42,6 +49,7 @@ import {
   getSubscriptionTierLabel,
   getSubscriptionTierSeverity,
 } from '../../../shared/utils/subscription-status.utils';
+import { consumeCreateNavigationState } from '../../../shared/utils/navigation-state.utils';
 
 interface OrganizationFilterPreferences extends TableFilterPreferences {
   enabled: boolean;
@@ -158,6 +166,19 @@ export class OrganizationList extends BaseTableComponent<
     this.organizationListBus.mutations$
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((mutation) => this.applyOrganizationMutation(mutation));
+
+    // Dashboards and the `n o` shortcut deep-link here with { create: true } in
+    // the navigation state. NavigationEnd covers both arriving from another page
+    // and re-triggering while already on this one (the caller navigates with
+    // onSameUrlNavigation: 'reload').
+    this.router.events
+      .pipe(
+        filter((event) => event instanceof NavigationEnd),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe(() => {
+        if (consumeCreateNavigationState()) this.openCreateDialog();
+      });
   }
 
   private applyOrganizationMutation(mutation: OrganizationMutation): void {
@@ -347,13 +368,6 @@ export class OrganizationList extends BaseTableComponent<
     this.filterSort.set(sortParam ? [sortParam] : []);
 
     this.loadData();
-
-    // Dashboards deep-link here with ?create=true to start a new organization.
-    // Strip the flag from the URL and open the (route-less) create dialog.
-    if (params.get('create') === 'true') {
-      this.pushStateToUrl({ create: null });
-      this.openCreateDialog();
-    }
   }
 
   protected override getDefaultFilterPreferences(): OrganizationFilterPreferences {
