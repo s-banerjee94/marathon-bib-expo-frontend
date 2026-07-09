@@ -40,11 +40,13 @@
     >
       <ng-template pTemplate="header">
         <tr>
-          <th class="w-16 whitespace-nowrap" pFrozenColumn>Sl. No</th>
+          <th scope="col" class="w-16 whitespace-nowrap" pFrozenColumn>Sl. No</th>
           @for (col of visibleCols(); track col.field) {
-            <th class="whitespace-nowrap">{{ col.header }}</th>
+            <th scope="col" class="whitespace-nowrap">{{ col.header }}</th>
           }
-          <th class="w-40 whitespace-nowrap" pFrozenColumn alignFrozen="right">Actions</th>
+          <th scope="col" class="w-40 whitespace-nowrap" pFrozenColumn alignFrozen="right">
+            Actions
+          </th>
         </tr>
       </ng-template>
 
@@ -60,64 +62,93 @@
             <td class="text-color-secondary whitespace-nowrap" pFrozenColumn>{{ rowIndex + 1 }}</td>
             @for (col of visibleCols(); track col.field) {
               <td class="whitespace-nowrap">
-                @switch (col.field) {
-                  @case ('id') {
-                    {{ campaign.id }}
-                  }
-                  @case ('name') {
-                    {{ campaign.name | defaultValue }}
-                  }
-                  @case ('smsTemplateName') {
-                    {{ campaign.smsTemplateName | defaultValue }}
-                  }
-                  @case ('triggerType') {
-                    {{ campaign.triggerType | smsTriggerLabel }}
-                  }
-                  @case ('targetFilter') {
-                    {{ campaign.targetFilter | smsTargetLabel }}
-                  }
-                  @case ('scheduledDate') {
-                    <span class="whitespace-nowrap">
-                      {{
-                        campaign.scheduledDate
-                          | formatEventDateTime: campaign.scheduledTime : eventTimezone()
-                      }}
-                      @if (eventTimezone()) {
-                        ({{
-                          campaign.scheduledDate
-                            | formatEventDateTime
-                              : campaign.scheduledTime
-                              : eventTimezone()
-                              : 'abbr'
-                        }})
+                @if (col.field === 'createdBy' || col.field === 'lastModifiedBy') {
+                  @let auditUser =
+                    (col.field === 'createdBy' ? campaign.createdBy : campaign.lastModifiedBy)
+                      | userSummary;
+                  @if (auditUser) {
+                    <div class="flex items-center gap-2">
+                      @if (auditUser.avatarUrl) {
+                        <p-avatar
+                          [image]="auditUser.avatarUrl"
+                          shape="circle"
+                          styleClass="shrink-0 !w-6 !h-6"
+                        />
+                      } @else {
+                        <p-avatar
+                          [label]="auditUser.name | initials: 2"
+                          shape="circle"
+                          styleClass="shrink-0 !w-6 !h-6 !text-xs"
+                        />
                       }
-                    </span>
+                      @if (auditUser.id !== null) {
+                        <a
+                          class="text-primary hover:underline"
+                          [routerLink]="['/users', auditUser.id, 'edit']"
+                        >
+                          {{ auditUser.name }}
+                        </a>
+                      } @else {
+                        <span>{{ auditUser.name }}</span>
+                      }
+                    </div>
+                  } @else {
+                    --
                   }
-                  @case ('status') {
-                    @if (actionLoadingId() === campaign.id) {
-                      <p-skeleton height="1.5rem" width="4rem" />
-                    } @else {
-                      <p-tag
-                        [value]="campaign.status"
-                        [severity]="statusSeverity(campaign.status)"
-                        [rounded]="true"
-                      />
+                } @else {
+                  @switch (col.field) {
+                    @case ('id') {
+                      {{ campaign.id }}
                     }
-                  }
-                  @case ('sentCount') {
-                    {{ campaign.sentCount ?? 0 }}
-                  }
-                  @case ('createdAt') {
-                    {{ campaign.createdAt | date: 'dd-MMM-yyyy, hh:mm a' | defaultValue }}
-                  }
-                  @case ('updatedAt') {
-                    {{ campaign.updatedAt | date: 'dd-MMM-yyyy, hh:mm a' | defaultValue }}
-                  }
-                  @case ('createdBy') {
-                    {{ campaign.createdBy | defaultValue }}
-                  }
-                  @case ('lastModifiedBy') {
-                    {{ campaign.lastModifiedBy | defaultValue }}
+                    @case ('name') {
+                      {{ campaign.name | defaultValue }}
+                    }
+                    @case ('smsTemplateName') {
+                      {{ campaign.smsTemplateName | defaultValue }}
+                    }
+                    @case ('triggerType') {
+                      {{ campaign.triggerType | smsTriggerLabel }}
+                    }
+                    @case ('targetFilter') {
+                      {{ campaign.targetFilter | smsTargetLabel }}
+                    }
+                    @case ('scheduledDate') {
+                      <span class="whitespace-nowrap">
+                        {{
+                          campaign.scheduledDate
+                            | formatEventDateTime: campaign.scheduledTime : eventTimezone()
+                        }}
+                        @if (eventTimezone()) {
+                          ({{
+                            campaign.scheduledDate
+                              | formatEventDateTime
+                                : campaign.scheduledTime
+                                : eventTimezone()
+                                : 'abbr'
+                          }})
+                        }
+                      </span>
+                    }
+                    @case ('status') {
+                      @if (actionLoadingId() === campaign.id) {
+                        <p-skeleton height="1.5rem" width="4rem" />
+                      } @else {
+                        <p-tag
+                          [value]="campaign.status"
+                          [severity]="statusSeverity(campaign.status)"
+                          [rounded]="true"
+                        />
+                      }
+                    }
+                    @case ('sentCount') {
+                      {{ campaign.sentCount ?? 0 }}
+                    }
+                    @case ('createdAt') {
+                      {{ campaign.createdAt | date: 'dd-MMM-yyyy, hh:mm a' | defaultValue }}
+                    }
+                    @case ('updatedAt') {
+                      {{ campaign.updatedAt | date: 'dd-MMM-yyyy, hh:mm a' | defaultValue }}
+                    }
                   }
                 }
               </td>
@@ -126,6 +157,7 @@
               <div class="flex gap-1">
                 <p-button
                   icon="pi pi-eye"
+                  ariaLabel="View details"
                   [text]="true"
                   [rounded]="true"
                   severity="secondary"
@@ -137,6 +169,7 @@
                 @if (canEdit(campaign)) {
                   <p-button
                     icon="pi pi-pencil"
+                    ariaLabel="Edit"
                     [text]="true"
                     [rounded]="true"
                     severity="info"
@@ -149,6 +182,7 @@
                 @if (canDisarm(campaign)) {
                   <p-button
                     icon="pi pi-pause"
+                    ariaLabel="Disarm"
                     [text]="true"
                     [rounded]="true"
                     severity="warn"
@@ -161,6 +195,7 @@
                 @if (canDelete(campaign)) {
                   <p-button
                     icon="pi pi-trash"
+                    ariaLabel="Delete"
                     [text]="true"
                     [rounded]="true"
                     severity="danger"
@@ -179,7 +214,8 @@
       <ng-template pTemplate="emptymessage">
         <tr>
           <td [attr.colspan]="visibleCols().length + 2" class="text-center py-8">
-            No campaigns found. Click "Create Campaign" to add one.
+            <app-empty-illustration name="no-campaigns" [size]="88" class="inline-block mb-3" />
+            <p>No campaigns found. Click "Create Campaign" to add one.</p>
           </td>
         </tr>
       </ng-template>
@@ -198,7 +234,7 @@
       </div>
     } @else if (campaigns().length === 0) {
       <div class="flex flex-col items-center justify-center py-12 px-4">
-        <i class="pi pi-send text-6xl mb-4 opacity-30"></i>
+        <app-empty-illustration name="no-campaigns" [size]="112" class="mb-4" />
         <p class="text-lg font-medium mb-1">No campaigns found</p>
         <p class="text-sm opacity-60">Tap + to create a campaign</p>
       </div>
@@ -249,6 +285,7 @@
               <div class="flex justify-end gap-1">
                 <p-button
                   icon="pi pi-eye"
+                  ariaLabel="View details"
                   [text]="true"
                   [rounded]="true"
                   severity="secondary"
@@ -258,6 +295,7 @@
                 @if (canEdit(campaign)) {
                   <p-button
                     icon="pi pi-pencil"
+                    ariaLabel="Edit"
                     [text]="true"
                     [rounded]="true"
                     severity="info"
@@ -268,6 +306,7 @@
                 @if (canDisarm(campaign)) {
                   <p-button
                     icon="pi pi-pause"
+                    ariaLabel="Disarm"
                     [text]="true"
                     [rounded]="true"
                     severity="warn"
@@ -278,6 +317,7 @@
                 @if (canDelete(campaign)) {
                   <p-button
                     icon="pi pi-trash"
+                    ariaLabel="Delete"
                     [text]="true"
                     [rounded]="true"
                     severity="danger"

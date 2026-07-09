@@ -1,0 +1,106 @@
+<div class="p-2 sm:p-3 md:p-4">
+  <!-- Page header -->
+  <div class="mb-4">
+    <div class="flex items-start justify-between gap-3">
+      <div class="min-w-0">
+        <h1 class="text-3xl font-bold tracking-tight">Notifications</h1>
+        <p class="mt-1 text-sm" style="color: var(--text-color-secondary)">
+          @if (unreadCount() > 0) {
+            You have {{ unreadCount() }} unread notification{{ unreadCount() === 1 ? '' : 's' }}.
+          } @else if (items().length > 0) {
+            No unread notifications.
+          } @else {
+            You're all caught up.
+          }
+        </p>
+      </div>
+      <div class="flex items-center gap-2 shrink-0">
+        @if (unreadCount() > 0) {
+          <p-button
+            (onClick)="onMarkAllRead()"
+            [text]="true"
+            icon="pi pi-check"
+            label="Mark all read"
+            severity="secondary"
+            size="small"
+          />
+        }
+        <p-button
+          (onClick)="goBack()"
+          [text]="true"
+          icon="pi pi-arrow-left"
+          label="Back"
+          severity="secondary"
+          size="small"
+        />
+      </div>
+    </div>
+    <div class="mt-4 border-t" style="border-color: var(--surface-border)"></div>
+  </div>
+
+  <div>
+    @if (loading() && items().length === 0) {
+      <div class="flex flex-col gap-1">
+        @for (i of [1, 2, 3, 4, 5]; track i) {
+          <app-notification-card-skeleton />
+        }
+      </div>
+    } @else if (items().length === 0) {
+      <div class="flex flex-col items-center justify-center py-16 px-4 text-center">
+        <app-empty-illustration name="no-notifications" [size]="112" class="mb-4" />
+        <p class="text-base font-medium">You're all caught up</p>
+        <p class="text-sm mt-1 max-w-xs" style="color: var(--text-color-secondary)">
+          Imports, event changes, and campaign updates will show up here.
+        </p>
+      </div>
+    } @else {
+      @for (group of groups(); track group.label) {
+        <section class="mb-5">
+          <!-- Day divider: eyebrow label + count + hairline rule -->
+          <div class="flex items-center gap-2 mb-1 px-1">
+            <span
+              class="text-[11px] font-semibold uppercase tracking-wider"
+              style="color: var(--text-color-secondary)"
+            >
+              {{ group.label }}
+            </span>
+            <span
+              class="text-[11px] font-medium px-1 rounded-full"
+              style="background: var(--surface-hover); color: var(--text-color-secondary)"
+            >
+              {{ group.items.length }}
+            </span>
+            <div class="flex-1 border-t" style="border-color: var(--surface-border)"></div>
+          </div>
+
+          <div class="flex flex-col gap-1">
+            @for (notif of group.items; track notif.id) {
+              <app-notification-card [notification]="notif" (read)="onCardRead($event)" />
+            }
+          </div>
+        </section>
+      }
+
+      @if (hasMore()) {
+        <div class="flex justify-center">
+          <p-button
+            (onClick)="loadMore()"
+            [label]="loadingMore() ? 'Loading…' : 'Load more'"
+            [loading]="loadingMore()"
+            [text]="true"
+            size="small"
+          />
+        </div>
+      }
+
+      <!-- Retention note — explains why older items disappear -->
+      <p
+        class="mt-6 flex items-center justify-center gap-1 text-xs"
+        style="color: var(--text-color-secondary)"
+      >
+        <i class="pi pi-clock text-[11px]"></i>
+        Notifications are kept for 30 days.
+      </p>
+    }
+  </div>
+</div>

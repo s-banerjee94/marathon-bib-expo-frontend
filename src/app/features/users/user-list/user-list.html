@@ -1,316 +1,486 @@
-@if (isMobile() && hasFormRoute()) {
-  <router-outlet />
-} @else {
-  <p-confirmpopup />
+<p-confirmpopup />
 
-  <app-list-shell
-    (columnSelectionChange)="onColumnSelectionChange()"
-    (pageChange)="onPageChange($event)"
-    (searchChange)="onSearchInput($event)"
-    (searchClear)="clearSearch()"
-    [(selectedColumns)]="selectedCols"
-    [activeFilterCount]="activeFilterCount()"
-    [columns]="cols()"
-    [currentPage]="currentPage()"
-    [isLoading]="isLoading()"
-    [isMobile]="isMobile()"
-    [items]="entities()"
-    [pageSize]="pageSize()"
-    [rowsPerPageOptions]="[5, 10, 20, 50]"
-    [searchTerm]="searchTerm()"
-    [totalRecords]="totalRecords()"
-    emptyIcon="pi pi-users"
-    emptyMessage="No users found"
-    searchPlaceholder="Search users (min 2 chars)..."
-    subtitle="Manage system users and their roles"
-    title="Users"
-  >
-    <ng-template #actions>
-      <p-button
-        (click)="onCreate()"
-        [size]="inputSize"
-        icon="pi pi-plus"
-        [label]="isMobile() ? '' : 'Create User'"
-      />
-    </ng-template>
+<!-- Shared action panel for the per-row kebab (desktop table + mobile cards). -->
+<p-popover #rowActions appendTo="body">
+  @if (actionUser(); as au) {
+    <div class="flex flex-col" style="min-width: 14rem">
+      <!-- Status switches: label/icon left, switch right. Flipping one closes the
+           panel and raises a confirm at the kebab. -->
+      @if (canToggleEnabled(au)) {
+        <div class="flex flex-col p-1.5">
+          <div class="flex items-center justify-between gap-4 px-2 py-1.5">
+            <span class="flex items-center gap-2 text-sm">
+              <i class="pi pi-check-circle"></i>
+              {{ au.enabled ? 'Enabled' : 'Disabled' }}
+            </span>
+            <p-toggleswitch
+              [dt]="switchStatusDt"
+              [ngModel]="au.enabled"
+              (ngModelChange)="requestToggleEnabled(au)"
+              ariaLabel="Toggle enabled"
+            />
+          </div>
 
-    <ng-template #filters>
-      <div class="flex items-center gap-2">
-        <p-checkbox
-          (ngModelChange)="filterEnabled.set($event); onFilterChange()"
-          [binary]="true"
-          [ngModel]="filterEnabled()"
-          inputId="filterEnabled"
-        />
-        <label class="cursor-pointer" for="filterEnabled">Show Enabled Only</label>
-      </div>
+          @if (canToggleLocked(au)) {
+            <div class="flex items-center justify-between gap-4 px-2 py-1.5">
+              <span class="flex items-center gap-2 text-sm">
+                <i [class]="au.accountNonLocked === false ? 'pi pi-lock' : 'pi pi-lock-open'"></i>
+                {{ au.accountNonLocked === false ? 'Locked' : 'Unlocked' }}
+              </span>
+              <p-toggleswitch
+                [dt]="switchStatusDt"
+                [ngModel]="au.accountNonLocked !== false"
+                (ngModelChange)="requestToggleLocked(au)"
+                ariaLabel="Toggle locked"
+              />
+            </div>
+          }
+        </div>
+      }
 
-      <p-floatlabel variant="on">
-        <p-select
-          (ngModelChange)="onRoleFilterChange($event)"
-          [ngModel]="filterRole()"
-          [options]="roleOptions"
-          [showClear]="true"
-          [size]="inputSize"
-          appendTo="body"
-          class="w-full md:w-48"
-          inputId="roleFilter"
-          optionLabel="label"
-          optionValue="value"
-        />
-        <label for="roleFilter">Role</label>
-      </p-floatlabel>
-
-      @if (canFilterByOrganization()) {
-        <div class="w-full md:w-64">
-          <app-organization-selector
-            (organizationIdChange)="onOrganizationFilterChange($event)"
-            [selectedOrganizationId]="filterOrganizationId() ?? undefined"
-            inputId="orgFilter"
-            label="Organization"
+      <!-- Send reset link -->
+      @if (canSendResetLink(au)) {
+        <div
+          [class.border-t]="canToggleEnabled(au)"
+          class="p-1.5"
+          style="border-color: var(--surface-border)"
+        >
+          <p-button
+            (onClick)="requestResetLink(au)"
+            [text]="true"
+            icon="pi pi-key"
+            label="Send reset link"
+            severity="secondary"
+            size="small"
+            styleClass="w-full !justify-start"
           />
         </div>
       }
 
-      <p-floatlabel variant="on">
-        <p-select
-          (ngModelChange)="onSortChange($event)"
-          [ngModel]="selectedSort()"
-          [options]="sortOptions"
-          [showClear]="true"
-          [size]="inputSize"
-          appendTo="body"
-          class="w-full md:w-48"
-          inputId="sortSelect"
-          optionLabel="label"
-          optionValue="value"
-        />
-        <label for="sortSelect">Sort By</label>
-      </p-floatlabel>
-    </ng-template>
+      <!-- Delete -->
+      @if (canManageUser(au)) {
+        <div class="border-t p-1.5" style="border-color: var(--surface-border)">
+          <p-button
+            (onClick)="requestDelete(au)"
+            [text]="true"
+            icon="pi pi-trash"
+            label="Delete"
+            severity="danger"
+            size="small"
+            styleClass="w-full !justify-start"
+          />
+        </div>
+      }
+    </div>
+  }
+</p-popover>
 
-    <ng-template #desktopBody>
-      <p-table
-        (onLazyLoad)="onPageChange($event)"
-        [first]="currentPage() * pageSize()"
-        [lazy]="true"
-        [paginator]="true"
-        [rowsPerPageOptions]="[5, 10, 20, 50]"
-        [rows]="pageSize()"
-        [scrollable]="true"
+<app-list-shell
+  (columnSelectionChange)="onColumnSelectionChange()"
+  (pageChange)="onPageChange($event)"
+  (searchChange)="onSearchInput($event)"
+  (searchClear)="clearSearch()"
+  [(selectedColumns)]="selectedCols"
+  [activeFilterCount]="activeFilterCount()"
+  [columns]="cols()"
+  [currentPage]="currentPage()"
+  [isLoading]="isLoading()"
+  [isMobile]="isMobile()"
+  [items]="entities()"
+  [pageSize]="pageSize()"
+  [rowsPerPageOptions]="[20, 30, 50, 100]"
+  [searchTerm]="searchTerm()"
+  [totalRecords]="totalRecords()"
+  emptyIcon="pi pi-users"
+  emptyIllustration="no-users"
+  emptyMessage="No users found"
+  searchPlaceholder="Search users (min 2 chars)..."
+  subtitle="Manage system users and their roles"
+  heading="Users"
+  printTitle="Users"
+>
+  <ng-template #actions>
+    <p-button
+      (click)="createMenu.toggle($event)"
+      [label]="isMobile() ? '' : 'Create User'"
+      [size]="inputSize"
+      aria-haspopup="true"
+      icon="pi pi-plus"
+    />
+    <p-menu #createMenu [model]="createMenuItems" [popup]="true" appendTo="body" />
+  </ng-template>
+
+  <ng-template #filters>
+    <div class="flex items-center gap-2">
+      <p-checkbox
+        (ngModelChange)="filterEnabled.set($event); onFilterChange()"
+        [binary]="true"
+        [ngModel]="filterEnabled()"
+        inputId="filterEnabled"
+      />
+      <label class="cursor-pointer" for="filterEnabled">Show Enabled Only</label>
+    </div>
+
+    <p-floatlabel variant="on">
+      <p-select
+        (ngModelChange)="onRoleFilterChange($event)"
+        [ngModel]="filterRole()"
+        [options]="roleOptions"
+        [showClear]="true"
         [size]="inputSize"
-        [tableStyle]="{ 'min-width': '75rem' }"
-        [totalRecords]="totalRecords()"
-        [value]="displayData()"
-        scrollHeight="600px"
-      >
-        <ng-template pTemplate="header">
-          <tr>
-            <th class="w-16 whitespace-nowrap" pFrozenColumn>Sl. No</th>
-            @for (col of visibleCols; track col.field) {
-              <th [class]="getColumnAlignment(col.field) + ' whitespace-nowrap'">
-                <span>{{ col.header }}</span>
-                @if (isSorted(col.field)) {
-                  <i [class]="getSortIcon(col.field)" class="ml-2"></i>
-                }
-              </th>
-            }
-            <th class="text-center w-36 whitespace-nowrap" pFrozenColumn alignFrozen="right">
-              Actions
+        appendTo="body"
+        class="w-full md:w-48"
+        inputId="roleFilter"
+        optionLabel="label"
+        optionValue="value"
+      />
+      <label for="roleFilter">Role</label>
+    </p-floatlabel>
+
+    @if (canFilterByOrganization()) {
+      <div class="w-full md:w-64">
+        <app-organization-selector
+          (organizationIdChange)="onOrganizationFilterChange($event)"
+          [selectedOrganizationId]="filterOrganizationId() ?? undefined"
+          inputId="orgFilter"
+          label="Organization"
+        />
+      </div>
+    }
+
+    <p-floatlabel variant="on">
+      <p-select
+        (ngModelChange)="onSortChange($event)"
+        [ngModel]="selectedSort()"
+        [options]="sortOptions"
+        [showClear]="true"
+        [size]="inputSize"
+        appendTo="body"
+        class="w-full md:w-48"
+        inputId="sortSelect"
+        optionLabel="label"
+        optionValue="value"
+      />
+      <label for="sortSelect">Sort By</label>
+    </p-floatlabel>
+  </ng-template>
+
+  <ng-template #desktopBody>
+    <p-table
+      (onLazyLoad)="onPageChange($event)"
+      [first]="currentPage() * pageSize()"
+      [lazy]="true"
+      [paginator]="true"
+      [rowsPerPageOptions]="[20, 30, 50, 100]"
+      [rows]="pageSize()"
+      [scrollable]="true"
+      [size]="inputSize"
+      [tableStyle]="{ 'min-width': '75rem' }"
+      [totalRecords]="totalRecords()"
+      [value]="displayData()"
+      scrollHeight="600px"
+    >
+      <ng-template pTemplate="header">
+        <tr>
+          <th scope="col" class="w-16 whitespace-nowrap" pFrozenColumn>Sl. No</th>
+          @for (col of visibleCols; track col.field) {
+            <th scope="col" [class]="getColumnAlignment(col.field) + ' whitespace-nowrap'">
+              <span>{{ col.header }}</span>
+              @if (isSorted(col.field)) {
+                <i [class]="getSortIcon(col.field)" class="ml-2"></i>
+              }
             </th>
-          </tr>
-        </ng-template>
+          }
+          <th
+            scope="col"
+            class="text-center w-36 whitespace-nowrap print:hidden"
+            pFrozenColumn
+            alignFrozen="right"
+          >
+            Actions
+          </th>
+        </tr>
+      </ng-template>
 
-        <ng-template let-user let-rowIndex="rowIndex" pTemplate="body">
-          <tr>
-            @if (isLoading()) {
-              <td pFrozenColumn><p-skeleton /></td>
-              @for (col of visibleCols; track col.field) {
-                <td [class]="getColumnAlignment(col.field) + ' whitespace-nowrap'">
-                  <p-skeleton />
-                </td>
-              }
-              <td class="text-center whitespace-nowrap" pFrozenColumn alignFrozen="right">
-                <p-skeleton height="2rem" width="5rem" />
-              </td>
-            } @else {
-              <td class="text-color-secondary whitespace-nowrap" pFrozenColumn>
-                {{ currentPage() * pageSize() + rowIndex + 1 }}
-              </td>
-              @for (col of visibleCols; track col.field) {
-                <td [class]="getColumnAlignment(col.field) + ' whitespace-nowrap'">
-                  @if (col.field === 'phoneNumber') {
-                    <a class="hover:underline" href="tel:{{ getCellValue(user, col.field) }}">
-                      {{ getCellValue(user, col.field) | defaultValue }}
-                    </a>
-                  } @else if (col.field === 'email') {
-                    <a class="hover:underline" href="mailto:{{ getCellValue(user, col.field) }}">
-                      {{ getCellValue(user, col.field) | defaultValue }}
-                    </a>
-                  } @else if (col.field === 'organizationName' && user.organizationId) {
-                    <span
-                      (click)="openOrganizationPopover($event, user.organizationId)"
-                      class="cursor-pointer border-b border-dotted border-gray-400"
-                    >
-                      {{ getCellValue(user, col.field) | defaultValue }}
-                    </span>
-                  } @else if (col.field === 'enabled') {
-                    @if (togglingUserId() === user.id) {
-                      <p-skeleton height="1.5rem" width="5rem" />
-                    } @else if (canManageUser(user)) {
-                      <p-tag
-                        (click)="toggleUserEnabled($event, user)"
-                        [rounded]="true"
-                        [severity]="user.enabled ? 'success' : 'danger'"
-                        [value]="user.enabled ? 'Enabled' : 'Disabled'"
-                        pTooltip="Click to toggle status"
-                        styleClass="cursor-pointer hover:opacity-80 transition-opacity"
-                        tooltipPosition="top"
-                      />
-                    } @else {
-                      <p-tag
-                        [rounded]="true"
-                        [severity]="user.enabled ? 'success' : 'danger'"
-                        [value]="user.enabled ? 'Enabled' : 'Disabled'"
-                      />
-                    }
-                  } @else if (col.field === 'role') {
-                    <p-tag
-                      [rounded]="true"
-                      [severity]="getRoleSeverity(user.role)"
-                      [value]="user.role"
-                    />
-                  } @else if (
-                    col.field === 'accountNonExpired' ||
-                    col.field === 'accountNonLocked' ||
-                    col.field === 'credentialsNonExpired'
-                  ) {
-                    <p-tag
-                      [rounded]="true"
-                      [severity]="getCellValue(user, col.field) !== false ? 'success' : 'danger'"
-                      [value]="getCellValue(user, col.field) !== false ? 'Yes' : 'No'"
-                    />
-                  } @else if (col.type === 'datetime') {
-                    {{
-                      $any(getCellValue(user, col.field))
-                        | date: 'dd-MMM-yyyy, hh:mm a'
-                        | defaultValue
-                    }}
-                  } @else if (col.type === 'date') {
-                    {{ $any(getCellValue(user, col.field)) | date: 'dd-MMM-yyyy' | defaultValue }}
-                  } @else {
-                    {{ getCellValue(user, col.field) | defaultValue }}
-                  }
-                </td>
-              }
-              <td class="text-center whitespace-nowrap" pFrozenColumn alignFrozen="right">
-                <div class="flex items-center justify-center gap-1">
-                  @if (canManageUser(user)) {
-                    <p-button
-                      (click)="onEdit(user)"
-                      [rounded]="true"
-                      [size]="inputSize"
-                      [text]="true"
-                      icon="pi pi-pencil"
-                      pTooltip="Edit"
-                      severity="info"
-                      tooltipPosition="top"
-                    />
-                    <p-button
-                      (click)="onDelete($event, user)"
-                      [loading]="deletingUserId() === user.id"
-                      [rounded]="true"
-                      [size]="inputSize"
-                      [text]="true"
-                      icon="pi pi-trash"
-                      pTooltip="Delete"
-                      severity="danger"
-                      tooltipPosition="top"
-                    />
-                  }
-                </div>
+      <ng-template let-user let-rowIndex="rowIndex" pTemplate="body">
+        <tr>
+          @if (isLoading()) {
+            <td pFrozenColumn><p-skeleton /></td>
+            @for (col of visibleCols; track col.field) {
+              <td [class]="getColumnAlignment(col.field) + ' whitespace-nowrap'">
+                <p-skeleton />
               </td>
             }
-          </tr>
-        </ng-template>
-
-        <ng-template pTemplate="emptymessage">
-          <tr>
-            <td [attr.colspan]="visibleCols.length + 2">
-              @if (!isLoading()) {
-                <div class="flex flex-col items-center justify-center py-12 px-4">
-                  <i class="pi pi-users text-6xl mb-4 opacity-30"></i>
-                  <p class="text-lg font-medium mb-1">No users found</p>
-                  <p class="text-sm opacity-60">Try adjusting your search or filters</p>
-                </div>
-              }
+            <td
+              class="text-center whitespace-nowrap print:hidden"
+              pFrozenColumn
+              alignFrozen="right"
+            >
+              <p-skeleton height="2rem" width="5rem" />
             </td>
-          </tr>
-        </ng-template>
-      </p-table>
-    </ng-template>
+          } @else {
+            <td class="text-color-secondary whitespace-nowrap" pFrozenColumn>
+              {{ currentPage() * pageSize() + rowIndex + 1 }}
+            </td>
+            @for (col of visibleCols; track col.field) {
+              <td [class]="getColumnAlignment(col.field) + ' whitespace-nowrap'">
+                @if (col.field === 'phoneNumber') {
+                  <a class="hover:underline" href="tel:{{ getCellValue(user, col.field) }}">
+                    {{ getCellValue(user, col.field) | defaultValue }}
+                  </a>
+                } @else if (col.field === 'email') {
+                  <a class="hover:underline" href="mailto:{{ getCellValue(user, col.field) }}">
+                    {{ getCellValue(user, col.field) | defaultValue }}
+                  </a>
+                } @else if (col.field === 'organizationName' && user.organizationId) {
+                  <span
+                    (click)="openOrganizationPopover($event, user.organizationId)"
+                    class="cursor-pointer border-b border-dotted border-gray-400"
+                  >
+                    {{ getCellValue(user, col.field) | defaultValue }}
+                  </span>
+                } @else if (col.field === 'eventName') {
+                  @if (user.eventId) {
+                    <div class="flex items-center gap-2">
+                      @let eventLogoUrl = user.eventId | eventLogo;
+                      @if (eventLogoUrl) {
+                        <p-avatar
+                          [image]="eventLogoUrl"
+                          shape="circle"
+                          styleClass="shrink-0 !w-6 !h-6"
+                          [pt]="{ image: { class: 'object-contain' } }"
+                        />
+                      } @else {
+                        <p-avatar
+                          [label]="user.eventId | eventName | initials: 2"
+                          shape="circle"
+                          styleClass="shrink-0 !w-6 !h-6 !text-xs"
+                        />
+                      }
+                      <a
+                        class="text-primary hover:underline"
+                        [routerLink]="['/events', user.eventId]"
+                      >
+                        {{ user.eventId | eventName }}
+                      </a>
+                    </div>
+                  } @else {
+                    --
+                  }
+                } @else if (col.field === 'enabled') {
+                  @if (togglingUserId() === user.id) {
+                    <p-skeleton height="1.5rem" width="5rem" />
+                  } @else {
+                    <p-tag
+                      [rounded]="true"
+                      [severity]="user.enabled ? 'success' : 'danger'"
+                      [value]="user.enabled ? 'Enabled' : 'Disabled'"
+                    />
+                  }
+                } @else if (col.field === 'role') {
+                  <p-tag
+                    [rounded]="true"
+                    [severity]="getRoleSeverity(user.role)"
+                    [value]="user.role"
+                  />
+                } @else if (col.field === 'accountNonLocked') {
+                  @if (togglingLockUserId() === user.id) {
+                    <p-skeleton height="1.5rem" width="5rem" />
+                  } @else {
+                    <p-tag
+                      [rounded]="true"
+                      [severity]="user.accountNonLocked === false ? 'danger' : 'success'"
+                      [value]="user.accountNonLocked === false ? 'Locked' : 'Unlocked'"
+                    />
+                  }
+                } @else if (col.field === 'createdBy' || col.field === 'lastModifiedBy') {
+                  @let auditUser = getCellValue(user, col.field) | userSummary;
+                  @if (auditUser) {
+                    <div class="flex items-center gap-2">
+                      @if (auditUser.avatarUrl) {
+                        <p-avatar
+                          [image]="auditUser.avatarUrl"
+                          shape="circle"
+                          styleClass="shrink-0 !w-6 !h-6"
+                        />
+                      } @else {
+                        <p-avatar
+                          [label]="auditUser.name | initials: 2"
+                          shape="circle"
+                          styleClass="shrink-0 !w-6 !h-6 !text-xs"
+                        />
+                      }
+                      @if (auditUser.id !== null) {
+                        <a
+                          class="text-primary hover:underline"
+                          [routerLink]="['/users', auditUser.id, 'edit']"
+                        >
+                          {{ auditUser.name }}
+                        </a>
+                      } @else {
+                        <span>{{ auditUser.name }}</span>
+                      }
+                    </div>
+                  } @else {
+                    --
+                  }
+                } @else if (col.type === 'datetime') {
+                  {{
+                    $any(getCellValue(user, col.field))
+                      | date: 'dd-MMM-yyyy, hh:mm a'
+                      | defaultValue
+                  }}
+                } @else if (col.type === 'date') {
+                  {{ $any(getCellValue(user, col.field)) | date: 'dd-MMM-yyyy' | defaultValue }}
+                } @else {
+                  {{ getCellValue(user, col.field) | defaultValue }}
+                }
+              </td>
+            }
+            <td
+              class="text-center whitespace-nowrap print:hidden"
+              pFrozenColumn
+              alignFrozen="right"
+            >
+              <div class="flex items-center justify-center gap-1">
+                @if (canManageUser(user)) {
+                  <p-button
+                    (click)="onEdit(user)"
+                    [rounded]="true"
+                    [size]="inputSize"
+                    [text]="true"
+                    icon="pi pi-eye"
+                    ariaLabel="View"
+                    pTooltip="View"
+                    severity="info"
+                    tooltipPosition="top"
+                  />
+                }
+                @if (hasRowActions(user)) {
+                  <p-button
+                    (click)="openRowActions($event, user)"
+                    [loading]="deletingUserId() === user.id"
+                    [rounded]="true"
+                    [size]="inputSize"
+                    [text]="true"
+                    icon="pi pi-ellipsis-v"
+                    ariaLabel="More actions"
+                    pTooltip="More actions"
+                    severity="secondary"
+                    tooltipPosition="top"
+                  />
+                }
+              </div>
+            </td>
+          }
+        </tr>
+      </ng-template>
 
-    <ng-template #mobileCard let-user>
-      <p-card>
-        <div class="flex flex-col gap-1.5">
-          <div class="flex items-start justify-between gap-2">
-            <div class="flex flex-col min-w-0">
-              <span class="font-semibold text-base truncate">{{ user.fullName }}</span>
-              <span class="text-sm opacity-70 truncate">{{ '@' + user.username }}</span>
-            </div>
-            <p-tag [rounded]="true" [severity]="getRoleSeverity(user.role)" [value]="user.role" />
-          </div>
-
-          <div class="flex flex-col gap-1 text-sm">
-            @if (user.phoneNumber) {
-              <div class="flex items-center gap-2">
-                <i class="pi pi-phone opacity-60 w-4"></i>
-                <a class="hover:underline" href="tel:{{ user.phoneNumber }}">
-                  {{ user.phoneNumber }}
-                </a>
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td [attr.colspan]="visibleCols.length + 2">
+            @if (!isLoading()) {
+              <div class="flex flex-col items-center justify-center py-12 px-4">
+                <app-empty-illustration name="no-users" [size]="112" class="mb-4" />
+                <p class="text-lg font-medium mb-1">No users found</p>
+                <p class="text-sm opacity-60">Try adjusting your search or filters</p>
               </div>
             }
-            @if (user.organizationName && user.organizationId) {
-              <div class="flex items-center gap-2">
-                <i class="pi pi-building opacity-60 w-4"></i>
-                <span
-                  (click)="openOrganizationPopover($event, user.organizationId)"
-                  class="cursor-pointer border-b border-dotted border-gray-400 truncate"
-                >
-                  {{ user.organizationName }}
-                </span>
-              </div>
-            }
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </ng-template>
+
+  <ng-template #mobileCard let-user>
+    <p-card>
+      <div class="flex flex-col gap-1.5">
+        <div class="flex items-start justify-between gap-2">
+          <div class="flex flex-col min-w-0">
+            <span class="font-semibold text-base truncate">{{ user.fullName }}</span>
+            <span class="text-sm opacity-70 truncate">{{ '@' + user.username }}</span>
           </div>
+          <p-tag [rounded]="true" [severity]="getRoleSeverity(user.role)" [value]="user.role" />
         </div>
 
-        @if (canManageUser(user)) {
-          <ng-template #footer>
-            <div class="flex items-center justify-end gap-1">
+        <div class="flex flex-col gap-1 text-sm">
+          @if (user.phoneNumber) {
+            <div class="flex items-center gap-2">
+              <i class="pi pi-phone opacity-60 w-4"></i>
+              <a class="hover:underline" href="tel:{{ user.phoneNumber }}">
+                {{ user.phoneNumber }}
+              </a>
+            </div>
+          }
+          @if (user.organizationName && user.organizationId) {
+            <div class="flex items-center gap-2">
+              <i class="pi pi-building opacity-60 w-4"></i>
+              <span
+                (click)="openOrganizationPopover($event, user.organizationId)"
+                class="cursor-pointer border-b border-dotted border-gray-400 truncate"
+              >
+                {{ user.organizationName }}
+              </span>
+            </div>
+          }
+          @if (user.eventId) {
+            <div class="flex items-center gap-2">
+              @let mobileEventLogoUrl = user.eventId | eventLogo;
+              @if (mobileEventLogoUrl) {
+                <p-avatar
+                  [image]="mobileEventLogoUrl"
+                  shape="circle"
+                  styleClass="shrink-0 !w-6 !h-6"
+                  [pt]="{ image: { class: 'object-contain' } }"
+                />
+              } @else {
+                <p-avatar
+                  [label]="user.eventId | eventName | initials: 2"
+                  shape="circle"
+                  styleClass="shrink-0 !w-6 !h-6 !text-xs"
+                />
+              }
+              <a
+                class="truncate text-primary hover:underline"
+                [routerLink]="['/events', user.eventId]"
+              >
+                {{ user.eventId | eventName }}
+              </a>
+            </div>
+          }
+        </div>
+      </div>
+
+      @if (hasRowActions(user)) {
+        <ng-template #footer>
+          <div class="flex items-center justify-end gap-1">
+            @if (canManageUser(user)) {
               <p-button
                 (click)="onEdit(user)"
                 [rounded]="true"
                 [size]="inputSize"
                 [text]="true"
-                icon="pi pi-pencil"
+                icon="pi pi-eye"
+                ariaLabel="View"
                 severity="info"
               />
-              <p-button
-                (click)="onDelete($event, user)"
-                [loading]="deletingUserId() === user.id"
-                [rounded]="true"
-                [size]="inputSize"
-                [text]="true"
-                icon="pi pi-trash"
-                severity="danger"
-              />
-            </div>
-          </ng-template>
-        }
-      </p-card>
-    </ng-template>
-  </app-list-shell>
-}
+            }
+            <p-button
+              (click)="openRowActions($event, user)"
+              [loading]="deletingUserId() === user.id"
+              [rounded]="true"
+              [size]="inputSize"
+              [text]="true"
+              icon="pi pi-ellipsis-v"
+              ariaLabel="More actions"
+              severity="secondary"
+            />
+          </div>
+        </ng-template>
+      }
+    </p-card>
+  </ng-template>
+</app-list-shell>
 
 <p-popover #orgPopover (onHide)="currentOrganizationDetails.set(null)" appendTo="body">
   @if (loadingOrganizationId() !== null) {
@@ -329,6 +499,7 @@
           [rounded]="true"
           [text]="true"
           icon="pi pi-external-link"
+          ariaLabel="Open in new tab"
           pTooltip="Open in new tab"
           size="small"
           styleClass="!w-6 !h-6 !p-0 !text-xs"

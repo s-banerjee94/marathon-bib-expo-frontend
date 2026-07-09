@@ -11,6 +11,7 @@ import {
 import { forkJoin } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { DatePipe } from '@angular/common';
+import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
 import { TableModule } from 'primeng/table';
@@ -23,15 +24,21 @@ import { IconFieldModule } from 'primeng/iconfield';
 import { InputIconModule } from 'primeng/inputicon';
 import { FloatLabelModule } from 'primeng/floatlabel';
 import { CardModule } from 'primeng/card';
+import { AvatarModule } from 'primeng/avatar';
 import { TooltipModule } from 'primeng/tooltip';
 import { DistributionLogResponse, LogSearchType } from '../../../../core/models/distribution.model';
 import { User, UserRole } from '../../../../core/models/user.model';
+import { Event } from '../../../../core/models/event.model';
 import { DistributionService } from '../../../../core/services/distribution.service';
 import { UserService } from '../../../../core/services/user.service';
+import { EventService } from '../../../../core/services/event.service';
 import { AuthService } from '../../../../core/services/auth.service';
 import { ErrorHandlerService } from '../../../../core/services/error-handler.service';
 import { DefaultValuePipe } from '../../../../shared/pipes/default-value.pipe';
 import { JoinPipe } from '../../../../shared/pipes/join.pipe';
+import { UserNamePipe } from '../../../../shared/pipes/user-name-pipe';
+import { InitialsPipe } from '../../../../shared/pipes/initials-pipe';
+import { UserSummaryPipe } from '../../../../shared/pipes/user-summary-pipe';
 import {
   LOG_ACTION_OPTIONS,
   LOG_SEARCH_TYPES,
@@ -45,6 +52,9 @@ import {
 } from '../../../../shared/constants/form.constants';
 import { DistributionDialogState } from '../distribution-dialog-state.service';
 import { injectIsMobile } from '../../../../shared/utils/responsive.utils';
+import { EmptyIllustration } from '../../../../shared/illustrations/empty-illustration';
+import { PrintHeader } from '../../../../shared/components/print-header/print-header';
+import { FormatEventDateTimePipe } from '../../../../shared/pipes/format-event-date-time-pipe';
 
 @Component({
   selector: 'app-activity-logs-tab',
@@ -64,18 +74,30 @@ import { injectIsMobile } from '../../../../shared/utils/responsive.utils';
     InputIconModule,
     FloatLabelModule,
     CardModule,
+    AvatarModule,
     TooltipModule,
     DefaultValuePipe,
     JoinPipe,
+    UserNamePipe,
+    InitialsPipe,
+    UserSummaryPipe,
+    RouterLink,
+    EmptyIllustration,
+    PrintHeader,
+    FormatEventDateTimePipe,
   ],
   templateUrl: './activity-logs-tab.html',
 })
 export class ActivityLogsTab {
   private distributionService = inject(DistributionService);
   private userService = inject(UserService);
+  private eventService = inject(EventService);
   private authService = inject(AuthService);
   private errorHandler = inject(ErrorHandlerService);
   private dialogState = inject(DistributionDialogState);
+
+  /** Resolved event for the print-only report header (name + date); null until loaded. */
+  event = signal<Event | null>(null);
 
   eventId = input.required<number, string>({ transform: (v) => Number(v) });
   organizationId = input<number>();
@@ -140,8 +162,10 @@ export class ActivityLogsTab {
           if (eid) {
             this.resetAndLoad();
             this.loadOrgUsers();
+            this.loadEvent(eid);
           } else {
             this.orgUsers.set([]);
+            this.event.set(null);
           }
         });
       },
@@ -280,6 +304,14 @@ export class ActivityLogsTab {
     });
   }
 
+  // Background fetch for the print header only — non-fatal, no toast on failure.
+  private loadEvent(eventId: number): void {
+    this.eventService.getEventById(eventId).subscribe({
+      next: (e) => this.event.set(e),
+      error: () => this.event.set(null),
+    });
+  }
+
   private loadOrgUsers(): void {
     this.isUsersLoading.set(true);
     const isRootOrAdmin = this.authService.hasAnyRole([UserRole.ROOT, UserRole.ADMIN]);
@@ -333,11 +365,5 @@ export class ActivityLogsTab {
       GOODIES_UNDONE: 'warn',
     };
     return map[action] ?? 'info';
-  }
-
-  getStaffUsername(value?: string): string {
-    if (!value) return '--';
-    const parts = value.split('__|__');
-    return parts.length > 1 ? parts[1] : value;
   }
 }

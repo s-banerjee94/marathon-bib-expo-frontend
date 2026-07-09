@@ -1,4 +1,4 @@
-import { Component, computed, DestroyRef, effect, inject, signal } from '@angular/core';
+import { Component, computed, DestroyRef, inject, signal, ViewChild } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import {
   ActivatedRoute,
@@ -6,7 +6,7 @@ import {
   Params,
   ParamMap,
   Router,
-  RouterOutlet,
+  RouterLink,
 } from '@angular/router';
 import { EMPTY, Subject } from 'rxjs';
 import { catchError, debounceTime, distinctUntilChanged, filter, switchMap } from 'rxjs/operators';
@@ -22,12 +22,15 @@ import { SelectModule } from 'primeng/select';
 import { ConfirmPopupModule } from 'primeng/confirmpopup';
 import { ConfirmationService } from 'primeng/api';
 import { DialogService } from 'primeng/dynamicdialog';
+import { Popover, PopoverModule } from 'primeng/popover';
 import { TagModule } from 'primeng/tag';
 import { FloatLabelModule } from 'primeng/floatlabel';
+import { AvatarModule } from 'primeng/avatar';
 import { ListShell } from '../../../shared/components/list/list-shell/list-shell';
+import { EmptyIllustration } from '../../../shared/illustrations/empty-illustration';
 
 import { Organization } from '../../../core/models/organization.model';
-import { PageableParams, PageableResponse } from '../../../core/models/api.model';
+import { PageableResponse } from '../../../core/models/api.model';
 import { OrganizationService } from '../../../core/services/organization.service';
 import { ORGANIZATION_COLUMNS } from '../../../shared/constants/organization-columns.constant';
 import { STORAGE_KEYS } from '../../../shared/constants/storage-keys.constant';
@@ -35,12 +38,21 @@ import { ORGANIZATION_SORT_OPTIONS } from '../../../shared/constants/sort-option
 import { OrganizationForm } from '../organization-form/organization-form';
 import { OrganizationListBus, OrganizationMutation } from '../organization-list-bus.service';
 import { DefaultValuePipe } from '../../../shared/pipes/default-value.pipe';
+import { UserQuotaPipe } from '../../../shared/pipes/user-quota-pipe';
+import { InitialsPipe } from '../../../shared/pipes/initials-pipe';
+import { UserSummaryPipe } from '../../../shared/pipes/user-summary-pipe';
 import { BaseTableComponent } from '../../../shared/base/base-table.component';
 import { TableFilterPreferences } from '../../../shared/models/table-config.model';
+import {
+  getSubscriptionStatusLabel,
+  getSubscriptionStatusSeverity,
+  getSubscriptionTierLabel,
+  getSubscriptionTierSeverity,
+} from '../../../shared/utils/subscription-status.utils';
+import { consumeCreateNavigationState } from '../../../shared/utils/navigation-state.utils';
 
 interface OrganizationFilterPreferences extends TableFilterPreferences {
   enabled: boolean;
-  deleted: boolean;
   sort: string[];
 }
 
@@ -60,9 +72,15 @@ interface OrganizationFilterPreferences extends TableFilterPreferences {
     ConfirmPopupModule,
     TagModule,
     FloatLabelModule,
+    AvatarModule,
     DefaultValuePipe,
-    RouterOutlet,
+    UserQuotaPipe,
+    InitialsPipe,
+    UserSummaryPipe,
+    PopoverModule,
     ListShell,
+    EmptyIllustration,
+    RouterLink,
   ],
   providers: [DialogService, ConfirmationService],
   templateUrl: './organization-list.html',
@@ -72,8 +90,14 @@ export class OrganizationList extends BaseTableComponent<
   Organization,
   OrganizationFilterPreferences
 > {
-  // Organization-specific filter
-  filterDeleted = signal(false);
+  @ViewChild('quotaPopover') quotaPopover!: Popover;
+  quotaOrg = signal<Organization | null>(null);
+
+  showQuotaPopover(event: Event, org: Organization): void {
+    this.quotaOrg.set(org);
+    this.quotaPopover.toggle(event);
+  }
+
   // Organization-specific sort options
   readonly sortOptions = ORGANIZATION_SORT_OPTIONS;
   // Base class requirements
@@ -81,26 +105,17 @@ export class OrganizationList extends BaseTableComponent<
   protected override filterPreferenceKey = STORAGE_KEYS.ORG_TABLE_FILTERS;
   protected override allColumns = ORGANIZATION_COLUMNS;
   togglingOrgId = signal<number | null>(null);
+  deletingOrgId = signal<number | null>(null);
   private organizationService = inject(OrganizationService);
   private confirmationService = inject(ConfirmationService);
   private router = inject(Router);
   private route = inject(ActivatedRoute);
   private destroyRef = inject(DestroyRef);
   private organizationListBus = inject(OrganizationListBus);
-  // Tracks which dialog is currently driven by the URL: null = closed, 'new' = create,
-  // 'edit:<id>' = edit. Used to ignore router events that don't change the dialog state.
-  private dialogKey: string | null = null;
-  // True when the dialog is being closed by syncDialogToRoute (URL change),
-  // so the onClose handler skips its own URL-clearing navigation.
-  private closingDialogFromRoute = false;
-  // isMobile is provided by BaseTableComponent; the form renders full-page via
-  // <router-outlet /> on mobile, and as an overlay dialog on desktop.
-  hasFormRoute = signal(false);
   // Drawer badge: count of filters set away from their defaults.
   activeFilterCount = computed(() => {
     let count = 0;
     if (!this.filterEnabled()) count++;
-    if (this.filterDeleted()) count++;
     if (this.selectedSort() !== null) count++;
     return count;
   });
@@ -108,26 +123,13 @@ export class OrganizationList extends BaseTableComponent<
   private urlSearchSubject = new Subject<string>();
   // Single-flight load trigger; switchMap below cancels the prior HTTP request when a new emit arrives.
   private loadTrigger = new Subject<void>();
-  // Default page size — kept consistent with BaseTableComponent's initial pageSize signal so
+  // Default page size — applied on init (overriding BaseTableComponent's signal) so
   // the URL stays clean (?size=… is only emitted when the user picks a non-default size).
-  private readonly DEFAULT_PAGE_SIZE = 5;
+  private readonly DEFAULT_PAGE_SIZE = 20;
 
   constructor() {
     super();
     this.initializeColumns();
-    this.syncDialogToRoute();
-    this.router.events
-      .pipe(
-        filter((event): event is NavigationEnd => event instanceof NavigationEnd),
-        takeUntilDestroyed(this.destroyRef),
-      )
-      .subscribe(() => this.syncDialogToRoute());
-
-    // Re-sync dialog when the viewport flips between mobile and desktop.
-    effect(() => {
-      this.isMobile();
-      this.syncDialogToRoute();
-    });
 
     // Subscribe to the load pipeline BEFORE queryParamMap — the route observable emits the
     // current value synchronously on subscribe, which triggers loadTrigger.next() inside
@@ -137,7 +139,7 @@ export class OrganizationList extends BaseTableComponent<
       .pipe(
         switchMap(() => {
           this.isLoading.set(true);
-          const params = this.buildOrganizationSearchParams();
+          const params = this.buildPageableParams();
           return this.organizationService.searchOrganizations(params).pipe(
             catchError((error) => {
               this.handleLoadError(error);
@@ -164,6 +166,19 @@ export class OrganizationList extends BaseTableComponent<
     this.organizationListBus.mutations$
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((mutation) => this.applyOrganizationMutation(mutation));
+
+    // Dashboards and the `n o` shortcut deep-link here with { create: true } in
+    // the navigation state. NavigationEnd covers both arriving from another page
+    // and re-triggering while already on this one (the caller navigates with
+    // onSameUrlNavigation: 'reload').
+    this.router.events
+      .pipe(
+        filter((event) => event instanceof NavigationEnd),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe(() => {
+        if (consumeCreateNavigationState()) this.openCreateDialog();
+      });
   }
 
   private applyOrganizationMutation(mutation: OrganizationMutation): void {
@@ -179,46 +194,20 @@ export class OrganizationList extends BaseTableComponent<
     }
   }
 
-  getSubscriptionTierSeverity(tier: string): 'danger' | 'success' | 'info' | 'warn' | 'secondary' {
-    switch (tier?.toUpperCase()) {
-      case 'ENTERPRISE':
-        return 'danger';
-      case 'PREMIUM':
-        return 'success';
-      case 'BASIC':
-        return 'info';
-      case 'FREE':
-        return 'secondary';
-      default:
-        return 'secondary';
-    }
-  }
-
-  getSubscriptionStatusSeverity(
-    status: string,
-  ): 'danger' | 'success' | 'info' | 'warn' | 'secondary' {
-    switch (status?.toUpperCase()) {
-      case 'ACTIVE':
-        return 'success';
-      case 'EXPIRED':
-      case 'CANCELLED':
-        return 'danger';
-      case 'TRIAL':
-        return 'info';
-      case 'PENDING':
-        return 'warn';
-      default:
-        return 'secondary';
-    }
-  }
+  // Delegate to the shared helpers so tier/status colours + labels stay
+  // consistent across the org list, the org-account view, and the dashboard.
+  getSubscriptionTierSeverity = getSubscriptionTierSeverity;
+  getSubscriptionStatusSeverity = getSubscriptionStatusSeverity;
+  getSubscriptionTierLabel = getSubscriptionTierLabel;
+  getSubscriptionStatusLabel = getSubscriptionStatusLabel;
 
   getColumnAlignment(field: string): string {
     // Center alignment for status/tag columns
-    if (['enabled', 'deleted', 'subscriptionTier', 'subscriptionStatus'].includes(field)) {
+    if (['enabled', 'subscriptionTier', 'subscriptionStatus'].includes(field)) {
       return 'text-center';
     }
     // Right alignment for numeric columns
-    if (['id', 'maxEvents', 'maxParticipantsPerEvent'].includes(field)) {
+    if (field === 'id') {
       return 'text-right';
     }
     // Left alignment for all other columns (default)
@@ -265,128 +254,55 @@ export class OrganizationList extends BaseTableComponent<
     });
   }
 
+  onDelete(event: Event, org: Organization): void {
+    this.confirmationService.confirm({
+      target: event.currentTarget as EventTarget,
+      message: `Delete "${org.organizerName}"? This permanently removes the organization and all of its users, and cannot be undone.`,
+      icon: 'pi pi-exclamation-triangle',
+      acceptButtonProps: {
+        label: 'Delete',
+        severity: 'danger',
+      },
+      rejectButtonProps: {
+        label: 'Cancel',
+        severity: 'secondary',
+        outlined: true,
+      },
+      accept: () => {
+        this.deletingOrgId.set(org.id);
+
+        this.organizationService.deleteOrganization(org.id).subscribe({
+          next: () => {
+            this.entities.set(this.entities().filter((o) => o.id !== org.id));
+            this.totalRecords.set(Math.max(0, this.totalRecords() - 1));
+            this.deletingOrgId.set(null);
+            this.toast.success(
+              `Organization "${org.organizerName}" deleted successfully`,
+              'Deleted',
+            );
+          },
+          error: (error) => {
+            this.deletingOrgId.set(null);
+            this.errorHandler.showError(error);
+          },
+        });
+      },
+    });
+  }
+
   onCreate(): void {
-    this.router.navigate(['/organizations/new'], { queryParamsHandling: 'preserve' });
+    this.openCreateDialog();
   }
 
   onEdit(org: Organization): void {
     this.router.navigate(['/organizations', org.id, 'edit'], { queryParamsHandling: 'preserve' });
   }
 
-  private syncDialogToRoute(): void {
-    const child = this.route.snapshot.firstChild;
-    const segments = child?.url ?? [];
-    let nextKey: string | null = null;
-
-    if (segments[0]?.path === 'new') {
-      nextKey = 'new';
-    } else if (segments.length === 2 && segments[1].path === 'edit') {
-      nextKey = `edit:${segments[0].path}`;
-    }
-
-    this.hasFormRoute.set(nextKey !== null);
-
-    // On mobile the routed OrganizationForm component takes the whole view; skip the
-    // dialog flow and tear down any dialog that was open before a viewport change.
-    if (this.isMobile()) {
-      if (this.dialogKey !== null && this.dialogRef) {
-        this.closingDialogFromRoute = true;
-        this.dialogRef.close();
-      }
-      this.dialogKey = null;
-      return;
-    }
-
-    if (nextKey === this.dialogKey) {
-      return;
-    }
-
-    const previousKey = this.dialogKey;
-    this.dialogKey = nextKey;
-
-    if (previousKey !== null && this.dialogRef) {
-      this.closingDialogFromRoute = true;
-      this.dialogRef.close();
-    }
-
-    if (nextKey === 'new') {
-      this.openCreateDialog();
-    } else if (nextKey?.startsWith('edit:')) {
-      const id = Number(nextKey.slice('edit:'.length));
-      if (Number.isFinite(id)) {
-        this.openEditDialog(id);
-      }
-    }
-  }
-
+  // Create always opens as a dialog (desktop and mobile alike — openDialog goes
+  // full-width on small screens). On success OrganizationForm publishes to
+  // OrganizationListBus, which prepends the new row in place; the list is never refetched.
   private openCreateDialog(): void {
-    this.openDialog(OrganizationForm, 'Create Organization', {
-      isEditMode: false,
-      successMessage: {
-        severity: 'success',
-        summary: 'Created',
-        detail: 'Organization created successfully',
-      },
-    });
-
-    if (this.dialogRef) {
-      this.dialogRef.onClose.subscribe(
-        (
-          result:
-            | {
-                organization?: Organization;
-                message?: { severity: string; summary: string; detail: string };
-              }
-            | undefined,
-        ) => {
-          if (result?.message) {
-            this.toast.show(result.message);
-          }
-          this.returnToList();
-        },
-      );
-    }
-  }
-
-  private openEditDialog(organizationId: number): void {
-    this.openDialog(OrganizationForm, 'Edit Organization', {
-      organizationId,
-      isEditMode: true,
-      successMessage: {
-        severity: 'success',
-        summary: 'Updated',
-        detail: 'Organization updated successfully',
-      },
-    });
-
-    if (this.dialogRef) {
-      this.dialogRef.onClose.subscribe(
-        (
-          result:
-            | {
-                organization?: Organization;
-                message?: { severity: string; summary: string; detail: string };
-              }
-            | undefined,
-        ) => {
-          if (result?.message) {
-            this.toast.show(result.message);
-          }
-          this.returnToList();
-        },
-      );
-    }
-  }
-
-  // Clear the dialog segment from the URL once the dialog finishes.
-  // Skipped when syncDialogToRoute initiated the close — the URL is already moving elsewhere.
-  private returnToList(): void {
-    if (this.closingDialogFromRoute) {
-      this.closingDialogFromRoute = false;
-      return;
-    }
-    this.dialogKey = null;
-    this.router.navigate(['/organizations'], { queryParamsHandling: 'preserve' });
+    this.openDialog(OrganizationForm, 'Create Organization', {});
   }
 
   override onSearchInput(value: string): void {
@@ -400,7 +316,6 @@ export class OrganizationList extends BaseTableComponent<
   override onFilterChange(): void {
     this.pushStateToUrl({
       enabled: this.filterEnabled() ? null : 'false',
-      deleted: this.filterDeleted() ? 'true' : null,
       page: null,
     });
   }
@@ -425,14 +340,6 @@ export class OrganizationList extends BaseTableComponent<
     this.loadTrigger.next();
   }
 
-  private buildOrganizationSearchParams(): PageableParams {
-    const params = this.buildPageableParams();
-    if (this.filterDeleted()) {
-      params.deleted = true;
-    }
-    return params;
-  }
-
   private pushStateToUrl(updates: Params): void {
     this.router.navigate([], {
       relativeTo: this.route,
@@ -447,7 +354,6 @@ export class OrganizationList extends BaseTableComponent<
     const pageParam = Number(params.get('page'));
     const sizeParam = Number(params.get('size'));
     const enabledParam = params.get('enabled');
-    const deletedParam = params.get('deleted');
     const sortParam = params.get('sort');
 
     this.searchTerm.set(q);
@@ -457,7 +363,6 @@ export class OrganizationList extends BaseTableComponent<
       Number.isFinite(sizeParam) && sizeParam > 0 ? sizeParam : this.DEFAULT_PAGE_SIZE,
     );
     this.filterEnabled.set(enabledParam !== 'false');
-    this.filterDeleted.set(deletedParam === 'true');
 
     this.selectedSort.set(sortParam);
     this.filterSort.set(sortParam ? [sortParam] : []);
@@ -468,7 +373,6 @@ export class OrganizationList extends BaseTableComponent<
   protected override getDefaultFilterPreferences(): OrganizationFilterPreferences {
     return {
       enabled: true,
-      deleted: false,
       sort: [],
     };
   }
@@ -476,14 +380,12 @@ export class OrganizationList extends BaseTableComponent<
   protected override getCurrentFilterPreferences(): OrganizationFilterPreferences {
     return {
       enabled: this.filterEnabled(),
-      deleted: this.filterDeleted(),
       sort: this.filterSort(),
     };
   }
 
   protected override applyFilterPreferences(prefs: OrganizationFilterPreferences): void {
     this.filterEnabled.set(prefs.enabled);
-    this.filterDeleted.set(prefs.deleted);
     this.filterSort.set(prefs.sort);
   }
 }

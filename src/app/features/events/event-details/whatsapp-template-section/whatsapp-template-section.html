@@ -1,0 +1,283 @@
+<div class="space-y-4">
+  <!-- Header -->
+  <div class="space-y-3">
+    <h2 class="text-xl font-semibold">WhatsApp Templates</h2>
+    <div class="flex flex-wrap justify-between items-center gap-3">
+      <!-- Left: Search -->
+      <div class="flex items-center gap-2 flex-1 min-w-0">
+        <p-iconfield class="flex-1 sm:max-w-sm">
+          <p-inputicon class="pi pi-search" />
+          <input
+            pInputText
+            [pSize]="inputSize"
+            placeholder="Search templates..."
+            [ngModel]="searchTerm()"
+            (ngModelChange)="onSearchInput($event)"
+          />
+        </p-iconfield>
+        @if (searchTerm().trim().length > 0) {
+          <p-button
+            icon="pi pi-filter-slash"
+            [label]="isMobile() ? '' : 'Clear'"
+            severity="secondary"
+            [text]="true"
+            [size]="buttonSize"
+            (onClick)="onClearSearch()"
+            pTooltip="Clear search"
+          />
+        }
+      </div>
+      <!-- Right: Column Selection + Create -->
+      <div class="flex items-center gap-3">
+        @if (!isMobile()) {
+          <div class="flex items-center gap-2">
+            <label for="whatsappTemplateColumnSelect" class="text-sm">Columns:</label>
+            <p-multiselect
+              (ngModelChange)="onColumnSelectionChange()"
+              [(ngModel)]="selectedCols"
+              [maxSelectedLabels]="2"
+              [options]="cols()"
+              [size]="inputSize"
+              inputId="whatsappTemplateColumnSelect"
+              optionDisabled="disabled"
+              optionLabel="header"
+              placeholder="Select Columns"
+            />
+          </div>
+        }
+        <p-button
+          [label]="isMobile() ? '' : 'Create WhatsApp Template'"
+          icon="pi pi-plus"
+          [size]="buttonSize"
+          (onClick)="onCreate()"
+          [disabled]="isLoading()"
+        />
+      </div>
+    </div>
+  </div>
+
+  @if (!isMobile()) {
+    <!-- Desktop Table -->
+    <p-table
+      [value]="displayData()"
+      dataKey="id"
+      [scrollable]="true"
+      [tableStyle]="{ 'min-width': '50rem' }"
+      [size]="inputSize"
+    >
+      <ng-template pTemplate="header">
+        <tr>
+          <th scope="col" class="w-16 whitespace-nowrap" pFrozenColumn>Sl. No</th>
+          @for (col of visibleCols(); track col.field) {
+            <th scope="col" class="whitespace-nowrap">{{ col.header }}</th>
+          }
+          <th scope="col" class="w-36 whitespace-nowrap" pFrozenColumn alignFrozen="right">
+            Actions
+          </th>
+        </tr>
+      </ng-template>
+
+      <ng-template pTemplate="body" let-template let-rowIndex="rowIndex">
+        <tr>
+          @if (isLoading()) {
+            <td pFrozenColumn><p-skeleton /></td>
+            @for (col of visibleCols(); track col.field) {
+              <td><p-skeleton /></td>
+            }
+            <td pFrozenColumn alignFrozen="right"><p-skeleton height="2rem" width="6rem" /></td>
+          } @else {
+            <td class="text-color-secondary whitespace-nowrap" pFrozenColumn>{{ rowIndex + 1 }}</td>
+            @for (col of visibleCols(); track col.field) {
+              <td class="whitespace-nowrap">
+                @if (col.field === 'createdBy' || col.field === 'lastModifiedBy') {
+                  @let auditUser =
+                    (col.field === 'createdBy' ? template.createdBy : template.lastModifiedBy)
+                      | userSummary;
+                  @if (auditUser) {
+                    <div class="flex items-center gap-2">
+                      @if (auditUser.avatarUrl) {
+                        <p-avatar
+                          [image]="auditUser.avatarUrl"
+                          shape="circle"
+                          styleClass="shrink-0 !w-6 !h-6"
+                        />
+                      } @else {
+                        <p-avatar
+                          [label]="auditUser.name | initials: 2"
+                          shape="circle"
+                          styleClass="shrink-0 !w-6 !h-6 !text-xs"
+                        />
+                      }
+                      @if (auditUser.id !== null) {
+                        <a
+                          class="text-primary hover:underline"
+                          [routerLink]="['/users', auditUser.id, 'edit']"
+                        >
+                          {{ auditUser.name }}
+                        </a>
+                      } @else {
+                        <span>{{ auditUser.name }}</span>
+                      }
+                    </div>
+                  } @else {
+                    --
+                  }
+                } @else {
+                  @switch (col.field) {
+                    @case ('name') {
+                      {{ template.name | defaultValue }}
+                    }
+                    @case ('contentSid') {
+                      <span class="font-mono text-sm">{{
+                        template.contentSid | truncate: 18
+                      }}</span>
+                    }
+                    @case ('body') {
+                      <div class="max-w-md truncate" [title]="template.body">
+                        {{ template.body | truncate: 40 | defaultValue }}
+                      </div>
+                    }
+                    @case ('bodyVariables') {
+                      {{ template.bodyVariables?.length || 0 }}
+                    }
+                    @case ('note') {
+                      <div class="max-w-[50ch] truncate" [title]="template.note">
+                        {{ template.note | defaultValue }}
+                      </div>
+                    }
+                    @case ('createdAt') {
+                      {{ template.createdAt | date: 'dd-MMM-yyyy, hh:mm a' }}
+                    }
+                    @case ('updatedAt') {
+                      {{ template.updatedAt | date: 'dd-MMM-yyyy, hh:mm a' }}
+                    }
+                  }
+                }
+              </td>
+            }
+            <td class="whitespace-nowrap" pFrozenColumn alignFrozen="right">
+              <div class="flex gap-1">
+                <p-button
+                  icon="pi pi-eye"
+                  ariaLabel="View details"
+                  [text]="true"
+                  [rounded]="true"
+                  severity="secondary"
+                  size="small"
+                  (onClick)="onViewTemplate(template)"
+                  pTooltip="View Details"
+                  tooltipPosition="top"
+                />
+                <p-button
+                  icon="pi pi-pencil"
+                  ariaLabel="Edit"
+                  [text]="true"
+                  [rounded]="true"
+                  severity="info"
+                  size="small"
+                  (onClick)="onEdit(template)"
+                  pTooltip="Edit"
+                  tooltipPosition="top"
+                />
+                <p-button
+                  icon="pi pi-trash"
+                  ariaLabel="Delete"
+                  [text]="true"
+                  [rounded]="true"
+                  severity="danger"
+                  size="small"
+                  (onClick)="onDelete(template, $event)"
+                  pTooltip="Delete"
+                  tooltipPosition="top"
+                />
+              </div>
+            </td>
+          }
+        </tr>
+      </ng-template>
+
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td [attr.colspan]="visibleCols().length + 2" class="text-center py-8">
+            <app-empty-illustration name="no-templates" [size]="88" class="inline-block mb-3" />
+            <p>No WhatsApp templates found. Click "Create WhatsApp Template" to add one.</p>
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+  } @else {
+    <!-- Mobile Cards -->
+    @if (isLoading()) {
+      <div class="flex flex-col gap-3">
+        @for (i of [1, 2, 3]; track i) {
+          <p-card>
+            <p-skeleton height="1.25rem" styleClass="mb-2" />
+            <p-skeleton height="1rem" width="70%" styleClass="mb-1" />
+            <p-skeleton height="1rem" width="90%" />
+          </p-card>
+        }
+      </div>
+    } @else if (templates().length === 0) {
+      <div class="flex flex-col items-center justify-center py-12 px-4">
+        <app-empty-illustration name="no-templates" [size]="112" class="mb-4" />
+        <p class="text-lg font-medium mb-1">No WhatsApp templates found</p>
+        <p class="text-sm opacity-60">Tap + to create a template</p>
+      </div>
+    } @else {
+      <div class="flex flex-col gap-3">
+        @for (template of templates(); track template.id) {
+          <p-card>
+            <div class="flex flex-col gap-1.5">
+              <div class="flex items-start justify-between gap-2">
+                <span class="font-semibold text-base truncate">{{ template.name }}</span>
+              </div>
+              <p class="text-xs font-mono opacity-70 truncate">{{ template.contentSid }}</p>
+              @if (template.body) {
+                <p class="text-sm opacity-70 line-clamp-2">{{ template.body }}</p>
+              }
+              <p class="text-xs opacity-50">
+                {{ template.bodyVariables?.length || 0 }} variable(s)
+              </p>
+              @if (template.note) {
+                <p class="text-xs opacity-50 truncate">{{ template.note }}</p>
+              }
+            </div>
+            <ng-template #footer>
+              <div class="flex justify-end gap-1">
+                <p-button
+                  icon="pi pi-eye"
+                  ariaLabel="View details"
+                  [text]="true"
+                  [rounded]="true"
+                  severity="secondary"
+                  size="small"
+                  (onClick)="onViewTemplate(template)"
+                />
+                <p-button
+                  icon="pi pi-pencil"
+                  ariaLabel="Edit"
+                  [text]="true"
+                  [rounded]="true"
+                  severity="info"
+                  size="small"
+                  (onClick)="onEdit(template)"
+                />
+                <p-button
+                  icon="pi pi-trash"
+                  ariaLabel="Delete"
+                  [text]="true"
+                  [rounded]="true"
+                  severity="danger"
+                  size="small"
+                  (onClick)="onDelete(template, $event)"
+                />
+              </div>
+            </ng-template>
+          </p-card>
+        }
+      </div>
+    }
+  }
+</div>
+
+<p-confirmpopup />

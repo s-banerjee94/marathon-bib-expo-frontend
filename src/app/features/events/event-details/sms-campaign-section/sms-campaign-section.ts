@@ -8,6 +8,7 @@ import {
   signal,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { RouterLink } from '@angular/router';
 import { finalize } from 'rxjs/operators';
 import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
@@ -16,6 +17,7 @@ import { TagModule } from 'primeng/tag';
 import { SkeletonModule } from 'primeng/skeleton';
 import { TooltipModule } from 'primeng/tooltip';
 import { CardModule } from 'primeng/card';
+import { AvatarModule } from 'primeng/avatar';
 import { ConfirmPopupModule } from 'primeng/confirmpopup';
 import { FormsModule } from '@angular/forms';
 import { DialogService } from 'primeng/dynamicdialog';
@@ -31,6 +33,8 @@ import { DefaultValuePipe } from '../../../../shared/pipes/default-value.pipe';
 import { FormatEventDateTimePipe } from '../../../../shared/pipes/format-event-date-time-pipe';
 import { SmsTriggerLabelPipe } from '../../../../shared/pipes/sms-trigger-label-pipe';
 import { SmsTargetLabelPipe } from '../../../../shared/pipes/sms-target-label-pipe';
+import { InitialsPipe } from '../../../../shared/pipes/initials-pipe';
+import { UserSummaryPipe } from '../../../../shared/pipes/user-summary-pipe';
 import { TableColumn } from '../../../../shared/models/table-config.model';
 import {
   SMS_CAMPAIGN_COLUMNS,
@@ -46,6 +50,8 @@ import {
   saveColumnPreferences,
 } from '../../../../shared/utils/column.utils';
 import { injectIsMobile } from '../../../../shared/utils/responsive.utils';
+import { getCampaignStatusSeverity } from '../../../../shared/utils/campaign-status.utils';
+import { EmptyIllustration } from '../../../../shared/illustrations/empty-illustration';
 
 @Component({
   selector: 'app-sms-campaign-section',
@@ -61,10 +67,15 @@ import { injectIsMobile } from '../../../../shared/utils/responsive.utils';
     TooltipModule,
     ConfirmPopupModule,
     CardModule,
+    AvatarModule,
     DefaultValuePipe,
     FormatEventDateTimePipe,
     SmsTriggerLabelPipe,
     SmsTargetLabelPipe,
+    InitialsPipe,
+    UserSummaryPipe,
+    RouterLink,
+    EmptyIllustration,
   ],
   providers: [DialogService, ConfirmationService],
   templateUrl: './sms-campaign-section.html',
@@ -172,7 +183,7 @@ export class SmsCampaignSection implements OnInit {
             this.toast.success('Campaign deleted successfully', 'Deleted');
           },
           error: (error: unknown) => {
-            this.errorHandler.showError(error, 'Failed to delete campaign');
+            this.errorHandler.showError(error);
           },
         });
       },
@@ -216,19 +227,7 @@ export class SmsCampaignSection implements OnInit {
     });
   }
 
-  statusSeverity(status: string): 'success' | 'info' | 'warn' | 'danger' | 'secondary' {
-    switch (status) {
-      case 'ACTIVE':
-        return 'success';
-      case 'SENDING':
-      case 'SENT':
-        return 'info';
-      case 'FAILED':
-        return 'danger';
-      default:
-        return 'secondary';
-    }
-  }
+  readonly statusSeverity = getCampaignStatusSeverity;
 
   canEdit(campaign: SmsCampaign): boolean {
     return campaign.status === 'DRAFT';

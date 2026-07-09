@@ -9,7 +9,7 @@ import { FloatLabelModule } from 'primeng/floatlabel';
 import { MessageModule } from 'primeng/message';
 import { Category } from '../../../../core/models/category.model';
 import { FORM_INPUT_SIZE } from '../../../../shared/constants/form.constants';
-import { shouldShowError } from '../../../../shared/utils/form.utils';
+import { buildDirtyPatch, shouldShowError } from '../../../../shared/utils/form.utils';
 
 @Component({
   selector: 'app-category-form',
@@ -52,11 +52,7 @@ export class CategoryForm implements OnInit {
       return;
     }
 
-    const patch = Object.fromEntries(
-      Object.keys(this.formData)
-        .filter((key) => form.controls[key]?.dirty)
-        .map((key) => [key, this.formData[key as keyof typeof this.formData]]),
-    );
+    const patch = buildDirtyPatch<Partial<typeof this.formData>>(form, this.formData);
 
     this.ref.close(Object.keys(patch).length ? patch : undefined);
   }

@@ -1,7 +1,7 @@
 import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, NgForm } from '@angular/forms';
-import { shouldShowError } from '../../../../shared/utils/form.utils';
+import { buildDirtyPatch, shouldShowError } from '../../../../shared/utils/form.utils';
 import { DynamicDialogConfig, DynamicDialogRef } from 'primeng/dynamicdialog';
 import { InputTextModule } from 'primeng/inputtext';
 import { SelectModule } from 'primeng/select';
@@ -25,6 +25,12 @@ import {
   SMS_CAMPAIGN_TRIGGER_OPTIONS,
   SMS_CAMPAIGN_TARGET_OPTIONS,
 } from '../../../../shared/constants/sms-campaign-columns.constant';
+import {
+  computeMinScheduledDate,
+  parseScheduledDateTime,
+  toScheduledDate,
+  toScheduledTime,
+} from '../../../../shared/utils/campaign-schedule.utils';
 
 @Component({
   selector: 'app-sms-campaign-form',
@@ -95,14 +101,9 @@ export class SmsCampaignForm implements OnInit {
 
     const tz = data.eventTimezone ?? '';
     this.eventTimezone.set(tz);
-    this.minScheduledDate.set(this.computeMinScheduledDate(tz));
+    this.minScheduledDate.set(computeMinScheduledDate(tz));
 
-    let scheduledAt: Date | null = null;
-    if (c?.scheduledDate && c?.scheduledTime) {
-      const [year, month, day] = c.scheduledDate.split('-').map(Number);
-      const [hour, minute] = c.scheduledTime.split(':').map(Number);
-      scheduledAt = new Date(year, month - 1, day, hour, minute);
-    }
+    const scheduledAt = parseScheduledDateTime(c?.scheduledDate, c?.scheduledTime);
 
     this.formData = {
       name: c?.name ?? '',
@@ -128,26 +129,6 @@ export class SmsCampaignForm implements OnInit {
 
   onScheduledAtSelect(value: Date): void {
     this.formData.scheduledAt = value;
-  }
-
-  private computeMinScheduledDate(timezone: string): Date {
-    const nowPlus3 = new Date(Date.now() + 3 * 60 * 1000);
-    if (!timezone) return nowPlus3;
-    try {
-      const parts = new Intl.DateTimeFormat('en-CA', {
-        timeZone: timezone,
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: false,
-      }).formatToParts(nowPlus3);
-      const g = (t: string) => Number(parts.find((p) => p.type === t)!.value);
-      return new Date(g('year'), g('month') - 1, g('day'), g('hour'), g('minute'));
-    } catch {
-      return nowPlus3;
-    }
   }
 
   private loadTemplates(eventId: number): void {
@@ -205,8 +186,8 @@ export class SmsCampaignForm implements OnInit {
       payload.triggerType = this.formData.triggerType;
       payload.targetFilter = this.formData.targetFilter ?? undefined;
       if (this.formData.triggerType === 'SCHEDULED' && this.formData.scheduledAt) {
-        payload.scheduledDate = this.toDateStr(this.formData.scheduledAt);
-        payload.scheduledTime = this.toTimeStr(this.formData.scheduledAt);
+        payload.scheduledDate = toScheduledDate(this.formData.scheduledAt);
+        payload.scheduledTime = toScheduledTime(this.formData.scheduledAt);
       }
     }
 
@@ -214,28 +195,18 @@ export class SmsCampaignForm implements OnInit {
   }
 
   private buildPatch(form: NgForm): UpdateSmsCampaignRequest {
-    const TRANSFORMED = new Set(['scheduledAt']);
-
-    const patch = Object.fromEntries(
-      Object.keys(this.formData)
-        .filter((key) => !TRANSFORMED.has(key) && form.controls[key]?.dirty)
-        .map((key) => [key, this.formData[key as keyof typeof this.formData]]),
-    ) as UpdateSmsCampaignRequest;
+    const patch = buildDirtyPatch<UpdateSmsCampaignRequest>(
+      form,
+      this.formData,
+      new Set(['scheduledAt']),
+    );
 
     if (form.controls['scheduledAt']?.dirty && this.formData.scheduledAt) {
-      patch.scheduledDate = this.toDateStr(this.formData.scheduledAt);
-      patch.scheduledTime = this.toTimeStr(this.formData.scheduledAt);
+      patch.scheduledDate = toScheduledDate(this.formData.scheduledAt);
+      patch.scheduledTime = toScheduledTime(this.formData.scheduledAt);
     }
 
     return patch;
-  }
-
-  private toDateStr(d: Date): string {
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-  }
-
-  private toTimeStr(d: Date): string {
-    return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
   }
 
   onCancel(): void {

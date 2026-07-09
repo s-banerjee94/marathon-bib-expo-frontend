@@ -1,4 +1,3 @@
-import { CommonModule } from '@angular/common';
 import { Component, computed, inject } from '@angular/core';
 import { AppMenuItem } from '../../shared/models/menu.model';
 import { AuthService } from '../../core/services/auth.service';
@@ -8,8 +7,9 @@ import { MenuitemComponent } from '../menuitem/menuitem';
 @Component({
   selector: 'app-menu',
   standalone: true,
-  imports: [CommonModule, MenuitemComponent],
+  imports: [MenuitemComponent],
   templateUrl: './menu.html',
+  host: { class: 'block h-full' },
 })
 export class MenuComponent {
   private authService = inject(AuthService);
@@ -56,22 +56,55 @@ export class MenuComponent {
       icon: 'pi pi-box',
       routerLink: '/distribution',
     },
+    {
+      label: 'Billing',
+      icon: 'pi pi-receipt',
+      routerLink: '/billing',
+      roles: [UserRole.ROOT, UserRole.ADMIN],
+    },
+    {
+      label: 'Audit Logs',
+      icon: 'pi pi-history',
+      routerLink: '/audit-logs',
+      roles: [UserRole.ROOT, UserRole.ADMIN, UserRole.ORGANIZER_ADMIN, UserRole.ORGANIZER_USER],
+    },
+    {
+      label: 'System Messaging',
+      icon: 'pi pi-megaphone',
+      routerLink: '/system-messaging',
+      roles: [UserRole.ROOT],
+    },
+    {
+      label: 'Campaign Senders',
+      icon: 'pi pi-send',
+      routerLink: '/campaign-providers',
+      roles: [UserRole.ROOT],
+    },
+  ];
+
+  // Pinned to the bottom of the sidebar, visually separated from the main nav.
+  private readonly bottomMenuItems: AppMenuItem[] = [
+    {
+      label: 'Organization',
+      icon: 'pi pi-building',
+      routerLink: '/organization',
+      roles: [UserRole.ORGANIZER_ADMIN],
+    },
   ];
 
   filteredMenu = computed(() => {
     const userRole = this.authService.getCurrentRole();
     if (!userRole) return [];
-
-    return this.filterMenuByRole(this.menuItems, userRole);
+    return this.filterMenu(this.menuItems, userRole);
   });
 
-  private filterMenuByRole(items: AppMenuItem[], userRole: UserRole): AppMenuItem[] {
-    return items
-      .filter((item) => !item.roles || item.roles.includes(userRole))
-      .map((item) => ({
-        ...item,
-        items: item.items ? this.filterMenuByRole(item.items, userRole) : undefined,
-      }))
-      .filter((item) => !item.items || item.items.length > 0);
+  filteredBottomMenu = computed(() => {
+    const userRole = this.authService.getCurrentRole();
+    if (!userRole) return [];
+    return this.filterMenu(this.bottomMenuItems, userRole);
+  });
+
+  private filterMenu(items: AppMenuItem[], userRole: UserRole): AppMenuItem[] {
+    return items.filter((item) => !item.roles || item.roles.includes(userRole));
   }
 }

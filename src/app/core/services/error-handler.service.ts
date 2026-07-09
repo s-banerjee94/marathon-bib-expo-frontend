@@ -115,6 +115,8 @@ export class ErrorHandlerService {
       if (error.statusText) return error.statusText;
       return `HTTP Error ${error.status}`;
     }
+    // Surface client-side thrown errors verbatim (e.g. image validation messages).
+    if (error instanceof Error && error.message) return error.message;
     return 'An error occurred. Please try again.';
   }
 

@@ -5,6 +5,10 @@ import { CardModule } from 'primeng/card';
 import { PaginatorModule, PaginatorState } from 'primeng/paginator';
 import { SkeletonModule } from 'primeng/skeleton';
 import { TableLazyLoadEvent } from 'primeng/table';
+import {
+  EmptyIllustration,
+  EmptyIllustrationName,
+} from '../../../illustrations/empty-illustration';
 
 /**
  * Card-style replacement for <p-table> on mobile.
@@ -18,7 +22,14 @@ import { TableLazyLoadEvent } from 'primeng/table';
  */
 @Component({
   selector: 'app-mobile-card-list',
-  imports: [CommonModule, ButtonModule, CardModule, PaginatorModule, SkeletonModule],
+  imports: [
+    CommonModule,
+    ButtonModule,
+    CardModule,
+    PaginatorModule,
+    SkeletonModule,
+    EmptyIllustration,
+  ],
   templateUrl: './mobile-card-list.html',
   styleUrl: './mobile-card-list.css',
 })
@@ -30,6 +41,7 @@ export class MobileCardList<T = unknown> {
   isLoading = input<boolean>(false);
   rowsPerPageOptions = input<number[]>([5, 10, 20, 50]);
   emptyIcon = input<string>('pi pi-inbox');
+  emptyIllustration = input<EmptyIllustrationName>('no-data');
   emptyMessage = input<string>('No results found');
   emptyHint = input<string>('Try adjusting your search or filters');
 

@@ -13,13 +13,12 @@
           [rounded]="true"
           [text]="true"
           icon="pi pi-bars"
-          pTooltip="Toggle menu"
           ariaLabel="Toggle navigation menu"
         />
       }
-      <a routerLink="/" class="px-4 font-semibold text-[var(--text-color)] no-underline"
-        >Marathon Bib Expo</a
-      >
+      <a routerLink="/" ariaLabel="Marathon Bib Expo home" class="flex items-center no-underline">
+        <img src="logo.png" alt="Marathon Bib Expo" class="mx-4 h-8 w-auto invert dark:invert-0" />
+      </a>
 
       <!-- Landing in-page navigation — only on the public root route -->
       @if (isLandingRoute()) {
@@ -56,11 +55,35 @@
 
   <ng-template pTemplate="end">
     <div class="flex items-center gap-2 pr-4">
+      <!-- Command Palette search trigger — app pages only -->
+      @if (isAuthenticated() && !isLandingRoute() && commandPalette.available()) {
+        <p-button
+          (onClick)="commandPalette.open()"
+          [outlined]="true"
+          severity="secondary"
+          styleClass="!gap-2 !px-2.5 !py-1.5"
+          ariaLabel="Open search command palette"
+        >
+          <i class="pi pi-search text-sm"></i>
+          <span class="hidden md:inline text-sm" style="color: var(--text-color-secondary)"
+            >Search</span
+          >
+          <kbd
+            class="hidden md:inline-flex items-center h-5 px-1.5 rounded border text-[11px] font-semibold"
+            style="
+              background: var(--surface-hover);
+              border-color: var(--surface-border);
+              color: var(--text-color-secondary);
+            "
+            >{{ commandPalette.shortcutLabel }}</kbd
+          >
+        </p-button>
+      }
+
       <!-- Dark Mode Toggle — available to everyone -->
       <p-button
         (onClick)="layoutService.toggleDarkMode()"
         [icon]="layoutService.isDarkTheme() ? 'pi pi-moon' : 'pi pi-sun'"
-        [pTooltip]="layoutService.isDarkTheme() ? 'Switch to light mode' : 'Switch to dark mode'"
         [ariaLabel]="layoutService.isDarkTheme() ? 'Switch to light mode' : 'Switch to dark mode'"
         [rounded]="true"
         [text]="true"
@@ -72,7 +95,6 @@
         [rounded]="true"
         [text]="true"
         icon="pi pi-palette"
-        pTooltip="Theme settings"
         ariaLabel="Open theme settings"
       />
       <p-popover #themePopover appendTo="body">
@@ -106,7 +128,6 @@
           (onClick)="notifPopover.toggle($event)"
           [rounded]="true"
           [text]="true"
-          pTooltip="Notifications"
           [ariaLabel]="
             notificationService.unreadCount() > 0
               ? 'Notifications, ' + notificationService.unreadCount() + ' unread'
@@ -128,88 +149,130 @@
         </p-button>
 
         <!-- Notification Popover -->
-        <p-popover #notifPopover appendTo="body">
-          <div class="flex flex-col w-80">
+        <p-popover #notifPopover appendTo="body" (onShow)="notificationService.openNotifications()">
+          <div class="flex flex-col w-80 sm:w-96">
             <!-- Header -->
-            <div class="flex items-center justify-between px-4 pt-3 pb-2">
-              <span class="font-semibold text-sm tracking-wide">Notifications</span>
+            <div class="flex items-center justify-between gap-1 p-1">
+              <div class="flex items-center gap-1">
+                <span class="font-semibold text-sm tracking-wide">Notifications</span>
+                @if (notificationService.unreadCount() > 0) {
+                  <span
+                    class="text-[11px] font-semibold px-1 py-0.5 rounded-full"
+                    style="
+                      background: color-mix(in srgb, var(--primary-color), transparent 90%);
+                      color: var(--primary-color);
+                    "
+                  >
+                    {{ notificationService.unreadCount() }} unread
+                  </span>
+                }
+              </div>
               @if (notificationService.unreadCount() > 0) {
-                <span
-                  class="text-[11px] font-semibold px-2 py-0.5 rounded-full"
-                  style="
-                    background: color-mix(in srgb, var(--primary-color), transparent 90%);
-                    color: var(--primary-color);
-                  "
-                >
-                  {{ notificationService.unreadCount() }} unread
-                </span>
+                <p-button
+                  (onClick)="notificationService.markAllAsRead()"
+                  label="Mark all read"
+                  [text]="true"
+                  size="small"
+                  styleClass="!text-[11px] !py-0.5 !px-1"
+                />
               }
             </div>
 
             <!-- List -->
-            <div class="flex flex-col gap-1 max-h-80 overflow-y-auto px-2 pb-2">
-              @if (notificationService.notifications().length === 0) {
-                <div class="flex flex-col items-center justify-center py-10 px-4">
-                  <span
-                    class="w-12 h-12 rounded-full flex items-center justify-center mb-3"
-                    style="background: var(--surface-hover)"
-                  >
-                    <i
-                      class="pi pi-bell-slash text-xl"
-                      style="color: var(--text-color-secondary)"
-                    ></i>
-                  </span>
+            <div class="flex flex-col gap-1 max-h-80 overflow-y-auto p-1">
+              @if (
+                notificationService.loading() && notificationService.notifications().length === 0
+              ) {
+                @for (i of [1, 2, 3]; track i) {
+                  <app-notification-card-skeleton />
+                }
+              } @else if (notificationService.notifications().length === 0) {
+                <div class="flex flex-col items-center justify-center gap-1 py-6">
+                  <app-empty-illustration name="no-notifications" [size]="72" class="mb-1" />
                   <p class="text-sm font-medium">All caught up</p>
-                  <p class="text-xs mt-1" style="color: var(--text-color-secondary)">
+                  <p class="text-xs" style="color: var(--text-color-secondary)">
                     No notifications yet
                   </p>
                 </div>
               } @else {
                 @for (notif of notificationService.notifications(); track notif.id) {
-                  <div
-                    (click)="onNotificationRead(notif.id, notif.read); notifPopover.hide()"
-                    class="flex flex-col gap-1 px-3 py-2.5 rounded-lg cursor-pointer transition-all"
-                    [style]="
-                      !notif.read
-                        ? 'background: color-mix(in srgb, var(--primary-color), transparent 90%); border-left: 3px solid var(--primary-color)'
-                        : 'border-left: 3px solid transparent'
-                    "
-                    style="padding-left: calc(0.75rem - 3px)"
-                  >
-                    <div class="flex items-start justify-between gap-2">
-                      <span class="text-sm leading-snug" [class.font-semibold]="!notif.read">
-                        {{ notif.title }}
-                      </span>
-                      @if (!notif.read) {
-                        <span
-                          class="w-2 h-2 rounded-full shrink-0 mt-1.5"
-                          style="background: var(--primary-color)"
-                        ></span>
-                      }
-                    </div>
-                    <p class="text-xs line-clamp-2" style="color: var(--text-color-secondary)">
-                      {{ notif.message }}
-                    </p>
-                    <span class="text-[11px]" style="color: var(--text-color-secondary)">
-                      {{ notif.createdAt | date: 'dd MMM, h:mm a' }}
-                    </span>
-                  </div>
+                  <app-notification-card [notification]="notif" (navigated)="notifPopover.hide()" />
+                }
+
+                @if (notificationService.hasMore()) {
+                  <p-button
+                    (onClick)="notificationService.loadMore()"
+                    [label]="notificationService.loadingMore() ? 'Loading…' : 'Load more'"
+                    [loading]="notificationService.loadingMore()"
+                    [text]="true"
+                    size="small"
+                    styleClass="w-full !text-xs"
+                  />
                 }
               }
+            </div>
+
+            <!-- Footer -->
+            <div class="border-t p-1" style="border-color: var(--surface-border)">
+              <p-button
+                (onClick)="viewAllNotifications(); notifPopover.hide()"
+                label="See All Notifications"
+                icon="pi pi-arrow-right"
+                iconPos="right"
+                [text]="true"
+                size="small"
+                styleClass="w-full !text-xs"
+              />
             </div>
           </div>
         </p-popover>
 
+        <!-- AI Assistant -->
+        @if (aiAssistant.available()) {
+          <p-button
+            (onClick)="aiAssistant.toggle()"
+            [rounded]="true"
+            [text]="true"
+            icon="pi pi-sparkles"
+            ariaLabel="Open AI assistant"
+          />
+        }
+
         <!-- User Avatar Menu -->
         <p-avatar
           (click)="menu.toggle($event)"
-          [label]="avatarLabel()"
+          (onImageError)="onAvatarImageError()"
+          [image]="avatarImage()"
+          [label]="avatarImage() ? undefined : avatarLabel()"
           shape="circle"
           size="normal"
-          styleClass="cursor-pointer"
+          styleClass="cursor-pointer shrink-0"
           ariaLabel="Open user menu"
         ></p-avatar>
-        <p-menu #menu [model]="items" popup="true"></p-menu>
+        <p-menu #menu [model]="items" popup="true" appendTo="body" styleClass="min-w-56 w-max">
+          <!-- Identity header (industry-standard account menu) -->
+          <ng-template #start>
+            <div
+              class="flex items-center gap-3 px-3 py-3 border-b"
+              style="border-color: var(--surface-border)"
+            >
+              <p-avatar
+                (onImageError)="onAvatarImageError()"
+                [image]="avatarImage()"
+                [label]="avatarImage() ? undefined : avatarLabel()"
+                shape="circle"
+                size="large"
+                styleClass="shrink-0"
+              ></p-avatar>
+              <div class="flex flex-col items-start gap-1">
+                <span class="font-semibold whitespace-nowrap">
+                  {{ currentUser()?.fullName || currentUser()?.username }}
+                </span>
+                <p-tag [value]="roleLabel()" />
+              </div>
+            </div>
+          </ng-template>
+        </p-menu>
       }
     </div>
   </ng-template>

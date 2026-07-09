@@ -11,3 +11,7 @@ export const BUTTON_SIZE = 'small' as const;
 
 // Number of items loaded per page / load-more request across all paginated lists
 export const PAGINATION_LIMIT = 50;
+
+// Backend password length rule (8–100 chars), shared by every password form
+export const PASSWORD_MIN_LENGTH = 8;
+export const PASSWORD_MAX_LENGTH = 100;

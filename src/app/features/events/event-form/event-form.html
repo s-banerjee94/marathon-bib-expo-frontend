@@ -29,47 +29,44 @@
   <form
     #eventForm="ngForm"
     (ngSubmit)="onSubmit(eventForm)"
-    [class]="isDialogMode() ? 'flex flex-col gap-4 mt-2' : 'flex flex-col gap-4'"
+    [class]="isDialogMode() ? 'flex flex-col gap-4' : 'flex flex-col gap-4'"
   >
-    <!-- Organization & Status -->
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-      @if (showOrganizationDropdown()) {
-        <div class="flex flex-col gap-1">
-          <app-organization-selector
-            (organizationIdChange)="event.organizationId = $event || 0"
-            [required]="true"
-            [selectedOrganizationId]="event.organizationId"
-            [size]="inputSize"
-            inputId="organizationId"
-            label="Organization *"
-          >
-            @if (eventForm.submitted && !event.organizationId) {
-              <p-message [size]="inputSize" severity="error" variant="simple">
-                Organization is required.
-              </p-message>
-            }
-          </app-organization-selector>
-        </div>
-      }
-      <div class="flex flex-col gap-1">
-        <p-floatlabel variant="on">
-          <p-select
-            [(ngModel)]="event.status"
-            [checkmark]="true"
-            [options]="statusOptions"
-            [size]="inputSize"
-            appendTo="body"
-            fluid="true"
-            id="status"
-            name="status"
-            optionLabel="label"
-            optionValue="value"
-            required
-          ></p-select>
-          <label for="status">Status *</label>
-        </p-floatlabel>
+    <!-- Dialog header with close button (dialog mode only; route mode uses the card title) -->
+    @if (isDialogMode()) {
+      <div class="flex items-center justify-between gap-3">
+        <h2 class="text-xl font-bold">{{ getTitle() }}</h2>
+        <p-button
+          (onClick)="handleCancel()"
+          [disabled]="isSubmitting()"
+          [rounded]="true"
+          [text]="true"
+          ariaLabel="Close"
+          icon="pi pi-times"
+          severity="secondary"
+          type="button"
+        />
       </div>
-    </div>
+    }
+
+    <!-- Organization -->
+    @if (showOrganizationDropdown()) {
+      <div class="flex flex-col gap-1">
+        <app-organization-selector
+          (organizationIdChange)="event.organizationId = $event || 0"
+          [required]="true"
+          [selectedOrganizationId]="event.organizationId"
+          [size]="inputSize"
+          inputId="organizationId"
+          label="Organization *"
+        >
+          @if (eventForm.submitted && !event.organizationId) {
+            <p-message [size]="inputSize" severity="error" variant="simple">
+              Organization is required.
+            </p-message>
+          }
+        </app-organization-selector>
+      </div>
+    }
 
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
       <!-- Event Name -->
@@ -185,7 +182,7 @@
         }
         @if (isTimezoneLocked()) {
           <small class="text-xs leading-none">
-            Timezone cannot be changed for {{ event.status }} events.
+            Timezone cannot be changed for {{ currentStatus() }} events.
           </small>
         }
       </div>
@@ -371,9 +368,7 @@
     <!-- Action Buttons -->
     <div
       [class]="
-        isDialogMode()
-          ? 'flex justify-end gap-3 pt-4 border-t'
-          : 'flex justify-between gap-3 pt-4 border-t'
+        isDialogMode() ? 'flex justify-end gap-3 pt-4' : 'flex justify-between gap-3 pt-4 border-t'
       "
     >
       @if (isDialogMode()) {

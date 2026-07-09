@@ -17,10 +17,18 @@ import { TagModule } from 'primeng/tag';
 import { SkeletonModule } from 'primeng/skeleton';
 import { Menu } from 'primeng/menu';
 import { ConfirmPopupModule } from 'primeng/confirmpopup';
+import { TooltipModule } from 'primeng/tooltip';
+import { DialogModule } from 'primeng/dialog';
 import { ConfirmationService, MenuItem } from 'primeng/api';
 import { DialogService } from 'primeng/dynamicdialog';
 import { Event, EventStatus } from '../../../../core/models/event.model';
 import { EventService } from '../../../../core/services/event.service';
+import { ImageUploadService } from '../../../../core/services/image-upload.service';
+import { ImageUpload } from '../../../../shared/components/image-upload/image-upload';
+import { EventListBus } from '../../event-list-bus.service';
+import { AuthService } from '../../../../core/services/auth.service';
+import { UserRole } from '../../../../core/models/user.model';
+import { DistributionService } from '../../../../core/services/distribution.service';
 import { ErrorHandlerService } from '../../../../core/services/error-handler.service';
 import { ToastService } from '../../../../core/services/toast.service';
 import { EventDetailsState } from '../event-details-state.service';
@@ -31,6 +39,8 @@ import {
 } from '../../../../shared/utils/event-status.utils';
 import { EventForm } from '../../event-form/event-form';
 import { BUTTON_SIZE } from '../../../../shared/constants/form.constants';
+import { injectIsMobile } from '../../../../shared/utils/responsive.utils';
+import { MobileTabBar, TabItem } from '../../../../shared/components/mobile-tab-bar/mobile-tab-bar';
 
 const DEFAULT_TAB = 'dashboard';
 
@@ -45,10 +55,14 @@ const DEFAULT_TAB = 'dashboard';
     SkeletonModule,
     Menu,
     ConfirmPopupModule,
+    TooltipModule,
+    DialogModule,
     RouterOutlet,
     RouterLink,
     RouterLinkActive,
     FormatEventDateTimePipe,
+    MobileTabBar,
+    ImageUpload,
   ],
   providers: [DialogService, ConfirmationService, EventDetailsState],
   templateUrl: './event-details.html',
@@ -60,18 +74,39 @@ export class EventDetails implements OnInit {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private eventService = inject(EventService);
+  private distributionService = inject(DistributionService);
   private errorHandler = inject(ErrorHandlerService);
   private toast = inject(ToastService);
   private dialogService = inject(DialogService);
   private confirmationService = inject(ConfirmationService);
   private destroyRef = inject(DestroyRef);
   private state = inject(EventDetailsState);
+  private authService = inject(AuthService);
+  private imageUploadService = inject(ImageUploadService);
+  private eventListBus = inject(EventListBus);
+
+  // Billing is visible to ROOT/ADMIN/ORGANIZER_ADMIN only — never ORGANIZER_USER or DISTRIBUTOR.
+  protected readonly canViewBilling = this.authService.hasAnyRole([
+    UserRole.ROOT,
+    UserRole.ADMIN,
+    UserRole.ORGANIZER_ADMIN,
+  ]);
+
+  // Limits is visible to ROOT/ADMIN only.
+  protected readonly canViewLimits = this.authService.hasAnyRole([UserRole.ROOT, UserRole.ADMIN]);
 
   event = signal<Event | null>(null);
   isLoading = signal(true);
   statusMenuItems = signal<MenuItem[]>([]);
   changingStatus = signal(false);
+  generatingShortUrls = signal(false);
   lastClickTarget: EventTarget | null = null;
+
+  // Event image — large preview lightbox + presigned-URL upload dialog.
+  protected readonly logoLoadError = signal(false);
+  protected readonly uploadingLogo = signal(false);
+  protected readonly imagePreviewVisible = signal(false);
+  protected readonly uploadDialogVisible = signal(false);
 
   activeTab = toSignal(
     this.router.events.pipe(
@@ -85,6 +120,26 @@ export class EventDetails implements OnInit {
   protected readonly getStatusSeverity = getEventStatusSeverity;
   protected readonly getStatusLabel = getEventStatusLabel;
   protected readonly buttonSize = BUTTON_SIZE;
+  protected readonly isMobile = injectIsMobile();
+
+  protected readonly eventTabs: TabItem[] = [
+    { id: 'dashboard', label: 'Dashboard', icon: 'pi-chart-bar' },
+    { id: 'participants', label: 'Participants', icon: 'pi-users' },
+    { id: 'goodies', label: 'Goodies', icon: 'pi-gift' },
+    { id: 'races', label: 'Races', icon: 'pi-flag' },
+    { id: 'categories', label: 'Categories', icon: 'pi-tags' },
+    { id: 'templates', label: 'Template', icon: 'pi-envelope' },
+    { id: 'campaigns', label: 'Campaign', icon: 'pi-send' },
+    { id: 'billing', label: 'Billing', icon: 'pi-receipt' },
+    { id: 'limits', label: 'Limits', icon: 'pi-sliders-h' },
+  ];
+
+  // Mobile tab bar — drops tabs the current role can't view.
+  protected readonly visibleTabs: TabItem[] = this.eventTabs.filter((tab) => {
+    if (tab.id === 'billing') return this.canViewBilling;
+    if (tab.id === 'limits') return this.canViewLimits;
+    return true;
+  });
 
   ngOnInit(): void {
     if (!Number.isFinite(this.eventId()) || this.eventId() <= 0) {
@@ -96,6 +151,7 @@ export class EventDetails implements OnInit {
 
   loadEventDetails(): void {
     this.isLoading.set(true);
+    this.logoLoadError.set(false);
     this.eventService
       .getEventById(this.eventId())
       .pipe(takeUntilDestroyed(this.destroyRef))
@@ -118,11 +174,16 @@ export class EventDetails implements OnInit {
     this.router.navigate(['/events']);
   }
 
+  onTabChange(tabId: string): void {
+    this.router.navigate([tabId], { relativeTo: this.route });
+  }
+
   onEditEvent(): void {
     const ref = this.dialogService.open(EventForm, {
       header: 'Edit Event',
       width: '800px',
       modal: true,
+      showHeader: false,
       data: {
         isEditMode: true,
         eventId: this.eventId(),
@@ -136,6 +197,90 @@ export class EventDetails implements OnInit {
         this.toast.success(result.message || 'Event updated successfully');
       }
     });
+  }
+
+  onGenerateShortUrls(): void {
+    this.generatingShortUrls.set(true);
+    this.distributionService
+      .generateShortUrls(this.eventId())
+      .pipe(
+        takeUntilDestroyed(this.destroyRef),
+        finalize(() => this.generatingShortUrls.set(false)),
+      )
+      .subscribe({
+        next: () => {
+          this.toast.info(
+            'Links are being generated in the background and will be ready shortly — you can keep working.',
+            'Generating verification links',
+          );
+        },
+        error: (error) => {
+          this.errorHandler.showError(error, 'Failed to start short URL generation');
+        },
+      });
+  }
+
+  // ---------- Event image ----------
+  protected onLogoError(): void {
+    this.logoLoadError.set(true);
+  }
+
+  protected openImagePreview(): void {
+    if (this.event()?.logoUrl && !this.logoLoadError()) {
+      this.imagePreviewVisible.set(true);
+    }
+  }
+
+  protected openUploadDialog(): void {
+    this.uploadDialogVisible.set(true);
+  }
+
+  protected onLogoSelected(file: File): void {
+    const id = this.eventId();
+    if (!id) return;
+    this.uploadingLogo.set(true);
+    this.imageUploadService
+      .replaceEventLogo(id, file)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (event) => this.afterLogoChange(event, 'Image updated'),
+        error: (error) => {
+          this.uploadingLogo.set(false);
+          this.errorHandler.showError(error);
+        },
+      });
+  }
+
+  protected onLogoRemove(): void {
+    const id = this.eventId();
+    if (!id) return;
+    this.uploadingLogo.set(true);
+    this.imageUploadService
+      .removeEventLogo(id)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (event) => this.afterLogoChange(event, 'Image removed'),
+        error: (error) => {
+          this.uploadingLogo.set(false);
+          this.errorHandler.showError(error);
+        },
+      });
+  }
+
+  private afterLogoChange(event: Event, message: string): void {
+    this.uploadingLogo.set(false);
+    this.logoLoadError.set(false);
+    this.event.set(event);
+    this.state.setEvent(event);
+    this.eventListBus.publish({ action: 'updated', event });
+    this.uploadDialogVisible.set(false);
+    this.toast.success(message);
+  }
+
+  // ---------- Address helper ----------
+  protected formatAddress(e: Event | null): string {
+    if (!e) return '';
+    return [e.city, e.stateProvince, e.postalCode, e.country].filter(Boolean).join(', ');
   }
 
   private buildStatusMenuItems(currentStatus: EventStatus): void {

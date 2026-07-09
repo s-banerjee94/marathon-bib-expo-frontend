@@ -16,17 +16,12 @@ export const USERS_ROUTES: Routes = [
     loadComponent: () => import('./user-list/user-list').then((m) => m.UserList),
     canActivate: [roleGuard(USER_ROLES)],
     title: pageTitle('Users'),
-    children: [
-      {
-        path: 'new',
-        loadComponent: () => import('./user-form/user-form').then((m) => m.UserForm),
-        title: pageTitle('New User'),
-      },
-      {
-        path: ':id/edit',
-        loadComponent: () => import('./user-form/user-form').then((m) => m.UserForm),
-        title: pageTitle('Edit User'),
-      },
-    ],
+  },
+  {
+    // Row "edit" opens the full-page user view/edit (not a dialog). Create is a dialog.
+    path: ':id/edit',
+    loadComponent: () => import('../user-account/user-account').then((m) => m.UserAccount),
+    canActivate: [roleGuard(USER_ROLES)],
+    title: pageTitle('Manage User'),
   },
 ];

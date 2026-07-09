@@ -1,4 +1,4 @@
-import { Component, computed, DestroyRef, effect, inject, signal, ViewChild } from '@angular/core';
+import { Component, computed, DestroyRef, inject, signal, ViewChild } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import {
   ActivatedRoute,
@@ -6,7 +6,7 @@ import {
   Params,
   ParamMap,
   Router,
-  RouterOutlet,
+  RouterLink,
 } from '@angular/router';
 import { EMPTY, Subject } from 'rxjs';
 import { catchError, debounceTime, distinctUntilChanged, filter, switchMap } from 'rxjs/operators';
@@ -23,7 +23,11 @@ import { CardModule } from 'primeng/card';
 import { CheckboxModule } from 'primeng/checkbox';
 import { SelectModule } from 'primeng/select';
 import { TagModule } from 'primeng/tag';
+import { AvatarModule } from 'primeng/avatar';
 import { FloatLabelModule } from 'primeng/floatlabel';
+import { MenuModule } from 'primeng/menu';
+import { MenuItem } from 'primeng/api';
+import { ToggleSwitchModule } from 'primeng/toggleswitch';
 
 import { User, UserRole } from '../../../core/models/user.model';
 import { PageableParams, PageableResponse } from '../../../core/models/api.model';
@@ -34,8 +38,14 @@ import { USER_COLUMNS } from '../../../shared/constants/user-columns.constant';
 import { STORAGE_KEYS } from '../../../shared/constants/storage-keys.constant';
 import { USER_SORT_OPTIONS } from '../../../shared/constants/sort-options.constant';
 import { UserForm } from '../user-form/user-form';
+import { InviteForm } from '../invite-form/invite-form';
+import { ResetLinkForm } from '../reset-link-form/reset-link-form';
 import { UserListBus, UserMutation } from '../user-list-bus.service';
 import { DefaultValuePipe } from '../../../shared/pipes/default-value.pipe';
+import { EventNamePipe } from '../../../shared/pipes/event-name-pipe';
+import { EventLogoPipe } from '../../../shared/pipes/event-logo-pipe';
+import { InitialsPipe } from '../../../shared/pipes/initials-pipe';
+import { UserSummaryPipe } from '../../../shared/pipes/user-summary-pipe';
 import { BaseTableComponent } from '../../../shared/base/base-table.component';
 import { TableColumn, TableFilterPreferences } from '../../../shared/models/table-config.model';
 import { OrganizationSelector } from '../../../layout/organization-selector/organization-selector';
@@ -44,10 +54,17 @@ import {
   FULL_ROLE_FILTER_OPTIONS,
   ORG_ROLE_FILTER_OPTIONS,
 } from '../../../shared/constants/role-filter-options.constant';
-import { userCanManage } from '../../../shared/utils/user-permissions.utils';
+import {
+  userCanIssueResetLink,
+  userCanManage,
+  userCanToggleEnabled,
+  userCanToggleLocked,
+} from '../../../shared/utils/user-permissions.utils';
+import { consumeCreateNavigationState } from '../../../shared/utils/navigation-state.utils';
 import { ConfirmationService } from 'primeng/api';
 import { DialogService } from 'primeng/dynamicdialog';
 import { ListShell } from '../../../shared/components/list/list-shell/list-shell';
+import { EmptyIllustration } from '../../../shared/illustrations/empty-illustration';
 
 interface UserFilterPreferences extends TableFilterPreferences {
   enabled: boolean;
@@ -74,10 +91,18 @@ interface UserFilterPreferences extends TableFilterPreferences {
     SelectModule,
     TagModule,
     FloatLabelModule,
+    MenuModule,
+    ToggleSwitchModule,
+    AvatarModule,
     DefaultValuePipe,
+    EventNamePipe,
+    EventLogoPipe,
+    InitialsPipe,
+    UserSummaryPipe,
     OrganizationSelector,
-    RouterOutlet,
     ListShell,
+    EmptyIllustration,
+    RouterLink,
   ],
   providers: [DialogService, ConfirmationService],
   templateUrl: './user-list.html',
@@ -85,17 +110,38 @@ interface UserFilterPreferences extends TableFilterPreferences {
 })
 export class UserList extends BaseTableComponent<User, UserFilterPreferences> {
   @ViewChild('orgPopover') orgPopover!: Popover;
+  // Shared action panel for the per-row kebab (one instance, reused by every row).
+  @ViewChild('rowActions') rowActions!: Popover;
+  // The row the open panel acts on — drives its header and switch states.
+  actionUser = signal<User | null>(null);
+  // The kebab button the panel opened from — used to anchor the confirm popups.
+  private actionAnchor: EventTarget | null = null;
+
+  // Status switches read green when "good" (enabled / unlocked) and red when not,
+  // via scoped design tokens (palette tokens, no custom CSS).
+  readonly switchStatusDt = {
+    background: 'var(--p-red-500)',
+    hover: { background: 'var(--p-red-600)' },
+    checked: {
+      background: 'var(--p-green-500)',
+      hover: { background: 'var(--p-green-600)' },
+    },
+  };
   // Organization popover state
   organizationCache = new Map<number, Organization>();
   loadingOrganizationId = signal<number | null>(null);
   currentOrganizationDetails = signal<Organization | null>(null);
   // Toggle enabled state
   togglingUserId = signal<number | null>(null);
+  // Toggle locked state (ROOT/ADMIN only)
+  togglingLockUserId = signal<number | null>(null);
   // Delete state
   deletingUserId = signal<number | null>(null);
   // User-specific filters
   filterRole = signal<UserRole | null>(null);
   filterOrganizationId = signal<number | null>(null);
+  // Deep-link only filter (no UI control): /users?eventId=10 lists that event's distributors.
+  filterEventId = signal<number | null>(null);
   // User-specific sort options
   readonly sortOptions = USER_SORT_OPTIONS;
   // Base class requirements
@@ -109,13 +155,6 @@ export class UserList extends BaseTableComponent<User, UserFilterPreferences> {
   private route = inject(ActivatedRoute);
   private destroyRef = inject(DestroyRef);
   private userListBus = inject(UserListBus);
-  // Tracks which dialog is currently driven by the URL: null = closed, 'new' = create, 'edit:<id>' = edit.
-  // Used to ignore router events that don't change the dialog state.
-  private dialogKey: string | null = null;
-  // True when the dialog is being closed by syncDialogToRoute (URL change),
-  // so the onClose handler skips its own URL-clearing navigation.
-  private closingDialogFromRoute = false;
-  hasFormRoute = signal(false);
   // Drawer badge: count of filters set away from their defaults.
   activeFilterCount = computed(() => {
     let count = 0;
@@ -131,24 +170,11 @@ export class UserList extends BaseTableComponent<User, UserFilterPreferences> {
   private loadTrigger = new Subject<void>();
   // Default page size — kept consistent with BaseTableComponent's initial pageSize signal so
   // the URL stays clean (?size=… is only emitted when the user picks a non-default size).
-  private readonly DEFAULT_PAGE_SIZE = 5;
+  private readonly DEFAULT_PAGE_SIZE = 20;
 
   constructor() {
     super();
     this.initializeColumns();
-    this.syncDialogToRoute();
-    this.router.events
-      .pipe(
-        filter((event): event is NavigationEnd => event instanceof NavigationEnd),
-        takeUntilDestroyed(this.destroyRef),
-      )
-      .subscribe(() => this.syncDialogToRoute());
-
-    // Viewport flag now lives on the base class; re-run dialog sync whenever it flips.
-    effect(() => {
-      this.isMobile();
-      this.syncDialogToRoute();
-    });
 
     // Subscribe to the load pipeline BEFORE queryParamMap — the route observable emits the
     // current value synchronously on subscribe, which triggers loadTrigger.next() inside
@@ -185,6 +211,23 @@ export class UserList extends BaseTableComponent<User, UserFilterPreferences> {
     this.userListBus.mutations$
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((mutation) => this.applyUserMutation(mutation));
+
+    // Dashboards and the `n u` shortcut deep-link here with { create: true,
+    // createRole? } in the navigation state. NavigationEnd covers both arriving
+    // from another page and re-triggering while already on this one (the caller
+    // navigates with onSameUrlNavigation: 'reload').
+    this.router.events
+      .pipe(
+        filter((event) => event instanceof NavigationEnd),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe(() => this.consumeCreateRequest());
+  }
+
+  private consumeCreateRequest(): void {
+    const request = consumeCreateNavigationState();
+    if (!request) return;
+    this.openCreateDialog((request.createRole as UserRole | null) ?? undefined);
   }
 
   private applyUserMutation(mutation: UserMutation): void {
@@ -217,15 +260,7 @@ export class UserList extends BaseTableComponent<User, UserFilterPreferences> {
 
   getColumnAlignment(field: string): string {
     // Center alignment for status/tag columns
-    if (
-      [
-        'enabled',
-        'role',
-        'accountNonExpired',
-        'accountNonLocked',
-        'credentialsNonExpired',
-      ].includes(field)
-    ) {
+    if (['enabled', 'role', 'accountNonLocked'].includes(field)) {
       return 'text-center';
     }
     // Right alignment for numeric columns
@@ -277,11 +312,11 @@ export class UserList extends BaseTableComponent<User, UserFilterPreferences> {
     });
   }
 
-  toggleUserEnabled(event: Event, user: User): void {
+  toggleUserEnabled(target: EventTarget | null, user: User): void {
     const action = user.enabled ? 'disable' : 'enable';
 
     this.confirmationService.confirm({
-      target: event.currentTarget as EventTarget,
+      target: target ?? undefined,
       message: `Do you want to ${action} ${user.username}?`,
       icon: 'pi pi-exclamation-triangle',
       acceptButtonProps: {
@@ -322,131 +357,144 @@ export class UserList extends BaseTableComponent<User, UserFilterPreferences> {
     });
   }
 
-  onCreate(): void {
-    this.router.navigate(['/users/new'], { queryParamsHandling: 'preserve' });
-  }
+  // The "Create" button opens this popup menu: fill in details now, or issue an
+  // invite link the new user accepts themselves.
+  readonly createMenuItems: MenuItem[] = [
+    {
+      label: 'Create manually',
+      icon: 'pi pi-user-plus',
+      command: () => this.openCreateDialog(),
+    },
+    {
+      label: 'Invite via link',
+      icon: 'pi pi-link',
+      command: () => this.openInviteDialog(),
+    },
+  ];
 
   onEdit(user: User): void {
     this.router.navigate(['/users', user.id, 'edit'], { queryParamsHandling: 'preserve' });
   }
 
-  private syncDialogToRoute(): void {
-    const child = this.route.snapshot.firstChild;
-    const segments = child?.url ?? [];
-    let nextKey: string | null = null;
-
-    if (segments[0]?.path === 'new') {
-      nextKey = 'new';
-    } else if (segments.length === 2 && segments[1].path === 'edit') {
-      nextKey = `edit:${segments[0].path}`;
-    }
-
-    this.hasFormRoute.set(nextKey !== null);
-
-    // On mobile the routed UserForm component takes the whole view; skip the dialog flow
-    // and tear down any dialog that was open before a viewport change.
-    if (this.isMobile()) {
-      if (this.dialogKey !== null && this.dialogRef) {
-        this.closingDialogFromRoute = true;
-        this.dialogRef.close();
-      }
-      this.dialogKey = null;
-      return;
-    }
-
-    if (nextKey === this.dialogKey) {
-      return;
-    }
-
-    const previousKey = this.dialogKey;
-    this.dialogKey = nextKey;
-
-    if (previousKey !== null && this.dialogRef) {
-      this.closingDialogFromRoute = true;
-      this.dialogRef.close();
-    }
-
-    if (nextKey === 'new') {
-      this.openCreateDialog();
-    } else if (nextKey?.startsWith('edit:')) {
-      const id = Number(nextKey.slice('edit:'.length));
-      if (Number.isFinite(id)) {
-        this.openEditDialog(id);
-      }
-    }
+  // Create always opens as a dialog (desktop and mobile alike — openDialog goes
+  // full-width on small screens). On success UserForm publishes to UserListBus,
+  // which prepends the new row in place; the list is never refetched. An optional
+  // `role` preselects the dropdown (used by the dashboard quick-create shortcuts).
+  private openCreateDialog(role?: UserRole): void {
+    this.openDialog(UserForm, 'Create User', { role });
   }
 
-  private openCreateDialog(): void {
-    this.openDialog(UserForm, 'Create User', {
-      isEditMode: false,
-      successMessage: {
-        severity: 'success',
-        summary: 'Created',
-        detail: 'User created successfully',
-      },
-    });
-
-    if (this.dialogRef) {
-      this.dialogRef.onClose.subscribe(
-        (
-          result:
-            | { user?: User; message?: { severity: string; summary: string; detail: string } }
-            | undefined,
-        ) => {
-          if (result?.message) {
-            this.toast.show(result.message);
-          }
-          this.returnToList();
-        },
-      );
-    }
-  }
-
-  private openEditDialog(userId: number): void {
-    this.openDialog(UserForm, 'Edit User', {
-      userId,
-      isEditMode: true,
-      successMessage: {
-        severity: 'success',
-        summary: 'Updated',
-        detail: 'User updated successfully',
-      },
-    });
-
-    if (this.dialogRef) {
-      this.dialogRef.onClose.subscribe(
-        (
-          result:
-            | { user?: User; message?: { severity: string; summary: string; detail: string } }
-            | undefined,
-        ) => {
-          if (result?.message) {
-            this.toast.show(result.message);
-          }
-          this.returnToList();
-        },
-      );
-    }
-  }
-
-  // Clear the dialog segment from the URL once the dialog finishes.
-  // Skipped when syncDialogToRoute initiated the close — the URL is already moving elsewhere.
-  private returnToList(): void {
-    if (this.closingDialogFromRoute) {
-      this.closingDialogFromRoute = false;
-      return;
-    }
-    this.dialogKey = null;
-    this.router.navigate(['/users'], { queryParamsHandling: 'preserve' });
+  // Issue a one-time invite link instead of creating the account directly. The
+  // dialog collects the fixed role/org and returns a shareable link; no row is
+  // added until the invitee accepts (and they land here on the next refresh).
+  private openInviteDialog(): void {
+    this.openDialog(InviteForm, 'Invite User', {});
   }
 
   canManageUser(user: User): boolean {
     return userCanManage(this.authService.currentUser(), user);
   }
 
-  onDelete(event: Event, user: User): void {
+  // Enable/disable and lock follow their own backend rules (user-permissions.utils):
+  // never yourself, ROOT may target any other user (even another ROOT), locking is
+  // additionally ROOT/ADMIN-only.
+  canToggleEnabled(user: User): boolean {
+    return userCanToggleEnabled(this.authService.currentUser(), user);
+  }
+
+  canToggleLocked(user: User): boolean {
+    return userCanToggleLocked(this.authService.currentUser(), user);
+  }
+
+  // Reset links follow their own backend rule: userCanManage plus self-service
+  // (except DISTRIBUTOR), and ROOT may target anyone including other ROOTs.
+  canSendResetLink(user: User): boolean {
+    return userCanIssueResetLink(this.authService.currentUser(), user);
+  }
+
+  // The action kebab only appears when at least one item would be available.
+  // canToggleLocked implies canToggleEnabled, so it doesn't need its own check.
+  hasRowActions(user: User): boolean {
+    return this.canManageUser(user) || this.canToggleEnabled(user) || this.canSendResetLink(user);
+  }
+
+  // Open the shared action panel for this row, remembering the kebab button so any
+  // confirm popup the chosen action raises points back at that same spot.
+  openRowActions(event: Event, user: User): void {
+    this.actionAnchor = event.currentTarget;
+    this.actionUser.set(user);
+    this.rowActions.toggle(event);
+  }
+
+  // A switch/delete inside the panel: close the panel, then raise the confirm at
+  // the kebab (the existing toggle/delete handlers anchor to `actionAnchor`).
+  requestToggleEnabled(user: User): void {
+    this.rowActions.hide();
+    this.toggleUserEnabled(this.actionAnchor, user);
+  }
+
+  requestToggleLocked(user: User): void {
+    this.rowActions.hide();
+    this.toggleUserLocked(this.actionAnchor, user);
+  }
+
+  requestDelete(user: User): void {
+    this.rowActions.hide();
+    this.onDelete(this.actionAnchor, user);
+  }
+
+  // "Send reset link": close the panel and collect the one-time link (and any
+  // delivery outcome) in a dialog that mirrors the invite-link design.
+  requestResetLink(user: User): void {
+    this.rowActions.hide();
+    this.openDialog(ResetLinkForm, 'Send Reset Link', { user });
+  }
+
+  toggleUserLocked(target: EventTarget | null, user: User): void {
+    const locked = user.accountNonLocked === false;
+
     this.confirmationService.confirm({
-      target: event.currentTarget as EventTarget,
+      target: target ?? undefined,
+      message: locked
+        ? `Unlock ${user.username}? They will be able to log in again.`
+        : `Lock ${user.username}? They won't be able to log in until the account is unlocked.`,
+      icon: 'pi pi-exclamation-triangle',
+      acceptButtonProps: {
+        label: locked ? 'Unlock' : 'Lock',
+        severity: locked ? 'success' : 'danger',
+      },
+      rejectButtonProps: {
+        label: 'Cancel',
+        severity: 'secondary',
+        outlined: true,
+      },
+      accept: () => {
+        this.togglingLockUserId.set(user.id);
+
+        this.userService.toggleLocked(user.id).subscribe({
+          next: (updatedUser) => {
+            this.entities.set(
+              this.entities().map((u) => (u.id === updatedUser.id ? updatedUser : u)),
+            );
+            this.togglingLockUserId.set(null);
+
+            this.toast.success(
+              `User ${updatedUser.accountNonLocked === false ? 'locked' : 'unlocked'} successfully`,
+              'Updated',
+            );
+          },
+          error: (error) => {
+            this.togglingLockUserId.set(null);
+            this.errorHandler.showError(error, 'Failed to toggle lock status');
+          },
+        });
+      },
+    });
+  }
+
+  onDelete(target: EventTarget | null, user: User): void {
+    this.confirmationService.confirm({
+      target: target ?? undefined,
       message: `Delete user ${user.username}? This cannot be undone.`,
       icon: 'pi pi-exclamation-triangle',
       acceptButtonProps: {
@@ -472,7 +520,7 @@ export class UserList extends BaseTableComponent<User, UserFilterPreferences> {
           },
           error: (error) => {
             this.deletingUserId.set(null);
-            this.errorHandler.showError(error, 'Failed to delete user');
+            this.errorHandler.showError(error);
           },
         });
       },
@@ -548,6 +596,10 @@ export class UserList extends BaseTableComponent<User, UserFilterPreferences> {
         params.organizationId = orgId;
       }
     }
+    const eventId = this.filterEventId();
+    if (eventId !== null) {
+      params.eventId = eventId;
+    }
     return params;
   }
 
@@ -582,6 +634,10 @@ export class UserList extends BaseTableComponent<User, UserFilterPreferences> {
 
     const orgId = orgParam ? Number(orgParam) : NaN;
     this.filterOrganizationId.set(Number.isFinite(orgId) ? orgId : null);
+
+    const eventParam = params.get('eventId');
+    const eventId = eventParam ? Number(eventParam) : NaN;
+    this.filterEventId.set(Number.isFinite(eventId) ? eventId : null);
 
     this.selectedSort.set(sortParam);
     this.filterSort.set(sortParam ? [sortParam] : []);

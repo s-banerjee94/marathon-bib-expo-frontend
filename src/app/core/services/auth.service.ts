@@ -1,15 +1,18 @@
 import { inject, Injectable, signal } from '@angular/core';
-import { HttpClient, HttpErrorResponse, HttpHeaders } from '@angular/common/http';
-import { Observable, of, Subject, throwError } from 'rxjs';
-import { catchError, finalize, switchMap, tap } from 'rxjs/operators';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { Router } from '@angular/router';
+import { Observable, of, throwError } from 'rxjs';
+import { catchError, finalize, map, shareReplay, switchMap, tap } from 'rxjs/operators';
 import { AuthResponse, LoginRequest, User, UserRole } from '../models/user.model';
 import { BASE_URI } from '../../shared/constants/api.constant';
-import { getCookie } from '../utils/cookie.util';
 import { LocalStorageService } from './local-storage.service';
 
-const CSRF_COOKIE_NAME = 'csrfToken';
-const CSRF_HEADER_NAME = 'X-CSRF-Token';
 const SESSION_INVALIDATED_MESSAGE = 'Session invalidated by another login. Please log in again.';
+
+// Treat an access token with less than this much life left as already expired, so
+// callers refresh *before* a send instead of racing an expiry mid-request. Sized to
+// cover a multi-tool agent turn that runs for a minute or two after the send.
+const TOKEN_EXPIRY_SKEW_MS = 120_000;
 
 @Injectable({
   providedIn: 'root',
@@ -23,14 +26,17 @@ export class AuthService {
   isLoading = this.loadingSignal.asReadonly();
 
   private accessTokenSignal = signal<string | null>(null);
-
-  // Emits whenever the in-memory access token is refreshed so SSE / other long-lived
-  // connections can reconnect with the new bearer.
-  private readonly tokenRefreshedSubject = new Subject<string>();
-  readonly tokenRefreshed$ = this.tokenRefreshedSubject.asObservable();
+  // Absolute expiry (ms epoch) of the in-memory access token, derived from the
+  // server's `expiresIn`; null when unknown. Drives isTokenExpiringSoon().
+  private accessTokenExpiresAt: number | null = null;
+  // Single-flight refresh shared across callers (the interceptor's 401 retry AND the
+  // AI refresh-before-send) so two overlapping refreshes can't each rotate the
+  // refresh cookie server-side and invalidate one another.
+  private refreshInFlight$: Observable<string> | null = null;
 
   private readonly http = inject(HttpClient);
   private readonly storage = inject(LocalStorageService);
+  private readonly router = inject(Router);
   private readonly authBase = `${BASE_URI}/auth`;
   private readonly loginUrl = `${this.authBase}/login`;
   private readonly refreshUrl = `${this.authBase}/refresh`;
@@ -63,26 +69,40 @@ export class AuthService {
 
   /**
    * POST /auth/refresh — exchanges the HttpOnly refresh-token cookie for a new
-   * access token (and rotates the refresh cookie server-side). Must echo the
-   * CSRF token as a header.
+   * access token (and rotates the refresh cookie server-side). The CSRF header is
+   * attached by authInterceptor (all mutating requests carry it).
    */
   refresh(): Observable<string> {
-    return this.http
-      .post<AuthResponse>(
-        this.refreshUrl,
-        {},
-        {
-          headers: this.csrfHeaders(),
-          withCredentials: true,
-        },
-      )
+    // Single-flight: concurrent callers share ONE /refresh call (and its result). The
+    // in-flight observable is dropped on completion so the next refresh starts fresh.
+    this.refreshInFlight$ ??= this.http
+      .post<AuthResponse>(this.refreshUrl, {}, { withCredentials: true })
       .pipe(
-        tap((res) => {
-          this.accessTokenSignal.set(res.accessToken);
-          this.tokenRefreshedSubject.next(res.accessToken);
-        }),
-        switchMap((res) => of(res.accessToken)),
+        tap((res) => this.applyAccessToken(res)),
+        map((res) => res.accessToken),
+        finalize(() => (this.refreshInFlight$ = null)),
+        shareReplay({ bufferSize: 1, refCount: true }),
       );
+    return this.refreshInFlight$;
+  }
+
+  /**
+   * Refresh, ending the session when the backend genuinely rejects the refresh
+   * token (401/403): clear local state and route to login. Transient failures
+   * (network / 5xx / timeout) pass through unchanged so callers can retry — they
+   * must never evict a valid session. The one session-eviction policy shared by
+   * the error interceptor's 401 retry and the AI assistant's refresh-before-send.
+   */
+  refreshOrInvalidate(): Observable<string> {
+    return this.refresh().pipe(
+      catchError((error: HttpErrorResponse) => {
+        if (error.status === 401 || error.status === 403) {
+          this.handleSessionInvalidated();
+          void this.router.navigate(['/login']);
+        }
+        return throwError(() => error);
+      }),
+    );
   }
 
   // ============================================================================
@@ -93,10 +113,7 @@ export class AuthService {
     this.loadingSignal.set(true);
 
     return this.http.post<AuthResponse>(this.loginUrl, request, { withCredentials: true }).pipe(
-      tap((authResponse) => {
-        this.accessTokenSignal.set(authResponse.accessToken);
-        this.tokenRefreshedSubject.next(authResponse.accessToken);
-      }),
+      tap((authResponse) => this.applyAccessToken(authResponse)),
       switchMap(() => this.fetchCurrentUser()),
       tap((user) => this.setUserState(user)),
       catchError((error) => this.handleLoginError(error)),
@@ -109,19 +126,10 @@ export class AuthService {
    * Always clears local state, even if the server call fails (e.g. network down).
    */
   logout(): Observable<void> {
-    return this.http
-      .post<void>(
-        this.logoutUrl,
-        {},
-        {
-          headers: this.csrfHeaders(),
-          withCredentials: true,
-        },
-      )
-      .pipe(
-        catchError(() => of(void 0)),
-        finalize(() => this.clearLocalState()),
-      );
+    return this.http.post<void>(this.logoutUrl, {}, { withCredentials: true }).pipe(
+      catchError(() => of(void 0)),
+      finalize(() => this.clearLocalState()),
+    );
   }
 
   /**
@@ -141,6 +149,18 @@ export class AuthService {
     return this.currentUserSignal()?.role ?? null;
   }
 
+  /**
+   * Merge fields into the cached current user (e.g. after a profile-picture
+   * change) so signals like the navbar avatar update immediately. No-op when not
+   * logged in.
+   */
+  updateCurrentUser(patch: Partial<User>): void {
+    const current = this.currentUserSignal();
+    if (current) {
+      this.currentUserSignal.set({ ...current, ...patch });
+    }
+  }
+
   hasRole(role: UserRole): boolean {
     return this.currentUserSignal()?.role === role;
   }
@@ -153,6 +173,17 @@ export class AuthService {
   /** In-memory access token (null until login / refresh succeeds). */
   getToken(): string | null {
     return this.accessTokenSignal();
+  }
+
+  /**
+   * True when the access token is missing, its expiry is unknown, or it will lapse
+   * within the skew window. The AI assistant refreshes before a send when this is
+   * true: its raw-fetch stream forwards the token to the MCP server per tool call
+   * and bypasses the HTTP interceptors, so it can't rely on the reactive 401-retry.
+   */
+  isTokenExpiringSoon(): boolean {
+    if (!this.accessTokenSignal() || this.accessTokenExpiresAt === null) return true;
+    return this.accessTokenExpiresAt - Date.now() <= TOKEN_EXPIRY_SKEW_MS;
   }
 
   /** True when a 401 carries the single-device eviction message. */
@@ -176,6 +207,13 @@ export class AuthService {
     return this.http.get<User>(this.meUrl, { withCredentials: true });
   }
 
+  private applyAccessToken(res: AuthResponse): void {
+    this.accessTokenSignal.set(res.accessToken);
+    // The server hands us the lifetime in seconds — track absolute expiry so we can
+    // refresh proactively (before a send) rather than reactively (after a 401).
+    this.accessTokenExpiresAt = res.expiresIn > 0 ? Date.now() + res.expiresIn * 1000 : null;
+  }
+
   private setUserState(user: User): void {
     this.currentUserSignal.set(user);
     this.isAuthenticatedSignal.set(true);
@@ -185,14 +223,10 @@ export class AuthService {
     this.currentUserSignal.set(null);
     this.isAuthenticatedSignal.set(false);
     this.accessTokenSignal.set(null);
+    this.accessTokenExpiresAt = null;
     // Wipe ALL persisted state on logout — theme, table prefs, in-flight imports,
     // legacy tokens. The next session starts from defaults.
     this.storage.clear();
-  }
-
-  private csrfHeaders(): HttpHeaders {
-    const token = getCookie(CSRF_COOKIE_NAME);
-    return token ? new HttpHeaders({ [CSRF_HEADER_NAME]: token }) : new HttpHeaders();
   }
 
   private handleLoginError(error: unknown): Observable<never> {

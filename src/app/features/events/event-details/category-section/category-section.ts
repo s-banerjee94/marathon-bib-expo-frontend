@@ -1,11 +1,13 @@
 import { Component, computed, effect, inject, input, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
 import { SelectModule } from 'primeng/select';
 import { MultiSelectModule } from 'primeng/multiselect';
 import { TagModule } from 'primeng/tag';
+import { AvatarModule } from 'primeng/avatar';
 import { SkeletonModule } from 'primeng/skeleton';
 import { TooltipModule } from 'primeng/tooltip';
 import { DialogService } from 'primeng/dynamicdialog';
@@ -36,6 +38,9 @@ import {
   saveColumnPreferences,
 } from '../../../../shared/utils/column.utils';
 import { injectIsMobile } from '../../../../shared/utils/responsive.utils';
+import { InitialsPipe } from '../../../../shared/pipes/initials-pipe';
+import { UserSummaryPipe } from '../../../../shared/pipes/user-summary-pipe';
+import { EmptyIllustration } from '../../../../shared/illustrations/empty-illustration';
 
 const DEFAULT_CATEGORY_FIELDS = ['id', 'categoryName', 'createdBy', 'createdAt'];
 
@@ -53,6 +58,11 @@ const DEFAULT_CATEGORY_FIELDS = ['id', 'categoryName', 'createdBy', 'createdAt']
     TooltipModule,
     ConfirmPopupModule,
     CardModule,
+    AvatarModule,
+    InitialsPipe,
+    UserSummaryPipe,
+    RouterLink,
+    EmptyIllustration,
   ],
   providers: [DialogService, ConfirmationService],
   templateUrl: './category-section.html',
@@ -165,16 +175,14 @@ export class CategorySection {
 
     ref?.onClose.subscribe((result: unknown) => {
       if (result) {
-        this.isLoading.set(true);
         const request = result as CreateCategoryRequest;
         this.categoryService.createCategory(this.eventId(), race.id, request).subscribe({
-          next: () => {
+          next: (created: Category) => {
             this.toast.success('Category created successfully');
-            this.loadCategories();
+            this.categories.update((list) => [...list, created]);
           },
           error: (error: unknown) => {
             this.errorHandler.showError(error, 'Failed to create category');
-            this.isLoading.set(false);
           },
         });
       }
@@ -190,18 +198,18 @@ export class CategorySection {
 
     ref?.onClose.subscribe((result: unknown) => {
       if (result) {
-        this.isLoading.set(true);
         const request = result as UpdateCategoryRequest;
         this.categoryService
           .updateCategory(this.eventId(), category.raceId, category.id, request)
           .subscribe({
-            next: () => {
+            next: (updated: Category) => {
               this.toast.success('Category updated successfully');
-              this.loadCategories();
+              this.categories.update((list) =>
+                list.map((c) => (c.id === updated.id ? updated : c)),
+              );
             },
             error: (error: unknown) => {
               this.errorHandler.showError(error, 'Failed to update category');
-              this.isLoading.set(false);
             },
           });
       }
@@ -216,17 +224,15 @@ export class CategorySection {
       acceptButtonStyleClass: 'p-button-danger p-button-sm',
       rejectButtonStyleClass: 'p-button-sm',
       accept: () => {
-        this.isLoading.set(true);
         this.categoryService
           .deleteCategory(this.eventId(), category.raceId, category.id)
           .subscribe({
             next: () => {
               this.toast.success('Category deleted successfully');
-              this.loadCategories();
+              this.categories.update((list) => list.filter((c) => c.id !== category.id));
             },
             error: (error: unknown) => {
-              this.errorHandler.showError(error, 'Failed to delete category');
-              this.isLoading.set(false);
+              this.errorHandler.showError(error);
             },
           });
       },

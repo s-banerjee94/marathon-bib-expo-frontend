@@ -17,6 +17,7 @@ import {
 import { SmsTemplateService } from '../../../../core/services/sms-template.service';
 import { ErrorHandlerService } from '../../../../core/services/error-handler.service';
 import { FORM_INPUT_SIZE } from '../../../../shared/constants/form.constants';
+import { buildDirtyPatch } from '../../../../shared/utils/form.utils';
 import {
   PLACEHOLDER_MAP,
   VALID_PLACEHOLDER_FIELDS,
@@ -184,11 +185,7 @@ export class SmsTemplateForm implements OnInit {
   }
 
   private buildPatch(form: NgForm): UpdateSmsTemplateRequest {
-    return Object.fromEntries(
-      Object.keys(this.formData)
-        .filter((key) => form.controls[key]?.dirty)
-        .map((key) => [key, this.formData[key as keyof typeof this.formData]]),
-    ) as UpdateSmsTemplateRequest;
+    return buildDirtyPatch<UpdateSmsTemplateRequest>(form, this.formData);
   }
 
   onCancel(): void {

@@ -8,6 +8,7 @@ import {
   Params,
   ParamMap,
   Router,
+  RouterLink,
   RouterOutlet,
 } from '@angular/router';
 import { EMPTY, Subject } from 'rxjs';
@@ -26,7 +27,9 @@ import { Menu } from 'primeng/menu';
 import { Popover, PopoverModule } from 'primeng/popover';
 import { DividerModule } from 'primeng/divider';
 import { FloatLabelModule } from 'primeng/floatlabel';
+import { AvatarModule } from 'primeng/avatar';
 import { ListShell } from '../../../shared/components/list/list-shell/list-shell';
+import { EmptyIllustration } from '../../../shared/illustrations/empty-illustration';
 import { Event, EventStatus } from '../../../core/models/event.model';
 import { PageableParams, PageableResponse } from '../../../core/models/api.model';
 import { EventService } from '../../../core/services/event.service';
@@ -40,6 +43,8 @@ import { EventForm } from '../event-form/event-form';
 import { EventListBus, EventMutation } from '../event-list-bus.service';
 import { DefaultValuePipe } from '../../../shared/pipes/default-value.pipe';
 import { FormatEventDateTimePipe } from '../../../shared/pipes/format-event-date-time-pipe';
+import { InitialsPipe } from '../../../shared/pipes/initials-pipe';
+import { UserSummaryPipe } from '../../../shared/pipes/user-summary-pipe';
 import { BaseTableComponent } from '../../../shared/base/base-table.component';
 import { TableFilterPreferences } from '../../../shared/models/table-config.model';
 import { OrganizationSelector } from '../../../layout/organization-selector/organization-selector';
@@ -71,11 +76,16 @@ interface EventFilterPreferences extends TableFilterPreferences {
     PopoverModule,
     DividerModule,
     FloatLabelModule,
+    AvatarModule,
     DefaultValuePipe,
     FormatEventDateTimePipe,
+    InitialsPipe,
+    UserSummaryPipe,
     OrganizationSelector,
     RouterOutlet,
+    RouterLink,
     ListShell,
+    EmptyIllustration,
   ],
   providers: [DialogService, ConfirmationService],
   templateUrl: './event-list.html',
@@ -139,9 +149,9 @@ export class EventList extends BaseTableComponent<Event, EventFilterPreferences>
   private urlSearchSubject = new Subject<string>();
   // Single-flight load trigger; switchMap below cancels the prior HTTP request when a new emit arrives.
   private loadTrigger = new Subject<void>();
-  // Default page size — kept consistent with BaseTableComponent's initial pageSize signal so
+  // Default page size — applied on init (overriding BaseTableComponent's signal) so
   // the URL stays clean (?size=… is only emitted when the user picks a non-default size).
-  private readonly DEFAULT_PAGE_SIZE = 5;
+  private readonly DEFAULT_PAGE_SIZE = 20;
 
   constructor() {
     super();
@@ -306,7 +316,7 @@ export class EventList extends BaseTableComponent<Event, EventFilterPreferences>
             this.loadData();
           },
           error: (error) => {
-            this.handleLoadError(error);
+            this.errorHandler.showError(error);
           },
         });
       },
@@ -542,15 +552,20 @@ export class EventList extends BaseTableComponent<Event, EventFilterPreferences>
 
   private openCreateDialog(): void {
     const currentUser = this.authService.currentUser();
-    this.openDialog(EventForm, 'Create Event', {
-      isEditMode: false,
-      organizationId: this.isRootOrAdmin ? undefined : currentUser?.organizationId,
-      successMessage: {
-        severity: 'success',
-        summary: 'Created',
-        detail: 'Event created successfully',
+    this.openDialog(
+      EventForm,
+      'Create Event',
+      {
+        isEditMode: false,
+        organizationId: this.isRootOrAdmin ? undefined : currentUser?.organizationId,
+        successMessage: {
+          severity: 'success',
+          summary: 'Created',
+          detail: 'Event created successfully',
+        },
       },
-    });
+      { showHeader: false },
+    );
 
     if (this.dialogRef) {
       this.dialogRef.onClose.subscribe(
@@ -572,15 +587,20 @@ export class EventList extends BaseTableComponent<Event, EventFilterPreferences>
   }
 
   private openEditDialog(eventId: number): void {
-    this.openDialog(EventForm, 'Edit Event', {
-      eventId,
-      isEditMode: true,
-      successMessage: {
-        severity: 'success',
-        summary: 'Updated',
-        detail: 'Event updated successfully',
+    this.openDialog(
+      EventForm,
+      'Edit Event',
+      {
+        eventId,
+        isEditMode: true,
+        successMessage: {
+          severity: 'success',
+          summary: 'Updated',
+          detail: 'Event updated successfully',
+        },
       },
-    });
+      { showHeader: false },
+    );
 
     if (this.dialogRef) {
       this.dialogRef.onClose.subscribe(

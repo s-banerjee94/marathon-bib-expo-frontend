@@ -26,6 +26,7 @@ import { DistributionDialogState } from '../distribution-dialog-state.service';
 import { ManageDistribution } from '../manage-distribution';
 import { injectIsMobile } from '../../../../shared/utils/responsive.utils';
 import { ParticipantDistributionCard } from '../participant-distribution-card/participant-distribution-card';
+import { EmptyIllustration } from '../../../../shared/illustrations/empty-illustration';
 
 @Component({
   selector: 'app-pending-goodies-tab',
@@ -43,6 +44,7 @@ import { ParticipantDistributionCard } from '../participant-distribution-card/pa
     MessageModule,
     DefaultValuePipe,
     ParticipantDistributionCard,
+    EmptyIllustration,
   ],
   templateUrl: './pending-goodies-tab.html',
 })

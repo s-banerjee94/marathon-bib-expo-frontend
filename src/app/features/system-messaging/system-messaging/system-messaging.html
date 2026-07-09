@@ -1,0 +1,38 @@
+<div class="p-2 sm:p-3 md:p-4">
+  <div class="mb-3">
+    <h1 class="text-xl md:text-2xl font-bold mb-0.5">System Messaging</h1>
+    <p class="text-sm text-color-secondary">
+      Provider connections and message content for invites, password resets, and OTPs.
+    </p>
+  </div>
+
+  <!-- Tabs (URL-driven). Desktop strip hides on mobile; the bottom tab bar replaces it. -->
+  <div class="hidden md:block">
+    <p-tabs [value]="activeTab()">
+      <p-tablist>
+        @for (channel of channels; track channel.value) {
+          <p-tab [value]="channel.value" [routerLink]="[channel.value]" routerLinkActive>
+            <i [class]="channel.icon" class="mr-2"></i>
+            {{ channel.label }}
+            @if (channel.comingSoon) {
+              <span class="ml-2 text-xs text-color-secondary">soon</span>
+            }
+          </p-tab>
+        }
+      </p-tablist>
+    </p-tabs>
+  </div>
+
+  <div class="pt-4">
+    <router-outlet />
+  </div>
+
+  <!-- Mobile-only bottom tab bar (self-hides at md+); spacer clears the fixed bar. -->
+  <app-mobile-tab-bar
+    class="md:hidden"
+    [tabs]="tabs"
+    [activeId]="activeTab()"
+    (tabChange)="onTabChange($event)"
+  />
+  <div class="h-20 md:hidden" aria-hidden="true"></div>
+</div>

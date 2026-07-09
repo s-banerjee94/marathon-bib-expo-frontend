@@ -17,10 +17,11 @@
     [isMobile]="isMobile()"
     [items]="entities()"
     [pageSize]="pageSize()"
-    [rowsPerPageOptions]="[5, 10, 50, 100]"
+    [rowsPerPageOptions]="[20, 30, 50, 100]"
     [searchTerm]="searchTerm()"
     [totalRecords]="totalRecords()"
     emptyIcon="pi pi-calendar"
+    emptyIllustration="no-events"
     emptyMessage="No events found"
     searchPlaceholder="Search events (min 2 chars)..."
     [subtitle]="
@@ -28,7 +29,8 @@
         ? 'View and manage all marathon events across all organizations'
         : 'Manage marathon and race events for your organization'
     "
-    title="Events"
+    heading="Events"
+    printTitle="Events"
   >
     <ng-template #actions>
       <p-button
@@ -90,7 +92,7 @@
         [first]="currentPage() * pageSize()"
         [lazy]="true"
         [paginator]="true"
-        [rowsPerPageOptions]="[5, 10, 50, 100]"
+        [rowsPerPageOptions]="[20, 30, 50, 100]"
         [rows]="pageSize()"
         [scrollable]="true"
         [size]="inputSize"
@@ -101,16 +103,21 @@
       >
         <ng-template pTemplate="header">
           <tr>
-            <th class="w-16 whitespace-nowrap" pFrozenColumn>Sl. No</th>
+            <th scope="col" class="w-16 whitespace-nowrap" pFrozenColumn>Sl. No</th>
             @for (col of visibleCols; track col.field) {
-              <th [class]="getColumnAlignment(col.field) + ' whitespace-nowrap'">
+              <th scope="col" [class]="getColumnAlignment(col.field) + ' whitespace-nowrap'">
                 <span>{{ col.header }}</span>
                 @if (isSorted(col.field)) {
                   <i [class]="getSortIcon(col.field)" class="ml-2"></i>
                 }
               </th>
             }
-            <th class="text-center w-36 whitespace-nowrap" pFrozenColumn alignFrozen="right">
+            <th
+              scope="col"
+              class="text-center w-36 whitespace-nowrap print:hidden"
+              pFrozenColumn
+              alignFrozen="right"
+            >
               Actions
             </th>
           </tr>
@@ -125,7 +132,11 @@
                   <p-skeleton />
                 </td>
               }
-              <td class="text-center whitespace-nowrap" pFrozenColumn alignFrozen="right">
+              <td
+                class="text-center whitespace-nowrap print:hidden"
+                pFrozenColumn
+                alignFrozen="right"
+              >
                 <p-skeleton height="2rem" width="5rem" />
               </td>
             } @else {
@@ -204,6 +215,37 @@
                         }})
                       }
                     </span>
+                  } @else if (col.field === 'createdBy' || col.field === 'lastModifiedBy') {
+                    @let auditUser = getCellValue(event, col.field) | userSummary;
+                    @if (auditUser) {
+                      <div class="flex items-center gap-2">
+                        @if (auditUser.avatarUrl) {
+                          <p-avatar
+                            [image]="auditUser.avatarUrl"
+                            shape="circle"
+                            styleClass="shrink-0 !w-6 !h-6"
+                          />
+                        } @else {
+                          <p-avatar
+                            [label]="auditUser.name | initials: 2"
+                            shape="circle"
+                            styleClass="shrink-0 !w-6 !h-6 !text-xs"
+                          />
+                        }
+                        @if (auditUser.id !== null) {
+                          <a
+                            class="text-primary hover:underline"
+                            [routerLink]="['/users', auditUser.id, 'edit']"
+                          >
+                            {{ auditUser.name }}
+                          </a>
+                        } @else {
+                          <span>{{ auditUser.name }}</span>
+                        }
+                      </div>
+                    } @else {
+                      --
+                    }
                   } @else if (col.type === 'datetime') {
                     {{
                       $any(getCellValue(event, col.field))
@@ -256,7 +298,11 @@
                 </td>
               }
 
-              <td class="text-center whitespace-nowrap" pFrozenColumn alignFrozen="right">
+              <td
+                class="text-center whitespace-nowrap print:hidden"
+                pFrozenColumn
+                alignFrozen="right"
+              >
                 <div class="flex items-center justify-center gap-1">
                   <p-button
                     (click)="onView(event)"
@@ -264,6 +310,7 @@
                     [size]="inputSize"
                     [text]="true"
                     icon="pi pi-eye"
+                    ariaLabel="View details"
                     pTooltip="View Details"
                     severity="secondary"
                     tooltipPosition="top"
@@ -274,6 +321,7 @@
                     [size]="inputSize"
                     [text]="true"
                     icon="pi pi-pencil"
+                    ariaLabel="Edit"
                     pTooltip="Edit"
                     severity="info"
                     tooltipPosition="top"
@@ -284,6 +332,7 @@
                     [size]="inputSize"
                     [text]="true"
                     icon="pi pi-trash"
+                    ariaLabel="Delete"
                     pTooltip="Delete"
                     severity="danger"
                     tooltipPosition="top"
@@ -299,7 +348,7 @@
             <td [attr.colspan]="visibleCols.length + 2">
               @if (!isLoading()) {
                 <div class="flex flex-col items-center justify-center py-12 px-4">
-                  <i class="pi pi-calendar text-6xl mb-4 opacity-30"></i>
+                  <app-empty-illustration name="no-events" [size]="112" class="mb-4" />
                   <p class="text-lg font-medium mb-1">No events found</p>
                   <p class="text-sm opacity-60">Try adjusting your search or filters</p>
                 </div>
@@ -400,6 +449,7 @@
               [size]="inputSize"
               [text]="true"
               icon="pi pi-eye"
+              ariaLabel="View details"
               severity="secondary"
             />
             <p-button
@@ -408,6 +458,7 @@
               [size]="inputSize"
               [text]="true"
               icon="pi pi-pencil"
+              ariaLabel="Edit"
               severity="info"
             />
             <p-button
@@ -416,6 +467,7 @@
               [size]="inputSize"
               [text]="true"
               icon="pi pi-trash"
+              ariaLabel="Delete"
               severity="danger"
             />
           </div>
@@ -443,6 +495,7 @@
             [rounded]="true"
             [text]="true"
             icon="pi pi-external-link"
+            ariaLabel="Open in new tab"
             pTooltip="Open in new tab"
             size="small"
             styleClass="!w-6 !h-6 !p-0 !text-xs"

@@ -7,7 +7,9 @@ import {
   CreateParticipantRequest,
   DeleteParticipantsResponse,
   ImportErrorListResponse,
+  ImportFieldResponse,
   ImportJobListResponse,
+  ImportMode,
   ImportParticipantsResponse,
   Participant,
   ParticipantListResponse,
@@ -168,15 +170,39 @@ export class ParticipantService {
   }
 
   /**
-   * Launch async CSV import via Spring Batch (returns 202 immediately)
-   * Use getBatchImportStatus to poll progress
+   * Target fields a CSV column can be mapped to for the given event.
+   * Used to build the batch-import column mapping at runtime.
    */
-  launchBatchImport(eventId: number, file: File): Observable<BatchImportResponse> {
+  getImportFields(eventId: number): Observable<ImportFieldResponse[]> {
+    return this.http.get<ImportFieldResponse[]>(
+      `${this.apiUrl}/${eventId}/participants/import-fields`,
+    );
+  }
+
+  /**
+   * Launch async CSV import via Spring Batch (returns 202 immediately).
+   * The backend matches columns by zero-based position, so `mapping`
+   * (an ImportMappingRequest JSON string) is required for the dynamic-mapping
+   * flow. `mode` selects the run type: IMPORT (full load, wipes existing,
+   * DRAFT only) or ADD_ON (append walk-ins, DRAFT or PUBLISHED).
+   * Use getBatchImportStatus to poll progress.
+   */
+  launchBatchImport(
+    eventId: number,
+    file: File,
+    mapping?: string,
+    mode: ImportMode = 'IMPORT',
+  ): Observable<BatchImportResponse> {
     const formData = new FormData();
     formData.append('file', file);
+    if (mapping) {
+      formData.append('mapping', mapping);
+    }
+    const params = new HttpParams().set('mode', mode);
     return this.http.post<BatchImportResponse>(
       `${this.apiUrl}/${eventId}/participants/batch-import`,
       formData,
+      { params },
     );
   }
 

@@ -1,0 +1,253 @@
+<div class="py-4">
+  <!-- Scanner Section -->
+  <div class="flex flex-col gap-3 mb-4">
+    <!-- Camera viewport -->
+    <div class="scanner-viewport" [class.scanner-viewport--active]="isScanning()">
+      <video #videoEl autoplay muted playsinline class="scanner-video"></video>
+      @if (isScanning()) {
+        <div class="scanner-overlay">
+          <div class="scanner-frame">
+            <span class="scanner-corner tl"></span>
+            <span class="scanner-corner tr"></span>
+            <span class="scanner-corner bl"></span>
+            <span class="scanner-corner br"></span>
+            <div class="scanner-line"></div>
+          </div>
+        </div>
+      } @else if (!isScanLoading()) {
+        <div class="scanner-placeholder">
+          <i class="pi pi-qrcode text-5xl opacity-20 mb-2"></i>
+          <p class="text-sm opacity-40">Tap Start Scan to open camera</p>
+        </div>
+      }
+      @if (isScanLoading()) {
+        <div class="scanner-placeholder">
+          <i class="pi pi-spin pi-spinner text-3xl opacity-50 mb-2"></i>
+          <p class="text-sm opacity-50">Processing QR code...</p>
+        </div>
+      }
+    </div>
+
+    <!-- Scanner error -->
+    @if (scanError()) {
+      <p-message severity="warn" variant="simple">{{ scanError() }}</p-message>
+    }
+
+    <!-- Scanner controls -->
+    @if (!isScanning()) {
+      <p-button
+        (onClick)="startScan()"
+        [loading]="isScanLoading()"
+        [disabled]="isScanLoading()"
+        [size]="buttonSize"
+        icon="pi pi-camera"
+        label="Start Scan"
+        severity="primary"
+        styleClass="w-full"
+      />
+    } @else {
+      <p-button
+        (onClick)="stopScan()"
+        [size]="buttonSize"
+        icon="pi pi-times"
+        label="Stop Camera"
+        severity="danger"
+        [outlined]="true"
+        styleClass="w-full"
+      />
+    }
+  </div>
+
+  <!-- Manual / auto-populated BIB search -->
+  <div class="flex gap-2 items-center mb-4">
+    <p-floatlabel variant="on" class="flex-1">
+      <p-iconfield iconPosition="left">
+        <p-inputicon class="pi pi-hashtag" />
+        <input
+          [(ngModel)]="searchValue"
+          (keyup.enter)="performSearch()"
+          [pSize]="inputSize"
+          fluid="true"
+          id="scanBibInput"
+          pInputText
+          type="text"
+          placeholder="BIB number"
+        />
+      </p-iconfield>
+      <label for="scanBibInput">BIB Number</label>
+    </p-floatlabel>
+    <p-button
+      (onClick)="performSearch()"
+      ariaLabel="Search"
+      [disabled]="!searchValue() || searchValue().trim().length < 2"
+      [loading]="isInitialLoading()"
+      [size]="buttonSize"
+      icon="pi pi-search"
+      severity="primary"
+    />
+    @if (isSearched()) {
+      <p-button
+        (onClick)="clearResults()"
+        ariaLabel="Clear"
+        [size]="buttonSize"
+        [outlined]="true"
+        icon="pi pi-times"
+        severity="secondary"
+      />
+    }
+  </div>
+
+  <!-- Results -->
+  @if (isSearched()) {
+    @if (isInitialLoading()) {
+      <div class="flex flex-col gap-3">
+        @for (i of skeletonRows; track $index) {
+          <p-card>
+            <p-skeleton height="1.25rem" styleClass="mb-2" width="40%" />
+            <p-skeleton height="1rem" styleClass="mb-1" />
+            <p-skeleton height="1rem" width="60%" />
+          </p-card>
+        }
+      </div>
+    } @else if (results().length === 0 && !loading()) {
+      <div class="flex flex-col items-center justify-center py-12">
+        <app-empty-illustration name="no-search-results" [size]="104" class="mb-4" />
+        <p class="font-medium">No participant found for BIB "{{ searchValue() }}"</p>
+      </div>
+    } @else {
+      <div class="flex flex-col gap-3">
+        @for (participant of results(); track participant.bibNumber) {
+          <app-participant-distribution-card
+            [bibNumber]="participant.bibNumber"
+            [fullName]="participant.fullName"
+            [gender]="participant.gender"
+            [chipNumber]="participant.chipNumber"
+            [phoneNumber]="participant.phoneNumber"
+            [email]="participant.email"
+            [raceName]="participant.raceName"
+            [categoryName]="participant.categoryName"
+            (detailsRequested)="parent.openDetailsDialog(participant.bibNumber)"
+          >
+            <!-- Status tag -->
+            @if (getBibStatus(participant)) {
+              <p-tag
+                card-status
+                [rounded]="true"
+                severity="success"
+                size="small"
+                value="Collected"
+              />
+            } @else {
+              <p-tag card-status [rounded]="true" severity="warn" size="small" value="Pending" />
+            }
+
+            <!-- Goodies popover -->
+            @if (getGoodiesCount(participant.goodies) > 0) {
+              <ng-container ngProjectAs="[card-goodies]">
+                <p-button
+                  (onClick)="goodiesPopover.toggle($event)"
+                  [rounded]="true"
+                  [text]="true"
+                  [size]="buttonSize"
+                  [severity]="getGoodiesDistributionSeverity(participant)"
+                  icon="pi pi-gift"
+                  [label]="
+                    getDistributedCount(participant) + '/' + getGoodiesCount(participant.goodies)
+                  "
+                />
+                <p-popover #goodiesPopover appendTo="body">
+                  <div class="p-3" style="min-width: 15rem">
+                    <h4 class="font-semibold mb-2 flex items-center gap-2">
+                      <i class="pi pi-gift"></i> Goodies
+                    </h4>
+                    @for (entry of getGoodiesDistributionEntries(participant); track entry.key) {
+                      <div class="flex justify-between items-center py-1">
+                        <span class="text-sm font-medium">
+                          {{ formatGoodiesKey(entry.key) }}
+                          @if (entry.value) {
+                            <span class="text-color-secondary">({{ entry.value }})</span>
+                          }
+                        </span>
+                        @if (entry.distributed) {
+                          <p-tag value="Done" [rounded]="true" severity="success" size="small" />
+                        } @else {
+                          <p-tag value="Pending" [rounded]="true" severity="warn" size="small" />
+                        }
+                      </div>
+                    }
+                  </div>
+                </p-popover>
+              </ng-container>
+            }
+
+            <!-- Action buttons -->
+            <div card-footer class="flex flex-col gap-2">
+              @if (!getBibStatus(participant)) {
+                <p-button
+                  (onClick)="parent.openCollectBibDialog(participant)"
+                  [size]="buttonSize"
+                  icon="pi pi-id-card"
+                  label="Collect BIB"
+                  styleClass="w-full"
+                />
+              }
+              @if (getBibStatus(participant) && hasPendingGoodies(participant)) {
+                <p-button
+                  (onClick)="parent.openDistributeGoodiesDialog(participant)"
+                  [size]="buttonSize"
+                  icon="pi pi-gift"
+                  label="Distribute Goodies"
+                  severity="info"
+                  styleClass="w-full"
+                />
+              }
+              @if (getBibStatus(participant) && canUndoBib()) {
+                <p-button
+                  (onClick)="parent.confirmUndoBib(participant)"
+                  [outlined]="true"
+                  [size]="buttonSize"
+                  icon="pi pi-undo"
+                  label="Undo BIB"
+                  severity="danger"
+                  styleClass="w-full"
+                />
+              }
+            </div>
+          </app-participant-distribution-card>
+        }
+      </div>
+
+      <!-- Load More -->
+      <div class="text-center mt-4">
+        @if (hasMore() && !loading()) {
+          <p-button
+            (onClick)="loadMore()"
+            [outlined]="true"
+            [size]="buttonSize"
+            icon="pi pi-arrow-down"
+            label="Load More"
+          />
+        }
+        @if (isLoadingMore()) {
+          <div>
+            <i class="pi pi-spin pi-spinner text-2xl"></i>
+            <p class="mt-2 text-color-secondary">Loading more...</p>
+          </div>
+        }
+        @if (!hasMore() && results().length > 0) {
+          <p class="text-sm text-color-secondary mt-2">
+            All {{ results().length }} result(s) loaded
+          </p>
+        }
+      </div>
+    }
+  }
+
+  @if (!isSearched() && !loading()) {
+    <div class="text-center py-10 text-color-secondary">
+      <i class="pi pi-qrcode text-5xl mb-4 block opacity-30"></i>
+      <p class="text-lg font-medium mb-1">Scan a participant QR code</p>
+      <p class="text-sm">Or enter a BIB number manually to look up distribution status.</p>
+    </div>
+  }
+</div>

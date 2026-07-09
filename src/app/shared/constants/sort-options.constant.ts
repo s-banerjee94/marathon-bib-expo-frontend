@@ -24,6 +24,15 @@ export const ORGANIZATION_SORT_OPTIONS: SortOption[] = [
   { label: 'Least Recently Updated', value: 'updatedAt,asc' },
 ];
 
+export const BILL_SORT_OPTIONS: SortOption[] = [
+  { label: 'Newest First', value: 'createdAt,desc' },
+  { label: 'Oldest First', value: 'createdAt,asc' },
+  { label: 'Amount (High-Low)', value: 'totalAmount,desc' },
+  { label: 'Amount (Low-High)', value: 'totalAmount,asc' },
+  { label: 'Status', value: 'status,asc' },
+  { label: 'Payment', value: 'paymentStatus,asc' },
+];
+
 export const EVENT_SORT_OPTIONS: SortOption[] = [
   { label: 'Event Name (A-Z)', value: 'eventName,asc' },
   { label: 'Event Name (Z-A)', value: 'eventName,desc' },

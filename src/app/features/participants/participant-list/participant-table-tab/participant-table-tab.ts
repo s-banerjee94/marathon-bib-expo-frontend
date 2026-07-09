@@ -1,20 +1,21 @@
 import {
+  ApplicationRef,
   ChangeDetectionStrategy,
   Component,
   computed,
   effect,
+  HostListener,
   inject,
   input,
   output,
   signal,
   untracked,
 } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { forkJoin, of } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { TableModule } from 'primeng/table';
+import { TableModule, TableLazyLoadEvent } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
 import { ButtonModule, ButtonSeverity } from 'primeng/button';
 import { TooltipModule } from 'primeng/tooltip';
@@ -28,8 +29,7 @@ import { FloatLabelModule } from 'primeng/floatlabel';
 import { PopoverModule } from 'primeng/popover';
 import { DividerModule } from 'primeng/divider';
 import { ConfirmationService } from 'primeng/api';
-import { LookupSearchType, Participant } from '../../../../core/models/participant.model';
-import { Race, Category } from '../../../../core/models/event.model';
+import { Participant } from '../../../../core/models/participant.model';
 import { EventService } from '../../../../core/services/event.service';
 import { ParticipantService } from '../../../../core/services/participant.service';
 import { ErrorHandlerService } from '../../../../core/services/error-handler.service';
@@ -54,8 +54,8 @@ import {
 } from '../../../../shared/constants/participant-columns.constant';
 import { STORAGE_KEYS } from '../../../../shared/constants/storage-keys.constant';
 import { TableColumn } from '../../../../shared/models/table-config.model';
-import { ParticipantListBus, ParticipantMutation } from '../../participant-list-bus.service';
 import { ParticipantListState } from '../participant-list-state.service';
+import { EmptyIllustration } from '../../../../shared/illustrations/empty-illustration';
 
 @Component({
   selector: 'app-participant-table-tab',
@@ -79,6 +79,7 @@ import { ParticipantListState } from '../participant-list-state.service';
     PopoverModule,
     DividerModule,
     DefaultValuePipe,
+    EmptyIllustration,
   ],
 })
 export class ParticipantTableTab {
@@ -88,8 +89,8 @@ export class ParticipantTableTab {
   private toast = inject(ToastService);
   private storage = inject(LocalStorageService);
   private confirmationService = inject(ConfirmationService);
-  private bus = inject(ParticipantListBus);
   private listState = inject(ParticipantListState);
+  private appRef = inject(ApplicationRef);
 
   // Router-bound input — the parent route is `event/:eventId`. Accepts string (from
   // router path params) or number (when bound directly by a host component).
@@ -119,27 +120,52 @@ export class ParticipantTableTab {
   parseDob = parseDob;
   formatGoodiesKey = formatGoodiesKey;
 
-  // Data state
-  participants = signal<Participant[]>([]);
-  totalCount = signal<number>(0);
+  // Data state — backed by the host-scoped cache so it survives this tab being
+  // destroyed/re-created while a details/create dialog is open (no reload on close).
+  participants = this.listState.participants;
+  totalCount = this.listState.totalCount;
   isLoading = signal(false);
-  hasMore = signal(true);
-  private lastEvaluatedKey?: string;
+  hasMore = this.listState.hasMore;
+  // Pagination cursor proxied to the shared cache (survives tab re-creation).
+  private get lastEvaluatedKey(): string | undefined {
+    return this.listState.lastEvaluatedKey;
+  }
+  private set lastEvaluatedKey(value: string | undefined) {
+    this.listState.lastEvaluatedKey = value;
+  }
 
-  // Search state
-  selectedSearchType = signal<LookupSearchType>('NAME');
-  searchValue = signal<string>('');
-  dropdownSelectedItem = signal<string>('');
-  isSearchMode = signal<boolean>(false);
+  // Search state (cached so a filtered view is preserved across dialog open/close)
+  selectedSearchType = this.listState.selectedSearchType;
+  searchValue = this.listState.searchValue;
+  dropdownSelectedItem = this.listState.dropdownSelectedItem;
+  // Race chosen to scope the CATEGORY dropdown (category lookup is a two-step pick).
+  categoryRaceId = this.listState.categoryRaceId;
+  isSearchMode = this.listState.isSearchMode;
 
   // Race / Category dropdown data (for race/category search modes)
-  races = signal<Race[]>([]);
-  categories = signal<Category[]>([]);
+  races = this.listState.races;
+  categories = this.listState.categories;
   isRacesLoading = signal(false);
 
   isDropdownSearch = computed(
     () => this.selectedSearchType() === 'RACE' || this.selectedSearchType() === 'CATEGORY',
   );
+
+  // Lookup by race/category sends IDS, not names: RACE → raceId,
+  // CATEGORY → `raceId#categoryId` (HttpParams URL-encodes the `#` as %23).
+  // The label still shows the human-readable name.
+  raceOptions = computed(() =>
+    this.races().map((r) => ({ label: r.raceName, value: String(r.id) })),
+  );
+  // CATEGORY lookup is scoped to the race picked in `categoryRaceId`, so the
+  // category dropdown only lists that race's categories (names can repeat across races).
+  categoryOptions = computed(() => {
+    const raceId = this.categoryRaceId();
+    if (raceId == null) return [];
+    return this.categories()
+      .filter((c) => c.raceId === raceId)
+      .map((c) => ({ label: c.categoryName, value: `${c.raceId}#${c.id}` }));
+  });
 
   searchPlaceholder = computed(() => {
     const option = this.lookupSearchTypes.find((t) => t.value === this.selectedSearchType());
@@ -169,6 +195,19 @@ export class ParticipantTableTab {
   // Skeleton rows for initial loading state
   skeletonRows = Array(5).fill({});
 
+  // Virtual scroll: fixed row height (px). Must match the body <tr> height so the
+  // scroller's geometry stays accurate (px, not rem, since the app scales the root
+  // font-size). Only the visible window of rows is ever in the DOM.
+  protected readonly virtualRowHeight = 48;
+  // Prefetch the next cursor page once the user scrolls within this many rows of the
+  // end of the currently-loaded set.
+  private readonly virtualScrollPrefetch = 15;
+
+  // Virtual scroll keeps only the visible row window in the DOM, so a print snapshot
+  // comes out empty. While printing we drop virtual scroll (see [virtualScroll] in the
+  // template) so every loaded row renders as a plain table the print stylesheet reflows.
+  protected readonly printing = signal(false);
+
   isInitialLoading = computed(() => this.isLoading() && this.participants().length === 0);
   isLoadingMore = computed(() => this.isLoading() && this.participants().length > 0);
 
@@ -176,39 +215,33 @@ export class ParticipantTableTab {
     // Initialize selected columns from localStorage (or all columns by default).
     this.initializeSelectedColumns();
 
-    // Effect 1: react to eventId changes — reset state and reload everything.
-    effect(
-      () => {
-        const id = this.eventId();
-        untracked(() => {
-          this.resetData();
-          if (id) {
-            this.loadEventData(id);
-            this.loadParticipants();
-            this.loadTotalCount();
-          } else {
-            this.races.set([]);
-            this.categories.set([]);
-          }
-        });
-      },
-      { allowSignalWrites: true },
-    );
+    // Effect 1: react to eventId changes — load on a genuine event switch, but
+    // restore from the cache when this tab is simply re-created for the same event
+    // (e.g., a details/create dialog closed), so the list never re-fetches.
+    effect(() => {
+      const id = this.eventId();
+      untracked(() => {
+        if (id && this.listState.isCachedFor(id)) return;
+
+        this.resetData();
+        if (id) {
+          this.listState.markLoaded(id);
+          this.loadEventData(id);
+          this.loadParticipants();
+          this.loadTotalCount();
+        } else {
+          this.races.set([]);
+          this.categories.set([]);
+        }
+      });
+    });
 
     // Effect 2: react to cross-tab reload triggers (e.g., after import completion).
-    effect(
-      () => {
-        if (this.listState.reloadTrigger() > 0) {
-          untracked(() => this.reloadParticipants());
-        }
-      },
-      { allowSignalWrites: true },
-    );
-
-    // Apply data mutations published by the form (created/updated) without an extra HTTP fetch.
-    this.bus.mutations$
-      .pipe(takeUntilDestroyed())
-      .subscribe((mutation) => this.applyParticipantMutation(mutation));
+    effect(() => {
+      if (this.listState.reloadTrigger() > 0) {
+        untracked(() => this.reloadParticipants());
+      }
+    });
   }
 
   // ---------- Data loading ----------
@@ -258,12 +291,8 @@ export class ParticipantTableTab {
   }
 
   private resetData(): void {
-    this.participants.set([]);
-    this.totalCount.set(0);
-    this.hasMore.set(true);
-    this.lastEvaluatedKey = undefined;
+    this.listState.resetCache();
     this.selectedParticipants = [];
-    this.resetSearch();
   }
 
   private loadEventData(eventId: number): void {
@@ -287,6 +316,12 @@ export class ParticipantTableTab {
   // ---------- Search ----------
   onSearchTypeChange(): void {
     this.searchValue.set('');
+    this.dropdownSelectedItem.set('');
+    this.categoryRaceId.set(null);
+  }
+
+  // CATEGORY mode: changing the race scope clears the previously picked category.
+  onCategoryRaceChange(): void {
     this.dropdownSelectedItem.set('');
   }
 
@@ -334,7 +369,8 @@ export class ParticipantTableTab {
   private resetSearch(): void {
     this.searchValue.set('');
     this.dropdownSelectedItem.set('');
-    this.selectedSearchType.set('NAME');
+    this.categoryRaceId.set(null);
+    this.selectedSearchType.set('BIB');
     this.isSearchMode.set(false);
   }
 
@@ -345,6 +381,31 @@ export class ParticipantTableTab {
     } else {
       this.loadParticipants(true);
     }
+  }
+
+  // Virtual scroll fires this as the visible window moves. We use it purely as a
+  // near-end trigger for cursor-based infinite loading (not offset paging): once the
+  // last visible row is within `virtualScrollPrefetch` of the loaded set, fetch the
+  // next page. loadMore() itself guards hasMore/isLoading and routes search vs default.
+  onVirtualScroll(event: TableLazyLoadEvent): void {
+    if (this.isInitialLoading()) return;
+    const last = event.last ?? 0;
+    if (last >= this.participants().length - this.virtualScrollPrefetch) {
+      this.loadMore();
+    }
+  }
+
+  @HostListener('window:beforeprint')
+  protected onBeforePrint(): void {
+    this.printing.set(true);
+    // print() snapshots synchronously without awaiting microtasks, so force change
+    // detection now to get the de-virtualized table into the DOM before the snapshot.
+    this.appRef.tick();
+  }
+
+  @HostListener('window:afterprint')
+  protected onAfterPrint(): void {
+    this.printing.set(false);
   }
 
   private loadMoreLookupResults(): void {
@@ -376,21 +437,6 @@ export class ParticipantTableTab {
       });
   }
 
-  // ---------- Mutations from the form (via bus) ----------
-  private applyParticipantMutation(mutation: ParticipantMutation): void {
-    const current = this.participants();
-    if (mutation.action === 'created') {
-      this.participants.set([mutation.participant, ...current]);
-      this.totalCount.update((count) => count + 1);
-    } else {
-      this.participants.set(
-        current.map((p) =>
-          p.bibNumber === mutation.participant.bibNumber ? mutation.participant : p,
-        ),
-      );
-    }
-  }
-
   // ---------- Delete (single + bulk) ----------
   onDelete(participant: Participant): void {
     this.confirmationService.confirm({
@@ -410,7 +456,7 @@ export class ParticipantTableTab {
             this.totalCount.update((count) => Math.max(0, count - 1));
             this.selectedParticipants = [];
           },
-          error: (error) => this.errorHandler.showError(error, 'Failed to delete participant'),
+          error: (error) => this.errorHandler.showError(error),
         });
       },
     });
@@ -442,11 +488,18 @@ export class ParticipantTableTab {
           chunks.push(bibNumbers.slice(i, i + BULK_DELETE_MAX_LIMIT));
         }
 
+        // Capture a failing chunk's backend error so it can be surfaced verbatim
+        // if nothing ends up deleted, instead of a fabricated frontend message.
+        let deleteError: unknown = null;
+
         forkJoin(
           chunks.map((chunk) =>
             this.participantService.bulkDeleteParticipants(eventId, chunk).pipe(
               map(() => chunk),
-              catchError(() => of<string[]>([])),
+              catchError((error) => {
+                deleteError = error;
+                return of<string[]>([]);
+              }),
             ),
           ),
         ).subscribe((deletedChunks) => {
@@ -460,10 +513,7 @@ export class ParticipantTableTab {
           this.selectedParticipants = [];
 
           if (removedBibs.length === 0) {
-            this.errorHandler.showError(
-              { message: 'No participants could be deleted' },
-              'Delete failed',
-            );
+            this.errorHandler.showError(deleteError);
           } else {
             const message =
               failedCount > 0

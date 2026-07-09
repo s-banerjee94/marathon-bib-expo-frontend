@@ -67,11 +67,13 @@
     >
       <ng-template pTemplate="header">
         <tr>
-          <th class="w-16 whitespace-nowrap" pFrozenColumn>Sl. No</th>
+          <th scope="col" class="w-16 whitespace-nowrap" pFrozenColumn>Sl. No</th>
           @for (col of visibleCols(); track col.field) {
-            <th class="whitespace-nowrap">{{ col.header }}</th>
+            <th scope="col" class="whitespace-nowrap">{{ col.header }}</th>
           }
-          <th class="w-36 whitespace-nowrap" pFrozenColumn alignFrozen="right">Actions</th>
+          <th scope="col" class="w-36 whitespace-nowrap" pFrozenColumn alignFrozen="right">
+            Actions
+          </th>
         </tr>
       </ng-template>
 
@@ -87,34 +89,63 @@
             <td class="text-color-secondary whitespace-nowrap" pFrozenColumn>{{ rowIndex + 1 }}</td>
             @for (col of visibleCols(); track col.field) {
               <td class="whitespace-nowrap">
-                @switch (col.field) {
-                  @case ('name') {
-                    {{ template.name | defaultValue }}
-                  }
-                  @case ('smsTemplateId') {
-                    {{ template.smsTemplateId }}
-                  }
-                  @case ('template') {
-                    <div class="max-w-md truncate" [title]="template.template">
-                      {{ template.template | truncate: 40 }}
+                @if (col.field === 'createdBy' || col.field === 'lastModifiedBy') {
+                  @let auditUser =
+                    (col.field === 'createdBy' ? template.createdBy : template.lastModifiedBy)
+                      | userSummary;
+                  @if (auditUser) {
+                    <div class="flex items-center gap-2">
+                      @if (auditUser.avatarUrl) {
+                        <p-avatar
+                          [image]="auditUser.avatarUrl"
+                          shape="circle"
+                          styleClass="shrink-0 !w-6 !h-6"
+                        />
+                      } @else {
+                        <p-avatar
+                          [label]="auditUser.name | initials: 2"
+                          shape="circle"
+                          styleClass="shrink-0 !w-6 !h-6 !text-xs"
+                        />
+                      }
+                      @if (auditUser.id !== null) {
+                        <a
+                          class="text-primary hover:underline"
+                          [routerLink]="['/users', auditUser.id, 'edit']"
+                        >
+                          {{ auditUser.name }}
+                        </a>
+                      } @else {
+                        <span>{{ auditUser.name }}</span>
+                      }
                     </div>
+                  } @else {
+                    --
                   }
-                  @case ('note') {
-                    <div class="max-w-[50ch] truncate" [title]="template.note">
-                      {{ template.note | defaultValue }}
-                    </div>
-                  }
-                  @case ('createdAt') {
-                    {{ template.createdAt | date: 'dd-MMM-yyyy, hh:mm a' }}
-                  }
-                  @case ('updatedAt') {
-                    {{ template.updatedAt | date: 'dd-MMM-yyyy, hh:mm a' }}
-                  }
-                  @case ('createdBy') {
-                    {{ template.createdBy | defaultValue }}
-                  }
-                  @case ('lastModifiedBy') {
-                    {{ template.lastModifiedBy | defaultValue }}
+                } @else {
+                  @switch (col.field) {
+                    @case ('name') {
+                      {{ template.name | defaultValue }}
+                    }
+                    @case ('smsTemplateId') {
+                      {{ template.smsTemplateId }}
+                    }
+                    @case ('template') {
+                      <div class="max-w-md truncate" [title]="template.template">
+                        {{ template.template | truncate: 40 }}
+                      </div>
+                    }
+                    @case ('note') {
+                      <div class="max-w-[50ch] truncate" [title]="template.note">
+                        {{ template.note | defaultValue }}
+                      </div>
+                    }
+                    @case ('createdAt') {
+                      {{ template.createdAt | date: 'dd-MMM-yyyy, hh:mm a' }}
+                    }
+                    @case ('updatedAt') {
+                      {{ template.updatedAt | date: 'dd-MMM-yyyy, hh:mm a' }}
+                    }
                   }
                 }
               </td>
@@ -123,6 +154,7 @@
               <div class="flex gap-1">
                 <p-button
                   icon="pi pi-eye"
+                  ariaLabel="View details"
                   [text]="true"
                   [rounded]="true"
                   severity="secondary"
@@ -133,6 +165,7 @@
                 />
                 <p-button
                   icon="pi pi-pencil"
+                  ariaLabel="Edit"
                   [text]="true"
                   [rounded]="true"
                   severity="info"
@@ -143,6 +176,7 @@
                 />
                 <p-button
                   icon="pi pi-trash"
+                  ariaLabel="Delete"
                   [text]="true"
                   [rounded]="true"
                   severity="danger"
@@ -160,7 +194,8 @@
       <ng-template pTemplate="emptymessage">
         <tr>
           <td [attr.colspan]="visibleCols().length + 2" class="text-center py-8">
-            No SMS templates found. Click "Create SMS Template" to add one.
+            <app-empty-illustration name="no-templates" [size]="88" class="inline-block mb-3" />
+            <p>No SMS templates found. Click "Create SMS Template" to add one.</p>
           </td>
         </tr>
       </ng-template>
@@ -179,7 +214,7 @@
       </div>
     } @else if (smsTemplates().length === 0) {
       <div class="flex flex-col items-center justify-center py-12 px-4">
-        <i class="pi pi-envelope text-6xl mb-4 opacity-30"></i>
+        <app-empty-illustration name="no-templates" [size]="112" class="mb-4" />
         <p class="text-lg font-medium mb-1">No SMS templates found</p>
         <p class="text-sm opacity-60">Tap + to create a template</p>
       </div>
@@ -205,6 +240,7 @@
               <div class="flex justify-end gap-1">
                 <p-button
                   icon="pi pi-eye"
+                  ariaLabel="View details"
                   [text]="true"
                   [rounded]="true"
                   severity="secondary"
@@ -213,6 +249,7 @@
                 />
                 <p-button
                   icon="pi pi-pencil"
+                  ariaLabel="Edit"
                   [text]="true"
                   [rounded]="true"
                   severity="info"
@@ -221,6 +258,7 @@
                 />
                 <p-button
                   icon="pi pi-trash"
+                  ariaLabel="Delete"
                   [text]="true"
                   [rounded]="true"
                   severity="danger"

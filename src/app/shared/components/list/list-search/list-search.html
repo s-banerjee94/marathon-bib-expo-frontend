@@ -1,4 +1,4 @@
-<p-iconfield class="flex-1 sm:max-w-md">
+<p-iconfield [class]="'flex-1 min-w-0 ' + maxWidthClass()">
   @if (isLoading()) {
     <p-inputicon class="pi pi-spin pi-spinner" />
   } @else {
@@ -12,6 +12,7 @@
     pInputText
     [placeholder]="placeholder()"
     type="text"
+    data-keyboard-search
   />
   @if (value()) {
     <p-inputicon (click)="onClear()" class="pi pi-times cursor-pointer" />

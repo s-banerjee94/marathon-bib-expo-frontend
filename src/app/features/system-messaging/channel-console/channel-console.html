@@ -1,0 +1,19 @@
+<div class="flex flex-col gap-6">
+  @if (channelMeta()?.comingSoon) {
+    <div
+      class="flex flex-col items-center justify-center gap-3 text-center p-12 rounded-2xl border border-dashed border-surface"
+    >
+      <i class="pi pi-clock text-3xl text-color-secondary"></i>
+      <div>
+        <div class="font-semibold">{{ channelMeta()?.label }} — coming soon</div>
+        <p class="text-sm text-color-secondary m-0 mt-1">
+          {{ channelMeta()?.label }} messaging isn't available yet. It'll appear here once
+          supported.
+        </p>
+      </div>
+    </div>
+  } @else {
+    <app-provider-config [channel]="channel()" />
+    <app-channel-templates [channel]="channel()" />
+  }
+</div>

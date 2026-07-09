@@ -31,5 +31,13 @@ export function roleRequiresEmailPhone(role: UserRole | null): boolean {
   return role ? ROLES_REQUIRING_EMAIL_PHONE.includes(role) : false;
 }
 
+/**
+ * Check if a role requires an event to be picked. A distributor is bound to
+ * exactly one event, so creating/inviting one needs an event selection.
+ */
+export function roleRequiresEvent(role: UserRole | null): boolean {
+  return role === UserRole.DISTRIBUTOR;
+}
+
 export const SEARCH_DEBOUNCE = SEARCH_DEBOUNCE_MS;
 export const DEFAULT_SEARCH_PAGE_SIZE = DEFAULT_PAGE_SIZE;

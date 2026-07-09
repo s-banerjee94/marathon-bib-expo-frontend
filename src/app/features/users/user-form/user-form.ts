@@ -1,58 +1,62 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
-import { CommonModule, Location } from '@angular/common';
+import { Component, inject, OnInit, signal, ViewChild } from '@angular/core';
 import { FormsModule, NgForm } from '@angular/forms';
-import { ActivatedRoute, Router } from '@angular/router';
 import { InputTextModule } from 'primeng/inputtext';
 import { FloatLabelModule } from 'primeng/floatlabel';
 import { ButtonModule } from 'primeng/button';
 import { MessageModule } from 'primeng/message';
-import { CardModule } from 'primeng/card';
-import { SelectModule } from 'primeng/select';
-import { SkeletonModule } from 'primeng/skeleton';
+import { RadioButtonModule } from 'primeng/radiobutton';
 import { DynamicDialogConfig, DynamicDialogRef } from 'primeng/dynamicdialog';
 import {
   CreateUserRequest,
   ROLE_AVAILABILITY,
   RoleOption,
-  UpdateUserRequest,
   User,
   UserRole,
 } from '../../../core/models/user.model';
+import { EventStatus } from '../../../core/models/event.model';
 import { UserService } from '../../../core/services/user.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { ErrorHandlerService } from '../../../core/services/error-handler.service';
 import { ToastService } from '../../../core/services/toast.service';
-import { roleRequiresEmailPhone, roleRequiresOrganization } from './user-form.utils';
+import {
+  roleRequiresEmailPhone,
+  roleRequiresEvent,
+  roleRequiresOrganization,
+} from './user-form.utils';
 import { UserListBus } from '../user-list-bus.service';
-import { userCanManage } from '../../../shared/utils/user-permissions.utils';
 import { shouldShowError } from '../../../shared/utils/form.utils';
 import { FORM_INPUT_SIZE } from '../../../shared/constants/form.constants';
 import { OrganizationSelector } from '../../../layout/organization-selector/organization-selector';
+import { EventSelector } from '../../../layout/event-selector/event-selector';
 
+/**
+ * Create-user form, always rendered inside a dialog (DialogService) from UserList.
+ * Editing a user is handled by the full-page UserAccount view, so this form is
+ * create-only. Dialog data may carry an optional `role` to preselect.
+ */
 @Component({
   selector: 'app-user-form',
   standalone: true,
   imports: [
-    CommonModule,
     FormsModule,
     InputTextModule,
     FloatLabelModule,
     ButtonModule,
     MessageModule,
-    CardModule,
-    SelectModule,
-    SkeletonModule,
+    RadioButtonModule,
     OrganizationSelector,
+    EventSelector,
   ],
   templateUrl: './user-form.html',
   styleUrl: './user-form.css',
 })
 export class UserForm implements OnInit {
-  // Optional injection for dialog mode
-  public dialogConfig = inject(DynamicDialogConfig, { optional: true });
-  public dialogRef = inject(DynamicDialogRef, { optional: true });
-  isDialogMode = signal(false);
-  // Form data as plain object for ngModel binding
+  private dialogConfig = inject(DynamicDialogConfig, { optional: true });
+  private dialogRef = inject(DynamicDialogRef, { optional: true });
+
+  @ViewChild(EventSelector) private eventSelector?: EventSelector;
+
+  // Form data as a plain object for ngModel binding.
   user: CreateUserRequest = {
     username: '',
     password: '',
@@ -61,238 +65,119 @@ export class UserForm implements OnInit {
     phoneNumber: '',
     role: UserRole.ADMIN,
     organizationId: undefined,
+    eventId: undefined,
   };
-  // Component state as signals
   isSubmitting = signal(false);
-  isEditMode = signal(false);
-  userId = signal<number | null>(null);
-  isLoading = signal(false);
   currentUserRole = signal<UserRole | null>(null);
   availableRoles = signal<RoleOption[]>([]);
-  selectedRole = signal<UserRole | null>(UserRole.ADMIN);
-  // Form input size (controlled centrally via constant)
+  selectedRole = signal<UserRole | null>(null);
+
+  // Hide completed/cancelled events from the distributor event picker.
+  readonly excludedEventStatuses = [EventStatus.COMPLETED, EventStatus.CANCELLED];
+
   readonly inputSize = FORM_INPUT_SIZE;
   shouldShowError = shouldShowError;
+
   private userService = inject(UserService);
   private authService = inject(AuthService);
-  private router = inject(Router);
-  private route = inject(ActivatedRoute);
-  private location = inject(Location);
   private toast = inject(ToastService);
   private errorHandler = inject(ErrorHandlerService);
   private userListBus = inject(UserListBus);
 
   ngOnInit(): void {
-    this.initializeCurrentUserRole();
-    this.initializeAvailableRoles();
+    const role = this.authService.getCurrentRole();
+    this.currentUserRole.set(role);
+    const roles = role ? (ROLE_AVAILABILITY[role] ?? []) : [];
+    this.availableRoles.set(roles);
 
-    // Check if opened in dialog mode
-    if (this.dialogConfig?.data) {
-      this.isDialogMode.set(true);
-      const dialogData = this.dialogConfig.data;
+    // Preselect a role ONLY when one was passed via dialog data (the dashboard
+    // quick-create shortcuts do this). Opening the generic "Create User" from the
+    // users route passes no role, so the radios start with nothing checked.
+    const requested = this.dialogConfig?.data?.role as UserRole | undefined;
+    const initial = roles.find((r) => r.value === requested)?.value ?? null;
+    this.selectedRole.set(initial);
+    this.onRoleSelected();
+  }
 
-      if (dialogData.isEditMode && dialogData.userId) {
-        this.isEditMode.set(true);
-        this.userId.set(dialogData.userId);
-        this.loadUserData(dialogData.userId);
-      }
-    } else {
-      // Route-based mode (existing behavior)
-      this.isDialogMode.set(false);
-      const idParam = this.route.snapshot.paramMap.get('id');
-
-      if (idParam) {
-        const id = parseInt(idParam, 10);
-        if (!isNaN(id)) {
-          this.isEditMode.set(true);
-          this.userId.set(id);
-          this.loadUserData(id);
-        } else {
-          // Invalid ID, redirect to create mode
-          this.router.navigate(['/users/new']);
-        }
-      } else {
-        // Create mode - default state
-        this.isEditMode.set(false);
-        this.userId.set(null);
-      }
-    }
-
+  onRoleChange(role: UserRole): void {
+    this.selectedRole.set(role);
     this.onRoleSelected();
   }
 
   onRoleSelected(): void {
-    if (this.selectedRole()) {
-      this.user.role = this.selectedRole()!;
+    const role = this.selectedRole();
+    if (!role) return;
+    this.user.role = role;
 
-      // Clear organization selection when role changes
-      this.user.organizationId = undefined;
+    // Clear organization + event selection when role changes.
+    this.user.organizationId = undefined;
+    this.user.eventId = undefined;
+    this.eventSelector?.reset();
 
-      // Auto-set organizationId for org-based roles
-      const currentRole = this.currentUserRole();
-      if (currentRole === UserRole.ORGANIZER_ADMIN || currentRole === UserRole.ORGANIZER_USER) {
-        this.user.organizationId = this.getCurrentOrganizationId();
-      }
+    // Auto-set organizationId for org-scoped current users.
+    const currentRole = this.currentUserRole();
+    if (currentRole === UserRole.ORGANIZER_ADMIN || currentRole === UserRole.ORGANIZER_USER) {
+      this.user.organizationId = this.authService.currentUser()?.organizationId;
     }
+  }
+
+  // ROOT/ADMIN change the organization via the dropdown; clear the dependent event
+  // so a stale selection from another org can't be submitted.
+  onOrganizationChanged(organizationId: number | undefined): void {
+    this.user.organizationId = organizationId;
+    this.user.eventId = undefined;
+    this.eventSelector?.reset();
   }
 
   showOrganizationDropdown(): boolean {
-    if (this.isEditMode()) return false;
-
     const currentRole = this.currentUserRole();
-
-    // Only show dropdown if current user is ROOT/ADMIN AND selected role needs organization
+    // Only ROOT/ADMIN pick an organization, and only when the selected role needs one.
     if (currentRole === UserRole.ROOT || currentRole === UserRole.ADMIN) {
       return this.selectedRole() !== null && roleRequiresOrganization(this.selectedRole());
     }
-
     return false;
   }
 
-  getCurrentOrganizationId(): number | undefined {
-    return this.authService.currentUser()?.organizationId;
+  // Distributors are bound to one event, so the picker shows for that role only.
+  showEventPicker(): boolean {
+    return roleRequiresEvent(this.selectedRole());
   }
 
-  isEmailRequired(): boolean {
-    return roleRequiresEmailPhone(this.selectedRole());
-  }
-
-  isPhoneRequired(): boolean {
+  // Email and phone are mandatory for ADMIN and organizer roles (mirrors the backend).
+  contactRequired(): boolean {
     return roleRequiresEmailPhone(this.selectedRole());
   }
 
   onSubmit(form: NgForm): void {
-    if (form.invalid) {
-      return;
-    }
+    if (form.invalid) return;
 
-    // Validate organizationId is set when required (not needed for ROOT/ADMIN creating ROOT/ADMIN)
+    // A role must be picked (the radios start unchecked for the generic create).
+    if (!this.selectedRole()) return;
+
+    // Validate organizationId is set when the role requires it.
     if (roleRequiresOrganization(this.selectedRole()) && !this.user.organizationId) {
       this.toast.error('Organization is required. Please select an organization.');
       return;
     }
 
+    // A distributor must be bound to an event.
+    if (roleRequiresEvent(this.selectedRole()) && !this.user.eventId) {
+      this.toast.error('Event is required. Please select an event for the distributor.');
+      return;
+    }
+
     this.isSubmitting.set(true);
-
-    if (this.isEditMode() && this.userId()) {
-      // Build update request — only send fields the backend accepts (PATCH /api/users/{id})
-      const updateRequest: UpdateUserRequest = {
-        email: this.user.email || undefined,
-        fullName: this.user.fullName || undefined,
-        phoneNumber: this.user.phoneNumber || undefined,
-      };
-      // Only include password if the user typed one
-      if (this.user.password) {
-        updateRequest.password = this.user.password;
-      }
-
-      this.userService.updateUser(this.userId()!, updateRequest).subscribe({
-        next: (updatedUser: User) => {
-          this.isSubmitting.set(false);
-          this.userListBus.publish({ action: 'updated', user: updatedUser });
-
-          if (this.isDialogMode() && this.dialogRef) {
-            const successMessage = this.dialogConfig?.data?.successMessage;
-            this.dialogRef!.close({ user: updatedUser, message: successMessage });
-          } else {
-            this.toast.success('User updated successfully');
-            setTimeout(() => this.location.back(), 1500);
-          }
-        },
-        error: (error) => {
-          this.isSubmitting.set(false);
-          this.errorHandler.showError(error, 'Error');
-        },
-      });
-    } else {
-      // Create mode
-      this.userService.createUser(this.user).subscribe({
-        next: (createdUser: User) => {
-          this.isSubmitting.set(false);
-          this.userListBus.publish({ action: 'created', user: createdUser });
-
-          if (this.isDialogMode() && this.dialogRef) {
-            const successMessage = this.dialogConfig?.data?.successMessage;
-            this.dialogRef!.close({ user: createdUser, message: successMessage });
-          } else {
-            this.toast.success('User created successfully');
-            setTimeout(() => this.location.back(), 1500);
-          }
-        },
-        error: (error) => {
-          this.isSubmitting.set(false);
-          this.errorHandler.showError(error, 'Error');
-        },
-      });
-    }
-  }
-
-  getTitle(): string {
-    return this.isEditMode() ? 'Edit User' : 'Create User';
-  }
-
-  goBack(): void {
-    this.location.back();
-  }
-
-  getSubmitButtonText(): string {
-    if (this.isSubmitting()) {
-      return this.isEditMode() ? 'Updating...' : 'Creating...';
-    }
-    return this.isEditMode() ? 'Update User' : 'Create User';
-  }
-
-  private initializeCurrentUserRole(): void {
-    const role = this.authService.getCurrentRole();
-    this.currentUserRole.set(role);
-  }
-
-  private initializeAvailableRoles(): void {
-    const currentRole = this.currentUserRole();
-    const rolesForCurrentUser = currentRole ? ROLE_AVAILABILITY[currentRole] : [];
-    this.availableRoles.set(rolesForCurrentUser || []);
-  }
-
-  private loadUserData(id: number): void {
-    this.isLoading.set(true);
-
-    this.userService.getUserById(id).subscribe({
-      next: (user: User) => {
-        this.isLoading.set(false);
-        if (!userCanManage(this.authService.currentUser(), user)) {
-          this.toast.error('You do not have permission to edit this user.');
-          this.dismiss();
-          return;
-        }
-        this.populateFormFromUser(user);
+    this.userService.createUser(this.user).subscribe({
+      next: (createdUser: User) => {
+        this.isSubmitting.set(false);
+        this.userListBus.publish({ action: 'created', user: createdUser });
+        this.toast.success('User created successfully', 'Created');
+        this.dialogRef?.close(createdUser);
       },
       error: (error) => {
-        this.isLoading.set(false);
+        this.isSubmitting.set(false);
         this.errorHandler.showError(error, 'Error');
-        this.dismiss();
       },
     });
-  }
-
-  private dismiss(): void {
-    if (this.isDialogMode() && this.dialogRef) {
-      this.dialogRef.close();
-    } else {
-      this.router.navigate([this.authService.getDashboardRoute()]);
-    }
-  }
-
-  private populateFormFromUser(userData: User): void {
-    this.user = {
-      username: userData.username,
-      password: '', // Password not returned from backend
-      email: userData.email,
-      fullName: userData.fullName,
-      phoneNumber: userData.phoneNumber,
-      role: userData.role,
-      organizationId: userData.organizationId,
-    };
-
-    this.selectedRole.set(userData.role);
   }
 }

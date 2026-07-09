@@ -21,10 +21,10 @@
     <p-table [value]="events()" [tableStyle]="{ 'min-width': '50rem' }">
       <ng-template pTemplate="header">
         <tr>
-          <th>Event Name</th>
-          <th>Venue</th>
-          <th>Start Date</th>
-          <th>Status</th>
+          <th scope="col">Event Name</th>
+          <th scope="col">Venue</th>
+          <th scope="col">Start Date</th>
+          <th scope="col">Status</th>
         </tr>
       </ng-template>
       <ng-template pTemplate="body" let-event>
@@ -39,7 +39,10 @@
       </ng-template>
       <ng-template pTemplate="emptymessage">
         <tr>
-          <td colspan="4" class="text-center py-6">No events found.</td>
+          <td colspan="4" class="text-center py-8">
+            <app-empty-illustration name="no-events" [size]="88" class="inline-block mb-2" />
+            <p class="text-color-secondary">No events found.</p>
+          </td>
         </tr>
       </ng-template>
     </p-table>

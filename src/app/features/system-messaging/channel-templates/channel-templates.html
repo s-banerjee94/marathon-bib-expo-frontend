@@ -1,0 +1,51 @@
+<p-card>
+  <ng-template pTemplate="title">
+    <span class="text-lg font-semibold">Message templates</span>
+  </ng-template>
+  <ng-template pTemplate="subtitle">
+    Content for each system message on this channel. Open one to edit its body and registration.
+  </ng-template>
+
+  <ng-template pTemplate="content">
+    @if (loading()) {
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        @for (p of purposes; track p.value) {
+          <p-skeleton height="9rem" borderRadius="0.75rem" />
+        }
+      </div>
+    } @else {
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        @for (card of cards(); track card.value) {
+          <button type="button" class="template-card" (click)="openTemplate(card.value)">
+            <div class="flex items-start gap-3">
+              <span class="template-card__icon" [attr.data-purpose]="card.value">
+                <i [class]="purposeIcon(card.value)"></i>
+              </span>
+              <div class="flex-1 min-w-0 text-left">
+                <div class="font-semibold text-sm leading-snug">{{ card.label }}</div>
+                <div class="text-xs text-color-secondary mt-0.5 line-clamp-2">
+                  {{ card.description }}
+                </div>
+              </div>
+            </div>
+
+            <p class="text-sm text-color-secondary line-clamp-2 m-0 mt-3 min-h-10 text-left">
+              {{ preview(card.template) }}
+            </p>
+
+            <div class="template-card__footer">
+              @if (!card.template) {
+                <p-tag value="Not set" severity="secondary" />
+              } @else if (card.template.enabled) {
+                <p-tag value="Enabled" severity="success" />
+              } @else {
+                <p-tag value="Disabled" severity="warn" />
+              }
+              <i class="pi pi-chevron-right text-xs text-color-secondary"></i>
+            </div>
+          </button>
+        }
+      </div>
+    }
+  </ng-template>
+</p-card>

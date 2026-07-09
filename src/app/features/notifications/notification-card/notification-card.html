@@ -1,0 +1,65 @@
+<p-card
+  [pt]="cardPt()"
+  (click)="onCardClick()"
+  styleClass="cursor-pointer rounded-md hover:!bg-[var(--surface-hover)]"
+>
+  <div class="flex gap-1">
+    <!-- Type icon -->
+    <span
+      class="w-7 h-7 rounded-full flex items-center justify-center shrink-0"
+      [style.background]="iconBg()"
+    >
+      <i [class]="icon() + ' text-xs'" [style.color]="iconColor()"></i>
+    </span>
+
+    <div class="flex-1 min-w-0">
+      <!-- Title + date/time -->
+      <div class="flex items-baseline justify-between gap-1">
+        <span
+          class="text-[13px] leading-tight truncate"
+          [class.font-semibold]="!notification().read"
+        >
+          {{ notification().title }}
+        </span>
+        <span class="text-[11px] shrink-0" style="color: var(--text-color-secondary)">
+          {{ notification().createdAt | date: 'dd MMM yyyy, hh:mm a' }}
+        </span>
+      </div>
+
+      <!-- Description (full message, wraps) -->
+      <p class="text-xs leading-snug break-words mt-0.5" style="color: var(--text-color-secondary)">
+        {{ notification().message }}
+      </p>
+
+      <!-- Entity chip + actor + deep link -->
+      @if (entityLabel() || notification().actorName || routable()) {
+        <div class="flex items-center gap-1 mt-1">
+          @if (entityLabel(); as label) {
+            <p-tag [value]="label" severity="secondary" />
+          }
+          @if (notification().actorName; as actor) {
+            <span
+              class="text-[11px] flex items-center gap-1 min-w-0"
+              style="color: var(--text-color-secondary)"
+            >
+              <i class="pi pi-user text-[10px]"></i>
+              <span class="font-medium truncate">{{ actor }}</span>
+            </span>
+          }
+          <span class="flex-1"></span>
+          @if (routable()) {
+            <p-button
+              (onClick)="onGoTo($event)"
+              label="Go To"
+              icon="pi pi-arrow-right"
+              iconPos="right"
+              [text]="true"
+              size="small"
+              styleClass="!text-[11px] !py-0 !px-1"
+            />
+          }
+        </div>
+      }
+    </div>
+  </div>
+</p-card>

@@ -7,17 +7,13 @@ import {
 } from '@angular/common/http';
 import { inject } from '@angular/core';
 import { Router } from '@angular/router';
-import { BehaviorSubject, catchError, filter, Observable, switchMap, take, throwError } from 'rxjs';
+import { catchError, Observable, switchMap, throwError } from 'rxjs';
 import { AuthService } from '../services/auth.service';
+import { CSRF_HEADER_NAME, getCsrfToken, isMutatingMethod } from '../utils/csrf.util';
 
 const AUTH_PATH_LOGIN = '/auth/login';
 const AUTH_PATH_REFRESH = '/auth/refresh';
 const AUTH_PATH_LOGOUT = '/auth/logout';
-
-// Module-level single-flight refresh state. Shared across all in-flight requests
-// so a burst of concurrent 401s triggers exactly one /refresh call.
-let refreshInFlight = false;
-const refreshedToken$ = new BehaviorSubject<string | null>(null);
 
 function isAuthEndpoint(url: string): boolean {
   return (
@@ -28,7 +24,15 @@ function isAuthEndpoint(url: string): boolean {
 }
 
 function attachToken(request: HttpRequest<unknown>, token: string): HttpRequest<unknown> {
-  return request.clone({ setHeaders: { Authorization: `Bearer ${token}` } });
+  // Re-read the CSRF cookie too — /refresh may have rotated it, so the original
+  // request's header would otherwise be stale and fail validation on retry.
+  const csrfToken = isMutatingMethod(request.method) ? getCsrfToken() : null;
+  return request.clone({
+    setHeaders: {
+      Authorization: `Bearer ${token}`,
+      ...(csrfToken ? { [CSRF_HEADER_NAME]: csrfToken } : {}),
+    },
+  });
 }
 
 export const errorInterceptor: HttpInterceptorFn = (request, next) => {
@@ -57,42 +61,24 @@ export const errorInterceptor: HttpInterceptorFn = (request, next) => {
         return throwError(() => error);
       }
 
-      return handle401(request, next, authService, router);
+      return handle401(request, next, authService);
     }),
   );
 };
 
+// A burst of concurrent 401s shares one /refresh call (AuthService.refresh() is
+// single-flight) and one eviction policy (refreshOrInvalidate ends the session on a
+// genuine 401/403 only — transient failures never log the user out). Each waiting
+// request then retries with the refreshed token; on refresh failure they all receive
+// the same error and surface it through their own handlers.
 function handle401(
   request: HttpRequest<unknown>,
   next: HttpHandlerFn,
   authService: AuthService,
-  router: Router,
 ): Observable<HttpEvent<unknown>> {
-  if (refreshInFlight) {
-    return refreshedToken$.pipe(
-      filter((token): token is string => token !== null),
-      take(1),
-      switchMap((token) => next(attachToken(request, token))),
-    );
-  }
-
-  refreshInFlight = true;
-  refreshedToken$.next(null);
-
-  return authService.refresh().pipe(
-    switchMap((token) => {
-      refreshInFlight = false;
-      refreshedToken$.next(token);
-      return next(attachToken(request, token));
-    }),
-    catchError((refreshError: HttpErrorResponse) => {
-      refreshInFlight = false;
-      refreshedToken$.next(null);
-      authService.handleSessionInvalidated();
-      router.navigate(['/login']);
-      return throwError(() => refreshError);
-    }),
-  );
+  return authService
+    .refreshOrInvalidate()
+    .pipe(switchMap((token) => next(attachToken(request, token))));
 }
 
 function logError(error: HttpErrorResponse): void {

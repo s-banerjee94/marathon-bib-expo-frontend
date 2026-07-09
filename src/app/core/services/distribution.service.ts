@@ -16,6 +16,7 @@ import {
   ParticipantDistributionResponse,
   PendingBibListResponse,
   PendingGoodiesListResponse,
+  ScanQrRequest,
   UndoDistributionResponse,
 } from '../models/distribution.model';
 
@@ -23,6 +24,18 @@ import {
 export class DistributionService {
   private http = inject(HttpClient);
   private apiUrl = `${BASE_URI}/events`;
+
+  scanQr(eventId: number, request: ScanQrRequest): Observable<ParticipantDistributionResponse> {
+    return this.http.post<ParticipantDistributionResponse>(
+      `${this.apiUrl}/${eventId}/participant-access/scan`,
+      request,
+    );
+  }
+
+  // Returns 202 with no body — generation runs asynchronously in the background.
+  generateShortUrls(eventId: number): Observable<void> {
+    return this.http.post<void>(`${this.apiUrl}/${eventId}/participant-access/short-urls`, {});
+  }
 
   getDistributionStatus(
     eventId: number,
@@ -51,6 +64,7 @@ export class DistributionService {
     );
   }
 
+  // TODO: not wired into any UI yet — add a bulk bib-collect action in the distribution feature
   bulkCollectBib(
     eventId: number,
     request: BulkCollectBibRequest,

@@ -12,18 +12,37 @@ export const ORGANIZATIONS_ROUTES: Routes = [
       import('./organization-list/organization-list').then((m) => m.OrganizationList),
     canActivate: [roleGuard(ORGANIZATION_ROLES)],
     title: pageTitle('Organizations'),
+  },
+  {
+    // ROOT/ADMIN edit opens the full-page organization account view (not a dialog),
+    // where governance fields (tier, billing email, quotas) are also editable.
+    path: ':id/edit',
+    loadComponent: () =>
+      import('../organization-account/organization-account').then((m) => m.OrganizationAccount),
+    canActivate: [roleGuard(ORGANIZATION_ROLES)],
+    title: pageTitle('Edit Organization'),
     children: [
+      { path: '', redirectTo: 'account', pathMatch: 'full' },
       {
-        path: 'new',
+        path: 'account',
         loadComponent: () =>
-          import('./organization-form/organization-form').then((m) => m.OrganizationForm),
-        title: pageTitle('New Organization'),
+          import('../organization-account/organization-account-details/organization-account-details').then(
+            (m) => m.OrganizationAccountDetails,
+          ),
       },
       {
-        path: ':id/edit',
+        path: 'settings',
         loadComponent: () =>
-          import('./organization-form/organization-form').then((m) => m.OrganizationForm),
-        title: pageTitle('Edit Organization'),
+          import('../organization-account/organization-settings-section/organization-settings-section').then(
+            (m) => m.OrganizationSettingsSection,
+          ),
+      },
+      {
+        path: 'billing',
+        loadComponent: () =>
+          import('../organization-account/organization-billing-section/organization-billing-section').then(
+            (m) => m.OrganizationBillingSection,
+          ),
       },
     ],
   },

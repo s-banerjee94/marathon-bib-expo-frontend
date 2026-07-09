@@ -11,11 +11,13 @@ import {
 import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
 import { ButtonModule } from 'primeng/button';
+import { SkeletonModule } from 'primeng/skeleton';
 import { ImportErrorItem } from '../../../../core/models/participant.model';
 import { ParticipantService } from '../../../../core/services/participant.service';
 import { ErrorHandlerService } from '../../../../core/services/error-handler.service';
-import { DefaultValuePipe } from '../../../../shared/pipes/default-value.pipe';
+import { LabelizePipe } from '../../../../shared/pipes/labelize-pipe';
 import { ParticipantListState } from '../participant-list-state.service';
+import { EmptyIllustration } from '../../../../shared/illustrations/empty-illustration';
 
 const IMPORT_ERRORS_PAGE_SIZE = 50;
 
@@ -24,7 +26,7 @@ const IMPORT_ERRORS_PAGE_SIZE = 50;
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './import-history-tab.html',
-  imports: [TableModule, TagModule, ButtonModule, DefaultValuePipe],
+  imports: [TableModule, TagModule, ButtonModule, SkeletonModule, LabelizePipe, EmptyIllustration],
 })
 export class ImportHistoryTab {
   private participantService = inject(ParticipantService);
@@ -38,8 +40,13 @@ export class ImportHistoryTab {
   hasMore = signal(false);
   private lastEvaluatedKey?: string;
 
-  // True only on the very first load (no data yet) — drives the big centered spinner.
+  // True only on the very first load (no data yet) — drives the skeleton rows.
   isInitialLoading = computed(() => this.isLoading() && this.errors().length === 0);
+  // True while appending another page — drives the small "load more" indicator.
+  isLoadingMore = computed(() => this.isLoading() && this.errors().length > 0);
+
+  // Placeholder rows rendered as skeletons during the initial load.
+  skeletonRows = Array(5).fill({});
 
   constructor() {
     // Effect 1: react to eventId changes — fresh load.

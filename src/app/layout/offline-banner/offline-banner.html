@@ -1,0 +1,11 @@
+@if (offline()) {
+  <div
+    class="fixed left-0 right-0 top-0 z-[1001] flex h-[var(--banner-height)] items-center justify-center gap-2 px-4 text-sm font-medium"
+    style="background-color: var(--primary-color); color: var(--primary-contrast-color, #ffffff)"
+    role="status"
+    aria-live="polite"
+  >
+    <i class="pi pi-exclamation-triangle" aria-hidden="true"></i>
+    <span>You're offline — changes are disabled until you reconnect.</span>
+  </div>
+}

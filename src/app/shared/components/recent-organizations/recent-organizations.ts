@@ -6,11 +6,20 @@ import { SkeletonModule } from 'primeng/skeleton';
 import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
 import { Organization } from '../../../core/models/organization.model';
+import { EmptyIllustration } from '../../illustrations/empty-illustration';
 
 @Component({
   selector: 'app-recent-organizations',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, ButtonModule, CardModule, SkeletonModule, TableModule, TagModule],
+  imports: [
+    CommonModule,
+    ButtonModule,
+    CardModule,
+    SkeletonModule,
+    TableModule,
+    TagModule,
+    EmptyIllustration,
+  ],
   templateUrl: './recent-organizations.html',
 })
 export class RecentOrganizations {

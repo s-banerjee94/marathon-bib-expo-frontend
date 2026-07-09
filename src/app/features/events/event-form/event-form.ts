@@ -32,7 +32,6 @@ interface EventFormModel {
   postalCode?: string;
   country?: string;
   timezone: string;
-  status: EventStatus;
   organizationId: number;
 }
 import { EventService } from '../../../core/services/event.service';
@@ -40,7 +39,7 @@ import { AuthService } from '../../../core/services/auth.service';
 import { ErrorHandlerService } from '../../../core/services/error-handler.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { UserRole } from '../../../core/models/user.model';
-import { shouldShowError } from '../../../shared/utils/form.utils';
+import { buildDirtyPatch, shouldShowError } from '../../../shared/utils/form.utils';
 import { FORM_INPUT_SIZE } from '../../../shared/constants/form.constants';
 import { OrganizationSelector } from '../../../layout/organization-selector/organization-selector';
 import { EventListBus } from '../event-list-bus.service';
@@ -94,7 +93,6 @@ export class EventForm implements OnInit {
     postalCode: '',
     country: '',
     timezone: '',
-    status: EventStatus.DRAFT,
     organizationId: 0,
   };
   // Component state as signals
@@ -107,13 +105,9 @@ export class EventForm implements OnInit {
   readonly countryOptions: CountryOption[] = COUNTRY_OPTIONS;
   // Form input size (controlled centrally via constant)
   readonly inputSize = FORM_INPUT_SIZE;
-  // Event status options for dropdown
-  readonly statusOptions = [
-    { label: 'Draft', value: EventStatus.DRAFT },
-    { label: 'Published', value: EventStatus.PUBLISHED },
-    { label: 'Cancelled', value: EventStatus.CANCELLED },
-    { label: 'Completed', value: EventStatus.COMPLETED },
-  ];
+  // Loaded event status (read-only). Status is changed only via the dedicated
+  // status endpoint, not this form; kept here to enforce the timezone-lock rule.
+  currentStatus = signal<EventStatus | null>(null);
   // Template utility function
   shouldShowError = shouldShowError;
   private eventService = inject(EventService);
@@ -181,9 +175,9 @@ export class EventForm implements OnInit {
   }
 
   isTimezoneLocked(): boolean {
+    const status = this.currentStatus();
     return (
-      this.isEditMode() &&
-      (this.event.status === EventStatus.PUBLISHED || this.event.status === EventStatus.COMPLETED)
+      this.isEditMode() && (status === EventStatus.PUBLISHED || status === EventStatus.COMPLETED)
     );
   }
 
@@ -305,6 +299,7 @@ export class EventForm implements OnInit {
     if (event.country) {
       this.timezoneOptions.set(getCountryTimezones(event.country));
     }
+    this.currentStatus.set(event.status);
     this.event = {
       eventName: event.eventName,
       eventDescription: event.eventDescription,
@@ -318,7 +313,6 @@ export class EventForm implements OnInit {
       postalCode: event.postalCode,
       country: event.country,
       timezone: event.timezone ?? '',
-      status: event.status,
       organizationId: event.organizationId,
     };
   }
@@ -339,7 +333,6 @@ export class EventForm implements OnInit {
       postalCode: this.event.postalCode,
       country: this.event.country,
       timezone: this.event.timezone,
-      status: this.event.status,
       organizationId: this.event.organizationId,
     };
   }
@@ -369,13 +362,11 @@ export class EventForm implements OnInit {
   }
 
   private buildPatchRequest(form: NgForm): UpdateEventRequest {
-    const TRANSFORMED = new Set(['eventStartDate', 'eventEndDate']);
-
-    const patch = Object.fromEntries(
-      Object.keys(this.event)
-        .filter((key) => !TRANSFORMED.has(key) && form.controls[key]?.dirty)
-        .map((key) => [key, this.event[key as keyof EventFormModel]]),
-    ) as UpdateEventRequest;
+    const patch = buildDirtyPatch<UpdateEventRequest>(
+      form,
+      this.event,
+      new Set(['eventStartDate', 'eventEndDate']),
+    );
 
     if (form.controls['eventStartDate']?.dirty) {
       patch.eventStartDate = this.toDateString(this.event.eventStartDate);

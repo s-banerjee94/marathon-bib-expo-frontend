@@ -90,6 +90,20 @@
     />
   </div>
 
+  <!-- AI Assistant -->
+  <div class="flex flex-col gap-2">
+    <span class="text-xs font-semibold uppercase tracking-wide">AI Assistant</span>
+    <p-selectbutton
+      (ngModelChange)="onAiAssistantModeChange($event)"
+      [allowEmpty]="false"
+      [ngModel]="layoutService.aiAssistantMode()"
+      [options]="layoutService.aiAssistantModeOptions"
+      optionLabel="label"
+      optionValue="value"
+      size="small"
+    />
+  </div>
+
   <!-- Border radius -->
   <div class="flex flex-col gap-2">
     <span class="text-xs font-semibold uppercase tracking-wide">Corners</span>

@@ -5,6 +5,44 @@
 /* Tailwind dark variant — class-contains match (Sakai pattern) for flexibility */
 @custom-variant dark (&:where([class*="app-dark"], [class*="app-dark"] *));
 
+/* Empty-state illustration motion. Exposed as `animate-illustration-*` utilities;
+ * always paired with the `motion-safe:` variant at the call site so they go static
+ * under prefers-reduced-motion. */
+@theme {
+  --animate-illustration-fade-in: illustration-fade-in 0.5s ease-out both;
+  --animate-illustration-float: illustration-float 3.6s ease-in-out 0.5s infinite;
+  --animate-illustration-twinkle: illustration-twinkle 2.6s ease-in-out infinite;
+
+  @keyframes illustration-fade-in {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  @keyframes illustration-float {
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-4px);
+    }
+  }
+  @keyframes illustration-twinkle {
+    0%,
+    100% {
+      opacity: 0.5;
+    }
+    50% {
+      opacity: 0.12;
+    }
+  }
+}
+
 /* Semantic alias layer (Sakai pattern)
  * Maps PrimeNG --p-* tokens to unprefixed semantic names so app CSS stays readable
  * and decoupled from PrimeNG's CSS variable naming.
@@ -33,8 +71,11 @@
 
   /* Layout primitives */
   --sidebar-width: 250px;
+  --sidebar-width-collapsed: 4.5rem;
   --sidebar-width-mobile: 320px;
   --topbar-height: 56px;
+  /* Height reserved above the topbar for the offline banner; 0 unless offline. */
+  --banner-height: 0px;
 }
 
 :root.app-dark {
@@ -64,11 +105,23 @@ body.blocked-scroll {
   min-height: 100vh;
 }
 
+/* When offline, the offline banner occupies a strip above the topbar; push the
+   topbar down and reserve room so it sits above (not over) the topbar. */
+.layout-wrapper.offline-active {
+  --banner-height: 32px;
+}
+
+.layout-wrapper.offline-active .layout-topbar {
+  top: var(--banner-height);
+}
+
 .layout-main {
   margin-left: 0;
-  min-height: calc(100vh - var(--topbar-height));
-  padding-top: var(--topbar-height);
-  transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  min-height: calc(100vh - var(--topbar-height) - var(--banner-height));
+  padding-top: calc(var(--topbar-height) + var(--banner-height));
+  transition:
+    margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    margin-right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .layout-static .layout-main {
@@ -79,10 +132,59 @@ body.blocked-scroll {
   margin-left: 0;
 }
 
+/* Icon-only rail — desktop static, collapsed. Sidebar shrinks to icon width,
+   labels/badges/chevrons hide, and each item centers its icon. Scoped to
+   desktop so the mobile overlay always shows the full labelled menu. */
+@media (min-width: 992px) {
+  .layout-static-collapsed .layout-sidebar {
+    width: var(--sidebar-width-collapsed);
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+  }
+
+  .layout-static-collapsed .layout-main {
+    margin-left: var(--sidebar-width-collapsed);
+  }
+
+  .layout-static-collapsed .menu-link {
+    justify-content: center;
+    padding-left: 0;
+    padding-right: 0;
+    padding-top: 0.85rem;
+    padding-bottom: 0.85rem;
+  }
+
+  .layout-static-collapsed .menu-link > span,
+  .layout-static-collapsed .menu-link > .pi-angle-down {
+    display: none;
+  }
+
+  .layout-static-collapsed .menu-link > i {
+    margin-right: 0;
+    font-size: 1.5rem;
+  }
+
+  .layout-static-collapsed app-menuitem > li {
+    margin-bottom: 0.5rem;
+  }
+}
+
+/* AI assistant "push" mode squeezes the content on desktop (matches the panel width) */
+@media (min-width: 640px) {
+  .layout-ai-push .layout-main {
+    margin-right: 28rem;
+  }
+}
+
 .layout-sidebar {
-  top: var(--topbar-height);
+  top: calc(var(--topbar-height) + var(--banner-height));
   width: var(--sidebar-width);
-  height: calc(100vh - var(--topbar-height));
+  /* 100vh extends behind the mobile system nav bar (clipping the bottom-pinned item);
+     dvh tracks the visible viewport. vh kept as a fallback for older browsers. */
+  height: calc(100vh - var(--topbar-height) - var(--banner-height));
+  height: calc(100dvh - var(--topbar-height) - var(--banner-height));
+  padding-bottom: calc(1rem + env(safe-area-inset-bottom));
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 @media (max-width: 991px) {
@@ -119,9 +221,44 @@ body.blocked-scroll {
 }
 
 .menu-link.active-route {
+  position: relative;
   color: var(--primary-color);
   font-weight: 700;
   background-color: color-mix(in srgb, var(--primary-color), transparent 90%);
+}
+
+/* 3px accent bar pinned to the active item's left edge. The shared
+   view-transition-name lets the Router's view transition slide it from the
+   previous active item to the new one on navigation (withViewTransitions in
+   app.config.ts). Only one menu item is active at a time, so the name stays
+   unique within a snapshot. */
+.menu-link.active-route::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  inset-block: 0.5rem;
+  width: 3px;
+  border-radius: 9999px;
+  background-color: var(--primary-color);
+  view-transition-name: sidebar-active-indicator;
+}
+
+::view-transition-group(sidebar-active-indicator) {
+  animation-duration: 200ms;
+  animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* During route navigation the page content swaps instantly — only the
+   active-nav indicator above animates. */
+:root.route-transition::view-transition-old(root),
+:root.route-transition::view-transition-new(root) {
+  animation: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(sidebar-active-indicator) {
+    animation: none;
+  }
 }
 
 /* View Transitions API — smooth crossfade when toggling dark mode (Sakai pattern) */
@@ -129,4 +266,129 @@ body.blocked-scroll {
 ::view-transition-new(root) {
   animation-duration: 250ms;
   mix-blend-mode: normal;
+}
+
+/* ───────────────────────────────────────────────────────────────────────────
+ * Print stylesheet — list & report screens ("Print to PDF")
+ *
+ * Per-screen chrome (search, filters, action buttons, tabs, page header) is
+ * hidden in the templates with Tailwind's `print:hidden` / `hidden print:block`
+ * utilities. The rules here own everything a feature component cannot reach: the
+ * app shell, PrimeNG overlays, and the table internals that have to be reflowed
+ * so the table fits the page width with intact rows. Lives in the global sheet
+ * (which is already all custom CSS) rather than component styles by necessity —
+ * scoped component CSS can't target the topbar/sidebar or PrimeNG's DOM.
+ * ────────────────────────────────────────────────────────────────────────── */
+@media print {
+  @page {
+    margin: 1.2cm;
+  }
+
+  /* Ink-friendly: white page, solid black text. */
+  body {
+    background: #fff !important;
+    color: #000 !important;
+  }
+
+  /* App shell — lives outside the routed content, so it can only be hidden here. */
+  app-navbar,
+  app-sidebar,
+  app-offline-banner,
+  app-mobile-tab-bar,
+  app-floating-progress,
+  app-import-progress-floating,
+  app-ai-assistant,
+  app-command-palette,
+  app-keyboard-shortcuts-help,
+  .layout-topbar,
+  .layout-sidebar {
+    display: none !important;
+  }
+
+  /* Reclaim the full printable width once the sidebar/topbar are gone. */
+  .layout-main {
+    margin: 0 !important;
+    padding: 0 !important;
+    min-height: 0 !important;
+  }
+
+  /* Overlays, toasts and interactive controls never belong on paper. */
+  p-toast,
+  p-confirmdialog,
+  p-confirmpopup,
+  .p-toast,
+  .p-tooltip,
+  .p-confirmpopup,
+  .p-popover,
+  .p-dialog-mask,
+  .p-paginator,
+  .p-button,
+  .p-checkbox,
+  .p-multiselect {
+    display: none !important;
+  }
+
+  /* Let the table escape its fixed-height scroll / virtual viewport and flow
+     onto the page instead of being trapped in a scrollbox. (Virtual-scrolled
+     tables still only render their loaded window of rows.) */
+  .p-datatable-table-container,
+  .p-datatable-wrapper,
+  .p-scroller,
+  .p-virtualscroller,
+  .cdk-virtual-scroll-viewport {
+    overflow: visible !important;
+    height: auto !important;
+    max-height: none !important;
+  }
+  .p-scroller-content,
+  .p-virtualscroller-content {
+    transform: none !important;
+    position: static !important;
+  }
+  .p-datatable-virtualscroller-spacer {
+    display: none !important;
+  }
+
+  /* Frozen columns rely on sticky offsets that misalign on paper — drop them
+     back into the normal table flow. */
+  .p-datatable-frozen-column {
+    position: static !important;
+    left: auto !important;
+    right: auto !important;
+    z-index: auto !important;
+  }
+
+  /* Reflow wide tables to the page width: shed min-widths, allow wrapping,
+     shrink type so every column fits inside the margins. */
+  .p-datatable-table {
+    min-width: 0 !important;
+    width: 100% !important;
+    table-layout: auto !important;
+  }
+  .p-datatable-table th,
+  .p-datatable-table td {
+    min-width: 0 !important;
+    max-width: none !important;
+    white-space: normal !important;
+    word-break: break-word;
+    color: #000 !important;
+    border: 1px solid #000 !important;
+    font-size: 10px !important;
+    padding: 2px 4px !important;
+  }
+
+  /* Repeat the header on every page; keep each row whole across page breaks. */
+  .p-datatable-thead {
+    display: table-header-group;
+  }
+  .p-datatable-table tr {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  /* Strip card/table shadows so they don't print as grey boxes. */
+  .p-card,
+  .p-datatable {
+    box-shadow: none !important;
+  }
 }

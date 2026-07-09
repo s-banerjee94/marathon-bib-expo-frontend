@@ -24,6 +24,7 @@
             <p-button
               label="Refresh"
               icon="pi pi-refresh"
+              ariaLabel="Refresh"
               severity="secondary"
               [outlined]="true"
               [size]="buttonSize"
@@ -36,15 +37,15 @@
 
       <ng-template pTemplate="header">
         <tr>
-          <th pFrozenColumn style="width: 60px" class="text-center">#</th>
-          <th pFrozenColumn style="min-width: 130px">BIB</th>
-          <th style="min-width: 200px">Full Name</th>
-          <th style="min-width: 140px">Phone</th>
-          <th style="min-width: 150px">Race</th>
-          <th style="min-width: 150px">Category</th>
-          <th style="min-width: 180px">BIB Collected At</th>
-          <th style="min-width: 220px">Pending Items</th>
-          <th pFrozenColumn alignFrozen="right" style="width: 100px">Actions</th>
+          <th scope="col" pFrozenColumn style="width: 60px" class="text-center">#</th>
+          <th scope="col" pFrozenColumn style="min-width: 130px">BIB</th>
+          <th scope="col" style="min-width: 200px">Full Name</th>
+          <th scope="col" style="min-width: 140px">Phone</th>
+          <th scope="col" style="min-width: 150px">Race</th>
+          <th scope="col" style="min-width: 150px">Category</th>
+          <th scope="col" style="min-width: 180px">BIB Collected At</th>
+          <th scope="col" style="min-width: 220px">Pending Items</th>
+          <th scope="col" pFrozenColumn alignFrozen="right" style="width: 100px">Actions</th>
         </tr>
       </ng-template>
 
@@ -88,6 +89,7 @@
               <div class="flex gap-1">
                 <p-button
                   (onClick)="parent.openDistributeGoodiesDialog(participant)"
+                  ariaLabel="Distribute goodies"
                   [rounded]="true"
                   [text]="true"
                   [size]="buttonSize"
@@ -106,7 +108,7 @@
         <tr>
           <td colspan="9" class="text-center py-10">
             @if (!loading()) {
-              <i class="pi pi-gift text-4xl mb-3 block text-color-secondary"></i>
+              <app-empty-illustration name="all-caught-up" [size]="88" class="inline-block mb-3" />
               <p class="text-color-secondary">No participants with pending goodies.</p>
             }
           </td>
@@ -124,6 +126,7 @@
       </h3>
       <p-button
         icon="pi pi-refresh"
+        ariaLabel="Refresh"
         severity="secondary"
         [outlined]="true"
         [size]="buttonSize"
@@ -144,7 +147,7 @@
       </div>
     } @else if (participants().length === 0) {
       <div class="flex flex-col items-center justify-center py-12">
-        <i class="pi pi-gift text-5xl mb-4 opacity-30"></i>
+        <app-empty-illustration name="all-caught-up" [size]="104" class="mb-4" />
         <p class="font-medium mb-1">No participants with pending goodies.</p>
       </div>
     } @else {

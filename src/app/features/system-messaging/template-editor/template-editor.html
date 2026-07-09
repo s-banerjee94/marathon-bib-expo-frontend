@@ -1,0 +1,258 @@
+<!-- Status tag, shared by the page header and the dialog header -->
+<ng-template #statusTpl>
+  @if (!loading()) {
+    @if (!template()) {
+      <p-tag value="Not set" severity="secondary" />
+    } @else if (template()!.enabled) {
+      <p-tag value="Enabled" severity="success" icon="pi pi-check-circle" />
+    } @else {
+      <p-tag value="Disabled" severity="warn" icon="pi pi-pause-circle" />
+    }
+  }
+</ng-template>
+
+<!-- Form body, shared by the page (inside p-card) and the dialog -->
+<ng-template #bodyTpl>
+  @if (loading()) {
+    <div class="flex flex-col gap-4">
+      <p-skeleton height="8rem" />
+      <p-skeleton height="3rem" />
+    </div>
+  } @else if (hasProvider() === false) {
+    <div
+      class="flex flex-col items-center justify-center gap-3 text-center p-8 rounded-2xl border border-dashed border-surface"
+    >
+      <i class="pi pi-cog text-3xl text-color-secondary"></i>
+      <div>
+        <div class="font-semibold">No {{ channelMeta?.label ?? channel }} provider configured</div>
+        <p class="text-sm text-color-secondary m-0 mt-1">
+          Set up the {{ channelMeta?.label ?? channel }} provider connection first — its template
+          mode decides whether this template is body- or variable-based.
+        </p>
+      </div>
+      <p-button
+        label="Configure provider"
+        icon="pi pi-arrow-right"
+        iconPos="right"
+        (onClick)="onCancel()"
+      />
+    </div>
+  } @else {
+    <form #form="ngForm" (ngSubmit)="onSave(form)" class="flex flex-col gap-6">
+      <!-- Content -->
+      @if (usesVariables()) {
+        <div class="flex flex-col gap-1">
+          <p-floatlabel variant="on">
+            <input
+              #contentSid="ngModel"
+              pInputText
+              [pSize]="inputSize"
+              id="dltTemplateId"
+              name="dltTemplateId"
+              fluid="true"
+              autocomplete="off"
+              [(ngModel)]="model.dltTemplateId"
+              [invalid]="shouldShowError(contentSid, form.submitted)"
+              required
+            />
+            <label for="dltTemplateId">{{ templateIdLabel }} *</label>
+          </p-floatlabel>
+          @if (shouldShowError(contentSid, form.submitted)) {
+            <p-message [size]="inputSize" severity="error" variant="simple">
+              {{ templateIdLabel }} is required for provider-rendered templates.
+            </p-message>
+          } @else {
+            <span class="text-xs text-color-secondary">
+              The provider's approved template id. The variables below fill its positional slots in
+              order.
+            </span>
+          }
+        </div>
+
+        <app-placeholder-variable-picker
+          [variables]="variables()"
+          [options]="placeholderOptions"
+          (variablesChange)="variables.set($event)"
+        />
+
+        <!-- Preview: the value sent for each positional slot {{n}} -->
+        @if (variables().length) {
+          <div class="flex flex-col gap-1">
+            <span class="text-xs font-medium">Preview — value sent for each positional slot:</span>
+            <div class="flex flex-wrap gap-2 border border-surface rounded-lg px-3 py-2">
+              @for (variable of variables(); track $index) {
+                <p-tag
+                  [value]="'{{' + ($index + 1) + '}} ' + variable"
+                  severity="success"
+                  [rounded]="true"
+                />
+              }
+            </div>
+          </div>
+        }
+      } @else {
+        <div class="flex flex-col gap-1">
+          <p-floatlabel variant="on">
+            <textarea
+              #bodyInput
+              #body="ngModel"
+              pTextarea
+              id="body"
+              name="body"
+              rows="4"
+              [autoResize]="true"
+              fluid="true"
+              placeholder="BibExpo: You're invited as #{role}. Create your account: #{inviteUrl}"
+              [(ngModel)]="model.body"
+              [invalid]="shouldShowError(body, form.submitted)"
+              required
+            ></textarea>
+            <label for="body">Message body *</label>
+          </p-floatlabel>
+          @if (shouldShowError(body, form.submitted)) {
+            <p-message [size]="inputSize" severity="error" variant="simple">
+              Message body is required.
+            </p-message>
+          }
+          @if (placeholderOptions.length) {
+            <div class="flex flex-wrap items-center gap-2 mt-1">
+              <span class="text-xs text-color-secondary">Insert:</span>
+              @for (option of placeholderOptions; track option.value) {
+                <p-button
+                  type="button"
+                  [label]="option.value"
+                  severity="secondary"
+                  outlined
+                  size="small"
+                  (onClick)="insertPlaceholder(option.value)"
+                />
+              }
+            </div>
+          }
+        </div>
+      }
+
+      <!-- Registration -->
+      <div class="flex flex-col gap-4 pt-5 border-t border-surface">
+        <span class="text-sm font-semibold">Registration</span>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          @if (!usesVariables()) {
+            <div class="flex flex-col gap-1">
+              <p-floatlabel variant="on">
+                <input
+                  pInputText
+                  [pSize]="inputSize"
+                  id="smsDltId"
+                  name="dltTemplateId"
+                  fluid="true"
+                  autocomplete="off"
+                  [(ngModel)]="model.dltTemplateId"
+                />
+                <label for="smsDltId">DLT template id</label>
+              </p-floatlabel>
+            </div>
+          }
+          <div class="flex flex-col gap-1">
+            <p-floatlabel variant="on">
+              <input
+                pInputText
+                [pSize]="inputSize"
+                id="senderId"
+                name="senderId"
+                fluid="true"
+                autocomplete="off"
+                placeholder="BIBEXP"
+                [(ngModel)]="model.senderId"
+              />
+              <label for="senderId">Sender id</label>
+            </p-floatlabel>
+          </div>
+        </div>
+      </div>
+
+      <!-- Enabled -->
+      <div class="flex items-center justify-between gap-4 pt-5 border-t border-surface">
+        <div class="flex flex-col min-w-0">
+          <span class="text-sm font-medium">Active for sending</span>
+          <span class="text-xs text-color-secondary">
+            When off, this template is saved but never used to send messages.
+          </span>
+        </div>
+        <p-toggleswitch
+          class="shrink-0"
+          name="enabled"
+          [(ngModel)]="model.enabled"
+          ariaLabel="Active for sending"
+        />
+      </div>
+
+      <!-- Actions -->
+      <div class="flex items-center justify-end gap-3 pt-5 border-t border-surface">
+        <p-button
+          label="Cancel"
+          severity="secondary"
+          text
+          type="button"
+          (onClick)="onCancel()"
+          [disabled]="saving()"
+        />
+        <p-button
+          label="Save template"
+          icon="pi pi-check"
+          type="submit"
+          [loading]="saving()"
+          [disabled]="saving() || form.invalid"
+        />
+      </div>
+    </form>
+  }
+</ng-template>
+
+@if (isDialog) {
+  <div class="flex flex-col">
+    <div class="flex flex-col gap-2 p-5 pb-4 border-b border-surface">
+      <div class="flex items-start justify-between gap-3">
+        <div class="flex flex-wrap items-center gap-3 min-w-0">
+          <span class="text-lg font-semibold">{{ titleText }}</span>
+          <ng-container *ngTemplateOutlet="statusTpl" />
+        </div>
+        <p-button
+          icon="pi pi-times"
+          severity="secondary"
+          text
+          rounded
+          class="shrink-0 -mt-1 -mr-1"
+          ariaLabel="Close"
+          (onClick)="onCancel()"
+        />
+      </div>
+      <span class="text-sm text-color-secondary">{{ purposeMeta?.description }}</span>
+    </div>
+    <div class="p-5">
+      <ng-container *ngTemplateOutlet="bodyTpl" />
+    </div>
+  </div>
+} @else {
+  <div class="flex flex-col gap-4 max-w-3xl">
+    <a
+      [routerLink]="['/system-messaging', channel]"
+      class="inline-flex items-center gap-2 text-sm text-color-secondary no-underline hover:text-color"
+    >
+      <i class="pi pi-arrow-left"></i>
+      {{ channelMeta?.label ?? channel }} templates
+    </a>
+
+    <p-card>
+      <ng-template pTemplate="title">
+        <div class="flex items-center justify-between gap-3">
+          <span class="text-lg font-semibold">{{ titleText }}</span>
+          <ng-container *ngTemplateOutlet="statusTpl" />
+        </div>
+      </ng-template>
+      <ng-template pTemplate="subtitle">{{ purposeMeta?.description }}</ng-template>
+      <ng-template pTemplate="content">
+        <ng-container *ngTemplateOutlet="bodyTpl" />
+      </ng-template>
+    </p-card>
+  </div>
+}

@@ -7,6 +7,7 @@ import { ButtonModule } from 'primeng/button';
 import { DividerModule } from 'primeng/divider';
 import { TooltipModule } from 'primeng/tooltip';
 import {
+  AiAssistantMode,
   BorderRadiusMode,
   InputVariant,
   LayoutService,
@@ -41,6 +42,10 @@ export class ThemeConfigurator {
 
   onMenuModeChange(mode: 'static' | 'overlay'): void {
     this.layoutService.setMenuMode(mode);
+  }
+
+  onAiAssistantModeChange(mode: AiAssistantMode): void {
+    this.layoutService.setAiAssistantMode(mode);
   }
 
   onFontScaleChange(scale: number): void {

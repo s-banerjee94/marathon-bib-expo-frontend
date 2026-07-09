@@ -1,7 +1,6 @@
 import {
   ChangeDetectionStrategy,
   Component,
-  HostListener,
   computed,
   effect,
   inject,
@@ -29,6 +28,7 @@ import { EventService } from '../../../core/services/event.service';
 import { ErrorHandlerService } from '../../../core/services/error-handler.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { DefaultValuePipe } from '../../../shared/pipes/default-value.pipe';
+import { UserNamePipe } from '../../../shared/pipes/user-name-pipe';
 import {
   formatGoodiesKey,
   getGenderDisplay,
@@ -59,6 +59,7 @@ type FieldKey =
   selector: 'app-participant-details',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: { '(document:keydown.escape)': 'onEscape()' },
   templateUrl: './participant-details.html',
   imports: [
     CommonModule,
@@ -74,6 +75,7 @@ type FieldKey =
     SkeletonModule,
     TooltipModule,
     DefaultValuePipe,
+    UserNamePipe,
     EditableFieldRow,
   ],
 })
@@ -133,6 +135,19 @@ export class ParticipantDetails {
     return Object.entries(g).map(([key, value]) => ({ key, value: String(value) }));
   });
 
+  /** Additional free-form columns — editable via PATCH merge semantics. */
+  protected readonly additionalFieldsEntries = computed(() => {
+    const f = this.participant()?.additionalFields;
+    if (!f) return [];
+    return Object.entries(f).map(([key, value]) => ({ key, value: String(value) }));
+  });
+
+  // Inline-edit state for additional fields
+  protected readonly editingAddlKey = signal<string | 'new' | null>(null);
+  protected readonly savingAddlField = signal(false);
+  protected workingAddlKey = '';
+  protected workingAddlValue = '';
+
   protected readonly distributionEntries = computed(() => {
     const p = this.participant();
     const goodies = p?.goodies;
@@ -154,7 +169,6 @@ export class ParticipantDetails {
     });
   }
 
-  @HostListener('document:keydown.escape')
   protected onEscape(): void {
     if (this.editingField() && !this.savingField()) {
       this.cancelEdit();
@@ -168,6 +182,12 @@ export class ParticipantDetails {
       next: (p) => {
         this.participant.set(p);
         this.isLoading.set(false);
+        // Reconcile the list row with this freshly-loaded record, so the table
+        // reflects changes made elsewhere (e.g. via a shared link) without a
+        // manual refresh. The list-state patches in place only when the row is
+        // present and actually differs; on the standalone page there is no list
+        // subscribed, so this is a harmless no-op.
+        this.bus.publish({ action: 'updated', participant: p });
       },
       error: (err) => {
         this.isLoading.set(false);
@@ -302,6 +322,8 @@ export class ParticipantDetails {
     }
   }
 
+  // Builds a single-field merge patch. Optional fields send '' when cleared
+  // (the backend's clear-to-NULL signal); required fields block empty saves.
   private buildUpdateRequest(field: FieldKey): UpdateParticipantRequest | null {
     const v = this.workingValue;
     const r: UpdateParticipantRequest = {};
@@ -315,22 +337,24 @@ export class ParticipantDetails {
         if (!r.gender) return null;
         break;
       case 'dateOfBirth':
-        r.dateOfBirth = this.formatDob(v as Date | null);
+        r.dateOfBirth = this.formatDob(v as Date | null) ?? '';
         break;
       case 'age':
-        r.age = v == null || v === '' ? undefined : Number(v);
+        // Numeric fields cannot be cleared via PATCH — empty just skips.
+        if (v == null || v === '') return null;
+        r.age = Number(v);
         break;
       case 'email':
-        r.email = stringOrUndef(v);
+        r.email = stringOrEmpty(v);
         break;
       case 'phoneNumber':
-        r.phoneNumber = stringOrUndef(v);
+        r.phoneNumber = stringOrEmpty(v);
         break;
       case 'city':
-        r.city = stringOrUndef(v);
+        r.city = stringOrEmpty(v);
         break;
       case 'country':
-        r.country = stringOrUndef(v);
+        r.country = stringOrEmpty(v);
         break;
       case 'raceId':
         if (v == null || v === '') return null;
@@ -348,13 +372,13 @@ export class ParticipantDetails {
         if (!r.chipNumber) return null;
         break;
       case 'emergencyContactName':
-        r.emergencyContactName = stringOrUndef(v);
+        r.emergencyContactName = stringOrEmpty(v);
         break;
       case 'emergencyContactPhone':
-        r.emergencyContactPhone = stringOrUndef(v);
+        r.emergencyContactPhone = stringOrEmpty(v);
         break;
       case 'notes':
-        r.notes = stringOrUndef(v);
+        r.notes = stringOrEmpty(v);
         break;
       default:
         return null;
@@ -373,6 +397,80 @@ export class ParticipantDetails {
     return `${day}-${month}-${year}`;
   }
 
+  // ---------- Additional fields CRUD (merge semantics) ----------
+  protected startEditAddlField(key: string, value: string): void {
+    if (!this.editable() || this.savingAddlField()) return;
+    this.editingField.set(null);
+    this.editingAddlKey.set(key);
+    this.workingAddlKey = key;
+    this.workingAddlValue = value;
+  }
+
+  protected startAddAddlField(): void {
+    if (!this.editable() || this.savingAddlField()) return;
+    const count = Object.keys(this.participant()?.additionalFields ?? {}).length;
+    if (count >= 10) return;
+    this.editingField.set(null);
+    this.editingAddlKey.set('new');
+    this.workingAddlKey = '';
+    this.workingAddlValue = '';
+  }
+
+  protected cancelAddlEdit(): void {
+    this.editingAddlKey.set(null);
+    this.workingAddlKey = '';
+    this.workingAddlValue = '';
+  }
+
+  protected commitAddlField(): void {
+    const newKey = this.workingAddlKey.trim();
+    if (!newKey) return;
+
+    const originalKey = this.editingAddlKey();
+    // Build a minimal merge patch — only the keys that actually change.
+    const patch: { [key: string]: string | null } = {};
+
+    if (originalKey === 'new') {
+      patch[newKey] = this.workingAddlValue.trim();
+    } else if (originalKey !== null && originalKey !== newKey) {
+      // Key renamed: null removes old, new key adds value.
+      patch[originalKey] = null;
+      patch[newKey] = this.workingAddlValue.trim();
+    } else if (originalKey !== null) {
+      patch[newKey] = this.workingAddlValue.trim();
+    }
+
+    this.patchAddlFields(patch);
+  }
+
+  protected deleteAddlField(key: string): void {
+    this.patchAddlFields({ [key]: null });
+  }
+
+  private patchAddlFields(patch: { [key: string]: string | null }): void {
+    const id = this.eventId();
+    const bib = this.bibNumber();
+    if (!id || !bib) return;
+
+    this.savingAddlField.set(true);
+    this.participantService.updateParticipant(id, bib, { additionalFields: patch }).subscribe({
+      next: (updated) => {
+        this.participant.set(updated);
+        this.savingAddlField.set(false);
+        this.editingAddlKey.set(null);
+        this.workingAddlKey = '';
+        this.workingAddlValue = '';
+        this.bus.publish({ action: 'updated', participant: updated });
+        this.participantUpdated.emit(updated);
+        this.toast.success('Saved');
+      },
+      error: (err) => {
+        this.savingAddlField.set(false);
+        this.errorHandler.showError(err, 'Failed to save');
+      },
+    });
+  }
+
   protected close(): void {
     this.closed.emit();
   }
@@ -387,4 +485,9 @@ function stringOrUndef(v: unknown): string | undefined {
   if (v == null) return undefined;
   const s = String(v).trim();
   return s === '' ? undefined : s;
+}
+
+// Cleared optional fields are sent as '' — the backend's clear-to-NULL signal.
+function stringOrEmpty(v: unknown): string {
+  return v == null ? '' : String(v).trim();
 }

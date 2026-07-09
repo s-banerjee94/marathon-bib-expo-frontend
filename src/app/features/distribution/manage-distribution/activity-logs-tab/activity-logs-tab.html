@@ -1,6 +1,18 @@
 <div class="py-4">
+  <app-print-header [title]="event()?.eventName || 'Event #' + eventId()">
+    <p class="font-medium">Distribution Activity Logs</p>
+    @if (event(); as ev) {
+      <p>
+        {{ ev.eventStartDate | formatEventDateTime: ev.eventStartTime : ev.timezone }}
+        @if (ev.eventEndDate && ev.eventEndDate !== ev.eventStartDate) {
+          – {{ ev.eventEndDate | formatEventDateTime: ev.eventEndTime : ev.timezone }}
+        }
+      </p>
+    }
+  </app-print-header>
+
   <!-- Search Section -->
-  <div class="grid grid-cols-1 md:grid-cols-12 gap-4 mb-4">
+  <div class="grid grid-cols-1 md:grid-cols-12 gap-4 mb-4 print:hidden">
     <div class="md:col-span-3">
       <p-floatlabel variant="on">
         <p-select
@@ -73,6 +85,7 @@
       @if (isSearchMode()) {
         <p-button
           icon="pi pi-times"
+          ariaLabel="Clear search"
           severity="secondary"
           [outlined]="true"
           [size]="buttonSize"
@@ -100,7 +113,7 @@
       size="small"
     >
       <ng-template #caption>
-        <div class="flex items-center justify-between">
+        <div class="flex items-center justify-between print:hidden">
           <h3 class="text-lg font-semibold m-0">Distribution Activity Logs</h3>
           <div class="flex items-center gap-3">
             @if (loaded()) {
@@ -109,6 +122,7 @@
             <p-button
               label="Refresh"
               icon="pi pi-refresh"
+              ariaLabel="Refresh"
               severity="secondary"
               [outlined]="true"
               [size]="buttonSize"
@@ -121,15 +135,15 @@
 
       <ng-template pTemplate="header">
         <tr>
-          <th pFrozenColumn style="width: 60px" class="text-center">#</th>
-          <th pFrozenColumn style="min-width: 175px">Timestamp</th>
-          <th style="min-width: 120px">BIB</th>
-          <th style="min-width: 190px">Action</th>
-          <th style="min-width: 150px">Item</th>
-          <th style="min-width: 160px">Performed By</th>
-          <th style="min-width: 160px">Collector Name</th>
-          <th style="min-width: 160px">Collector Phone</th>
-          <th style="min-width: 200px">Details</th>
+          <th scope="col" pFrozenColumn style="width: 60px" class="text-center">#</th>
+          <th scope="col" pFrozenColumn style="min-width: 175px">Timestamp</th>
+          <th scope="col" style="min-width: 120px">BIB</th>
+          <th scope="col" style="min-width: 190px">Action</th>
+          <th scope="col" style="min-width: 150px">Item</th>
+          <th scope="col" style="min-width: 160px">Performed By</th>
+          <th scope="col" style="min-width: 160px">Collector Name</th>
+          <th scope="col" style="min-width: 160px">Collector Phone</th>
+          <th scope="col" style="min-width: 200px">Details</th>
         </tr>
       </ng-template>
 
@@ -160,7 +174,42 @@
               />
             </td>
             <td>{{ log.itemNames | join }}</td>
-            <td>{{ getStaffUsername(log.performedBy) }}</td>
+            <td>
+              @if (log.performedBy) {
+                @let performedByUser = log.performedBy | userName | userSummary;
+                @if (performedByUser) {
+                  <div class="flex items-center gap-2">
+                    @if (performedByUser.avatarUrl) {
+                      <p-avatar
+                        [image]="performedByUser.avatarUrl"
+                        shape="circle"
+                        styleClass="shrink-0 !w-6 !h-6"
+                      />
+                    } @else {
+                      <p-avatar
+                        [label]="performedByUser.name | initials: 2"
+                        shape="circle"
+                        styleClass="shrink-0 !w-6 !h-6 !text-xs"
+                      />
+                    }
+                    @if (performedByUser.id !== null) {
+                      <a
+                        class="text-primary hover:underline"
+                        [routerLink]="['/users', performedByUser.id, 'edit']"
+                      >
+                        {{ performedByUser.name }}
+                      </a>
+                    } @else {
+                      <span>{{ performedByUser.name }}</span>
+                    }
+                  </div>
+                } @else {
+                  --
+                }
+              } @else {
+                --
+              }
+            </td>
             <td>{{ log.collectorName | defaultValue }}</td>
             <td>{{ log.collectorPhone | defaultValue }}</td>
             <td class="text-sm text-color-secondary">{{ log.details | defaultValue }}</td>
@@ -172,7 +221,7 @@
         <tr>
           <td colspan="9" class="text-center py-10">
             @if (!loading()) {
-              <i class="pi pi-list text-4xl mb-3 block text-color-secondary"></i>
+              <app-empty-illustration name="no-data" [size]="88" class="inline-block mb-3" />
               <p class="text-color-secondary">
                 @if (isSearchMode()) {
                   No logs found for this search.
@@ -196,6 +245,7 @@
       </h3>
       <p-button
         icon="pi pi-refresh"
+        ariaLabel="Refresh"
         severity="secondary"
         [outlined]="true"
         [size]="buttonSize"
@@ -216,7 +266,7 @@
       </div>
     } @else if (logs().length === 0) {
       <div class="flex flex-col items-center justify-center py-12">
-        <i class="pi pi-list text-5xl mb-4 opacity-30"></i>
+        <app-empty-illustration name="no-data" [size]="104" class="mb-4" />
         <p class="font-medium">
           @if (isSearchMode()) {
             No logs found for this search.
@@ -270,7 +320,7 @@
 
                 <!-- Performed By -->
                 <span class="text-sm opacity-70">
-                  Perform By: {{ getStaffUsername(log.performedBy) }}
+                  Perform By: {{ log.performedBy | userName }}
                 </span>
 
                 <!-- Details (left-aligned) -->
@@ -286,7 +336,7 @@
   }
 
   <!-- Load More -->
-  <div class="text-center mt-4">
+  <div class="text-center mt-4 print:hidden">
     @if (hasMore() && !loading()) {
       <p-button
         (onClick)="loadMore()"

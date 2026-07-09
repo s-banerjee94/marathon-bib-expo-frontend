@@ -1,11 +1,11 @@
 # Marathon Bib Expo Frontend
 
-An Angular 21 single-page application for managing marathon bib distribution operations. This frontend provides role-based dashboards, participant management, organization administration, and real-time event tracking for the Marathon Bib Expo platform.
+An Angular 21 single-page application for managing marathon bib distribution operations. It provides role-based dashboards, event and participant management, bib/goodies distribution with QR scanning, messaging campaigns, billing, and public bib verification for the Marathon Bib Expo platform.
 
 ## Prerequisites
 
-- Node.js 18 or higher
-- npm 9 or higher
+- Node.js 20.19 or higher (22.12+ / 24+ also supported)
+- npm 10 or higher
 
 ## Quick Start
 
@@ -15,17 +15,25 @@ An Angular 21 single-page application for managing marathon bib distribution ope
 npm install
 ```
 
-### 2. Configure API Base URL
+### 2. Configure the API Base URL
 
-Open `src/app/shared/constants/api.constant.ts` and set the backend URL:
+You normally **don't** need to change anything. The API base URL comes from the
+environment files:
 
-```typescript
-// For local backend
-export const BASE_URI = 'http://localhost:8080/api';
+- `src/environments/environment.ts` — development
+- `src/environments/environment.prod.ts` — production (swapped in at build time via `fileReplacements` in `angular.json`)
 
-// For network backend
-// export const BASE_URI = 'http://192.168.0.106:8080/api';
-```
+Both default to the **relative, same-origin path `/api`**, so one build artifact
+works on any host:
+
+- **Dev** — the dev server proxies `/api/*` to the backend at `http://localhost:8080` via `proxy.conf.json`.
+- **Prod** — nginx serves the built app and proxies `/api` to the Spring Boot backend on the same box.
+
+Keeping the frontend and backend same-origin is what lets the HttpOnly refresh
+cookie and the CSRF cookie work — including over plain HTTP from another device
+on the LAN. **Avoid pointing `apiBaseUrl` at an absolute cross-origin URL**; that
+breaks the cookie auth model. To reach a backend on a different machine in dev,
+change the `target` in `proxy.conf.json` instead.
 
 ### 3. Start the Development Server
 
@@ -35,8 +43,6 @@ npm start
 
 The application starts at **http://localhost:4200**.
 
-> The dev server proxies `/api/*` requests to `http://localhost:8080` via `proxy.conf.json`.
-
 ---
 
 ## Tech Stack
@@ -44,12 +50,12 @@ The application starts at **http://localhost:4200**.
 | Layer             | Technology                        |
 | ----------------- | --------------------------------- |
 | Language          | TypeScript 5.x                    |
-| Framework         | Angular 21                        |
+| Framework         | Angular 21 (standalone, signals)  |
 | Component Library | PrimeNG 21                        |
 | Styling           | Tailwind CSS 4.x                  |
-| State Management  | Angular Signals                   |
 | HTTP              | Angular HttpClient + Interceptors |
 | Routing           | Angular Router (lazy-loaded)      |
+| Offline / PWA     | Angular Service Worker            |
 | Testing           | Vitest 4.x                        |
 | Linting           | ESLint + Angular ESLint           |
 | Formatting        | Prettier                          |
@@ -64,16 +70,23 @@ All components are **standalone** — no NgModule pattern is used anywhere in th
 ```
 src/app/
 ├── core/          # Guards, interceptors, singleton services, domain models
-├── layout/        # App shell: navbar, sidebar, selectors, theme switcher
+├── layout/        # App shell: navbar, sidebar, AI assistant, command palette, theme
 ├── features/      # Lazy-loaded feature areas
-│   ├── auth/         # login
-│   ├── dashboard/    # role-aware sub-dashboards (root, admin, org-admin, …)
-│   ├── events/       # event-list, event-form, event-details (with nested tabs)
-│   ├── organizations/
-│   ├── users/
-│   ├── participants/ # list (+ tabs and dialogs), form
-│   ├── distribution/ # manage-distribution (+ tabs)
-│   └── errors/       # not-found, unauthorized
+│   ├── auth/                # login, password reset, invitations
+│   ├── dashboard/           # role-aware sub-dashboards (root, admin, org, distributor)
+│   ├── events/              # event CRUD + nested tabs (races, categories, campaigns, limits, bills)
+│   ├── organizations/       # organization CRUD + settings
+│   ├── users/               # user CRUD, invite links, account controls
+│   ├── participants/        # participant CRUD, CSV import/export, import history
+│   ├── import-mapper/       # drag-to-map CSV → participant import wizard
+│   ├── distribution/        # bib/goodies distribution, QR scanning, activity logs
+│   ├── billing/             # platform billing console
+│   ├── system-messaging/    # provider config + system templates
+│   ├── campaign-providers/  # SMS/WhatsApp campaign sender providers
+│   ├── audit-logs/          # audit log feed with filters
+│   ├── notifications/       # in-app notification center
+│   ├── public-verification/ # public bib verification + expo card (no auth)
+│   └── errors/              # not-found, unauthorized
 ├── shared/        # Reusable list shell, pipes, utils, constants, base classes
 └── app.ts | app.routes.ts | app.config.ts | app.html
 ```
@@ -82,39 +95,41 @@ src/app/
 
 ## Key Features
 
-- **Role-Based Dashboards** — separate dashboard views for ROOT, ADMIN, ORGANIZER_ADMIN, ORGANIZER_USER, and DISTRIBUTOR roles with scope-aware statistics and charts
-- **User Management** — create, edit, search, filter, and paginate users with role and organization assignment
-- **Organization Management** — full CRUD for organizations with subscription tier, enable/disable controls, and capacity tracking
-- **JWT Authentication** — stateless Bearer token auth with automatic injection via HTTP interceptor and 401 redirect on expiry
-- **Lazy Loading** — all feature routes are lazy-loaded for optimal bundle size
-- **BaseTableComponent** — shared base class providing debounced search, pagination, column selection (persisted to localStorage), skeleton loading, and filter preferences
-- **Global Error Handling** — centralized `ErrorHandlerService` with PrimeNG toast notifications; components never implement custom error parsing
-- **Smooth Animations** — Angular animations for sidebar slide transitions
+- **Role-Based Dashboards** — scope-aware views for ROOT, ADMIN, ORGANIZER_ADMIN, ORGANIZER_USER, and DISTRIBUTOR roles with statistics and charts
+- **Event Management** — events with races, categories, participant limits, billing, and SMS/WhatsApp campaign tabs
+- **Participant Management** — CRUD, cursor-paginated virtualized tables, CSV import with a drag-to-map column wizard, and export
+- **Distribution** — bib/goodies handout with QR bib scanning, pending queues, and activity logs
+- **Messaging Campaigns** — SMS/WhatsApp templates and campaigns with configurable sender providers
+- **Public Verification** — unauthenticated bib verification and downloadable expo cards via short links
+- **AI Assistant** — in-app conversational assistant with human-in-the-loop action approvals
+- **PWA / Offline** — installable app, cached shell, offline write guarding, and update prompts
+- **Notifications** — in-app notification bell and full notification page
+- **Audit Logs** — filterable audit trail of user actions
+- **Shared Table Base** — debounced search, pagination, persisted column/filter preferences, and skeleton loading via `BaseTableComponent`
+- **Centralized Error Handling** — `ErrorHandlerService` with toast notifications; components never implement custom error parsing
 
 ---
 
 ## Authentication
 
-The app authenticates against the [Marathon Bib Expo Service](https://github.com/s-banerjee94/marathon-bib-expo-service) backend.
+The app authenticates against the [Marathon Bib Expo Service](https://github.com/s-banerjee94/marathon-bib-expo-service) backend using short-lived access tokens with cookie-based refresh:
 
-**Login flow:**
-
-1. POST credentials to `/api/auth/login`
-2. Backend returns a JWT token + user info
-3. Token stored in `localStorage` and injected into all subsequent requests by `authInterceptor`
-4. On 401, `errorInterceptor` auto-logs out and redirects to `/login`
+1. POST credentials to `/api/auth/login`; the backend sets an **HttpOnly refresh cookie** and returns a short-lived access token
+2. The access token is held **in memory only** and injected into requests by `authInterceptor`, along with a double-submit **CSRF token** header
+3. On startup the session is silently restored from the refresh cookie; on 401 the token is refreshed and the request retried
+4. Only a genuine refresh rejection logs the user out and redirects to `/login`
 
 ---
 
 ## User Roles
 
-| Role              | Description                                 |
-| ----------------- | ------------------------------------------- |
-| `ROOT`            | Full system access across all organizations |
-| `ADMIN`           | System-level admin access                   |
-| `ORGANIZER_ADMIN` | Admin for their own organization            |
-| `ORGANIZER_USER`  | Standard user within an organization        |
-| `DISTRIBUTOR`     | Can perform bib/goodies distribution only   |
+| Role              | Description                                       |
+| ----------------- | ------------------------------------------------- |
+| `ROOT`            | Full system access across all organizations       |
+| `ADMIN`           | System-level admin access                         |
+| `ORGANIZER_ADMIN` | Admin for their own organization                  |
+| `ORGANIZER_USER`  | Standard user within an organization              |
+| `DISTRIBUTOR`     | Bib/goodies distribution for their assigned event |
 
 ---
 
@@ -144,7 +159,7 @@ This frontend is designed to work with the **Marathon Bib Expo Service** backend
 
 **Repository:** https://github.com/s-banerjee94/marathon-bib-expo-service
 
-The backend provides JWT authentication, user/organization/event management, participant tracking, bib and goodies distribution, CSV batch import, and real-time SSE notifications.
+The backend provides authentication, user/organization/event management, participant tracking, bib and goodies distribution, CSV batch import, messaging campaigns, billing, and notifications.
 
 ---
 

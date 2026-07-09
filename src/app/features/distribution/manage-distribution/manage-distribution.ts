@@ -43,6 +43,8 @@ import { EventSelector } from '../../../layout/event-selector/event-selector';
 import { DistributionDialogState } from './distribution-dialog-state.service';
 import { ParticipantDetails } from '../../participants/participant-details/participant-details';
 import { injectIsMobile } from '../../../shared/utils/responsive.utils';
+import { MobileTabBar, TabItem } from '../../../shared/components/mobile-tab-bar/mobile-tab-bar';
+import { EmptyIllustration } from '../../../shared/illustrations/empty-illustration';
 
 /** Minimal shape shared by Participant and ParticipantDistributionResponse for dialog usage */
 type DistributionTarget = Participant | ParticipantDistributionResponse;
@@ -66,6 +68,8 @@ type DistributionTarget = Participant | ParticipantDistributionResponse;
     OrganizationSelector,
     EventSelector,
     ParticipantDetails,
+    MobileTabBar,
+    EmptyIllustration,
   ],
   providers: [ConfirmationService, DistributionDialogState],
   templateUrl: './manage-distribution.html',
@@ -88,6 +92,8 @@ export class ManageDistribution implements OnInit {
   selectedOrganizationId = signal<number | undefined>(undefined);
   selectedEventId = signal<number | undefined>(undefined);
   isRestrictedUser = signal(false);
+  // A distributor is locked to one event — no org/event selectors, jump straight in.
+  isDistributor = signal(false);
 
   // Read-only participant details dialog (opened from any tab's card click).
   readonly isMobile = injectIsMobile();
@@ -134,8 +140,38 @@ export class ManageDistribution implements OnInit {
     ]),
   );
   canViewLogs = computed(() =>
-    this.authService.hasAnyRole([UserRole.ROOT, UserRole.ADMIN, UserRole.ORGANIZER_ADMIN]),
+    this.authService.hasAnyRole([
+      UserRole.ROOT,
+      UserRole.ADMIN,
+      UserRole.ORGANIZER_ADMIN,
+      UserRole.ORGANIZER_USER,
+    ]),
   );
+
+  // Mobile bottom tab bar — ids match the child route paths and mirror the desktop
+  // tab strip. The Activity Logs tab is appended only when the user can view logs,
+  // matching the @if (canViewLogs()) guard on the desktop strip.
+  protected readonly distributionTabs = computed<TabItem[]>(() => {
+    const tabs: TabItem[] = [
+      { id: 'lookup', label: 'BIB Lookup', icon: 'pi-search' },
+      { id: 'pending-bibs', label: 'Pending BIBs', icon: 'pi-id-card' },
+      { id: 'pending-goodies', label: 'Pending Goodies', icon: 'pi-gift' },
+    ];
+    if (this.canViewLogs()) {
+      tabs.push({ id: 'logs', label: 'Activity Logs', icon: 'pi-list' });
+    }
+    return tabs;
+  });
+
+  // Mobile tab bar selection — navigate to the sibling tab route, same as the
+  // desktop tab strip's routerLinks (preserving query params for org/event filters).
+  onTabChange(tabId: string): void {
+    const eventId = this.selectedEventId();
+    if (!eventId) return;
+    this.router.navigate(['/distribution/event', eventId, tabId], {
+      queryParamsHandling: 'preserve',
+    });
+  }
 
   // Collect BIB dialog
   collectBibVisible = signal(false);
@@ -151,6 +187,8 @@ export class ManageDistribution implements OnInit {
   selectedGoodiesForDistribute: string[] = [];
 
   ngOnInit(): void {
+    const distributor = this.authService.hasRole(UserRole.DISTRIBUTOR);
+    this.isDistributor.set(distributor);
     const restricted = this.authService.hasAnyRole([
       UserRole.ORGANIZER_ADMIN,
       UserRole.ORGANIZER_USER,
@@ -172,8 +210,15 @@ export class ManageDistribution implements OnInit {
       )
       .subscribe(() => this.applyUrlToState(this.route.snapshot.queryParamMap));
 
-    // If a restricted user landed without URL filters, seed the URL with their org so links stay shareable.
-    if (restricted && !this.route.snapshot.queryParamMap.get('organizationId')) {
+    if (distributor) {
+      // Bound to a single event — go straight to it; there's nothing to select.
+      const eventId = this.authService.currentUser()?.eventId;
+      const eventInUrl = this.route.snapshot.firstChild?.paramMap.get('eventId');
+      if (eventId && !eventInUrl) {
+        this.router.navigate(['/distribution/event', eventId, 'lookup'], { replaceUrl: true });
+      }
+    } else if (restricted && !this.route.snapshot.queryParamMap.get('organizationId')) {
+      // Other restricted users keep the org-seeded, shareable-URL behaviour.
       const orgId = this.authService.currentUser()?.organizationId;
       if (orgId) {
         this.pushStateToUrl({ organizationId: String(orgId) });

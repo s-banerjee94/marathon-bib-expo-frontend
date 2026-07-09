@@ -1,0 +1,114 @@
+<form #limitsForm="ngForm" (ngSubmit)="onSave(limitsForm)" class="space-y-4">
+  <!-- Header -->
+  <div class="flex justify-between items-start gap-3">
+    <div>
+      <h2 class="text-xl font-semibold">Resource Limits</h2>
+      <p class="text-sm opacity-60">
+        Caps applied to this event. Creating items beyond a cap is blocked with a message.
+      </p>
+    </div>
+
+    @if (canManage && !forbidden()) {
+      <div class="flex gap-2 flex-shrink-0">
+        <p-button
+          label="Discard"
+          severity="secondary"
+          [outlined]="true"
+          [size]="buttonSize"
+          [disabled]="limitsForm.pristine || isSaving()"
+          (onClick)="onDiscard(limitsForm)"
+        />
+        <p-button
+          type="submit"
+          label="Save Changes"
+          icon="pi pi-check"
+          [size]="buttonSize"
+          [loading]="isSaving()"
+          [disabled]="limitsForm.pristine || limitsForm.invalid"
+        />
+      </div>
+    }
+  </div>
+
+  @if (isLoading()) {
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+      @for (n of [1, 2, 3, 4, 5, 6, 7, 8]; track n) {
+        <p-skeleton height="8rem" styleClass="rounded-lg" />
+      }
+    </div>
+  } @else if (forbidden()) {
+    <!-- GET is ROOT/ADMIN-only on the backend; degrade gracefully for other roles. -->
+    <div class="flex flex-col items-center justify-center py-12 px-4 text-center">
+      <i class="pi pi-lock text-6xl mb-4 opacity-30"></i>
+      <p class="text-lg font-medium mb-1">Limits are managed by administrators</p>
+      <p class="text-sm opacity-60">
+        Resource limits for this event are set by ROOT or ADMIN users and aren't available to view
+        from your account.
+      </p>
+    </div>
+  } @else {
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+      @for (f of fields; track f.key) {
+        <p-card styleClass="h-full">
+          <div class="flex flex-col gap-3">
+            <!-- icon + label + near/over-limit pill -->
+            <div class="flex items-center gap-2">
+              <i class="pi {{ f.icon }} text-base opacity-80"></i>
+              <span class="text-xs uppercase tracking-wide font-semibold opacity-60">{{
+                f.label
+              }}</span>
+              @if (usageState(f.key) === 'over') {
+                <p-tag value="Over limit" severity="danger" styleClass="ml-auto" />
+              } @else if (usageState(f.key) === 'near') {
+                <p-tag value="Near limit" severity="warn" styleClass="ml-auto" />
+              }
+            </div>
+
+            <!-- editable cap (ROOT/ADMIN) or read-only value -->
+            @if (canManage) {
+              <p-inputnumber
+                [(ngModel)]="formData[f.key]"
+                [name]="f.key"
+                [min]="1"
+                [step]="1"
+                [showButtons]="true"
+                [useGrouping]="true"
+                [maxFractionDigits]="0"
+                [size]="inputSize"
+                [fluid]="true"
+                required
+              />
+            } @else {
+              <div class="text-2xl font-semibold tabular-nums">{{ formData[f.key] | number }}</div>
+            }
+
+            <!-- usage bar + caption when usage is known; otherwise a quiet placeholder -->
+            @if (usageCaption(f) !== null) {
+              <div class="flex flex-col gap-1.5">
+                <p-progressbar
+                  [value]="usagePercent(f.key) ?? 0"
+                  [showValue]="false"
+                  [dt]="barDt(f.key)"
+                  styleClass="!h-1.5"
+                />
+                <span class="text-xs opacity-50">{{ usageCaption(f) }}</span>
+              </div>
+            } @else {
+              <div class="flex flex-col gap-1.5">
+                <div class="border-t border-dashed mt-1"></div>
+                <span class="text-xs opacity-40">Usage not tracked</span>
+              </div>
+            }
+          </div>
+        </p-card>
+      }
+    </div>
+
+    @if (canManage) {
+      <p class="text-xs opacity-50">
+        Each limit must be at least 1. Lowering a cap below what already exists keeps current
+        records but blocks new ones.
+      </p>
+    }
+  }
+</form>

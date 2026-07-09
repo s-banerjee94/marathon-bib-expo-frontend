@@ -2,10 +2,12 @@
 
 <div class="p-2 sm:p-3 md:p-4">
   <!-- Header -->
-  <div class="mb-6">
+  <div class="mb-6 print:hidden">
     <h1 class="text-3xl font-bold">Distribution Management</h1>
     <p class="mt-2 text-color-secondary">
-      @if (isRestrictedUser()) {
+      @if (isDistributor()) {
+        Manage bib &amp; goodie distribution for your event.
+      } @else if (isRestrictedUser()) {
         Select an event to manage distribution.
       } @else {
         Select an organization and event to manage distribution.
@@ -13,36 +15,38 @@
     </p>
   </div>
 
-  <!-- Filter Section -->
-  <p-card class="mb-6">
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 p-2 md:p-4">
-      @if (!isRestrictedUser()) {
-        <app-organization-selector
-          (organizationIdChange)="onOrganizationChange($event)"
+  <!-- Filter Section — a distributor is locked to one event, so no selectors. -->
+  @if (!isDistributor()) {
+    <p-card class="mb-6 print:hidden">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 p-2 md:p-4">
+        @if (!isRestrictedUser()) {
+          <app-organization-selector
+            (organizationIdChange)="onOrganizationChange($event)"
+            [required]="true"
+            [selectedOrganizationId]="selectedOrganizationId()"
+            label="Organization"
+            placeholder="Type to search organizations..."
+          />
+        }
+        <app-event-selector
+          (eventIdChange)="onEventChange($event)"
+          [disabled]="!selectedOrganizationId()"
+          [organizationId]="selectedOrganizationId()"
           [required]="true"
-          [selectedOrganizationId]="selectedOrganizationId()"
-          label="Organization"
-          placeholder="Type to search organizations..."
+          [selectedEventId]="selectedEventId()"
+          label="Event"
+          placeholder="Type to search events..."
+          [class]="isRestrictedUser() ? 'md:col-span-2' : ''"
         />
-      }
-      <app-event-selector
-        (eventIdChange)="onEventChange($event)"
-        [disabled]="!selectedOrganizationId()"
-        [organizationId]="selectedOrganizationId()"
-        [required]="true"
-        [selectedEventId]="selectedEventId()"
-        label="Event"
-        placeholder="Type to search events..."
-        [class]="isRestrictedUser() ? 'md:col-span-2' : ''"
-      />
-    </div>
-  </p-card>
+      </div>
+    </p-card>
+  }
 
-  <!-- Empty State -->
-  @if (!selectedEventId()) {
+  <!-- Empty State (skipped for distributors — they auto-open their event) -->
+  @if (!selectedEventId() && !isDistributor()) {
     <p-card>
       <div class="p-8 text-center">
-        <i class="pi pi-inbox text-6xl mb-4 block text-color-secondary"></i>
+        <app-empty-illustration name="no-events" [size]="112" class="inline-block mb-4" />
         <h3 class="text-xl font-semibold mb-2">No Event Selected</h3>
         <p class="text-color-secondary">
           @if (isRestrictedUser()) {
@@ -58,53 +62,65 @@
   <!-- Distribution Tabs (routed via router-outlet) -->
   @if (selectedEventId()) {
     <p-card>
-      <p-tabs [value]="activeTab()">
-        <p-tablist>
-          <p-tab
-            value="lookup"
-            [routerLink]="['/distribution/event', selectedEventId(), 'lookup']"
-            queryParamsHandling="preserve"
-            routerLinkActive
-          >
-            <i class="pi pi-search mr-2"></i>
-            BIB Lookup
-          </p-tab>
-          <p-tab
-            value="pending-bibs"
-            [routerLink]="['/distribution/event', selectedEventId(), 'pending-bibs']"
-            queryParamsHandling="preserve"
-            routerLinkActive
-          >
-            <i class="pi pi-id-card mr-2"></i>
-            Pending BIBs
-          </p-tab>
-          <p-tab
-            value="pending-goodies"
-            [routerLink]="['/distribution/event', selectedEventId(), 'pending-goodies']"
-            queryParamsHandling="preserve"
-            routerLinkActive
-          >
-            <i class="pi pi-gift mr-2"></i>
-            Pending Goodies
-          </p-tab>
-          @if (canViewLogs()) {
+      <!-- Desktop tab strip hides on mobile; the bottom tab bar replaces it. -->
+      <div class="hidden md:block print:hidden">
+        <p-tabs [value]="activeTab()">
+          <p-tablist>
             <p-tab
-              value="logs"
-              [routerLink]="['/distribution/event', selectedEventId(), 'logs']"
+              value="lookup"
+              [routerLink]="['/distribution/event', selectedEventId(), 'lookup']"
               queryParamsHandling="preserve"
               routerLinkActive
             >
-              <i class="pi pi-list mr-2"></i>
-              Activity Logs
+              <i class="pi pi-search mr-2"></i>
+              BIB Lookup
             </p-tab>
-          }
-        </p-tablist>
-      </p-tabs>
+            <p-tab
+              value="pending-bibs"
+              [routerLink]="['/distribution/event', selectedEventId(), 'pending-bibs']"
+              queryParamsHandling="preserve"
+              routerLinkActive
+            >
+              <i class="pi pi-id-card mr-2"></i>
+              Pending BIBs
+            </p-tab>
+            <p-tab
+              value="pending-goodies"
+              [routerLink]="['/distribution/event', selectedEventId(), 'pending-goodies']"
+              queryParamsHandling="preserve"
+              routerLinkActive
+            >
+              <i class="pi pi-gift mr-2"></i>
+              Pending Goodies
+            </p-tab>
+            @if (canViewLogs()) {
+              <p-tab
+                value="logs"
+                [routerLink]="['/distribution/event', selectedEventId(), 'logs']"
+                queryParamsHandling="preserve"
+                routerLinkActive
+              >
+                <i class="pi pi-list mr-2"></i>
+                Activity Logs
+              </p-tab>
+            }
+          </p-tablist>
+        </p-tabs>
+      </div>
 
       <div class="pt-4">
         <router-outlet />
       </div>
     </p-card>
+
+    <!-- Mobile-only bottom tab bar (self-hides at md+); spacer clears the fixed bar. -->
+    <app-mobile-tab-bar
+      class="md:hidden"
+      [tabs]="distributionTabs()"
+      [activeId]="activeTab()"
+      (tabChange)="onTabChange($event)"
+    />
+    <div class="h-20 md:hidden" aria-hidden="true"></div>
   }
 </div>
 

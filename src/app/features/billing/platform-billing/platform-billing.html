@@ -1,0 +1,35 @@
+<div class="p-2 sm:p-3 md:p-4">
+  <div class="mb-4">
+    <h1 class="text-3xl font-bold mb-1">Billing</h1>
+    <p class="text-color-secondary">Revenue and invoices across all organizations.</p>
+  </div>
+
+  <!-- Tabs (URL-driven). Desktop strip hides on mobile; the bottom tab bar replaces it. -->
+  <div class="hidden md:block">
+    <p-tabs [value]="activeTab()">
+      <p-tablist>
+        <p-tab value="overview" [routerLink]="['overview']" routerLinkActive>
+          <i class="pi pi-chart-bar mr-2"></i>
+          Overview
+        </p-tab>
+        <p-tab value="all-bills" [routerLink]="['all-bills']" routerLinkActive>
+          <i class="pi pi-list mr-2"></i>
+          All Bills
+        </p-tab>
+      </p-tablist>
+    </p-tabs>
+  </div>
+
+  <div class="pt-4">
+    <router-outlet />
+  </div>
+
+  <!-- Mobile-only bottom tab bar (self-hides at md+); spacer clears the fixed bar. -->
+  <app-mobile-tab-bar
+    class="md:hidden"
+    [tabs]="tabs"
+    [activeId]="activeTab()"
+    (tabChange)="onTabChange($event)"
+  />
+  <div class="h-20 md:hidden" aria-hidden="true"></div>
+</div>

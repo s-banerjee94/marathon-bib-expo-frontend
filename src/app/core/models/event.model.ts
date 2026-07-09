@@ -63,7 +63,6 @@ export interface CreateEventRequest {
   timezone: string;
   latitude?: number;
   longitude?: number;
-  status?: EventStatus;
   organizationId: number;
   eventGoodies?: string;
 }
@@ -89,7 +88,6 @@ export interface UpdateEventRequest {
   timezone?: string;
   latitude?: number;
   longitude?: number;
-  status?: EventStatus;
   eventGoodies?: string;
 }
 
@@ -112,23 +110,4 @@ export interface Category {
   categoryName: string;
   raceId: number;
   eventId: number;
-}
-
-/**
- * Race Summary (for Event Summary Response)
- */
-export interface RaceSummary {
-  id: number;
-  raceName: string;
-  categoryCount: number;
-}
-
-/**
- * Event Summary Response with races and categories
- */
-export interface EventSummaryResponse {
-  event: Event;
-  races: RaceSummary[];
-  totalRaces: number;
-  totalCategories: number;
 }

@@ -15,6 +15,8 @@ export interface Participant {
   categoryId: string;
   categoryName: string;
   goodies?: { [key: string]: string };
+  /** Unmatched CSV columns funnelled into the "other" bucket at import time (header → value). */
+  additionalFields?: { [key: string]: string };
   bibCollectedAt?: string;
   bibCollectedByName?: string;
   bibCollectedByPhone?: string;
@@ -111,10 +113,10 @@ export interface CreateParticipantRequest {
   chipNumber: string;
   bibNumber: string;
   fullName: string;
+  // Race/category are sent by id only — the backend resolves the names live and
+  // returns them on the response. raceName/categoryName are no longer part of the contract.
   raceId: number;
-  raceName: string;
   categoryId: number;
-  categoryName: string;
   gender: string; // M, F, O
   phoneNumber?: string;
   email?: string;
@@ -124,6 +126,7 @@ export interface CreateParticipantRequest {
   city?: string;
   bibCollectedAt?: string;
   goodies?: { [key: string]: string };
+  additionalFields?: { [key: string]: string };
   emergencyContactName?: string;
   emergencyContactPhone?: string;
   notes?: string;
@@ -146,6 +149,8 @@ export interface UpdateParticipantRequest {
   emergencyContactPhone?: string;
   notes?: string;
   bibCollectedAt?: string;
+  /** Merge patch: non-empty string adds/overwrites a key, null removes it, omitted keys are unchanged. */
+  additionalFields?: { [key: string]: string | null };
 }
 
 export type ImportErrorType =
@@ -200,9 +205,28 @@ export interface ImportJobListResponse {
   totalPages: number;
 }
 
+/**
+ * Batch-import run mode (sent as the `mode` query param on launch).
+ * - `IMPORT` (default): full load — wipes existing participants, then loads the
+ *   file. Allowed only while the event is DRAFT.
+ * - `ADD_ON`: appends walk-ins without wiping. Allowed while DRAFT or PUBLISHED.
+ */
+export type ImportMode = 'IMPORT' | 'ADD_ON';
+
 export interface BatchImportResponse {
   jobExecutionId: number;
   status: string;
+}
+
+/**
+ * A participant field a CSV column can be mapped to during import.
+ * Returned by GET /events/{eventId}/participants/import-fields; `key` is sent
+ * back as the `targetField` in the batch-import mapping.
+ */
+export interface ImportFieldResponse {
+  key: string;
+  label: string;
+  required: boolean;
 }
 
 export interface BatchJobStatusResponse {

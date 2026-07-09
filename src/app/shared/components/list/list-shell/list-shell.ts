@@ -5,9 +5,11 @@ import { MultiSelectModule } from 'primeng/multiselect';
 import { TableLazyLoadEvent } from 'primeng/table';
 import { FORM_INPUT_SIZE } from '../../../constants/form.constants';
 import { TableColumn } from '../../../models/table-config.model';
+import { EmptyIllustrationName } from '../../../illustrations/empty-illustration';
 import { ListSearch } from '../list-search/list-search';
 import { ListFilterPanel } from '../list-filter-panel/list-filter-panel';
 import { MobileCardList } from '../mobile-card-list/mobile-card-list';
+import { PrintHeader } from '../../print-header/print-header';
 
 /**
  * One-stop page shell for paginated list views.
@@ -35,14 +37,17 @@ import { MobileCardList } from '../mobile-card-list/mobile-card-list';
     ListSearch,
     ListFilterPanel,
     MobileCardList,
+    PrintHeader,
   ],
   templateUrl: './list-shell.html',
   styleUrl: './list-shell.css',
 })
 export class ListShell<T = unknown> {
-  // Header
-  title = input.required<string>();
+  heading = input<string>('');
   subtitle = input<string>('');
+  /** When set, renders a print-only page header (title + "Printed at"). Opt-in
+   *  so only screens meant to be printed get one. */
+  printTitle = input<string>('');
 
   // Viewport
   isMobile = input<boolean>(false);
@@ -51,11 +56,15 @@ export class ListShell<T = unknown> {
   isLoading = input<boolean>(false);
   searchTerm = input<string>('');
   searchPlaceholder = input<string>('Search (min 2 chars)...');
+  /** Desktop width cap for the search box (Tailwind class). Mobile is always full-width. */
+  searchMaxWidthClass = input<string>('sm:max-w-md');
   searchChange = output<string>();
   searchClear = output<void>();
 
   // Filters
   activeFilterCount = input<number>(0);
+  /** Mobile-only: render the Filters button on the search row instead of its own row below. */
+  inlineMobileFilters = input<boolean>(false);
 
   // Column selector — hidden on mobile via the template
   showColumnSelector = input<boolean>(true);
@@ -70,6 +79,7 @@ export class ListShell<T = unknown> {
   pageSize = input<number>(5);
   rowsPerPageOptions = input<number[]>([5, 10, 20, 50]);
   emptyIcon = input<string>('pi pi-inbox');
+  emptyIllustration = input<EmptyIllustrationName>('no-data');
   emptyMessage = input<string>('No results found');
   emptyHint = input<string>('Try adjusting your search or filters');
   pageChange = output<TableLazyLoadEvent>();

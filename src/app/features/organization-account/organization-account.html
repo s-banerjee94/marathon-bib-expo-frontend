@@ -1,0 +1,84 @@
+<p-confirmpopup />
+
+<div class="p-2 sm:p-3 md:p-4">
+  <!-- Page header -->
+  <div class="mb-6 flex items-start justify-between gap-3">
+    <div class="min-w-0">
+      <h1 class="text-3xl font-bold mb-2">
+        {{ canEditGovernance ? 'Edit Organization' : 'Organization' }}
+      </h1>
+      <p class="text-color-secondary">
+        @if (canEditGovernance) {
+          Update this organization's details, subscription, and quotas.
+        } @else {
+          View and manage your organization's details.
+        }
+      </p>
+    </div>
+    <div class="flex items-center gap-2 shrink-0">
+      @if (canEditGovernance && organization()) {
+        <p-button
+          (click)="onDelete($event)"
+          [loading]="isDeleting()"
+          [text]="true"
+          icon="pi pi-trash"
+          label="Delete"
+          severity="danger"
+          size="small"
+        />
+      }
+      <p-button
+        (onClick)="goBack()"
+        [text]="true"
+        icon="pi pi-arrow-left"
+        label="Back"
+        severity="secondary"
+        size="small"
+      />
+    </div>
+  </div>
+
+  @if (isLoading()) {
+    <!-- Loading skeleton -->
+    <div class="flex flex-col gap-6">
+      <p-skeleton height="7rem" />
+      <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+        <p-skeleton height="28rem" styleClass="xl:col-span-2" />
+        <p-skeleton height="28rem" />
+      </div>
+    </div>
+  } @else if (organization()) {
+    <!-- Tabs (URL-driven). Desktop strip hides on mobile; the bottom tab bar replaces it. -->
+    <div class="hidden md:block">
+      <p-tabs [value]="activeTab()">
+        <p-tablist>
+          <p-tab value="account" [routerLink]="['account']" routerLinkActive>
+            <i class="pi pi-building mr-2"></i>
+            Account
+          </p-tab>
+          <p-tab value="settings" [routerLink]="['settings']" routerLinkActive>
+            <i class="pi pi-cog mr-2"></i>
+            Settings
+          </p-tab>
+          <p-tab value="billing" [routerLink]="['billing']" routerLinkActive>
+            <i class="pi pi-receipt mr-2"></i>
+            Billing
+          </p-tab>
+        </p-tablist>
+      </p-tabs>
+    </div>
+
+    <div class="pt-4">
+      <router-outlet />
+    </div>
+
+    <!-- Mobile-only bottom tab bar (self-hides at md+); spacer clears the fixed bar. -->
+    <app-mobile-tab-bar
+      class="md:hidden"
+      [tabs]="tabs"
+      [activeId]="activeTab()"
+      (tabChange)="onTabChange($event)"
+    />
+    <div class="h-20 md:hidden" aria-hidden="true"></div>
+  }
+</div>

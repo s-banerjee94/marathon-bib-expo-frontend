@@ -9,6 +9,7 @@ import { DefaultValuePipe } from '../../../../shared/pipes/default-value.pipe';
 import { FormatEventDateTimePipe } from '../../../../shared/pipes/format-event-date-time-pipe';
 import { SmsTriggerLabelPipe } from '../../../../shared/pipes/sms-trigger-label-pipe';
 import { SmsTargetLabelPipe } from '../../../../shared/pipes/sms-target-label-pipe';
+import { getCampaignStatusSeverity } from '../../../../shared/utils/campaign-status.utils';
 
 @Component({
   selector: 'app-sms-campaign-detail',
@@ -32,20 +33,7 @@ export class SmsCampaignDetail {
   campaign = signal<SmsCampaign | null>(this.config.data?.campaign ?? null);
   eventTimezone = signal<string>(this.config.data?.eventTimezone ?? '');
 
-  statusSeverity(status: string): 'success' | 'info' | 'warn' | 'danger' | 'secondary' {
-    switch (status) {
-      case 'ACTIVE':
-        return 'success';
-      case 'SENDING':
-        return 'info';
-      case 'SENT':
-        return 'info';
-      case 'FAILED':
-        return 'danger';
-      default:
-        return 'secondary';
-    }
-  }
+  readonly statusSeverity = getCampaignStatusSeverity;
 
   onClose(): void {
     this.ref.close();

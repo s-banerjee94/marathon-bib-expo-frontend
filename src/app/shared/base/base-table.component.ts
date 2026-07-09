@@ -1,5 +1,5 @@
 import { Directive, inject, OnDestroy, OnInit, signal } from '@angular/core';
-import { DialogService, DynamicDialogRef } from 'primeng/dynamicdialog';
+import { DialogService, DynamicDialogConfig, DynamicDialogRef } from 'primeng/dynamicdialog';
 import { TableLazyLoadEvent } from 'primeng/table';
 import { Subject } from 'rxjs';
 import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
@@ -9,6 +9,7 @@ import { ErrorHandlerService } from '../../core/services/error-handler.service';
 import { ToastService } from '../../core/services/toast.service';
 import { AuthService } from '../../core/services/auth.service';
 import { LocalStorageService } from '../../core/services/local-storage.service';
+import { BreakpointService } from '../../core/services/breakpoint.service';
 import { FORM_INPUT_SIZE } from '../constants/form.constants';
 
 /**
@@ -26,7 +27,7 @@ export abstract class BaseTableComponent<T, F extends TableFilterPreferences>
   entities = signal<T[]>([]);
   isLoading = signal(false);
   currentPage = signal(0);
-  pageSize = signal(5);
+  pageSize = signal(25);
   totalRecords = signal(0);
   searchTerm = signal('');
   // Filter signals (to be extended by subclasses if needed)
@@ -40,8 +41,9 @@ export abstract class BaseTableComponent<T, F extends TableFilterPreferences>
   // Form input size (controlled centrally via constant)
   readonly inputSize = FORM_INPUT_SIZE;
   // Reactive viewport flag — true when viewport width <= 768px. Subclass templates branch
-  // on this to render mobile cards instead of the desktop table.
-  readonly isMobile = signal(false);
+  // on this to render mobile cards instead of the desktop table. Backed by the shared
+  // BreakpointService so the whole app reads one signal/listener.
+  readonly isMobile = inject(BreakpointService).isMobile;
   protected dialogService = inject(DialogService);
   protected toast = inject(ToastService);
   protected errorHandler = inject(ErrorHandlerService);
@@ -49,8 +51,6 @@ export abstract class BaseTableComponent<T, F extends TableFilterPreferences>
   protected storage = inject(LocalStorageService);
   protected dialogRef: DynamicDialogRef | null = null;
   protected searchSubject = new Subject<string>();
-  private mobileMediaQuery: MediaQueryList | null = null;
-  private mobileQueryHandler: ((event: MediaQueryListEvent) => void) | null = null;
   // Abstract properties - must be implemented by subclasses
   protected abstract columnPreferenceKey: string;
   protected abstract filterPreferenceKey: string;
@@ -63,13 +63,6 @@ export abstract class BaseTableComponent<T, F extends TableFilterPreferences>
       this.saveColumnPreferences(this.selectedCols());
       this.saveFilterPreferences(this.getCurrentFilterPreferences());
     });
-
-    if (typeof window !== 'undefined' && typeof window.matchMedia === 'function') {
-      this.mobileMediaQuery = window.matchMedia('(max-width: 768px)');
-      this.isMobile.set(this.mobileMediaQuery.matches);
-      this.mobileQueryHandler = (event) => this.isMobile.set(event.matches);
-      this.mobileMediaQuery.addEventListener('change', this.mobileQueryHandler);
-    }
   }
 
   // Canonical-order visible columns: filter allColumns by required-or-selected
@@ -177,11 +170,6 @@ export abstract class BaseTableComponent<T, F extends TableFilterPreferences>
     }
     this.searchSubject.complete();
     this.preferenceSaveSubject.complete();
-    if (this.mobileMediaQuery && this.mobileQueryHandler) {
-      this.mobileMediaQuery.removeEventListener('change', this.mobileQueryHandler);
-    }
-    this.mobileMediaQuery = null;
-    this.mobileQueryHandler = null;
   }
 
   protected initializeColumns(): void {
@@ -279,7 +267,12 @@ export abstract class BaseTableComponent<T, F extends TableFilterPreferences>
     this.errorHandler.showError(error, 'Error loading data');
   }
 
-  protected openDialog<C>(component: C, header: string, data: unknown): DynamicDialogRef | null {
+  protected openDialog<C>(
+    component: C,
+    header: string,
+    data: unknown,
+    config?: Partial<DynamicDialogConfig>,
+  ): DynamicDialogRef | null {
     this.dialogRef = this.dialogService.open(component as never, {
       header,
       width: '45vw',
@@ -292,6 +285,7 @@ export abstract class BaseTableComponent<T, F extends TableFilterPreferences>
         '640px': '100vw',
       },
       data,
+      ...config,
     });
 
     return this.dialogRef;

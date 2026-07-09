@@ -64,3 +64,7 @@ swagger.json
 sakai-ng-master
 swagger api doc/
 cert/
+/plan
+event-dashboard
+design-mocks
+.playwright-mcp

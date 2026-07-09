@@ -10,6 +10,26 @@ export enum UserRole {
   DISTRIBUTOR = 'DISTRIBUTOR',
 }
 
+/** Human-readable labels for each role, for display in menus and profile views. */
+export const ROLE_LABELS: Record<UserRole, string> = {
+  [UserRole.ROOT]: 'Root',
+  [UserRole.ADMIN]: 'Admin',
+  [UserRole.ORGANIZER_ADMIN]: 'Organizer Admin',
+  [UserRole.ORGANIZER_USER]: 'Organizer User',
+  [UserRole.DISTRIBUTOR]: 'Distributor',
+};
+
+/** Roles that manage events, users and participants — everyone except DISTRIBUTOR. */
+export const EVENT_MANAGEMENT_ROLES = [
+  UserRole.ROOT,
+  UserRole.ADMIN,
+  UserRole.ORGANIZER_ADMIN,
+  UserRole.ORGANIZER_USER,
+];
+
+/** Platform-level roles that manage organizations and billing. */
+export const PLATFORM_ADMIN_ROLES = [UserRole.ROOT, UserRole.ADMIN];
+
 /**
  * User model matching backend UserResponse
  */
@@ -20,12 +40,15 @@ export interface User {
   fullName: string;
   phoneNumber: string;
   role: UserRole;
+  /** Short-lived presigned URL for the profile picture; null/undefined if none set. */
+  profilePictureUrl?: string;
   organizationId?: number;
   organizationName?: string;
+  /** The single event a distributor is bound to; null for every other role. */
+  eventId?: number;
+  eventName?: string;
   enabled: boolean;
-  accountNonExpired?: boolean;
   accountNonLocked?: boolean;
-  credentialsNonExpired?: boolean;
   createdAt?: Date;
   updatedAt?: Date;
   createdBy?: string;
@@ -43,17 +66,27 @@ export interface CreateUserRequest {
   phoneNumber: string;
   role: UserRole;
   organizationId?: number;
+  /** Required when role is DISTRIBUTOR — the event the distributor is bound to. */
+  eventId?: number;
 }
 
 /**
- * Update User Request DTO — only profile fields (password, email, fullName, phoneNumber)
- * Role, username, and organization cannot be changed via this endpoint.
+ * Update User Request DTO — only profile fields (email, fullName, phoneNumber).
+ * Role, username, and organization cannot be changed via this endpoint, and
+ * passwords are changed only through the dedicated password endpoints.
  */
 export interface UpdateUserRequest {
-  password?: string;
   email?: string;
   fullName?: string;
   phoneNumber?: string;
+}
+
+/**
+ * Change Own Password Request DTO — PUT /users/me/password.
+ */
+export interface ChangePasswordRequest {
+  currentPassword: string;
+  newPassword: string;
 }
 
 /**

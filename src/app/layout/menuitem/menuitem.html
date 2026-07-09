@@ -1,79 +1,19 @@
-@if (item().separator) {
-  <li
-    class="menu-separator h-px my-2"
-    [style]="{ 'background-color': 'var(--surface-border)' }"
-  ></li>
-} @else {
-  <li [ngClass]="{ 'active-menuitem': isActive() || isExpanded() }" class="mb-1">
-    @if (item().routerLink && !hasSubmenu) {
-      <!-- Regular menu item with router link -->
-      <a
-        (click)="onItemClick($event)"
-        [routerLink]="item().routerLink"
-        routerLinkActive="active-route"
-        [routerLinkActiveOptions]="{ exact: false }"
-        class="menu-link flex items-center py-3 px-4 rounded-lg no-underline cursor-pointer transition-colors duration-150 max-[991px]:min-h-12 max-[991px]:py-3.5"
-        pRipple
-      >
-        @if (item().icon) {
-          <i [class]="item().icon" class="mr-3 text-lg"></i>
-        }
-        <span class="flex-1 text-sm font-medium">{{ item().label }}</span>
-        @if (item().badge) {
-          <span
-            [ngClass]="item().badgeClass"
-            class="ml-auto py-1 px-2 text-xs rounded"
-            [style]="{
-              'background-color': 'var(--primary-color)',
-              color: 'var(--primary-contrast-color)',
-            }"
-          >
-            {{ item().badge }}
-          </span>
-        }
-      </a>
-    } @else {
-      <!-- Parent menu item with submenu -->
-      <a
-        (click)="onItemClick($event)"
-        [ngClass]="{ 'active-route': isActive() }"
-        class="menu-link flex items-center py-3 px-4 rounded-lg no-underline cursor-pointer transition-colors duration-150 max-[991px]:min-h-12 max-[991px]:py-3.5"
-        pRipple
-      >
-        @if (item().icon) {
-          <i [class]="item().icon" class="mr-3 text-lg"></i>
-        }
-        <span class="flex-1 text-sm font-medium">{{ item().label }}</span>
-        @if (item().badge) {
-          <span
-            [ngClass]="item().badgeClass"
-            class="ml-auto py-1 px-2 text-xs rounded"
-            [style]="{
-              'background-color': 'var(--primary-color)',
-              color: 'var(--primary-contrast-color)',
-            }"
-          >
-            {{ item().badge }}
-          </span>
-        }
-        @if (hasSubmenu) {
-          <i
-            [ngClass]="{ 'rotate-180': isExpanded() }"
-            class="pi pi-fw pi-angle-down transition-transform duration-200"
-          ></i>
-        }
-      </a>
+<li class="mb-1">
+  <a
+    (click)="onItemClick()"
+    [routerLink]="item().routerLink"
+    routerLinkActive="active-route"
+    [routerLinkActiveOptions]="{ exact: false }"
+    [attr.aria-label]="item().label"
+    [pTooltip]="item().label"
+    tooltipPosition="right"
+    [tooltipDisabled]="!showTooltip()"
+    class="menu-link flex items-center py-3 px-4 rounded-lg no-underline cursor-pointer transition-colors duration-150 max-[991px]:min-h-12 max-[991px]:py-3.5"
+    pRipple
+  >
+    @if (item().icon) {
+      <i [class]="item().icon" class="mr-3 text-lg"></i>
     }
-
-    @if (hasSubmenu) {
-      <ul
-        [ngClass]="isExpanded() ? 'max-h-[500px]' : 'max-h-0'"
-        class="list-none p-0 m-0 pl-4 overflow-hidden transition-all duration-300 ease-in-out"
-      >
-        @for (child of item().items; track child.label; let i = $index) {
-          <app-menuitem [index]="i" [item]="child" [parentKey]="key"></app-menuitem>
-        }
-      </ul>
-    }
-  </li>
-}
+    <span class="flex-1 text-sm font-medium">{{ item().label }}</span>
+  </a>
+</li>

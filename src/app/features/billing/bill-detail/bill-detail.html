@@ -1,0 +1,286 @@
+@if (bill(); as b) {
+  <div class="flex flex-col gap-4">
+    <!-- Summary -->
+    <div class="flex flex-wrap items-start justify-between gap-3">
+      <div class="min-w-0">
+        <div class="font-semibold truncate">{{ b.eventName }}</div>
+        <div class="text-sm opacity-60">
+          @if (b.invoiceNumber) {
+            {{ b.invoiceNumber }} ·
+          }
+          Generated {{ b.createdAt | date: 'dd-MMM-yyyy, hh:mm a' }}
+          @if (b.updatedAt) {
+            · Updated {{ b.updatedAt | date: 'dd-MMM-yyyy, hh:mm a' }}
+          }
+        </div>
+      </div>
+      <div class="flex items-center gap-2">
+        <p-tag [value]="statusLabel(b.status)" [severity]="statusSeverity(b.status)" />
+        @if (b.status === BillStatus.FINAL) {
+          @if (canManage() && b.paymentStatus !== PaymentStatus.PAID) {
+            <p-button
+              label="Mark Paid"
+              icon="pi pi-wallet"
+              severity="success"
+              [outlined]="true"
+              size="small"
+              [loading]="updatingPayment()"
+              pTooltip="Records collection — cannot be undone"
+              tooltipPosition="top"
+              (onClick)="markPaid($event)"
+            />
+          } @else {
+            <p-tag
+              [value]="paymentLabel(b.paymentStatus)"
+              [severity]="paymentSeverity(b.paymentStatus)"
+            />
+          }
+        }
+        @if (b.downloadUrl) {
+          <p-button
+            icon="pi pi-download"
+            label="Download PDF"
+            [text]="true"
+            size="small"
+            pTooltip="Download invoice PDF"
+            tooltipPosition="top"
+            (onClick)="downloadBill(b)"
+          />
+        }
+      </div>
+    </div>
+
+    <!-- Line items -->
+    <p-table [value]="lineItems()" dataKey="id" [size]="inputSize">
+      <ng-template pTemplate="header">
+        <tr>
+          <th scope="col">Item</th>
+          <th scope="col" class="text-right whitespace-nowrap">Qty</th>
+          <th scope="col" class="text-right whitespace-nowrap">Unit price</th>
+          <th scope="col" class="text-right whitespace-nowrap">Amount</th>
+          @if (editable()) {
+            <th scope="col" class="w-20 text-center">Actions</th>
+          }
+        </tr>
+      </ng-template>
+
+      <ng-template pTemplate="body" let-line>
+        <tr>
+          <td>
+            <div class="font-medium">{{ line.description }}</div>
+            <div class="text-xs opacity-60">
+              {{ kindLabel(line.kind) }}
+              @if (line.discountPercent !== null) {
+                · {{ line.discountPercent }}% off
+              }
+            </div>
+          </td>
+          <td class="text-right whitespace-nowrap">{{ line.quantity ?? '--' }}</td>
+          <td class="text-right whitespace-nowrap">
+            {{ line.unitPrice !== null ? formatMoney(line.unitPrice, b.currency) : '--' }}
+          </td>
+          <td class="text-right whitespace-nowrap font-medium">
+            {{ formatMoney(line.amount, b.currency) }}
+          </td>
+          @if (editable()) {
+            <td class="text-center whitespace-nowrap">
+              <div class="flex justify-center gap-1">
+                <p-button
+                  icon="pi pi-pencil"
+                  ariaLabel="Edit"
+                  [text]="true"
+                  [rounded]="true"
+                  size="small"
+                  [disabled]="!lineEditable(line) || formOpen()"
+                  pTooltip="Edit"
+                  tooltipPosition="top"
+                  (onClick)="openEdit(line)"
+                />
+                <p-button
+                  icon="pi pi-trash"
+                  ariaLabel="Remove line item"
+                  [text]="true"
+                  [rounded]="true"
+                  size="small"
+                  severity="danger"
+                  [disabled]="!lineRemovable(line) || formOpen()"
+                  [loading]="removingId() === line.id"
+                  pTooltip="Remove"
+                  tooltipPosition="top"
+                  (onClick)="removeLine(line, $event)"
+                />
+              </div>
+            </td>
+          }
+        </tr>
+      </ng-template>
+
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td [attr.colspan]="editable() ? 5 : 4" class="text-center py-6 text-color-secondary">
+            No line items on this bill.
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+
+    <!-- Totals -->
+    <div class="flex flex-col items-end gap-1 text-sm">
+      <div class="flex justify-between gap-8 w-full sm:w-72">
+        <span class="opacity-70">Subtotal</span>
+        <span>{{ formatMoney(b.subtotal, b.currency) }}</span>
+      </div>
+      <div class="flex justify-between gap-8 w-full sm:w-72">
+        <span class="opacity-70">GST ({{ b.taxRate }}%)</span>
+        <span>{{ formatMoney(b.taxAmount, b.currency) }}</span>
+      </div>
+      <div class="flex justify-between gap-8 w-full sm:w-72 text-base font-semibold">
+        <span>Total</span>
+        <span>{{ formatMoney(b.totalAmount, b.currency) }}</span>
+      </div>
+    </div>
+
+    <!-- Add / edit line (draft + ROOT/ADMIN only) -->
+    @if (editable()) {
+      @if (!formOpen()) {
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <p-button
+            label="Add line item"
+            icon="pi pi-plus"
+            [text]="true"
+            [size]="buttonSize"
+            (onClick)="openAdd()"
+          />
+          <p-button
+            label="Issue Final Invoice"
+            icon="pi pi-lock"
+            [size]="buttonSize"
+            (onClick)="onIssueFinal($event)"
+          />
+        </div>
+      } @else {
+        <div class="border rounded p-4 flex flex-col gap-3">
+          <div class="font-medium">{{ editingLine() ? 'Edit line item' : 'Add line item' }}</div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <!-- Type: selectable when adding, fixed when editing -->
+            <div class="flex flex-col gap-1">
+              <label class="text-sm opacity-70">Type</label>
+              @if (editingLine()) {
+                <p-tag [value]="kindLabel(formKind)" severity="secondary" styleClass="self-start" />
+              } @else {
+                <p-select
+                  [(ngModel)]="formKind"
+                  [options]="kindOptions"
+                  optionLabel="label"
+                  optionValue="value"
+                  [size]="inputSize"
+                  appendTo="body"
+                  fluid="true"
+                />
+              }
+            </div>
+
+            <!-- Description: editable unless it's the system participant line -->
+            <div class="flex flex-col gap-1">
+              <label class="text-sm opacity-70">Description</label>
+              <input
+                type="text"
+                pInputText
+                [(ngModel)]="formDescription"
+                [pSize]="inputSize"
+                [disabled]="isParticipantForm"
+                placeholder="Shown on the bill"
+                fluid="true"
+              />
+            </div>
+          </div>
+
+          @if (isDiscountForm) {
+            <!-- Discount: either a percentage or a fixed amount -->
+            <div class="flex flex-wrap items-end gap-3">
+              <div class="flex flex-col gap-1">
+                <label class="text-sm opacity-70">Discount as</label>
+                <p-selectbutton
+                  [(ngModel)]="formDiscountMode"
+                  [options]="discountModeOptions"
+                  optionLabel="label"
+                  optionValue="value"
+                  [allowEmpty]="false"
+                  [size]="inputSize"
+                />
+              </div>
+              @if (formDiscountMode === 'PERCENT') {
+                <div class="flex flex-col gap-1">
+                  <label class="text-sm opacity-70">Percent (1–100)</label>
+                  <p-inputnumber
+                    [(ngModel)]="formPercent"
+                    [min]="1"
+                    [max]="100"
+                    [size]="inputSize"
+                    suffix="%"
+                  />
+                </div>
+              } @else {
+                <div class="flex flex-col gap-1">
+                  <label class="text-sm opacity-70">Amount ({{ b.currency }})</label>
+                  <p-inputnumber
+                    [(ngModel)]="formAmount"
+                    [min]="0"
+                    [minFractionDigits]="0"
+                    [maxFractionDigits]="2"
+                    [size]="inputSize"
+                  />
+                </div>
+              }
+            </div>
+          } @else {
+            <!-- Charge / participant: quantity × unit price -->
+            <div class="flex flex-wrap items-end gap-3">
+              <div class="flex flex-col gap-1">
+                <label class="text-sm opacity-70">Quantity</label>
+                <p-inputnumber
+                  [(ngModel)]="formQuantity"
+                  [min]="1"
+                  [showButtons]="true"
+                  [size]="inputSize"
+                />
+              </div>
+              <div class="flex flex-col gap-1">
+                <label class="text-sm opacity-70">Unit price ({{ b.currency }})</label>
+                <p-inputnumber
+                  [(ngModel)]="formUnitPrice"
+                  [min]="0"
+                  [minFractionDigits]="0"
+                  [maxFractionDigits]="2"
+                  [size]="inputSize"
+                />
+              </div>
+            </div>
+          }
+
+          <div class="flex justify-end gap-2">
+            <p-button
+              label="Cancel"
+              [text]="true"
+              severity="secondary"
+              [size]="buttonSize"
+              [disabled]="saving()"
+              (onClick)="cancelForm()"
+            />
+            <p-button
+              [label]="editingLine() ? 'Save' : 'Add'"
+              icon="pi pi-check"
+              [size]="buttonSize"
+              [loading]="saving()"
+              [disabled]="!canSave()"
+              (onClick)="save()"
+            />
+          </div>
+        </div>
+      }
+    }
+  </div>
+
+  <p-confirmpopup />
+}

@@ -2,6 +2,7 @@ export const PLACEHOLDER_MAP: Record<string, string> = {
   fullName: "Participant's full name",
   bibNumber: 'Bib number',
   raceName: 'Race name',
+  reportingTime: 'Reporting Time',
   categoryName: 'Category name',
   bibCollectedAt: 'Bib collected timestamp',
   bibCollectedByName: 'Collected by (name)',

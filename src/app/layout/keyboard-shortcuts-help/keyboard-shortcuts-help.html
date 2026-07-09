@@ -1,0 +1,42 @@
+<p-dialog
+  [visible]="keyboard.helpOpen()"
+  (visibleChange)="keyboard.setHelpOpen($event)"
+  [modal]="true"
+  [dismissableMask]="true"
+  [draggable]="false"
+  [resizable]="false"
+  [closeOnEscape]="true"
+  header="Keyboard shortcuts"
+  appendTo="body"
+  [style]="{ width: '90vw', maxWidth: '520px' }"
+>
+  <div class="flex flex-col gap-5 pt-1">
+    @for (section of keyboard.helpGroups(); track section.group) {
+      <div class="flex flex-col gap-1">
+        <h3
+          class="px-1 pb-1 text-xs font-semibold uppercase tracking-wide"
+          style="color: var(--text-color-secondary)"
+        >
+          {{ section.group }}
+        </h3>
+        @for (shortcut of section.shortcuts; track shortcut.label) {
+          <div
+            class="flex items-center justify-between gap-4 rounded-md px-2 py-1.5"
+            style="background: var(--surface-hover)"
+          >
+            <span class="text-sm">{{ shortcut.label }}</span>
+            <kbd
+              class="inline-flex items-center h-5 px-1.5 rounded border text-[11px] font-semibold shrink-0"
+              style="
+                background: var(--surface-hover);
+                border-color: var(--surface-border);
+                color: var(--text-color-secondary);
+              "
+              >{{ shortcut.keys | join: ' + ' }}</kbd
+            >
+          </div>
+        }
+      </div>
+    }
+  </div>
+</p-dialog>

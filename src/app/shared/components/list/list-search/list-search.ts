@@ -14,6 +14,8 @@ export class ListSearch {
   value = input<string>('');
   placeholder = input<string>('Search (min 2 chars)...');
   isLoading = input<boolean>(false);
+  /** Desktop width cap (Tailwind class, from the `sm` breakpoint up). Mobile stays full-width via `flex-1`. */
+  maxWidthClass = input<string>('sm:max-w-md');
 
   valueChange = output<string>();
   cleared = output<void>();

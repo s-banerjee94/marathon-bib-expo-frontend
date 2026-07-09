@@ -1,27 +1,42 @@
 <p-toast />
 <p-confirmdialog />
 
-<div [ngClass]="layoutClasses()" class="layout-wrapper">
-  <app-navbar></app-navbar>
+@if (isPublicRoute()) {
+  <router-outlet></router-outlet>
+} @else {
+  <div [ngClass]="layoutClasses()" class="layout-wrapper">
+    <app-navbar></app-navbar>
+    <app-offline-banner />
 
-  @if (showSidebar()) {
-    <app-sidebar></app-sidebar>
-    @if (
-      layoutService.layoutState().mobileMenuActive || layoutService.layoutState().overlayMenuActive
-    ) {
-      <div
-        (click)="onMaskClick()"
-        class="fixed left-0 right-0 bottom-0 top-[var(--topbar-height)] z-[997] cursor-pointer"
-        [style]="{ 'background-color': 'var(--maskbg)' }"
-      ></div>
+    @if (showSidebar()) {
+      <app-sidebar></app-sidebar>
+      @if (
+        layoutService.layoutState().mobileMenuActive ||
+        layoutService.layoutState().overlayMenuActive
+      ) {
+        <div
+          (click)="onMaskClick()"
+          class="fixed left-0 right-0 bottom-0 top-[var(--topbar-height)] z-[997] cursor-pointer"
+          [style]="{ 'background-color': 'var(--maskbg)' }"
+        ></div>
+      }
     }
+
+    <main class="layout-main">
+      <div [class]="contentClass()">
+        <router-outlet></router-outlet>
+      </div>
+    </main>
+
+    @if (aiAssistant.available()) {
+      <app-ai-assistant />
+    }
+  </div>
+
+  <app-import-progress-floating />
+
+  @if (isAuthenticated()) {
+    <app-command-palette />
+    <app-keyboard-shortcuts-help />
   }
-
-  <main class="layout-main">
-    <div [class]="contentClass()">
-      <router-outlet></router-outlet>
-    </div>
-  </main>
-</div>
-
-<app-import-progress-floating />
+}

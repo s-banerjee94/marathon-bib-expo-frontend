@@ -1,5 +1,6 @@
 import { Component, computed, inject, input, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
@@ -7,6 +8,7 @@ import { InputTextModule } from 'primeng/inputtext';
 import { MultiSelectModule } from 'primeng/multiselect';
 import { CardModule } from 'primeng/card';
 import { TagModule } from 'primeng/tag';
+import { AvatarModule } from 'primeng/avatar';
 import { SkeletonModule } from 'primeng/skeleton';
 import { TooltipModule } from 'primeng/tooltip';
 import { DialogService } from 'primeng/dynamicdialog';
@@ -19,6 +21,9 @@ import { ToastService } from '../../../../core/services/toast.service';
 import { EventDetailsState } from '../event-details-state.service';
 import { RaceForm } from '../race-form/race-form';
 import { DefaultValuePipe } from '../../../../shared/pipes/default-value.pipe';
+import { InitialsPipe } from '../../../../shared/pipes/initials-pipe';
+import { UserSummaryPipe } from '../../../../shared/pipes/user-summary-pipe';
+import { FormatEventDateTimePipe } from '../../../../shared/pipes/format-event-date-time-pipe';
 import { TableRowSelectEvent } from 'primeng/table';
 import { TableColumn } from '../../../../shared/models/table-config.model';
 import {
@@ -35,6 +40,7 @@ import {
   saveColumnPreferences,
 } from '../../../../shared/utils/column.utils';
 import { injectIsMobile } from '../../../../shared/utils/responsive.utils';
+import { EmptyIllustration } from '../../../../shared/illustrations/empty-illustration';
 
 @Component({
   selector: 'app-race-section',
@@ -50,7 +56,13 @@ import { injectIsMobile } from '../../../../shared/utils/responsive.utils';
     TooltipModule,
     ConfirmPopupModule,
     CardModule,
+    AvatarModule,
     DefaultValuePipe,
+    InitialsPipe,
+    UserSummaryPipe,
+    FormatEventDateTimePipe,
+    RouterLink,
+    EmptyIllustration,
   ],
   providers: [DialogService, ConfirmationService],
   templateUrl: './race-section.html',
@@ -74,6 +86,7 @@ export class RaceSection implements OnInit {
   cols = signal<TableColumn[]>([]);
   selectedCols = signal<TableColumn[]>([]);
   visibleCols = computed(() => getVisibleCols(RACE_COLUMNS, this.selectedCols()));
+  eventTimezone = computed(() => this.state.event()?.timezone ?? '');
   readonly inputSize = FORM_INPUT_SIZE;
   readonly buttonSize = BUTTON_SIZE;
 
@@ -112,7 +125,7 @@ export class RaceSection implements OnInit {
     const ref = this.dialogService.open(RaceForm, {
       header: 'Create Race',
       width: '600px',
-      data: { race: null, eventId: this.eventId() },
+      data: { race: null, eventId: this.eventId(), eventTimezone: this.eventTimezone() },
     });
 
     ref?.onClose.subscribe((result: Race | undefined) => {
@@ -127,7 +140,7 @@ export class RaceSection implements OnInit {
     const ref = this.dialogService.open(RaceForm, {
       header: 'Edit Race',
       width: '600px',
-      data: { race, eventId: this.eventId() },
+      data: { race, eventId: this.eventId(), eventTimezone: this.eventTimezone() },
     });
 
     ref?.onClose.subscribe((result: Race | undefined) => {
@@ -152,7 +165,7 @@ export class RaceSection implements OnInit {
             this.toast.success('Race deleted successfully');
           },
           error: (error: unknown) => {
-            this.errorHandler.showError(error, 'Failed to delete race');
+            this.errorHandler.showError(error);
           },
         });
       },

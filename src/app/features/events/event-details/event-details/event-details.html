@@ -3,6 +3,47 @@
   <p-confirmpopup />
   <p-menu #statusMenu [model]="statusMenuItems()" [popup]="true" appendTo="body" />
 
+  <!-- Event image: large preview lightbox -->
+  <p-dialog
+    [visible]="imagePreviewVisible()"
+    (visibleChange)="imagePreviewVisible.set($event)"
+    [modal]="true"
+    [dismissableMask]="true"
+    [draggable]="false"
+    [resizable]="false"
+    [header]="event()?.eventName ?? 'Event image'"
+    [style]="{ 'max-width': '90vw' }"
+  >
+    @if (event()?.logoUrl) {
+      <img
+        [src]="event()!.logoUrl"
+        [alt]="event()!.eventName"
+        class="block max-w-[80vw] max-h-[75vh] object-contain"
+      />
+    }
+  </p-dialog>
+
+  <!-- Event image: upload / change dialog -->
+  <p-dialog
+    [visible]="uploadDialogVisible()"
+    (visibleChange)="uploadDialogVisible.set($event)"
+    [modal]="true"
+    [draggable]="false"
+    [resizable]="false"
+    header="Event image"
+    [style]="{ width: '24rem', 'max-width': '90vw' }"
+  >
+    <app-image-upload
+      shape="square"
+      [imageUrl]="event()?.logoUrl"
+      [pending]="uploadingLogo()"
+      alt="Event logo"
+      helpText="PNG with a transparent background looks best. The whole image is kept (never cropped) and resized to fit 512px."
+      (fileSelected)="onLogoSelected($event)"
+      (removeRequested)="onLogoRemove()"
+    />
+  </p-dialog>
+
   <!-- Header -->
   <div class="mb-4">
     <p-button
@@ -17,41 +58,110 @@
   <!-- Event Header Card -->
   @if (isLoading()) {
     <p-card class="mb-4">
-      <p-skeleton width="30%" height="2rem" styleClass="mb-3" />
-      <p-skeleton width="100%" height="1rem" styleClass="mb-2" />
+      <div class="flex gap-4 mb-3">
+        <p-skeleton width="5rem" height="5rem" styleClass="rounded-xl flex-shrink-0" />
+        <div class="flex-1">
+          <p-skeleton width="50%" height="2rem" styleClass="mb-3" />
+          <p-skeleton width="20%" height="1.5rem" />
+        </div>
+      </div>
       <p-skeleton width="100%" height="1rem" styleClass="mb-2" />
       <p-skeleton width="80%" height="1rem" />
     </p-card>
   } @else if (event()) {
     <p-card class="mb-4">
-      <div class="flex justify-between items-start mb-3">
-        <div>
-          <h1 class="text-3xl font-bold mb-2">{{ event()!.eventName }}</h1>
-          <p-tag [value]="event()!.status" [severity]="getStatusSeverity(event()!.status)" />
+      <!-- Logo + title + action buttons -->
+      <div class="flex gap-4 items-start mb-3">
+        <!-- Event image: click to view large, camera to change -->
+        <div class="flex-shrink-0">
+          <div class="relative w-20 h-20">
+            <button
+              type="button"
+              class="w-20 h-20 rounded-lg overflow-hidden border flex items-center justify-center"
+              [class.cursor-zoom-in]="event()!.logoUrl && !logoLoadError()"
+              [attr.aria-label]="
+                event()!.logoUrl && !logoLoadError() ? 'View event image' : 'Event image'
+              "
+              (click)="openImagePreview()"
+            >
+              @if (event()!.logoUrl && !logoLoadError()) {
+                <img
+                  [src]="event()!.logoUrl"
+                  [alt]="event()!.eventName"
+                  class="w-full h-full object-contain p-1"
+                  (error)="onLogoError()"
+                />
+              } @else {
+                <span class="text-3xl font-bold">{{
+                  event()!.eventName.charAt(0).toUpperCase()
+                }}</span>
+              }
+            </button>
+            <div class="absolute -bottom-1 -right-1">
+              <p-button
+                icon="pi pi-camera"
+                ariaLabel="Change event image"
+                [rounded]="true"
+                size="small"
+                severity="secondary"
+                pTooltip="Change image"
+                tooltipPosition="bottom"
+                (onClick)="openUploadDialog()"
+              />
+            </div>
+          </div>
         </div>
-        <div class="flex gap-2">
-          <!-- Edit Event Button -->
-          <p-button
-            icon="pi pi-pencil"
-            label="Edit Event"
-            severity="secondary"
-            [size]="buttonSize"
-            (onClick)="onEditEvent()"
-          />
 
-          <!-- Change Status Button -->
-          <p-button
-            icon="pi pi-sync"
-            label="Change Status"
-            severity="secondary"
-            [outlined]="true"
-            [size]="buttonSize"
-            [loading]="changingStatus()"
-            (onClick)="showStatusMenu(statusMenu, $event)"
-          />
+        <!-- Name, status tag, and action buttons -->
+        <div class="flex-1 min-w-0">
+          <div class="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3">
+            <div class="min-w-0">
+              <h1 class="text-2xl sm:text-3xl font-bold mb-2 break-words">
+                {{ event()!.eventName }}
+              </h1>
+              <p-tag [value]="event()!.status" [severity]="getStatusSeverity(event()!.status)" />
+            </div>
+            <div class="flex flex-wrap gap-2 sm:flex-shrink-0">
+              <p-button
+                icon="pi pi-link"
+                ariaLabel="Generate Short URLs"
+                [label]="isMobile() ? '' : 'Generate Short URLs'"
+                pTooltip="Generate Short URLs"
+                tooltipPosition="bottom"
+                severity="secondary"
+                [outlined]="true"
+                [size]="buttonSize"
+                [loading]="generatingShortUrls()"
+                (onClick)="onGenerateShortUrls()"
+              />
+              <p-button
+                icon="pi pi-pencil"
+                ariaLabel="Edit Event"
+                [label]="isMobile() ? '' : 'Edit Event'"
+                pTooltip="Edit Event"
+                tooltipPosition="bottom"
+                severity="secondary"
+                [size]="buttonSize"
+                (onClick)="onEditEvent()"
+              />
+              <p-button
+                icon="pi pi-sync"
+                ariaLabel="Change Status"
+                [label]="isMobile() ? '' : 'Change Status'"
+                pTooltip="Change Status"
+                tooltipPosition="bottom"
+                severity="secondary"
+                [outlined]="true"
+                [size]="buttonSize"
+                [loading]="changingStatus()"
+                (onClick)="showStatusMenu(statusMenu, $event)"
+              />
+            </div>
+          </div>
         </div>
       </div>
 
+      <!-- Info grid -->
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
         <div>
           <p class="text-sm text-gray-600 mb-1">Event Dates</p>
@@ -79,11 +189,14 @@
           <div>
             <p class="text-sm text-gray-600 mb-1">Venue</p>
             <p class="font-medium">{{ event()!.venueName }}</p>
-            @if (event()!.city || event()!.country) {
-              <p class="text-sm text-gray-600">
-                {{ event()!.city }}{{ event()!.city && event()!.country ? ', ' : ''
-                }}{{ event()!.country }}
-              </p>
+            @if (event()!.addressLine1) {
+              <p class="text-sm">{{ event()!.addressLine1 }}</p>
+            }
+            @if (event()!.addressLine2) {
+              <p class="text-sm">{{ event()!.addressLine2 }}</p>
+            }
+            @if (formatAddress(event())) {
+              <p class="text-sm text-gray-600">{{ formatAddress(event()) }}</p>
             }
           </div>
         }
@@ -98,39 +211,66 @@
     </p-card>
   }
 
-  <!-- Tabs (URL-driven) -->
+  <!-- Tabs (URL-driven). Desktop strip hides on mobile; the bottom tab bar replaces it. -->
   @if (!isLoading() && event()) {
-    <p-tabs [value]="activeTab()">
-      <p-tablist>
-        <p-tab value="dashboard" [routerLink]="['dashboard']" routerLinkActive>
-          <i class="pi pi-chart-bar mr-2"></i>
-          Dashboard
-        </p-tab>
-        <p-tab value="participants" [routerLink]="['participants']" routerLinkActive>
-          <i class="pi pi-users mr-2"></i>
-          Participant List
-        </p-tab>
-        <p-tab value="races" [routerLink]="['races']" routerLinkActive>
-          <i class="pi pi-flag mr-2"></i>
-          Races
-        </p-tab>
-        <p-tab value="categories" [routerLink]="['categories']" routerLinkActive>
-          <i class="pi pi-tags mr-2"></i>
-          Categories
-        </p-tab>
-        <p-tab value="sms-templates" [routerLink]="['sms-templates']" routerLinkActive>
-          <i class="pi pi-envelope mr-2"></i>
-          SMS Templates
-        </p-tab>
-        <p-tab value="sms-campaigns" [routerLink]="['sms-campaigns']" routerLinkActive>
-          <i class="pi pi-send mr-2"></i>
-          SMS Campaigns
-        </p-tab>
-      </p-tablist>
-    </p-tabs>
+    <div class="hidden md:block">
+      <p-tabs [value]="activeTab()">
+        <p-tablist>
+          <p-tab value="dashboard" [routerLink]="['dashboard']" routerLinkActive>
+            <i class="pi pi-chart-bar mr-2"></i>
+            Dashboard
+          </p-tab>
+          <p-tab value="participants" [routerLink]="['participants']" routerLinkActive>
+            <i class="pi pi-users mr-2"></i>
+            Participant List
+          </p-tab>
+          <p-tab value="goodies" [routerLink]="['goodies']" routerLinkActive>
+            <i class="pi pi-gift mr-2"></i>
+            Goodies
+          </p-tab>
+          <p-tab value="races" [routerLink]="['races']" routerLinkActive>
+            <i class="pi pi-flag mr-2"></i>
+            Races
+          </p-tab>
+          <p-tab value="categories" [routerLink]="['categories']" routerLinkActive>
+            <i class="pi pi-tags mr-2"></i>
+            Categories
+          </p-tab>
+          <p-tab value="templates" [routerLink]="['templates']" routerLinkActive>
+            <i class="pi pi-envelope mr-2"></i>
+            Template
+          </p-tab>
+          <p-tab value="campaigns" [routerLink]="['campaigns']" routerLinkActive>
+            <i class="pi pi-send mr-2"></i>
+            Campaign
+          </p-tab>
+          @if (canViewBilling) {
+            <p-tab value="billing" [routerLink]="['billing']" routerLinkActive>
+              <i class="pi pi-receipt mr-2"></i>
+              Billing
+            </p-tab>
+          }
+          @if (canViewLimits) {
+            <p-tab value="limits" [routerLink]="['limits']" routerLinkActive>
+              <i class="pi pi-sliders-h mr-2"></i>
+              Limits
+            </p-tab>
+          }
+        </p-tablist>
+      </p-tabs>
+    </div>
 
     <div class="pt-4">
       <router-outlet />
     </div>
+
+    <!-- Mobile-only bottom tab bar (self-hides at md+); spacer clears the fixed bar. -->
+    <app-mobile-tab-bar
+      class="md:hidden"
+      [tabs]="visibleTabs"
+      [activeId]="activeTab()"
+      (tabChange)="onTabChange($event)"
+    />
+    <div class="h-20 md:hidden" aria-hidden="true"></div>
   }
 </div>

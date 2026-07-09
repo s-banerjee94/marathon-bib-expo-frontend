@@ -55,12 +55,12 @@ export class OrganizerDashboard implements OnInit {
 
   // Computed properties
   userCapacityPercentage = computed(() => {
-    const max = this.organization()?.maxOrganizerUsers || 1;
+    const max = this.organization()?.userQuota?.organizerUsers?.max || 1;
     return Math.round((this.totalOrgUsers() / max) * 100);
   });
 
   distributorCapacityPercentage = computed(() => {
-    const max = this.organization()?.maxDistributors || 1;
+    const max = this.organization()?.userQuota?.distributors?.max || 1;
     return Math.round((this.totalDistributors() / max) * 100);
   });
 
@@ -163,13 +163,14 @@ export class OrganizerDashboard implements OnInit {
     });
   }
 
+  // Quick-create travels as navigation state (see navigation-state.utils.ts).
   goToCreateUser(): void {
-    this.router.navigate(['/users/new']);
+    this.router.navigate(['/users'], { state: { create: true } });
   }
 
   goToCreateDistributor(): void {
-    this.router.navigate(['/users/new'], {
-      queryParams: { role: UserRole.DISTRIBUTOR },
+    this.router.navigate(['/users'], {
+      state: { create: true, createRole: UserRole.DISTRIBUTOR },
     });
   }
 

@@ -1,0 +1,339 @@
+<p-card>
+  <ng-template pTemplate="title">
+    <div class="flex items-center justify-between gap-3">
+      <span class="text-lg font-semibold">Provider connection</span>
+      @if (!loading()) {
+        @if (!provider()) {
+          <p-tag value="Not set" severity="secondary" />
+        } @else if (provider()!.enabled) {
+          <p-tag value="Enabled" severity="success" icon="pi pi-check-circle" />
+        } @else {
+          <p-tag value="Disabled" severity="warn" icon="pi pi-pause-circle" />
+        }
+      }
+    </div>
+  </ng-template>
+  <ng-template pTemplate="subtitle">{{ subtitle() }}</ng-template>
+
+  <ng-template pTemplate="content">
+    @if (loading()) {
+      <div class="flex flex-col gap-4">
+        <p-skeleton height="3rem" />
+        <p-skeleton height="3rem" />
+        <p-skeleton height="9rem" />
+      </div>
+    } @else {
+      <ng-content select="[banner]" />
+
+      <form #form="ngForm" (ngSubmit)="onSubmit(form)" class="flex flex-col">
+        <!-- Endpoint -->
+        <div class="form-section">
+          <div class="form-section__heading">
+            <span class="section-icon section-icon--endpoint"><i class="pi pi-link"></i></span>
+            <span class="text-sm font-semibold">Endpoint</span>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="flex flex-col gap-1 md:col-span-2">
+              <p-floatlabel variant="on">
+                <input
+                  #baseUrl="ngModel"
+                  pInputText
+                  [pSize]="inputSize"
+                  id="baseUrl"
+                  name="baseUrl"
+                  fluid="true"
+                  autocomplete="off"
+                  placeholder="https://www.fast2sms.com/dev/bulkV2"
+                  [(ngModel)]="model.baseUrl"
+                  [invalid]="shouldShowError(baseUrl, form.submitted)"
+                  required
+                />
+                <label for="baseUrl">Send endpoint *</label>
+              </p-floatlabel>
+              @if (shouldShowError(baseUrl, form.submitted)) {
+                <p-message [size]="inputSize" severity="error" variant="simple">
+                  Send endpoint is required.
+                </p-message>
+              }
+            </div>
+            <div class="flex flex-col gap-1 md:col-span-1">
+              <p-floatlabel variant="on">
+                <p-select
+                  [size]="inputSize"
+                  styleClass="w-full"
+                  inputId="httpMethod"
+                  name="httpMethod"
+                  [options]="httpMethodOptions"
+                  optionLabel="label"
+                  optionValue="value"
+                  [(ngModel)]="model.httpMethod"
+                />
+                <label for="httpMethod">HTTP method</label>
+              </p-floatlabel>
+            </div>
+          </div>
+        </div>
+
+        <!-- Authentication -->
+        <div class="form-section">
+          <div class="form-section__heading">
+            <span class="section-icon section-icon--auth"><i class="pi pi-lock"></i></span>
+            <span class="text-sm font-semibold">Authentication</span>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="flex flex-col gap-1 md:col-span-2">
+              <p-floatlabel variant="on">
+                <p-select
+                  [size]="inputSize"
+                  styleClass="w-full"
+                  inputId="authType"
+                  name="authType"
+                  [options]="authTypeOptions"
+                  optionLabel="label"
+                  optionValue="value"
+                  [(ngModel)]="model.authType"
+                />
+                <label for="authType">Scheme</label>
+              </p-floatlabel>
+            </div>
+
+            @if (model.authType === 'TOKEN') {
+              <div class="flex flex-col gap-1 md:col-span-2">
+                <p-floatlabel variant="on">
+                  <p-password
+                    #authToken="ngModel"
+                    [(ngModel)]="model.authToken"
+                    [feedback]="false"
+                    [toggleMask]="true"
+                    [size]="inputSize"
+                    inputId="authToken"
+                    name="authToken"
+                    fluid="true"
+                    autocomplete="off"
+                    [placeholder]="provider()?.authTokenMasked ?? ''"
+                    [invalid]="shouldShowError(authToken, form.submitted)"
+                    [required]="!provider()?.authTokenMasked"
+                  />
+                  <label for="authToken"
+                    >API token {{ provider()?.authTokenMasked ? '' : '*' }}</label
+                  >
+                </p-floatlabel>
+                @if (shouldShowError(authToken, form.submitted)) {
+                  <p-message [size]="inputSize" severity="error" variant="simple">
+                    API token is required.
+                  </p-message>
+                } @else if (provider()?.authTokenMasked) {
+                  <span class="flex items-center gap-1.5 text-xs text-color-secondary mt-1">
+                    <i class="pi pi-shield"></i>
+                    Saved as {{ provider()?.authTokenMasked }} — leave blank to keep it.
+                  </span>
+                }
+              </div>
+            } @else {
+              <div class="flex flex-col gap-1">
+                <p-floatlabel variant="on">
+                  <input
+                    #username="ngModel"
+                    pInputText
+                    [pSize]="inputSize"
+                    id="username"
+                    name="username"
+                    fluid="true"
+                    autocomplete="off"
+                    [(ngModel)]="model.username"
+                    [invalid]="shouldShowError(username, form.submitted)"
+                    required
+                  />
+                  <label for="username">Username *</label>
+                </p-floatlabel>
+                @if (shouldShowError(username, form.submitted)) {
+                  <p-message [size]="inputSize" severity="error" variant="simple">
+                    Username is required.
+                  </p-message>
+                }
+              </div>
+              <div class="flex flex-col gap-1">
+                <p-floatlabel variant="on">
+                  <p-password
+                    #password="ngModel"
+                    [(ngModel)]="model.password"
+                    [feedback]="false"
+                    [toggleMask]="true"
+                    [size]="inputSize"
+                    inputId="password"
+                    name="password"
+                    fluid="true"
+                    autocomplete="off"
+                    [placeholder]="provider()?.passwordMasked ?? ''"
+                    [invalid]="shouldShowError(password, form.submitted)"
+                    [required]="!provider()?.passwordMasked"
+                  />
+                  <label for="password">Password {{ provider()?.passwordMasked ? '' : '*' }}</label>
+                </p-floatlabel>
+                @if (shouldShowError(password, form.submitted)) {
+                  <p-message [size]="inputSize" severity="error" variant="simple">
+                    Password is required.
+                  </p-message>
+                } @else if (provider()?.passwordMasked) {
+                  <span class="text-xs text-color-secondary">
+                    A password is already saved. Leave blank to keep it.
+                  </span>
+                }
+              </div>
+            }
+          </div>
+        </div>
+
+        <!-- Message rendering -->
+        <div class="form-section">
+          <div class="form-section__heading">
+            <span class="section-icon section-icon--render"><i class="pi pi-sliders-h"></i></span>
+            <span class="text-sm font-semibold">Message rendering</span>
+          </div>
+          <div class="flex flex-col gap-1 md:max-w-md">
+            <p-floatlabel variant="on">
+              <p-select
+                [size]="inputSize"
+                styleClass="w-full"
+                inputId="templateMode"
+                name="templateMode"
+                [options]="templateModeOptions"
+                optionLabel="label"
+                optionValue="value"
+                [(ngModel)]="model.templateMode"
+              />
+              <label for="templateMode">Template mode</label>
+            </p-floatlabel>
+            <span class="text-xs text-color-secondary mt-1">
+              Client-rendered builds the text from the template body; provider-rendered uses the
+              vendor's registered template with positional variables.
+            </span>
+          </div>
+        </div>
+
+        <!-- Request -->
+        <div class="form-section">
+          <div class="form-section__heading">
+            <span class="section-icon section-icon--request"><i class="pi pi-code"></i></span>
+            <span class="text-sm font-semibold">Request</span>
+          </div>
+
+          <div class="flex flex-col gap-4">
+            @if (model.httpMethod === 'POST') {
+              <div class="flex flex-col gap-4">
+                <div class="flex flex-col gap-1 md:max-w-xs">
+                  <p-floatlabel variant="on">
+                    <p-select
+                      [size]="inputSize"
+                      styleClass="w-full"
+                      inputId="contentType"
+                      name="contentType"
+                      [options]="contentTypeOptions"
+                      optionLabel="label"
+                      optionValue="value"
+                      [(ngModel)]="model.contentType"
+                    />
+                    <label for="contentType">Body format</label>
+                  </p-floatlabel>
+                </div>
+
+                <div class="flex flex-col gap-1">
+                  <p-floatlabel variant="on">
+                    <textarea
+                      pTextarea
+                      id="bodyTemplate"
+                      name="bodyTemplate"
+                      rows="4"
+                      [autoResize]="true"
+                      fluid="true"
+                      class="font-mono text-sm"
+                      [placeholder]="bodyPlaceholder"
+                      [(ngModel)]="model.bodyTemplate"
+                    ></textarea>
+                    <label for="bodyTemplate">Body template</label>
+                  </p-floatlabel>
+                  <span class="text-xs text-color-secondary">
+                    Raw request body sent to the vendor. Embed any of the tokens below; the server
+                    substitutes them for each message.
+                  </span>
+                </div>
+              </div>
+            }
+
+            <div class="flex flex-col gap-2">
+              <span class="text-sm font-medium">Headers &amp; query parameters</span>
+              <p class="text-xs text-color-secondary m-0">
+                Each row is one header or query parameter. The value may be static or contain a
+                token.
+              </p>
+              <app-provider-param-table [params]="params()" (paramsChange)="params.set($event)" />
+            </div>
+
+            <!-- Token reference panel -->
+            <div class="token-panel">
+              <div class="token-panel__header">
+                <i class="pi pi-hashtag"></i>
+                <span>Available tokens</span>
+              </div>
+              <div class="token-panel__grid">
+                @for (token of tokens; track token.token) {
+                  <div class="token-row">
+                    <code class="token-chip">{{ token.token }}</code>
+                    <span class="token-desc">{{ token.description }}</span>
+                  </div>
+                }
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Footer: toggle + actions -->
+        <div class="provider-footer">
+          <div class="flex items-center gap-3">
+            <p-toggleswitch
+              name="enabled"
+              [(ngModel)]="model.enabled"
+              ariaLabel="Active for sending"
+            />
+            <div class="flex flex-col">
+              <span class="text-sm font-medium">Active for sending</span>
+              <span class="text-xs text-color-secondary">{{ enabledHint() }}</span>
+            </div>
+          </div>
+          <div class="flex items-center gap-2 flex-wrap">
+            @if (showRemove() && provider()) {
+              <p-button
+                label="Remove override"
+                icon="pi pi-trash"
+                severity="danger"
+                [outlined]="true"
+                type="button"
+                [loading]="removing()"
+                [disabled]="removing() || saving()"
+                (onClick)="remove.emit($event)"
+              />
+            }
+            @if (showTest()) {
+              <p-button
+                label="Send test"
+                icon="pi pi-send"
+                severity="secondary"
+                [outlined]="true"
+                type="button"
+                [disabled]="saving() || removing()"
+                (onClick)="test.emit()"
+              />
+            }
+            <p-button
+              label="Save provider"
+              icon="pi pi-check"
+              type="submit"
+              [loading]="saving()"
+              [disabled]="saving() || removing() || form.invalid"
+            />
+          </div>
+        </div>
+      </form>
+    }
+  </ng-template>
+</p-card>

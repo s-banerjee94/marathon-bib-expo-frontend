@@ -1,0 +1,1130 @@
+<!-- Shared chat body, reused by every display mode -->
+<ng-template #chatBody>
+  <!-- Reusable edit form (generated from the tool's args), shared by the single
+       and multi-action flows. Read-only identifiers surface as "Applies to" chips;
+       masked secrets stay blank. -->
+  <ng-template #editFields let-ai="ai" let-action="action" let-draft="draft">
+    @if (hasReadonly(draft)) {
+      <div class="flex flex-wrap items-center gap-1.5">
+        <span
+          class="text-[11px] flex items-center gap-1"
+          style="color: var(--text-color-secondary)"
+        >
+          <i class="pi pi-id-card text-[11px]"></i> Applies to
+        </span>
+        @for (field of draft.fields; track field.key) {
+          @if (field.readonly) {
+            <span
+              class="inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-[11px]"
+              style="border-color: var(--surface-border); background: var(--surface-hover)"
+            >
+              <span style="color: var(--text-color-secondary)">{{ field.label }}</span>
+              <span class="font-mono">{{ field.display || '—' }}</span>
+            </span>
+          }
+        }
+      </div>
+    }
+    @for (field of draft.fields; track field.key; let fi = $index) {
+      @if (!field.readonly) {
+        <div class="flex flex-col gap-1">
+          <label
+            class="text-xs font-medium"
+            style="color: var(--text-color-secondary)"
+            [for]="'f-' + action.id + '-' + fi"
+          >
+            {{ field.label }}
+          </label>
+          @if (field.kind === 'boolean') {
+            <p-toggleswitch
+              [ngModel]="field.boolValue"
+              (ngModelChange)="setFieldBool(ai, fi, $event)"
+              [disabled]="assistant.sending()"
+              [inputId]="'f-' + action.id + '-' + fi"
+            />
+          } @else {
+            <input
+              pInputText
+              [id]="'f-' + action.id + '-' + fi"
+              [ngModel]="field.value"
+              (ngModelChange)="setFieldValue(ai, fi, $event)"
+              [type]="field.kind === 'number' ? 'number' : 'text'"
+              [placeholder]="field.masked ? 'Unchanged' : ''"
+              [disabled]="assistant.sending()"
+              class="text-sm"
+              fluid="true"
+            />
+            @if (field.masked) {
+              <span
+                class="text-[11px] flex items-center gap-1"
+                style="color: var(--text-color-secondary)"
+              >
+                <i class="pi pi-lock text-[11px]"></i> Masked — leave blank to keep current
+              </span>
+            }
+          }
+        </div>
+      }
+    }
+  </ng-template>
+
+  <!-- Reusable ask_user picker: radio options + optional free text. -->
+  <ng-template #pickerBody let-ai="ai" let-action="action" let-draft="draft">
+    <div class="flex flex-col gap-1.5">
+      @for (opt of draft.options; track opt; let oi = $index) {
+        <label
+          class="flex items-center gap-2.5 text-sm cursor-pointer rounded-md border px-3 py-2.5"
+          [style.border-color]="
+            draft.selectedOption === opt ? 'var(--primary-color)' : 'var(--surface-border)'
+          "
+          [style.background]="
+            draft.selectedOption === opt
+              ? 'color-mix(in srgb, var(--primary-color), transparent 94%)'
+              : 'transparent'
+          "
+          [for]="'opt-' + action.id + '-' + oi"
+        >
+          <p-radiobutton
+            [ngModel]="draft.selectedOption"
+            (ngModelChange)="setSelectedOption(ai, $event)"
+            [value]="opt"
+            [inputId]="'opt-' + action.id + '-' + oi"
+            [name]="'ask-' + action.id"
+            [disabled]="assistant.sending()"
+          />
+          <span class="break-words">{{ opt }}</span>
+        </label>
+      }
+      @if (draft.allowCustom) {
+        <input
+          pInputText
+          [ngModel]="draft.customText"
+          (ngModelChange)="setCustomText(ai, $event)"
+          [disabled]="assistant.sending()"
+          placeholder="Something else…"
+          class="text-sm mt-0.5"
+          fluid="true"
+        />
+      }
+      @if (draft.respondError) {
+        <p-message severity="error" variant="simple" size="small">
+          {{ draft.respondError }}
+        </p-message>
+      }
+    </div>
+  </ng-template>
+
+  <!-- Reusable attachment card: an image thumbnail or a PDF chip, used by both the
+       composer staging strip (removable, with upload status) and sent/restored user
+       bubbles (read-only, click to view). `att` may be a StagedAttachment or a
+       ChatAttachment. One render path: prefer the local blob (`previewUrl`, instant),
+       else the durable presigned `url` (upload + history); `broken` shows an
+       "unavailable" placeholder when the url 404s. `msgId`/`index` are set on bubble
+       cards so an image load error can flag that attachment. -->
+  <ng-template
+    #attachmentCard
+    let-att="att"
+    let-removable="removable"
+    let-msgId="msgId"
+    let-index="index"
+  >
+    <div class="relative shrink-0">
+      @if (att.kind === 'image') {
+        <div
+          class="w-14 h-14 rounded-lg overflow-hidden border"
+          style="border-color: var(--surface-border); background: var(--surface-hover)"
+        >
+          @if (att.broken) {
+            <span
+              class="w-full h-full flex items-center justify-center"
+              pTooltip="Attachment no longer available"
+              tooltipPosition="top"
+            >
+              <i class="pi pi-image text-sm" style="color: var(--text-color-secondary)"></i>
+            </span>
+          } @else if (att.previewUrl || att.url) {
+            <!-- Click to view full-size (zoom/rotate); no hover tooltip -->
+            <p-image
+              [src]="att.previewUrl || att.url"
+              [alt]="att.filename"
+              [preview]="att.status !== 'uploading' && att.status !== 'error'"
+              (onImageError)="onAttachmentError(msgId, index)"
+              appendTo="body"
+              width="56"
+              height="56"
+              styleClass="block w-full h-full"
+              imageClass="w-full h-full object-cover"
+            />
+          } @else {
+            <span class="w-full h-full flex items-center justify-center">
+              <i class="pi pi-image" style="color: var(--text-color-secondary)"></i>
+            </span>
+          }
+          @if (att.status === 'uploading') {
+            <span
+              class="absolute inset-0 flex items-center justify-center"
+              style="background: color-mix(in srgb, var(--surface-card), transparent 25%)"
+            >
+              <i class="pi pi-spin pi-spinner text-sm" style="color: var(--primary-color)"></i>
+            </span>
+          } @else if (att.status === 'error') {
+            <span
+              class="absolute inset-0 flex items-center justify-center"
+              [pTooltip]="att.error"
+              tooltipPosition="top"
+              style="background: color-mix(in srgb, var(--p-red-500), transparent 78%)"
+            >
+              <i class="pi pi-exclamation-triangle text-sm" style="color: var(--p-red-500)"></i>
+            </span>
+          }
+        </div>
+      } @else {
+        <!-- PDF: a chip; when it has a durable url (sent/restored) clicking opens it -->
+        @let pdfOpenable = !!att.url && !att.broken && att.status !== 'uploading';
+        <div
+          class="flex items-center gap-2 rounded-lg border px-2.5 py-2 max-w-[13rem]"
+          [class.cursor-pointer]="pdfOpenable"
+          style="border-color: var(--surface-border); background: var(--surface-hover)"
+          [attr.role]="pdfOpenable ? 'button' : null"
+          [attr.tabindex]="pdfOpenable ? 0 : null"
+          (click)="pdfOpenable && openAttachment(att)"
+          (keydown.enter)="pdfOpenable && openAttachment(att)"
+        >
+          <span
+            class="w-8 h-8 rounded-md flex items-center justify-center shrink-0"
+            style="background: color-mix(in srgb, var(--p-red-500), transparent 88%)"
+          >
+            @if (att.status === 'uploading') {
+              <i class="pi pi-spin pi-spinner text-sm" style="color: var(--p-red-500)"></i>
+            } @else if (att.status === 'error') {
+              <i class="pi pi-exclamation-triangle text-sm" style="color: var(--p-red-500)"></i>
+            } @else {
+              <i class="pi pi-file-pdf text-sm" style="color: var(--p-red-500)"></i>
+            }
+          </span>
+          <span class="flex flex-col min-w-0">
+            <span class="text-xs font-medium truncate">{{ att.filename }}</span>
+            <span class="text-[10px]" style="color: var(--text-color-secondary)">
+              @if (att.broken) {
+                No longer available
+              } @else if (att.status === 'error') {
+                {{ att.error }}
+              } @else if (att.status === 'uploading') {
+                Uploading…
+              } @else if (att.sizeBytes) {
+                PDF · {{ formatBytes(att.sizeBytes) }}
+              } @else {
+                PDF
+              }
+            </span>
+          </span>
+        </div>
+      }
+      @if (removable) {
+        <button
+          type="button"
+          (click)="assistant.removeAttachment(att.localId)"
+          class="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full flex items-center justify-center"
+          style="background: var(--surface-card); border: 1px solid var(--surface-border)"
+          aria-label="Remove attachment"
+        >
+          <i class="pi pi-times text-[9px]"></i>
+        </button>
+      }
+    </div>
+  </ng-template>
+
+  <div
+    class="relative flex flex-col h-full min-h-0"
+    (dragenter)="onDragEnter($event)"
+    (dragover)="onDragOver($event)"
+    (dragleave)="onDragLeave()"
+    (drop)="onDrop($event)"
+  >
+    <!-- Drag-and-drop overlay: pointer-events-none so drop still reaches the root -->
+    @if (dragActive()) {
+      <div
+        class="absolute inset-0 z-20 flex items-center justify-center pointer-events-none p-4"
+        style="background: color-mix(in srgb, var(--primary-color), transparent 86%)"
+      >
+        <div
+          class="flex flex-col items-center gap-2 rounded-xl border-2 border-dashed px-6 py-5"
+          style="border-color: var(--primary-color); background: var(--surface-card)"
+        >
+          <i class="pi pi-cloud-upload text-2xl" style="color: var(--primary-color)"></i>
+          <span class="text-sm font-medium">Drop to attach</span>
+          <span class="text-xs" style="color: var(--text-color-secondary)">
+            Images or PDF · up to {{ assistant.maxAttachments }} files
+          </span>
+        </div>
+      </div>
+    }
+    <!-- Header -->
+    <div
+      class="flex items-center justify-between gap-2 px-3 py-2 border-b shrink-0"
+      style="border-color: var(--surface-border)"
+    >
+      <div class="flex items-center gap-2">
+        <span
+          class="w-8 h-8 rounded-full flex items-center justify-center"
+          style="background: color-mix(in srgb, var(--primary-color), transparent 88%)"
+        >
+          <i class="pi pi-sparkles" style="color: var(--primary-color)"></i>
+        </span>
+        <span class="font-semibold">AI Assistant</span>
+      </div>
+      <div class="flex items-center gap-1">
+        <!-- Clears server-side memory (DELETE /chat/memory) and the local transcript -->
+        <p-button
+          (onClick)="assistant.resetConversation()"
+          [disabled]="assistant.sending()"
+          icon="pi pi-pen-to-square"
+          label="New chat"
+          [text]="true"
+          size="small"
+          styleClass="!text-xs"
+        />
+        <p-button
+          (onClick)="assistant.setOpen(false)"
+          icon="pi pi-times"
+          [rounded]="true"
+          [text]="true"
+          ariaLabel="Close assistant"
+        />
+      </div>
+    </div>
+
+    <!-- Conversation -->
+    <div
+      #scrollArea
+      class="flex-1 min-h-0 overflow-y-auto overflow-x-hidden flex flex-col gap-3 p-3"
+    >
+      <!-- Older history: load the previous page, prepended above the current view -->
+      @if (assistant.hasMoreHistory()) {
+        <div class="flex justify-center shrink-0">
+          <p-button
+            (onClick)="onLoadEarlier()"
+            [loading]="assistant.historyLoading()"
+            [disabled]="assistant.historyLoading()"
+            label="Load earlier messages"
+            icon="pi pi-history"
+            [text]="true"
+            size="small"
+            styleClass="!text-xs"
+          />
+        </div>
+      }
+
+      <!-- First-open restore: history in flight with nothing shown yet -->
+      @if (assistant.historyLoading() && assistant.messages().length === 0) {
+        <div class="flex items-center justify-center h-full">
+          <i class="pi pi-spin pi-spinner text-xl" style="color: var(--text-color-secondary)"></i>
+        </div>
+      }
+
+      @if (
+        assistant.messages().length === 0 && !assistant.sending() && !assistant.historyLoading()
+      ) {
+        <div class="flex flex-col items-center justify-center gap-2 h-full text-center px-4">
+          <span
+            class="w-14 h-14 rounded-full flex items-center justify-center"
+            style="background: color-mix(in srgb, var(--primary-color), transparent 88%)"
+          >
+            <i class="pi pi-sparkles text-2xl" style="color: var(--primary-color)"></i>
+          </span>
+          <p class="font-medium">How can I help?</p>
+          <p class="text-sm" style="color: var(--text-color-secondary)">
+            Ask me to create an event, add a race, invite a distributor, and more — in plain words.
+          </p>
+        </div>
+      }
+
+      @for (msg of assistant.messages(); track msg.id) {
+        @if (msg.summary) {
+          <!-- Server summarized earlier turns: a divider, with the recap below -->
+          <div class="flex items-center gap-2 py-1">
+            <span class="flex-1 h-px" style="background: var(--surface-border)"></span>
+            <span class="text-xs whitespace-nowrap" style="color: var(--text-color-secondary)">
+              Earlier conversation summarized
+            </span>
+            <span class="flex-1 h-px" style="background: var(--surface-border)"></span>
+          </div>
+          @if (msg.text) {
+            <div
+              class="text-xs italic px-2 break-words [&>*:first-child]:!mt-0 [&>*:last-child]:!mb-0 [&_p]:my-1 [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:my-1 [&_li]:my-0.5"
+              style="color: var(--text-color-secondary)"
+              [innerHTML]="msg.text | markdown"
+            ></div>
+          }
+        } @else if (msg.role === 'user') {
+          <div class="flex flex-col items-end gap-1.5">
+            @if (msg.attachments?.length) {
+              <div class="flex flex-wrap justify-end gap-2 max-w-[85%]">
+                @for (att of msg.attachments; track $index; let attIdx = $index) {
+                  <ng-container
+                    *ngTemplateOutlet="
+                      attachmentCard;
+                      context: { att: att, removable: false, msgId: msg.id, index: attIdx }
+                    "
+                  />
+                }
+              </div>
+            }
+            @if (msg.text) {
+              <div
+                class="max-w-[85%] rounded-2xl rounded-br-sm px-3 py-2 text-sm whitespace-pre-wrap break-words"
+                style="background: var(--primary-color); color: var(--primary-contrast-color)"
+              >
+                {{ msg.text }}
+              </div>
+            }
+          </div>
+        } @else {
+          <div class="flex justify-start gap-2">
+            <span
+              class="w-7 h-7 shrink-0 rounded-full flex items-center justify-center"
+              style="background: color-mix(in srgb, var(--primary-color), transparent 88%)"
+            >
+              <i class="pi pi-sparkles text-sm" style="color: var(--primary-color)"></i>
+            </span>
+            <div class="flex flex-col gap-2 max-w-[92%] min-w-0">
+              @if (msg.text) {
+                <div
+                  class="rounded-2xl rounded-bl-sm px-3 py-2 text-sm break-words [&>*:first-child]:!mt-0 [&>*:last-child]:!mb-0 [&_h1]:text-lg [&_h1]:font-semibold [&_h1]:mt-3 [&_h1]:mb-1 [&_h2]:text-base [&_h2]:font-semibold [&_h2]:mt-3 [&_h2]:mb-1 [&_h3]:text-sm [&_h3]:font-semibold [&_h3]:mt-2 [&_h3]:mb-1 [&_p]:my-2 [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:my-2 [&_ol]:list-decimal [&_ol]:pl-5 [&_ol]:my-2 [&_li]:my-1 [&_a]:underline [&_a]:[color:var(--primary-color)] [&_strong]:font-semibold [&_em]:italic [&_code]:rounded [&_code]:px-1 [&_code]:py-0.5 [&_code]:text-[0.85em] [&_code]:[background:var(--surface-border)] [&_pre]:rounded-lg [&_pre]:p-3 [&_pre]:my-2 [&_pre]:overflow-x-auto [&_pre]:[background:var(--surface-border)] [&_pre_code]:p-0 [&_pre_code]:[background:transparent] [&_blockquote]:border-l-4 [&_blockquote]:pl-3 [&_blockquote]:italic [&_blockquote]:[border-color:var(--surface-border)] [&_table]:block [&_table]:w-max [&_table]:max-w-full [&_table]:overflow-x-auto [&_table]:my-2 [&_table]:text-xs [&_table]:border-collapse [&_th]:border [&_th]:[border-color:var(--surface-border)] [&_th]:px-2 [&_th]:py-1 [&_th]:text-left [&_td]:border [&_td]:[border-color:var(--surface-border)] [&_td]:px-2 [&_td]:py-1 [&_hr]:my-3 [&_hr]:[border-color:var(--surface-border)]"
+                  style="background: var(--surface-hover)"
+                  [innerHTML]="msg.text | markdown"
+                ></div>
+              }
+
+              <!-- Approval round: one card per pending write action / question -->
+              @if (msg.pending) {
+                @let isActive = msg.id === activePending()?.id && !msg.decisions;
+                @for (action of msg.pending; track action.id; let ai = $index) {
+                  @let question = isQuestion(action);
+                  @let destructive = isDestructive(action);
+
+                  @if (msg.decisions) {
+                    <!-- Resolved: collapse to a compact, locked chip -->
+                    @let dec = msg.decisions[ai];
+                    @let rcol = decisionMeta[dec.type].color;
+                    <div
+                      class="rounded-xl border flex items-center gap-2.5 px-3 py-2.5"
+                      style="border-color: var(--surface-border); background: var(--surface-hover)"
+                    >
+                      <span
+                        class="w-6 h-6 shrink-0 rounded-md flex items-center justify-center text-xs"
+                        [style.background]="'color-mix(in srgb, ' + rcol + ', transparent 86%)'"
+                        [style.color]="rcol"
+                      >
+                        <i [class]="decisionMeta[dec.type].icon"></i>
+                      </span>
+                      <div class="text-xs min-w-0 break-words">
+                        <span class="font-semibold">{{
+                          question ? 'Question' : actionTitle(action)
+                        }}</span>
+                        <span style="color: var(--text-color-secondary)">
+                          · {{ resolvedLabel(action, dec) }}</span
+                        >
+                        @if (dec.message) {
+                          <span class="italic" style="color: var(--text-color-secondary)">
+                            — “{{ dec.message }}”</span
+                          >
+                        }
+                      </div>
+                    </div>
+                  } @else {
+                    @let accent =
+                      destructive
+                        ? 'var(--p-red-500)'
+                        : question
+                          ? 'var(--p-blue-500)'
+                          : 'var(--primary-color)';
+                    @let draft = decisionDrafts()[ai];
+
+                    <div
+                      class="relative rounded-xl border overflow-hidden"
+                      style="border-color: var(--surface-border); background: var(--surface-card)"
+                    >
+                      <!-- Leading intent edge -->
+                      <span
+                        class="absolute inset-y-0 left-0 w-[3px]"
+                        [style.background]="accent"
+                      ></span>
+
+                      <!-- Header: plain action title + status/awaiting pill -->
+                      <div class="flex items-center gap-2.5 p-3 pb-2">
+                        <span
+                          class="w-8 h-8 shrink-0 rounded-md flex items-center justify-center text-sm"
+                          [style.background]="'color-mix(in srgb, ' + accent + ', transparent 88%)'"
+                          [style.color]="accent"
+                        >
+                          <i [class]="question ? 'pi pi-question-circle' : actionIcon(action)"></i>
+                        </span>
+                        <div class="flex-1 min-w-0">
+                          <div class="font-semibold text-sm leading-tight break-words">
+                            {{ question ? 'One quick question' : actionTitle(action) }}
+                          </div>
+                          @if (question) {
+                            <div
+                              class="text-[11px] mt-0.5"
+                              style="color: var(--text-color-secondary)"
+                            >
+                              Pick one so I can continue
+                            </div>
+                          }
+                        </div>
+                        @if (isActive) {
+                          @if (isSingleRound()) {
+                            <span
+                              class="shrink-0 inline-flex items-center gap-1.5 rounded-full px-2 py-1 text-[10px] font-semibold"
+                              style="
+                                background: var(--surface-hover);
+                                color: var(--text-color-secondary);
+                              "
+                            >
+                              <span
+                                class="w-1.5 h-1.5 rounded-full animate-pulse"
+                                [style.background]="
+                                  destructive ? 'var(--p-red-500)' : 'var(--p-amber-500)'
+                                "
+                              ></span>
+                              Awaiting you
+                            </span>
+                          } @else if (draft) {
+                            @let scol = decisionMeta[draft.type].color;
+                            <span
+                              class="shrink-0 inline-flex items-center gap-1 rounded-full px-2 py-1 text-[10px] font-semibold"
+                              [style.background]="
+                                'color-mix(in srgb, ' + scol + ', transparent 88%)'
+                              "
+                              [style.color]="scol"
+                            >
+                              <i [class]="decisionMeta[draft.type].icon" class="text-[10px]"></i>
+                              {{ decisionMeta[draft.type].label }}
+                            </span>
+                          }
+                        }
+                      </div>
+
+                      <!-- Body: the question prompt, or the write's markdown summary -->
+                      @if (question) {
+                        <p class="px-3 pb-2.5 text-sm font-medium break-words">
+                          {{ questionText(action) }}
+                        </p>
+                      } @else {
+                        <div
+                          class="px-3 pb-2.5 text-sm break-words [&>*:first-child]:!mt-0 [&>*:last-child]:!mb-0 [&_p]:my-1 [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:my-1 [&_ol]:list-decimal [&_ol]:pl-5 [&_ol]:my-1 [&_li]:my-0.5 [&_strong]:font-semibold [&_em]:italic [&_code]:rounded [&_code]:px-1 [&_code]:py-0.5 [&_code]:text-[0.85em] [&_code]:[background:var(--surface-border)]"
+                          [innerHTML]="action.summary | markdown"
+                        ></div>
+                      }
+
+                      @if (isActive && draft) {
+                        @if (isSingleRound()) {
+                          <!-- ═══ SINGLE ACTION — direct flow ═══ -->
+                          @if (question) {
+                            <div class="px-3 pb-2">
+                              <ng-container
+                                *ngTemplateOutlet="
+                                  pickerBody;
+                                  context: { ai: ai, action: action, draft: draft }
+                                "
+                              />
+                            </div>
+                            <div
+                              class="flex items-center gap-2 px-3 py-2.5 border-t"
+                              style="
+                                border-color: var(--surface-border);
+                                background: color-mix(
+                                  in srgb,
+                                  var(--surface-hover),
+                                  transparent 40%
+                                );
+                              "
+                            >
+                              <p-button
+                                (onClick)="sendDecisions()"
+                                label="Send answer"
+                                icon="pi pi-send"
+                                size="small"
+                                [loading]="assistant.sending()"
+                                [disabled]="assistant.sending()"
+                                styleClass="!text-xs"
+                              />
+                              <span class="flex-1"></span>
+                              <p-button
+                                (onClick)="cancelQuestion(ai)"
+                                label="Cancel"
+                                severity="danger"
+                                [text]="true"
+                                size="small"
+                                [disabled]="assistant.sending()"
+                                styleClass="!text-xs"
+                              />
+                            </div>
+                          } @else {
+                            @switch (draft.type) {
+                              @case ('edit') {
+                                <div
+                                  class="flex flex-col gap-2 px-3 py-3 border-t"
+                                  style="border-color: var(--surface-border)"
+                                >
+                                  <ng-container
+                                    *ngTemplateOutlet="
+                                      editFields;
+                                      context: { ai: ai, action: action, draft: draft }
+                                    "
+                                  />
+                                </div>
+                                <div class="flex items-center gap-2 px-3 pb-3">
+                                  <p-button
+                                    (onClick)="sendDecisions()"
+                                    label="Approve changes"
+                                    icon="pi pi-check"
+                                    size="small"
+                                    [loading]="assistant.sending()"
+                                    [disabled]="assistant.sending()"
+                                    styleClass="!text-xs"
+                                  />
+                                  <p-button
+                                    (onClick)="closeEditor(ai)"
+                                    label="Cancel"
+                                    severity="secondary"
+                                    [text]="true"
+                                    size="small"
+                                    [disabled]="assistant.sending()"
+                                    styleClass="!text-xs"
+                                  />
+                                </div>
+                              }
+                              @case ('reject') {
+                                <div
+                                  class="px-3 py-3 border-t flex flex-col gap-1.5"
+                                  style="border-color: var(--surface-border)"
+                                >
+                                  <textarea
+                                    pTextarea
+                                    [ngModel]="draft.note"
+                                    (ngModelChange)="setNote(ai, $event)"
+                                    [disabled]="assistant.sending()"
+                                    rows="2"
+                                    [autoResize]="true"
+                                    placeholder="e.g. Use August 2nd instead, and set the city to Mumbai…"
+                                    class="text-sm w-full"
+                                  ></textarea>
+                                  <span
+                                    class="text-[11px] flex items-center gap-1"
+                                    style="color: var(--text-color-secondary)"
+                                  >
+                                    <i class="pi pi-info-circle text-[11px]"></i>
+                                    Add a note and the assistant retries — or reject blank to
+                                    cancel.
+                                  </span>
+                                </div>
+                                <div class="flex items-center gap-2 px-3 pb-3">
+                                  <p-button
+                                    (onClick)="sendDecisions()"
+                                    [label]="draft.note.trim() ? 'Reject & retry' : 'Reject'"
+                                    [icon]="draft.note.trim() ? 'pi pi-replay' : 'pi pi-times'"
+                                    severity="danger"
+                                    size="small"
+                                    [loading]="assistant.sending()"
+                                    [disabled]="assistant.sending()"
+                                    styleClass="!text-xs"
+                                  />
+                                  <p-button
+                                    (onClick)="closeEditor(ai)"
+                                    label="Back"
+                                    severity="secondary"
+                                    [text]="true"
+                                    size="small"
+                                    [disabled]="assistant.sending()"
+                                    styleClass="!text-xs"
+                                  />
+                                </div>
+                              }
+                              @default {
+                                <div
+                                  class="flex items-center gap-2 px-3 py-2.5 border-t"
+                                  style="
+                                    border-color: var(--surface-border);
+                                    background: color-mix(
+                                      in srgb,
+                                      var(--surface-hover),
+                                      transparent 40%
+                                    );
+                                  "
+                                >
+                                  <p-button
+                                    (onClick)="chooseApprove(ai)"
+                                    [label]="approveLabel(action)"
+                                    icon="pi pi-check"
+                                    [severity]="destructive ? 'danger' : 'success'"
+                                    size="small"
+                                    [loading]="assistant.sending()"
+                                    [disabled]="assistant.sending()"
+                                    styleClass="!text-xs"
+                                  />
+                                  @if (isAllowed(action, 'edit')) {
+                                    <p-button
+                                      (onClick)="openEditor(ai, 'edit')"
+                                      label="Edit"
+                                      icon="pi pi-pencil"
+                                      severity="secondary"
+                                      [outlined]="true"
+                                      size="small"
+                                      [disabled]="assistant.sending()"
+                                      styleClass="!text-xs"
+                                    />
+                                  }
+                                  <span class="flex-1"></span>
+                                  @if (isAllowed(action, 'reject')) {
+                                    <p-button
+                                      (onClick)="openEditor(ai, 'reject')"
+                                      label="Reject"
+                                      icon="pi pi-times"
+                                      severity="danger"
+                                      [text]="true"
+                                      size="small"
+                                      [disabled]="assistant.sending()"
+                                      styleClass="!text-xs"
+                                    />
+                                  }
+                                </div>
+                              }
+                            }
+                          }
+                        } @else {
+                          <!-- ═══ MULTI ACTION — decide each, submit together ═══ -->
+                          <div class="flex flex-col gap-2 px-3 pb-3">
+                            <div class="flex flex-wrap gap-1">
+                              @for (type of allDecisionTypes; track type) {
+                                @if (isAllowed(action, type)) {
+                                  <p-button
+                                    (onClick)="setDecisionType(ai, type)"
+                                    [label]="decisionLabel(action, type)"
+                                    [icon]="decisionMeta[type].icon"
+                                    [severity]="decisionMeta[type].severity"
+                                    [outlined]="draft.type !== type"
+                                    size="small"
+                                    [disabled]="assistant.sending()"
+                                    styleClass="!text-xs"
+                                  />
+                                }
+                              }
+                            </div>
+
+                            @if (draft.type === 'edit') {
+                              <div class="flex flex-col gap-2 pt-1">
+                                <ng-container
+                                  *ngTemplateOutlet="
+                                    editFields;
+                                    context: { ai: ai, action: action, draft: draft }
+                                  "
+                                />
+                              </div>
+                            }
+                            @if (draft.type === 'respond') {
+                              <div class="pt-1">
+                                <ng-container
+                                  *ngTemplateOutlet="
+                                    pickerBody;
+                                    context: { ai: ai, action: action, draft: draft }
+                                  "
+                                />
+                              </div>
+                            }
+                            @if (draft.type === 'reject') {
+                              <textarea
+                                pTextarea
+                                [ngModel]="draft.note"
+                                (ngModelChange)="setNote(ai, $event)"
+                                [disabled]="assistant.sending()"
+                                rows="2"
+                                [autoResize]="true"
+                                placeholder="Reason (optional)…"
+                                class="text-sm"
+                              ></textarea>
+                            }
+                          </div>
+                        }
+                      }
+                    </div>
+                  }
+                }
+
+                <!-- Multi-action round: one batched submit (single-action commits inline) -->
+                @if (!isSingleRound() && isActive) {
+                  <div
+                    class="flex items-center justify-between gap-2 rounded-xl border px-3 py-2.5"
+                    style="border-color: var(--surface-border); background: var(--surface-card)"
+                  >
+                    <span
+                      class="text-xs flex items-center gap-1.5"
+                      style="color: var(--text-color-secondary)"
+                    >
+                      <i class="pi pi-clock text-[11px]"></i>
+                      {{ activePending()?.pending?.length }} actions to confirm
+                    </span>
+                    <p-button
+                      (onClick)="sendDecisions()"
+                      [disabled]="assistant.sending()"
+                      [loading]="assistant.sending()"
+                      [label]="submitLabel()"
+                      icon="pi pi-send"
+                      size="small"
+                    />
+                  </div>
+                }
+              }
+            </div>
+          </div>
+        }
+      }
+
+      <!-- Typing indicator: shown only until the first token streams in -->
+      @if (assistant.sending() && !assistant.streaming()) {
+        <div class="flex justify-start gap-2">
+          <span
+            class="w-7 h-7 shrink-0 rounded-full flex items-center justify-center"
+            style="background: color-mix(in srgb, var(--primary-color), transparent 88%)"
+          >
+            <i class="pi pi-sparkles text-sm" style="color: var(--primary-color)"></i>
+          </span>
+          <div
+            class="rounded-2xl rounded-bl-sm px-3 py-3 flex items-center gap-1"
+            style="background: var(--surface-hover)"
+          >
+            <span
+              class="w-2 h-2 rounded-full animate-bounce [animation-delay:-0.3s]"
+              style="background: var(--text-color-secondary)"
+            ></span>
+            <span
+              class="w-2 h-2 rounded-full animate-bounce [animation-delay:-0.15s]"
+              style="background: var(--text-color-secondary)"
+            ></span>
+            <span
+              class="w-2 h-2 rounded-full animate-bounce"
+              style="background: var(--text-color-secondary)"
+            ></span>
+          </div>
+        </div>
+      }
+    </div>
+
+    <!-- Daily limit reached (leaves room for the not-yet-live quota 429) -->
+    @if (assistant.limitNotice(); as notice) {
+      <div class="shrink-0 px-2 pt-2">
+        <p-message severity="warn" styleClass="w-full">
+          {{ notice }}
+        </p-message>
+      </div>
+    }
+
+    <!-- Composer -->
+    <div
+      class="shrink-0 border-t p-2 flex flex-col gap-2"
+      style="border-color: var(--surface-border)"
+    >
+      <!-- Mode picker (left) · daily token budget meter + tools toggle (right) -->
+      <div class="flex items-center justify-between gap-2">
+        <p-button
+          (onClick)="modePopover.toggle($event)"
+          [label]="currentMode().label"
+          [icon]="currentMode().icon"
+          [text]="true"
+          size="small"
+          styleClass="!text-xs"
+          ariaLabel="Change approval mode"
+        />
+        <div class="flex items-center gap-1.5 shrink-0">
+          @if (showUsage()) {
+            <div
+              class="flex items-center gap-1.5"
+              [pTooltip]="usageTooltip()"
+              tooltipPosition="top"
+            >
+              <i class="pi pi-chart-bar text-xs" style="color: var(--text-color-secondary)"></i>
+              <p-progressbar
+                [value]="usagePercent()"
+                [showValue]="false"
+                styleClass="!h-1.5 w-16"
+              />
+              <span
+                class="text-[10px] whitespace-nowrap"
+                style="color: var(--text-color-secondary)"
+              >
+                {{ usageResetLabel() }}
+              </span>
+            </div>
+          }
+          <!-- Tool toggles: master switch + per-tool on/off (GET/PUT /chat/tools) -->
+          <span class="relative inline-flex">
+            <p-button
+              (onClick)="toolsDialogOpen.set(true)"
+              icon="pi pi-sliders-h"
+              [text]="true"
+              size="small"
+              styleClass="!text-xs"
+              ariaLabel="Assistant tools"
+              pTooltip="Assistant tools"
+              tooltipPosition="top"
+            />
+            @if (!assistant.mcpEnabled()) {
+              <span
+                class="absolute top-0 right-0 w-2 h-2 rounded-full pointer-events-none"
+                style="background: var(--p-amber-500)"
+              ></span>
+            }
+          </span>
+        </div>
+      </div>
+
+      <!-- Tools panel: reduce what the assistant is offered to save tokens/focus.
+           DISPLAY only — never grants or removes any permission. A centered modal
+           (not a trigger-anchored popover) so it can't drift on scroll and always
+           shows fully, identically across overlay / push / popup modes. -->
+      <p-dialog
+        header="Assistant tools"
+        [visible]="toolsDialogOpen()"
+        (visibleChange)="toolsDialogOpen.set($event)"
+        (onHide)="toolSearch.set('')"
+        [modal]="true"
+        [dismissableMask]="true"
+        [draggable]="false"
+        [resizable]="false"
+        appendTo="body"
+        [style]="{ width: '34rem', maxWidth: 'calc(100vw - 2rem)' }"
+        [breakpoints]="{ '640px': '95vw' }"
+      >
+        <div class="flex flex-col gap-3">
+          <span class="text-sm -mt-1" style="color: var(--text-color-secondary)">
+            Turn tools off to save tokens. This only changes what the assistant is offered — your
+            permissions are unchanged.
+          </span>
+
+          <!-- Master switch -->
+          <label
+            class="flex items-center justify-between gap-3 rounded-lg border px-3 py-2.5 cursor-pointer"
+            style="border-color: var(--surface-border); background: var(--surface-hover)"
+            for="ai-tools-master"
+          >
+            <span class="flex flex-col">
+              <span class="text-sm font-medium">Enable tools</span>
+              <span class="text-xs" style="color: var(--text-color-secondary)">
+                Off = the assistant can chat but won't take actions.
+              </span>
+            </span>
+            <p-toggleswitch
+              inputId="ai-tools-master"
+              [ngModel]="assistant.mcpEnabled()"
+              (ngModelChange)="assistant.setMcpEnabled($event)"
+              [disabled]="assistant.toolsLoading() || assistant.toolsSaving()"
+            />
+          </label>
+
+          @if (assistant.toolsLoading() && assistant.tools().length === 0) {
+            <div class="flex items-center justify-center py-6">
+              <i class="pi pi-spin pi-spinner" style="color: var(--text-color-secondary)"></i>
+            </div>
+          } @else if (assistant.mcpEnabled()) {
+            @if (assistant.tools().length === 0) {
+              <p class="text-xs text-center py-4" style="color: var(--text-color-secondary)">
+                No tools are available for your role.
+              </p>
+            } @else {
+              <div class="flex items-center justify-between">
+                <span
+                  class="text-[11px] font-semibold uppercase tracking-wide"
+                  style="color: var(--text-color-secondary)"
+                >
+                  Available tools
+                </span>
+                <span class="text-[11px]" style="color: var(--text-color-secondary)">
+                  {{ activeToolCount() }}/{{ assistant.tools().length }} on
+                </span>
+              </div>
+
+              @if (showToolSearch()) {
+                <span class="relative block">
+                  <i
+                    class="pi pi-search absolute left-2.5 top-1/2 -translate-y-1/2 text-xs"
+                    style="color: var(--text-color-secondary)"
+                  ></i>
+                  <input
+                    pInputText
+                    [ngModel]="toolSearch()"
+                    (ngModelChange)="toolSearch.set($event)"
+                    placeholder="Search tools…"
+                    class="text-sm w-full !pl-8"
+                    fluid="true"
+                  />
+                </span>
+              }
+
+              <div class="max-h-[45vh] overflow-y-auto -mx-1 px-1">
+                @if (filteredTools().length === 0) {
+                  <p class="text-xs text-center py-4" style="color: var(--text-color-secondary)">
+                    No tools match “{{ toolSearch() }}”.
+                  </p>
+                } @else {
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-4">
+                    @for (tool of filteredTools(); track tool.name) {
+                      <label
+                        class="flex items-center gap-2.5 px-1 py-2 cursor-pointer rounded-md min-w-0"
+                        [for]="'ai-tool-' + tool.name"
+                      >
+                        <p-checkbox
+                          [inputId]="'ai-tool-' + tool.name"
+                          [binary]="true"
+                          [ngModel]="isToolEnabled(tool.name)"
+                          (ngModelChange)="assistant.setToolEnabled(tool.name, $event)"
+                          [disabled]="assistant.toolsSaving()"
+                        />
+                        <span class="text-sm break-words min-w-0">{{ tool.label }}</span>
+                      </label>
+                    }
+                  </div>
+                }
+              </div>
+            }
+          } @else {
+            <p
+              class="text-xs px-1 py-4 flex items-center gap-2"
+              style="color: var(--text-color-secondary)"
+            >
+              <i class="pi pi-power-off text-[11px]"></i>
+              Tools are off. The assistant will answer from chat only.
+            </p>
+          }
+        </div>
+      </p-dialog>
+      <p-popover #modePopover appendTo="body">
+        <div class="flex flex-col w-56">
+          @for (option of modeOptions; track option.value) {
+            <button
+              type="button"
+              (click)="assistant.setMode(option.value); modePopover.hide()"
+              class="flex items-center gap-2 p-2 rounded-md text-left"
+              [style.background]="option.value === assistant.mode() ? 'var(--surface-hover)' : null"
+            >
+              <i [class]="option.icon" style="color: var(--primary-color)"></i>
+              <span class="flex flex-col">
+                <span class="text-sm font-medium">{{ option.label }}</span>
+                <span class="text-xs" style="color: var(--text-color-secondary)">
+                  {{ option.hint }}
+                </span>
+              </span>
+            </button>
+          }
+        </div>
+      </p-popover>
+
+      <!-- Staged attachments for the next message (removable chips with status) -->
+      @if (assistant.stagedAttachments().length) {
+        <div class="flex flex-wrap gap-2 px-0.5">
+          @for (att of assistant.stagedAttachments(); track att.localId) {
+            <ng-container
+              *ngTemplateOutlet="attachmentCard; context: { att: att, removable: true }"
+            />
+          }
+        </div>
+      }
+
+      <!-- Hidden file input, opened by the paperclip button -->
+      <input
+        #fileInput
+        type="file"
+        class="hidden"
+        [accept]="acceptTypes"
+        multiple
+        (change)="onFilesSelected($event)"
+      />
+
+      <div class="flex items-end gap-2">
+        <p-button
+          (onClick)="openFilePicker()"
+          [disabled]="composerDisabled() || assistant.attachmentSlotsLeft() <= 0"
+          icon="pi pi-paperclip"
+          [rounded]="true"
+          [text]="true"
+          ariaLabel="Attach files"
+          pTooltip="Attach an image or PDF"
+          tooltipPosition="top"
+        />
+        <textarea
+          pTextarea
+          [ngModel]="draft()"
+          (ngModelChange)="draft.set($event)"
+          (keydown.enter)="onEnter($event)"
+          [maxlength]="assistant.maxMessageLength"
+          [disabled]="composerDisabled()"
+          rows="1"
+          [placeholder]="
+            activePending() ? 'Answer the request above to continue…' : 'Ask the assistant…'
+          "
+          class="flex-1 resize-none max-h-32"
+          [autoResize]="true"
+        ></textarea>
+        <p-button
+          (onClick)="onSend()"
+          [disabled]="!canSend()"
+          icon="pi pi-send"
+          [rounded]="true"
+          ariaLabel="Send message"
+        />
+      </div>
+    </div>
+  </div>
+</ng-template>
+
+@let mode = layout.aiAssistantMode();
+
+<!-- Overlay + Push: right-edge sliding panel -->
+@if (mode === 'overlay' || mode === 'push') {
+  @if (mode === 'overlay' && assistant.isOpen()) {
+    <div
+      (click)="assistant.setOpen(false)"
+      class="fixed left-0 right-0 bottom-0 top-[var(--topbar-height)] z-[1000]"
+      style="background: var(--maskbg)"
+    ></div>
+  }
+  <aside
+    class="fixed top-[var(--topbar-height)] right-0 bottom-0 z-[1001] w-full sm:w-[28rem] border-l flex flex-col transition-transform duration-300 ease-out"
+    style="background: var(--surface-card); border-color: var(--surface-border)"
+    [class.translate-x-full]="!assistant.isOpen()"
+    [attr.aria-hidden]="!assistant.isOpen()"
+  >
+    <ng-container *ngTemplateOutlet="chatBody" />
+  </aside>
+}
+
+<!-- Popup: draggable bubble + floating window -->
+@if (mode === 'popup') {
+  @if (assistant.isOpen()) {
+    <div
+      class="fixed z-[1001] flex flex-col rounded-2xl border shadow-2xl overflow-hidden w-[22rem] max-w-[calc(100vw-2rem)] h-[35rem] max-h-[70vh]"
+      style="background: var(--surface-card); border-color: var(--surface-border)"
+      [style.left.px]="popupPos().left"
+      [style.top.px]="popupPos().top"
+    >
+      <ng-container *ngTemplateOutlet="chatBody" />
+    </div>
+  }
+  <button
+    type="button"
+    (pointerdown)="onFabPointerDown($event)"
+    (pointermove)="onFabPointerMove($event)"
+    (pointerup)="onFabPointerUp($event)"
+    class="fixed z-[1002] w-14 h-14 rounded-full shadow-lg flex items-center justify-center cursor-grab active:cursor-grabbing touch-none"
+    style="background: var(--primary-color); color: var(--primary-contrast-color)"
+    [style.left.px]="fabPos().x"
+    [style.top.px]="fabPos().y"
+    [attr.aria-label]="assistant.isOpen() ? 'Close AI assistant' : 'Open AI assistant'"
+  >
+    <i
+      class="pi text-xl"
+      [class.pi-times]="assistant.isOpen()"
+      [class.pi-sparkles]="!assistant.isOpen()"
+    ></i>
+  </button>
+}

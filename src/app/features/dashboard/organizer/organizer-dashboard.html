@@ -55,7 +55,7 @@
               <div class="flex justify-between items-center">
                 <span class="text-sm">Current Users:</span>
                 <span class="text-xl font-bold">
-                  {{ totalOrgUsers() }} / {{ organization()?.maxOrganizerUsers || 0 }}
+                  {{ totalOrgUsers() }} / {{ organization()?.userQuota?.organizerUsers?.max || 0 }}
                 </span>
               </div>
               <p-progressBar
@@ -78,7 +78,8 @@
               <div class="flex justify-between items-center">
                 <span class="text-sm">Active Distributors:</span>
                 <span class="text-xl font-bold">
-                  {{ totalDistributors() }} / {{ organization()?.maxDistributors || 0 }}
+                  {{ totalDistributors() }} /
+                  {{ organization()?.userQuota?.distributors?.max || 0 }}
                 </span>
               </div>
               <p-progressBar

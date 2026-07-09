@@ -7,6 +7,7 @@ import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
 import { Event, EventStatus } from '../../../core/models/event.model';
 import { FormatEventDateTimePipe } from '../../pipes/format-event-date-time-pipe';
+import { EmptyIllustration } from '../../illustrations/empty-illustration';
 
 @Component({
   selector: 'app-recent-events',
@@ -19,6 +20,7 @@ import { FormatEventDateTimePipe } from '../../pipes/format-event-date-time-pipe
     TableModule,
     TagModule,
     FormatEventDateTimePipe,
+    EmptyIllustration,
   ],
   templateUrl: './recent-events.html',
 })

@@ -10,6 +10,7 @@ export const RACE_COLUMNS: TableColumn[] = [
   { field: 'id', header: 'ID' },
   { field: 'raceName', header: 'Race Name', required: true, disabled: true },
   { field: 'raceDescription', header: 'Description' },
+  { field: 'reportingTime', header: 'Reporting Time' },
   { field: 'categoryCount', header: 'Categories' },
   { field: 'createdAt', header: 'Created At' },
   { field: 'updatedAt', header: 'Updated At' },
@@ -17,7 +18,13 @@ export const RACE_COLUMNS: TableColumn[] = [
   { field: 'lastModifiedBy', header: 'Last Modified By' },
 ];
 
-export const DEFAULT_RACE_COLUMNS = ['id', 'raceName', 'raceDescription', 'categoryCount'];
+export const DEFAULT_RACE_COLUMNS = [
+  'id',
+  'raceName',
+  'raceDescription',
+  'reportingTime',
+  'categoryCount',
+];
 
 /**
  * Sort options for race dropdown

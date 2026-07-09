@@ -1,0 +1,15 @@
+<div class="flex flex-col gap-5">
+  <div class="flex justify-center">
+    <p-selectbutton
+      [options]="channels"
+      [ngModel]="activeChannel()"
+      [allowEmpty]="false"
+      (onChange)="onChannelChange($event.value)"
+      optionLabel="label"
+      optionValue="value"
+      [size]="buttonSize"
+    />
+  </div>
+
+  <router-outlet />
+</div>

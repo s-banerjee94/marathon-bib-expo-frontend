@@ -5,10 +5,10 @@ import {
   Category,
   CreateEventRequest,
   Event,
-  EventSummaryResponse,
   Race,
   UpdateEventRequest,
 } from '../models/event.model';
+import { EventLimit, UpdateEventLimitRequest } from '../models/event-limit.model';
 import { PageableParams, PageableResponse } from '../models/api.model';
 import { AuthService } from './auth.service';
 import { UserRole } from '../models/user.model';
@@ -54,10 +54,6 @@ export class EventService {
     return this.http.delete<void>(`${this.baseUrl}/${id}`);
   }
 
-  getEventSummary(id: number): Observable<EventSummaryResponse> {
-    return this.http.get<EventSummaryResponse>(`${this.baseUrl}/${id}/summary`);
-  }
-
   getRaces(eventId: number): Observable<Race[]> {
     return this.http.get<Race[]>(`${this.baseUrl}/${eventId}/races`);
   }
@@ -74,5 +70,14 @@ export class EventService {
     return this.http.patch<Event>(`${this.baseUrl}/${id}/status`, null, {
       params: { status },
     });
+  }
+
+  /** Per-event resource limits. Backend restricts both calls to ROOT/ADMIN. */
+  getEventLimits(eventId: number): Observable<EventLimit> {
+    return this.http.get<EventLimit>(`${this.baseUrl}/${eventId}/limits`);
+  }
+
+  updateEventLimits(eventId: number, request: UpdateEventLimitRequest): Observable<EventLimit> {
+    return this.http.patch<EventLimit>(`${this.baseUrl}/${eventId}/limits`, request);
   }
 }
