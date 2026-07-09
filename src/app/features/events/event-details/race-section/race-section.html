@@ -105,7 +105,17 @@
                     </div>
                   }
                   @case ('reportingTime') {
-                    {{ formatReportingTime(race.reportingTime) | defaultValue }}
+                    {{
+                      race.reportingDate | formatEventDateTime: race.reportingTime : eventTimezone()
+                    }}
+                    @if (race.reportingTime && eventTimezone()) {
+                      <span class="text-color-secondary">
+                        ({{
+                          race.reportingDate
+                            | formatEventDateTime: race.reportingTime : eventTimezone() : 'abbr'
+                        }})
+                      </span>
+                    }
                   }
                   @case ('categoryCount') {
                     <div class="text-center">{{ race.categoryCount }}</div>
@@ -208,10 +218,20 @@
               @if (race.raceDescription) {
                 <p class="text-sm opacity-70 line-clamp-2">{{ race.raceDescription }}</p>
               }
-              @if (race.reportingTime) {
+              @if (race.reportingDate) {
                 <div class="flex items-center gap-1.5 text-sm opacity-70">
                   <i class="pi pi-clock text-xs"></i>
-                  <span>{{ formatReportingTime(race.reportingTime) }}</span>
+                  <span>
+                    {{
+                      race.reportingDate | formatEventDateTime: race.reportingTime : eventTimezone()
+                    }}
+                    @if (race.reportingTime && eventTimezone()) {
+                      ({{
+                        race.reportingDate
+                          | formatEventDateTime: race.reportingTime : eventTimezone() : 'abbr'
+                      }})
+                    }
+                  </span>
                 </div>
               }
             </div>

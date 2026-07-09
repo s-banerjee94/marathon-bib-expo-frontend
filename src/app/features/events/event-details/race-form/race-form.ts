@@ -14,13 +14,17 @@ import { ErrorHandlerService } from '../../../../core/services/error-handler.ser
 import { FORM_INPUT_SIZE } from '../../../../shared/constants/form.constants';
 import { buildDirtyPatch, shouldShowError } from '../../../../shared/utils/form.utils';
 import {
-  utcInstantToZonedDate,
-  zonedDateToUtcInstant,
-} from '../../../../shared/utils/timezone.utils';
+  parseScheduledDateTime,
+  toScheduledDate,
+  toScheduledTime,
+} from '../../../../shared/utils/campaign-schedule.utils';
 
 interface RaceFormModel {
   raceName: string;
   raceDescription: string;
+  // Single date+time control; split into the two local wall-clock strings on
+  // submit (reportingDate yyyy-MM-dd + reportingTime HH:mm). No timezone math —
+  // the server interprets the wall-clock in the parent event's timezone.
   reportingTime: Date | null;
 }
 
@@ -70,17 +74,23 @@ export class RaceForm implements OnInit {
     this.formData = {
       raceName: race?.raceName ?? '',
       raceDescription: race?.raceDescription ?? '',
-      reportingTime: utcInstantToZonedDate(race?.reportingTime, this.eventTimezone()),
+      // Same wall-clock split codec the campaign forms use; a race may lack the
+      // time half, which then defaults to midnight.
+      reportingTime: parseScheduledDateTime(
+        race?.reportingDate ?? undefined,
+        race?.reportingTime || '00:00',
+      ),
     };
   }
 
   onSubmit(form: NgForm): void {
     if (!form.valid) return;
 
-    const reportingTimeIso = zonedDateToUtcInstant(
-      this.formData.reportingTime,
-      this.eventTimezone(),
-    );
+    // Both fields or neither — the picker yields a Date (both) or null (neither).
+    const picked = this.formData.reportingTime;
+    const reporting = picked
+      ? { reportingDate: toScheduledDate(picked), reportingTime: toScheduledTime(picked) }
+      : null;
 
     if (this.isEditMode()) {
       const patch = buildDirtyPatch<UpdateRaceRequest>(
@@ -89,8 +99,9 @@ export class RaceForm implements OnInit {
         new Set(['reportingTime']),
       );
 
-      if (form.controls['reportingTime']?.dirty && reportingTimeIso) {
-        patch.reportingTime = reportingTimeIso;
+      if (form.controls['reportingTime']?.dirty && reporting) {
+        patch.reportingDate = reporting.reportingDate;
+        patch.reportingTime = reporting.reportingTime;
       }
 
       if (!Object.keys(patch).length) {
@@ -106,7 +117,7 @@ export class RaceForm implements OnInit {
         },
         error: (error: unknown) => {
           this.isSubmitting.set(false);
-          this.errorHandler.showError(error, 'Failed to update race');
+          this.errorHandler.showError(error);
         },
       });
       return;
@@ -115,7 +126,7 @@ export class RaceForm implements OnInit {
     const createRequest: CreateRaceRequest = {
       raceName: this.formData.raceName,
       raceDescription: this.formData.raceDescription,
-      ...(reportingTimeIso ? { reportingTime: reportingTimeIso } : {}),
+      ...(reporting ?? {}),
     };
 
     this.isSubmitting.set(true);
@@ -126,7 +137,7 @@ export class RaceForm implements OnInit {
       },
       error: (error: unknown) => {
         this.isSubmitting.set(false);
-        this.errorHandler.showError(error, 'Failed to create race');
+        this.errorHandler.showError(error);
       },
     });
   }

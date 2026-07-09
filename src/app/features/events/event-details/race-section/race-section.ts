@@ -23,6 +23,7 @@ import { RaceForm } from '../race-form/race-form';
 import { DefaultValuePipe } from '../../../../shared/pipes/default-value.pipe';
 import { InitialsPipe } from '../../../../shared/pipes/initials-pipe';
 import { UserSummaryPipe } from '../../../../shared/pipes/user-summary-pipe';
+import { FormatEventDateTimePipe } from '../../../../shared/pipes/format-event-date-time-pipe';
 import { TableRowSelectEvent } from 'primeng/table';
 import { TableColumn } from '../../../../shared/models/table-config.model';
 import {
@@ -39,7 +40,6 @@ import {
   saveColumnPreferences,
 } from '../../../../shared/utils/column.utils';
 import { injectIsMobile } from '../../../../shared/utils/responsive.utils';
-import { formatUtcInstantInZone } from '../../../../shared/utils/timezone.utils';
 import { EmptyIllustration } from '../../../../shared/illustrations/empty-illustration';
 
 @Component({
@@ -60,6 +60,7 @@ import { EmptyIllustration } from '../../../../shared/illustrations/empty-illust
     DefaultValuePipe,
     InitialsPipe,
     UserSummaryPipe,
+    FormatEventDateTimePipe,
     RouterLink,
     EmptyIllustration,
   ],
@@ -88,10 +89,6 @@ export class RaceSection implements OnInit {
   eventTimezone = computed(() => this.state.event()?.timezone ?? '');
   readonly inputSize = FORM_INPUT_SIZE;
   readonly buttonSize = BUTTON_SIZE;
-
-  formatReportingTime(iso?: string): string {
-    return formatUtcInstantInZone(iso, this.eventTimezone());
-  }
 
   ngOnInit(): void {
     initializeColumnPreferences(
