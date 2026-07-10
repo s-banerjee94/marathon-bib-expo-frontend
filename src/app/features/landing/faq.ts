@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { FaqReveal } from './faq-reveal';
 import { LetterPop } from './letter-pop';
 import { ScrollReveal } from './scroll-reveal';
 
@@ -9,7 +10,7 @@ interface Qa {
 
 @Component({
   selector: 'app-faq',
-  imports: [ScrollReveal, LetterPop],
+  imports: [ScrollReveal, LetterPop, FaqReveal],
   templateUrl: './faq.html',
   host: { class: 'block' },
   changeDetection: ChangeDetectionStrategy.OnPush,

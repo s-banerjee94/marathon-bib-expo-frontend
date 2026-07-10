@@ -48,6 +48,7 @@ export class Hero {
   private readonly bg = viewChild.required<ElementRef<HTMLElement>>('heroBg');
   private readonly demoCol = viewChild.required<ElementRef<HTMLElement>>('demoCol');
   private readonly meltWrap = viewChild.required<ElementRef<HTMLElement>>('meltWrap');
+  private readonly bibText = viewChild.required<ElementRef<SVGTextElement>>('bibText');
   private readonly cardFly = viewChild.required(CardFly);
   private mm?: gsap.MatchMedia;
 
@@ -207,7 +208,10 @@ export class Hero {
       this.markCollected();
       this.scanTimeoutId = setTimeout(() => {
         void this.cardFly()
-          .swap(() => this.nextRunner())
+          .swap(() => {
+            this.nextRunner();
+            this.scrambleBib();
+          })
           .then(() => this.busy.set(false));
       }, COLLECTED_HOLD_MS);
     }, SCAN_DURATION_MS);
@@ -221,5 +225,32 @@ export class Hero {
   private nextRunner(): void {
     this.runnerIndex.update((i) => (i + 1) % this.runners.length);
     this.isCollected.set(false);
+  }
+
+  /** Slot-machine roll while the new card drops in: digits lock left to right. */
+  private scrambleBib(): void {
+    const el = this.bibText().nativeElement;
+    const target = this.current().bib;
+    this.zone.runOutsideAngular(() => {
+      const proxy = { p: 0 };
+      gsap.to(proxy, {
+        p: 1,
+        duration: 0.8,
+        delay: 0.15,
+        ease: 'power1.out',
+        overwrite: true,
+        onUpdate: () => {
+          const locked = Math.floor(proxy.p * target.length);
+          let text = target.slice(0, locked);
+          for (let i = locked; i < target.length; i++) {
+            text += String(gsap.utils.random(0, 9, 1));
+          }
+          el.textContent = text;
+        },
+        onComplete: () => {
+          el.textContent = target;
+        },
+      });
+    });
   }
 }

@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { CountUp } from './count-up';
 import { LetterPop } from './letter-pop';
 import { ScrollReveal } from './scroll-reveal';
 import { TiltCard } from './tilt-card';
@@ -14,7 +15,7 @@ interface Role {
 
 @Component({
   selector: 'app-roles',
-  imports: [ScrollReveal, TiltCard, LetterPop],
+  imports: [ScrollReveal, TiltCard, LetterPop, CountUp],
   templateUrl: './roles.html',
   host: { class: 'block' },
   changeDetection: ChangeDetectionStrategy.OnPush,

@@ -1,6 +1,11 @@
 <section
   class="relative overflow-hidden bg-[var(--primary-color)] py-16 text-[var(--primary-contrast-color)] before:pointer-events-none before:absolute before:inset-0 before:bg-[repeating-linear-gradient(-8deg,transparent_0,transparent_60px,rgba(255,255,255,0.04)_60px,rgba(255,255,255,0.04)_61px)] before:content-['']"
 >
+  <div
+    appSpotlight
+    aria-hidden="true"
+    class="pointer-events-none absolute inset-0 bg-[radial-gradient(360px_circle_at_var(--spot-x,50%)_var(--spot-y,50%),rgba(255,255,255,0.08),transparent_70%)] opacity-0 transition-opacity duration-500"
+  ></div>
   <div class="relative z-[1] mx-auto max-w-[1440px] px-7">
     <div
       appScrollReveal
@@ -12,7 +17,7 @@
           <div
             class="text-[clamp(40px,5vw,64px)] leading-none font-extrabold tracking-[-0.03em] tabular-nums"
           >
-            <span data-count>{{ s.num }}</span
+            <span appCountUp>{{ s.num }}</span
             ><span class="ml-1 text-[0.5em] font-semibold opacity-60">{{ s.unit }}</span>
           </div>
           <div class="mt-2 text-xs font-semibold tracking-[0.08em] uppercase opacity-70">

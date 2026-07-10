@@ -94,10 +94,13 @@ export class HowItWorks {
     return { items, sweep };
   }
 
-  /** Grows the stage's pieces in one by one; in the scan stage the sweep line
-   *  crosses the QR box before the rest of the flow appears. */
+  /** Grows the stage's pieces in one by one; in the scan stage the QR modules
+   *  scatter-assemble and the sweep line crosses before the rest of the flow. */
   private playStage(): void {
     const { items, sweep } = this.hideItems();
+    const qrRects = Array.from(
+      this.stageBox().nativeElement.querySelectorAll<SVGRectElement>('[data-stage-qr] rect'),
+    );
     const tl = gsap.timeline();
     items.forEach((item, i) => {
       tl.to(
@@ -105,6 +108,28 @@ export class HowItWorks {
         { opacity: 1, y: 0, scale: 1, duration: 0.45, ease: 'back.out(1.6)' },
         i === 0 ? 0 : '+=0.3',
       );
+      if (i === 0 && qrRects.length > 0) {
+        tl.fromTo(
+          qrRects,
+          {
+            x: () => gsap.utils.random(-34, 34),
+            y: () => gsap.utils.random(-30, 30),
+            opacity: 0,
+            scale: 0,
+            transformOrigin: 'center',
+          },
+          {
+            x: 0,
+            y: 0,
+            opacity: 1,
+            scale: 1,
+            duration: 0.5,
+            ease: 'back.out(2)',
+            stagger: { each: 0.02, from: 'random' },
+          },
+          '-=0.2',
+        );
+      }
       if (i === 0 && sweep) {
         tl.set(sweep, { top: '0%', opacity: 1 })
           .to(sweep, { top: '97%', duration: 0.7, ease: 'power1.inOut' })

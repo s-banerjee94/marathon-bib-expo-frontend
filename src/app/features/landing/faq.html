@@ -18,7 +18,10 @@
       class="grid grid-cols-1 gap-x-14 min-[900px]:grid-cols-2"
     >
       @for (item of qa; track item.q) {
-        <details class="group border-b border-[var(--surface-border)] py-6 last:border-b-0">
+        <details
+          appFaqReveal
+          class="group border-b border-[var(--surface-border)] py-6 last:border-b-0"
+        >
           <summary
             class="flex cursor-pointer list-none items-center justify-between text-[17px] font-bold tracking-[-0.01em] text-[var(--text-color)] [&::-webkit-details-marker]:hidden"
           >
@@ -28,6 +31,7 @@
             ></i>
           </summary>
           <div
+            data-faq-body
             class="mt-3 max-w-[540px] text-[14.5px] leading-[1.6] text-[var(--text-color-secondary)]"
           >
             {{ item.a }}
