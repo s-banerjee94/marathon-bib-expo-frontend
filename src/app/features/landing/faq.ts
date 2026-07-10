@@ -14,12 +14,16 @@ interface Qa {
 export class Faq {
   readonly qa: readonly Qa[] = [
     {
-      q: 'Do we need to install anything for race day?',
-      a: 'No. Distributors open the web app on any laptop or tablet, sign in with their assigned credentials, and they’re ready. The lookup UI is touch-friendly and works on cellular if your expo venue has weak wifi.',
+      q: 'Do runners register for the race through Marathon Bib Expo?',
+      a: 'No. Registration happens on your own platform — sometimes more than one. Once it closes, you bring the results in: import the full roster as a CSV, or add and edit participants one at a time. Marathon Bib Expo starts where registration ends and runs through hand-off at the expo.',
+    },
+    {
+      q: 'Do we need to install anything for the expo?',
+      a: "No. Distributors open the web app on any laptop, tablet, or phone, sign in with their assigned credentials, and they’re ready. It can also be installed as an app for a home-screen icon, but that's optional — and the interface keeps working if the venue wifi drops.",
     },
     {
       q: 'Can we import bibs and chip numbers separately?',
-      a: 'Yes. Bib numbers and chip numbers are separate columns in the CSV import. You can also update them post-import via the participant edit dialog.',
+      a: 'Yes. The drag-to-map import wizard connects bib number, chip number, size, and goodies to their own CSV columns. You can also update them post-import via the participant edit dialog.',
     },
     {
       q: 'What happens if a participant loses their bib?',
@@ -27,7 +31,7 @@ export class Faq {
     },
     {
       q: 'How do roles map to my organization?',
-      a: 'You (the race organizer) sign up as the Admin and own everything in your account. You invite Employees — ops team members who help manage participants and events. On race day, you create Volunteer accounts for distributors at the expo — they only see the bib-pickup screen. Three roles, scoped permissions, no overlap.',
+      a: "Your organization gets an Organizer Admin account — that's the owner, with full event and team control. You invite Organizer Users to help manage participants and events day-to-day. At the expo, you create Distributor accounts bound to a single event — they only see the scan and lookup screen. Three roles, scoped permissions, no overlap.",
     },
     {
       q: 'Do you integrate with timing systems?',
@@ -35,7 +39,15 @@ export class Faq {
     },
     {
       q: 'Does it work on mobile and tablets?',
-      a: 'Yes — the entire platform runs in the browser and adapts to any device. Admins manage events from their desktop, employees can edit participants from a tablet at the office, and volunteers run the bib-pickup screen from a phone or tablet at the expo table. No app to install.',
+      a: 'Yes — the entire platform runs in the browser and adapts to any device. Organizer Admins manage events from their desktop, Organizer Users can edit participants from a tablet at the office, and Distributors run the scan screen from a phone or tablet at the expo table. No app to install.',
+    },
+    {
+      q: 'How do we get started?',
+      a: "There's no self-serve signup — we set up your organization and first Organizer Admin login for you. Book a demo and we'll walk through creating your first event live on the call.",
+    },
+    {
+      q: 'What does the AI assistant actually do?',
+      a: "It's a chat panel scoped to your account — ask it to look up a participant, draft a campaign, or check event stats. Anything that would change data comes back as a proposed action you approve, edit, or reject first. It never writes anything on its own.",
     },
   ];
 }

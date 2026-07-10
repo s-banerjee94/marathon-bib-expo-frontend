@@ -1,5 +1,5 @@
 <section id="features" class="scroll-mt-[var(--topbar-height)] py-24">
-  <div class="mx-auto max-w-[1200px] px-7">
+  <div class="mx-auto max-w-[1440px] px-7">
     <div class="mb-14 max-w-[720px]">
       <span
         class="inline-flex items-center gap-2.5 text-xs font-bold tracking-[0.12em] text-[var(--text-color-secondary)] uppercase before:h-px before:w-6 before:bg-current before:content-['']"
@@ -11,23 +11,39 @@
         Everything race ops actually needs.<br />Nothing they don't.
       </h2>
       <p class="max-w-[620px] text-lg leading-[1.55] text-[var(--text-color-secondary)]">
-        Built around the actual job: get bibs into the right hands, fast, with an audit trail. No
-        social features, no AI assistants, no gamification.
+        Registration happens on your own platform, before any of this starts. Marathon Bib Expo
+        picks up from there: get bibs into the right hands, fast, with an audit trail — plus an AI
+        assistant for the busywork, and a link runners can check without ever logging in.
       </p>
     </div>
-    <div
-      class="grid grid-cols-1 gap-px overflow-hidden rounded-xl border border-[var(--surface-border)] bg-[var(--surface-border)] min-[900px]:grid-cols-3"
-    >
+    <div class="grid grid-cols-1 gap-6 min-[900px]:grid-cols-3">
       @for (f of items; track f.title) {
-        <div class="relative flex flex-col gap-3 bg-[var(--surface-card)] px-7 py-8">
-          <div
-            class="flex h-10 w-10 items-center justify-center rounded-lg bg-[var(--surface-hover)] text-lg text-[var(--text-color)]"
-          >
-            <i class="pi pi-{{ f.icon }}"></i>
-          </div>
-          <h3 class="mt-1 text-lg font-bold tracking-[-0.015em]">{{ f.title }}</h3>
-          <p class="text-sm leading-[1.55] text-[var(--text-color-secondary)]">{{ f.body }}</p>
-        </div>
+        <p-card styleClass="h-full">
+          <ng-template #title>
+            <div class="flex items-center gap-3">
+              <div
+                class="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-[var(--surface-hover)] text-lg text-[var(--text-color)]"
+              >
+                <i class="pi pi-{{ f.icon }}"></i>
+              </div>
+              <span class="text-lg font-bold tracking-[-0.015em]">{{ f.title }}</span>
+            </div>
+          </ng-template>
+          <p class="text-base leading-[1.6] text-[var(--text-color-secondary)]">{{ f.body }}</p>
+          @if (f.icon === 'send') {
+            <div class="mt-3 flex items-center gap-2" aria-hidden="true">
+              <i class="pi pi-comment motion-safe:animate-channel-pulse text-base"></i>
+              <span class="h-px w-3 bg-[var(--surface-border)]"></span>
+              <i
+                class="pi pi-whatsapp motion-safe:animate-channel-pulse text-base [animation-delay:400ms]"
+              ></i>
+              <span class="h-px w-3 bg-[var(--surface-border)]"></span>
+              <i
+                class="pi pi-envelope motion-safe:animate-channel-pulse text-base [animation-delay:800ms]"
+              ></i>
+            </div>
+          }
+        </p-card>
       }
     </div>
   </div>

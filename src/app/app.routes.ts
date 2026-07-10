@@ -8,7 +8,7 @@ export const routes: Routes = [
     path: '',
     loadComponent: () => import('./features/landing/landing').then((m) => m.Landing),
     pathMatch: 'full',
-    title: 'Marathon Bib Expo — Bib distribution for race day',
+    title: 'Marathon Bib Expo — Bib distribution for the expo',
   },
   {
     path: 'login',

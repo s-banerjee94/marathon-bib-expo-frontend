@@ -14,9 +14,9 @@ interface Stat {
 })
 export class StatsStrip {
   readonly stats: readonly Stat[] = [
-    { num: '1.2', unit: 'M', cap: 'Participants processed' },
-    { num: '4,800', unit: '+', cap: 'Race events run' },
-    { num: '38', unit: '', cap: 'Countries served' },
-    { num: '99.96', unit: '%', cap: 'Race-day uptime' },
+    { num: '5,000', unit: '+', cap: 'Runners at a big expo' },
+    { num: '1–2', unit: '', cap: 'Days to hand out every bib' },
+    { num: '3', unit: '', cap: 'Message channels built in' },
+    { num: '3', unit: '', cap: 'Roles inside your organization' },
   ];
 }

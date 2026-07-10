@@ -8,11 +8,11 @@ import { ChangeDetectionStrategy, Component } from '@angular/core';
 })
 export class LogoWall {
   readonly orgs: readonly string[] = [
-    'SUNRISE RUNNERS',
-    'HARBOR HALF CO.',
-    'CITY CYCLES',
-    'TRAILBLAZER',
-    'NORTHFIELD TRACK',
-    'IRONHEART RACE OPS',
+    '5K & 10K',
+    'HALF MARATHON',
+    'FULL MARATHON',
+    'TRAIL & ULTRA',
+    'RELAY',
+    'MULTI-DAY STAGE RACE',
   ];
 }

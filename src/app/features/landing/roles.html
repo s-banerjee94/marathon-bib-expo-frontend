@@ -1,5 +1,5 @@
 <section id="roles" class="scroll-mt-[var(--topbar-height)] py-24">
-  <div class="mx-auto max-w-[1200px] px-7">
+  <div class="mx-auto max-w-[1440px] px-7">
     <div class="mb-14 max-w-[720px]">
       <span
         class="inline-flex items-center gap-2.5 text-xs font-bold tracking-[0.12em] text-[var(--text-color-secondary)] uppercase before:h-px before:w-6 before:bg-current before:content-['']"
@@ -11,8 +11,9 @@
         The right screen for the right hands.
       </h2>
       <p class="max-w-[620px] text-lg leading-[1.55] text-[var(--text-color-secondary)]">
-        Every login lands on a role-aware dashboard. Volunteers don't see admin controls. Admins
-        don't waste time on lookup screens. Your team sits comfortably in between.
+        Every login lands on a role-aware dashboard. Distributors don't see admin controls.
+        Organizer Admins don't waste time on the lookup screen. Your team sits comfortably in
+        between.
       </p>
     </div>
 
@@ -26,11 +27,11 @@
             >{{ r.tag }}</span
           >
           <h3 class="text-[22px] font-bold tracking-[-0.02em]">{{ r.title }}</h3>
-          <p class="text-sm leading-[1.55] text-[var(--text-color-secondary)]">{{ r.body }}</p>
+          <p class="text-base leading-[1.6] text-[var(--text-color-secondary)]">{{ r.body }}</p>
           <ul class="m-0 flex list-none flex-col gap-2 p-0">
             @for (c of r.caps; track c) {
-              <li class="flex items-center gap-2 text-[13px] text-[var(--text-color)]">
-                <i class="pi pi-check text-xs text-[#16a34a]"></i> {{ c }}
+              <li class="flex items-center gap-2 text-[15px] text-[var(--text-color)]">
+                <i class="pi pi-check text-sm text-[#16a34a]"></i> {{ c }}
               </li>
             }
           </ul>
@@ -51,8 +52,8 @@
           One dashboard. Every race.
         </h3>
         <p class="max-w-[420px] text-[15px] leading-[1.6] text-[var(--text-color-secondary)]">
-          Live stats, recent organizations, upcoming events, and a doughnut chart for every
-          dimension you might ask. Refreshes on demand or on a schedule.
+          Live stats, upcoming events, and a doughnut chart for every dimension you might ask.
+          Refreshes on demand or on a schedule.
         </p>
       </div>
       <div

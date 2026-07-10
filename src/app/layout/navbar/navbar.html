@@ -20,32 +20,36 @@
         <img src="logo.png" alt="Marathon Bib Expo" class="mx-4 h-8 w-auto invert dark:invert-0" />
       </a>
 
-      <!-- Landing in-page navigation — only on the public root route -->
+      <!-- Landing in-page navigation — only on the public root route.
+           Absolutely centered within the fixed topbar (its positioned ancestor),
+           independent of the start/end slot widths on either side. -->
       @if (isLandingRoute()) {
-        <nav class="ml-4 hidden items-center gap-[22px] text-sm min-[900px]:flex">
+        <nav
+          class="absolute inset-x-0 top-0 mx-auto hidden h-[var(--topbar-height)] w-fit items-center gap-[22px] text-sm min-[900px]:flex"
+        >
           <a
             href="#features"
-            class="font-medium text-[var(--text-color-secondary)] no-underline transition-colors hover:text-[var(--text-color)]"
+            class="font-semibold text-[var(--text-color)] no-underline transition-colors hover:text-[var(--primary-color)]"
             >Features</a
           >
           <a
             href="#how"
-            class="font-medium text-[var(--text-color-secondary)] no-underline transition-colors hover:text-[var(--text-color)]"
+            class="font-semibold text-[var(--text-color)] no-underline transition-colors hover:text-[var(--primary-color)]"
             >How it works</a
           >
           <a
             href="#roles"
-            class="font-medium text-[var(--text-color-secondary)] no-underline transition-colors hover:text-[var(--text-color)]"
+            class="font-semibold text-[var(--text-color)] no-underline transition-colors hover:text-[var(--primary-color)]"
             >Roles</a
           >
           <a
             href="#pricing"
-            class="font-medium text-[var(--text-color-secondary)] no-underline transition-colors hover:text-[var(--text-color)]"
+            class="font-semibold text-[var(--text-color)] no-underline transition-colors hover:text-[var(--primary-color)]"
             >Pricing</a
           >
           <a
             href="#faq"
-            class="font-medium text-[var(--text-color-secondary)] no-underline transition-colors hover:text-[var(--text-color)]"
+            class="font-semibold text-[var(--text-color)] no-underline transition-colors hover:text-[var(--primary-color)]"
             >FAQ</a
           >
         </nav>

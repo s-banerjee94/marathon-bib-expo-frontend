@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { CardModule } from 'primeng/card';
 
 interface Feature {
   icon: string;
@@ -8,6 +9,7 @@ interface Feature {
 
 @Component({
   selector: 'app-features',
+  imports: [CardModule],
   templateUrl: './features.html',
   host: { class: 'block' },
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -15,34 +17,34 @@ interface Feature {
 export class Features {
   readonly items: readonly Feature[] = [
     {
-      icon: 'box',
+      icon: 'qrcode',
       title: 'Bib & goodies distribution',
       body: 'One screen, one scan. Look up by bib, name, phone, or email; tick the kit; move on. Built for queues that don’t slow down.',
     },
     {
-      icon: 'upload',
-      title: 'CSV import in batches',
-      body: 'Drop in a roster of 50,000 participants and the batch job streams updates back. Validation errors are itemized, not silent.',
+      icon: 'sitemap',
+      title: 'Drag-to-map roster import',
+      body: 'Connect CSV columns to participant fields visually, for a fresh roster or a batch of walk-ins added at the table. Validation errors stream back itemized, row by row — never a silent failure.',
     },
     {
       icon: 'send',
-      title: 'SMS campaigns',
-      body: 'Schedule per-race or per-category texts — bib pickup reminders, weather updates, last-call announcements.',
+      title: 'SMS, WhatsApp & email campaigns',
+      body: 'Schedule per-race or per-category messages across three channels from one console — pickup reminders, weather updates, last-call announcements.',
+    },
+    {
+      icon: 'comments',
+      title: 'AI assistant',
+      body: 'Ask it to draft a campaign, look up a participant, or reissue a bib. Every write comes back as a proposed action you approve, edit, or reject first — nothing runs unsupervised.',
+    },
+    {
+      icon: 'verified',
+      title: 'Public bib check & expo card',
+      body: 'Runners open a short link, no login required, to check their status and download a shareable expo card — the one screen built for the people wearing the bib, not running the table.',
     },
     {
       icon: 'shield',
       title: 'Three roles, scoped access',
-      body: 'Admin (you, the organizer) · Employees (your ops team) · Volunteers (race-day distributors). Each role sees only what they need. No accidental data leaks across events.',
-    },
-    {
-      icon: 'chart-bar',
-      title: 'Real-time stats',
-      body: 'Dashboards refresh as bibs leave the expo. Watch your collection rate hit 95% live, segmented by race and category.',
-    },
-    {
-      icon: 'id-card',
-      title: 'Participant lookup',
-      body: 'Distributors hit the search box, tap the participant, confirm the kit. Zero training, even for race-day volunteers.',
+      body: 'Organizer Admin, Organizer User, and Distributor inside your organization — each sees only what the job needs. No cross-event or cross-organization leaks.',
     },
   ];
 }

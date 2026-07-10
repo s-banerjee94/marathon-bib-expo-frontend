@@ -5,7 +5,7 @@ import { StatsStrip } from './stats-strip';
 import { Features } from './features';
 import { HowItWorks } from './how-it-works';
 import { Roles } from './roles';
-import { Testimonials } from './testimonials';
+import { RunnerSpotlight } from './runner-spotlight';
 import { Pricing } from './pricing';
 import { Faq } from './faq';
 import { FinalCta } from './final-cta';
@@ -20,7 +20,7 @@ import { SiteFooter } from './site-footer';
     Features,
     HowItWorks,
     Roles,
-    Testimonials,
+    RunnerSpotlight,
     Pricing,
     Faq,
     FinalCta,
