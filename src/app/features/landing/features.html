@@ -19,11 +19,12 @@
     </div>
     <div appScrollReveal revealStagger="0.1" class="grid grid-cols-1 gap-6 min-[900px]:grid-cols-3">
       @for (f of items; track f.title) {
-        <p-card styleClass="h-full">
+        <!-- Explicit border: in dark mode the card fill matches the page bg and the shadow is invisible -->
+        <p-card styleClass="h-full !border !border-[var(--surface-border)]">
           <ng-template #title>
             <div class="flex items-center gap-3">
               <div
-                class="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-[var(--surface-hover)] text-lg text-[var(--text-color)]"
+                class="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-[color-mix(in_srgb,#16a34a,transparent_88%)] text-lg text-[#15803d] dark:text-[#4ade80]"
               >
                 <i class="pi pi-{{ f.icon }}"></i>
               </div>

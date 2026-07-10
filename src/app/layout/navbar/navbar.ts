@@ -1,9 +1,12 @@
 import {
+  afterNextRender,
   ChangeDetectionStrategy,
   Component,
   computed,
+  DestroyRef,
   effect,
   inject,
+  NgZone,
   OnDestroy,
   signal,
 } from '@angular/core';
@@ -55,6 +58,17 @@ export class Navbar implements OnDestroy {
   // Drives the landing vs. app-shell variants of the topbar.
   isLandingRoute = this.layoutService.isLandingRoute;
 
+  // Landing in-page nav — hash anchors, so routerLinkActive can't track them;
+  // a scroll listener marks the section currently under the topbar instead.
+  protected readonly landingSections = [
+    { id: 'features', label: 'Features' },
+    { id: 'how', label: 'How it works' },
+    { id: 'roles', label: 'Roles' },
+    { id: 'pricing', label: 'Pricing' },
+    { id: 'faq', label: 'FAQ' },
+  ] as const;
+  protected readonly activeSection = signal('');
+
   // Account dropdown: identity header is rendered via the menu's #start template;
   // these are the actionable items below it.
   items: MenuItem[] = [
@@ -91,6 +105,38 @@ export class Navbar implements OnDestroy {
       } else {
         this.notificationService.disconnect();
       }
+    });
+
+    const zone = inject(NgZone);
+    const destroyRef = inject(DestroyRef);
+    afterNextRender(() => {
+      zone.runOutsideAngular(() => {
+        let ticking = false;
+        const update = (): void => {
+          ticking = false;
+          if (!this.isLandingRoute()) {
+            return;
+          }
+          let current = '';
+          for (const { id } of this.landingSections) {
+            const el = document.getElementById(id);
+            if (el && el.getBoundingClientRect().top <= 120) {
+              current = id;
+            }
+          }
+          if (current !== this.activeSection()) {
+            zone.run(() => this.activeSection.set(current));
+          }
+        };
+        const onScroll = (): void => {
+          if (!ticking) {
+            ticking = true;
+            requestAnimationFrame(update);
+          }
+        };
+        window.addEventListener('scroll', onScroll, { passive: true });
+        destroyRef.onDestroy(() => window.removeEventListener('scroll', onScroll));
+      });
     });
   }
 

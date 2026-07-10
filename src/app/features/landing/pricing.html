@@ -56,6 +56,11 @@
             class="mt-auto"
             [label]="t.cta"
             [severity]="t.featured ? 'secondary' : 'primary'"
+            [class]="
+              t.featured
+                ? '!border-[#16a34a] !bg-[#16a34a] !text-white hover:!border-[#15803d] hover:!bg-[#15803d]'
+                : ''
+            "
           ></a>
         </div>
       }

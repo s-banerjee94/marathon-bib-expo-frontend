@@ -3,6 +3,11 @@
   id="top"
   class="relative flex min-h-[calc(100vh-var(--topbar-height))] scroll-mt-[var(--topbar-height)] items-center overflow-hidden py-16"
 >
+  <!-- Soft brand-color wash — landing-only, sits behind the diagonal lines -->
+  <div
+    aria-hidden="true"
+    class="pointer-events-none absolute inset-0 z-0 bg-[radial-gradient(900px_circle_at_12%_8%,color-mix(in_srgb,#16a34a,transparent_90%),transparent_55%),radial-gradient(800px_circle_at_88%_30%,color-mix(in_srgb,#2563eb,transparent_93%),transparent_60%)]"
+  ></div>
   <div
     #heroBg
     class="pointer-events-none absolute inset-0 z-0 bg-[repeating-linear-gradient(-8deg,transparent_0,transparent_38px,color-mix(in_srgb,var(--text-color),transparent_96%)_38px,color-mix(in_srgb,var(--text-color),transparent_96%)_39px)] [mask:linear-gradient(180deg,black_0%,transparent_80%)] [-webkit-mask:linear-gradient(180deg,black_0%,transparent_80%)]"
@@ -56,6 +61,7 @@
             icon="pi pi-arrow-right"
             iconPos="right"
             size="large"
+            class="!border-[#15803d] !bg-[#15803d] !text-white hover:!border-[#166534] hover:!bg-[#166534]"
           ></a>
           <a
             pButton
@@ -120,6 +126,9 @@
                   stroke="var(--text-color)"
                   stroke-width="3"
                 />
+                <!-- Race-color header band (squared off at its bottom edge) -->
+                <rect x="20" y="16" width="360" height="76" rx="8" [attr.fill]="current().band" />
+                <rect x="20" y="56" width="360" height="36" [attr.fill]="current().band" />
                 <!-- Top safety-pin holes -->
                 <circle
                   cx="55"
@@ -156,26 +165,30 @@
                 <!-- Event name -->
                 <text
                   x="200"
-                  y="72"
+                  y="52"
                   text-anchor="middle"
                   font-family="var(--font-sans)"
                   font-size="17"
                   font-weight="700"
                   letter-spacing="6"
-                  fill="var(--text-color)"
+                  [attr.fill]="current().bandInk"
                 >
                   BAY MARATHON
                 </text>
-                <!-- Divider line -->
-                <line
-                  x1="60"
-                  y1="88"
-                  x2="340"
-                  y2="88"
-                  stroke="var(--text-color)"
-                  stroke-opacity="0.2"
-                  stroke-width="2"
-                />
+                <!-- Race name inside the band -->
+                <text
+                  x="200"
+                  y="76"
+                  text-anchor="middle"
+                  font-family="var(--font-mono)"
+                  font-size="11"
+                  font-weight="600"
+                  letter-spacing="4"
+                  opacity="0.85"
+                  [attr.fill]="current().bandInk"
+                >
+                  {{ current().race }}
+                </text>
                 <!-- Big number — constrained to fit within the bib width -->
                 <text
                   x="200"
@@ -225,6 +238,17 @@
                   opacity="0.9"
                 />
                 <rect x="100" y="242" width="200" height="12" rx="2" fill="url(#bib-perf)" />
+                <!-- Border re-stroke so the band sits cleanly inside the outline -->
+                <rect
+                  x="20"
+                  y="16"
+                  width="360"
+                  height="268"
+                  rx="8"
+                  fill="none"
+                  stroke="var(--text-color)"
+                  stroke-width="3"
+                />
               </g>
 
               <!-- Floating speed line accents -->

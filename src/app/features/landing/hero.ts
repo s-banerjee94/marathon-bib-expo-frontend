@@ -24,6 +24,10 @@ gsap.registerPlugin(ScrollTrigger);
 interface DemoRunner {
   bib: string;
   category: string;
+  race: string;
+  /** Race-band color — real expo bibs are color-coded per race. */
+  band: string;
+  bandInk: string;
 }
 
 const SCAN_DURATION_MS = 700;
@@ -51,11 +55,35 @@ export class Hero {
   readonly meltChars: readonly string[] = Array.from('melt\u00A0down');
 
   private readonly runners: readonly DemoRunner[] = [
-    { bib: '12044', category: 'M 30–34' },
-    { bib: '08871', category: 'F 18–24' },
-    { bib: '15532', category: 'M 45–49' },
-    { bib: '03210', category: 'F 30–34' },
-    { bib: '21987', category: 'M 18–24' },
+    {
+      bib: '12044',
+      category: 'M 30–34',
+      race: 'FULL MARATHON',
+      band: '#16a34a',
+      bandInk: '#ffffff',
+    },
+    {
+      bib: '08871',
+      category: 'F 18–24',
+      race: 'HALF MARATHON',
+      band: '#f59e0b',
+      bandInk: '#0f172a',
+    },
+    { bib: '15532', category: 'M 45–49', race: '10K', band: '#2563eb', bandInk: '#ffffff' },
+    {
+      bib: '03210',
+      category: 'F 30–34',
+      race: 'FULL MARATHON',
+      band: '#16a34a',
+      bandInk: '#ffffff',
+    },
+    {
+      bib: '21987',
+      category: 'M 18–24',
+      race: 'HALF MARATHON',
+      band: '#f59e0b',
+      bandInk: '#0f172a',
+    },
   ];
 
   private readonly prefersReducedMotion =
