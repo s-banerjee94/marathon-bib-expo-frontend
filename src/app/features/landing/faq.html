@@ -1,17 +1,22 @@
 <section id="faq" class="scroll-mt-[var(--topbar-height)] py-24">
   <div class="mx-auto max-w-[1440px] px-7">
-    <div class="mb-14 max-w-[720px]">
+    <div appScrollReveal revealStagger="0.12" class="mb-14 max-w-[720px]">
       <span
         class="inline-flex items-center gap-2.5 text-xs font-bold tracking-[0.12em] text-[var(--text-color-secondary)] uppercase before:h-px before:w-6 before:bg-current before:content-['']"
         >FAQ</span
       >
       <h2
+        appLetterPop
         class="my-4 text-[clamp(36px,4.5vw,56px)] leading-[1.05] font-extrabold tracking-[-0.03em] text-[var(--text-color)]"
       >
         Questions race directors ask us.
       </h2>
     </div>
-    <div class="grid grid-cols-1 gap-x-14 min-[900px]:grid-cols-2">
+    <div
+      appScrollReveal
+      revealStagger="0.06"
+      class="grid grid-cols-1 gap-x-14 min-[900px]:grid-cols-2"
+    >
       @for (item of qa; track item.q) {
         <details class="group border-b border-[var(--surface-border)] py-6 last:border-b-0">
           <summary

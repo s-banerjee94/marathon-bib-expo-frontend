@@ -1,5 +1,7 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { CardModule } from 'primeng/card';
+import { LetterPop } from './letter-pop';
+import { ScrollReveal } from './scroll-reveal';
 
 interface Feature {
   icon: string;
@@ -9,7 +11,7 @@ interface Feature {
 
 @Component({
   selector: 'app-features',
-  imports: [CardModule],
+  imports: [CardModule, ScrollReveal, LetterPop],
   templateUrl: './features.html',
   host: { class: 'block' },
   changeDetection: ChangeDetectionStrategy.OnPush,

@@ -1,11 +1,12 @@
 <section id="pricing" class="scroll-mt-[var(--topbar-height)] py-24">
   <div class="mx-auto max-w-[1440px] px-7">
-    <div class="mb-14 max-w-[720px]">
+    <div appScrollReveal revealStagger="0.12" class="mb-14 max-w-[720px]">
       <span
         class="inline-flex items-center gap-2.5 text-xs font-bold tracking-[0.12em] text-[var(--text-color-secondary)] uppercase before:h-px before:w-6 before:bg-current before:content-['']"
         >Pricing</span
       >
       <h2
+        appLetterPop
         class="my-4 text-[clamp(36px,4.5vw,56px)] leading-[1.05] font-extrabold tracking-[-0.03em] text-[var(--text-color)]"
       >
         Three tiers.<br />One built for your season.
@@ -16,6 +17,8 @@
       </p>
     </div>
     <div
+      appScrollReveal
+      revealStagger="0.12"
       class="grid grid-cols-1 overflow-hidden rounded-xl border border-[var(--surface-border)] min-[900px]:grid-cols-3"
     >
       @for (t of tiers; track t.name) {

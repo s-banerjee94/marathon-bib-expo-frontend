@@ -1,5 +1,7 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { ButtonModule } from 'primeng/button';
+import { LetterPop } from './letter-pop';
+import { ScrollReveal } from './scroll-reveal';
 
 interface Tier {
   name: string;
@@ -12,7 +14,7 @@ interface Tier {
 
 @Component({
   selector: 'app-pricing',
-  imports: [ButtonModule],
+  imports: [ButtonModule, ScrollReveal, LetterPop],
   templateUrl: './pricing.html',
   host: { class: 'block' },
   changeDetection: ChangeDetectionStrategy.OnPush,

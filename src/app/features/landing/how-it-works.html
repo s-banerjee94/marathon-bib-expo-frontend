@@ -1,11 +1,12 @@
 <section id="how" class="scroll-mt-[var(--topbar-height)] bg-[var(--surface-ground)] py-16">
   <div class="mx-auto max-w-[1440px] px-7">
-    <div class="mb-14 max-w-[720px]">
+    <div appScrollReveal revealStagger="0.12" class="mb-14 max-w-[720px]">
       <span
         class="inline-flex items-center gap-2.5 text-xs font-bold tracking-[0.12em] text-[var(--text-color-secondary)] uppercase before:h-px before:w-6 before:bg-current before:content-['']"
         >How it works</span
       >
       <h2
+        appLetterPop
         class="my-4 text-[clamp(36px,4.5vw,56px)] leading-[1.05] font-extrabold tracking-[-0.03em] text-[var(--text-color)]"
       >
         The expo is the demo.
@@ -15,7 +16,7 @@
         are opinionated about the flow.
       </p>
     </div>
-    <div class="grid grid-cols-2 gap-6 min-[900px]:grid-cols-4">
+    <div appScrollReveal revealStagger="0.1" class="grid grid-cols-2 gap-6 min-[900px]:grid-cols-4">
       @for (s of steps; track s.num) {
         <button
           type="button"
@@ -56,6 +57,8 @@
 
     <!-- Stage visual — replays whenever a step is selected -->
     <div
+      #stageBox
+      appScrollReveal
       class="mt-10 min-h-[220px] overflow-hidden rounded-xl border border-[var(--surface-border)] bg-[var(--surface-card)] p-6"
     >
       @switch (activeStep()) {
@@ -63,40 +66,32 @@
           <div class="flex h-full flex-col items-center justify-center gap-4 py-4">
             <div class="flex flex-wrap justify-center gap-2">
               <span
-                class="motion-safe:animate-grow-fade-in rounded-full border border-[var(--surface-border)] bg-[var(--surface-ground)] px-3 py-1.5 text-sm font-semibold"
-                (animationend)="advanceStage(1, $event)"
+                data-stage-item
+                class="rounded-full border border-[var(--surface-border)] bg-[var(--surface-ground)] px-3 py-1.5 text-sm font-semibold"
                 >Full Marathon</span
               >
-              @if (stageProgress() >= 1) {
-                <span
-                  class="motion-safe:animate-grow-fade-in rounded-full border border-[var(--surface-border)] bg-[var(--surface-ground)] px-3 py-1.5 text-sm font-semibold"
-                  (animationend)="advanceStage(2, $event)"
-                  >Half Marathon</span
-                >
-              }
-              @if (stageProgress() >= 2) {
-                <span
-                  class="motion-safe:animate-grow-fade-in rounded-full border border-[var(--surface-border)] bg-[var(--surface-ground)] px-3 py-1.5 text-sm font-semibold"
-                  (animationend)="advanceStage(3, $event)"
-                  >10K</span
-                >
-              }
-            </div>
-            @if (stageProgress() >= 3) {
-              <div
-                class="motion-safe:animate-grow-fade-in font-['Geist_Mono',_monospace] text-xs text-[var(--text-color-secondary)]"
+              <span
+                data-stage-item
+                class="rounded-full border border-[var(--surface-border)] bg-[var(--surface-ground)] px-3 py-1.5 text-sm font-semibold"
+                >Half Marathon</span
               >
-                races → categories → participant limits, set in minutes
-              </div>
-            }
+              <span
+                data-stage-item
+                class="rounded-full border border-[var(--surface-border)] bg-[var(--surface-ground)] px-3 py-1.5 text-sm font-semibold"
+                >10K</span
+              >
+            </div>
+            <div
+              data-stage-item
+              class="font-['Geist_Mono',_monospace] text-xs text-[var(--text-color-secondary)]"
+            >
+              races → categories → participant limits, set in minutes
+            </div>
           </div>
         }
         @case (1) {
           <div class="flex h-full flex-col items-center justify-center gap-3 py-4">
-            <div
-              class="motion-safe:animate-grow-fade-in flex items-center gap-3"
-              (animationend)="advanceStage(1, $event)"
-            >
+            <div data-stage-item class="flex items-center gap-3">
               <span
                 class="w-24 text-right font-['Geist_Mono',_monospace] text-xs text-[var(--text-color-secondary)]"
                 >full_name</span
@@ -107,43 +102,37 @@
                 >Full Name</span
               >
             </div>
-            @if (stageProgress() >= 1) {
-              <div
-                class="motion-safe:animate-grow-fade-in flex items-center gap-3"
-                (animationend)="advanceStage(2, $event)"
+            <div data-stage-item class="flex items-center gap-3">
+              <span
+                class="w-24 text-right font-['Geist_Mono',_monospace] text-xs text-[var(--text-color-secondary)]"
+                >bib_no</span
               >
-                <span
-                  class="w-24 text-right font-['Geist_Mono',_monospace] text-xs text-[var(--text-color-secondary)]"
-                  >bib_no</span
-                >
-                <i class="pi pi-arrow-right text-xs text-[#16a34a]"></i>
-                <span
-                  class="w-28 rounded-md bg-[var(--surface-hover)] px-2.5 py-1 text-xs font-semibold"
-                  >Bib Number</span
-                >
-              </div>
-            }
-            @if (stageProgress() >= 2) {
-              <div class="motion-safe:animate-grow-fade-in flex items-center gap-3">
-                <span
-                  class="w-24 text-right font-['Geist_Mono',_monospace] text-xs text-[var(--text-color-secondary)]"
-                  >tshirt_sz</span
-                >
-                <i class="pi pi-arrow-right text-xs text-[#16a34a]"></i>
-                <span
-                  class="w-28 rounded-md bg-[var(--surface-hover)] px-2.5 py-1 text-xs font-semibold"
-                  >Shirt Size</span
-                >
-              </div>
-            }
+              <i class="pi pi-arrow-right text-xs text-[#16a34a]"></i>
+              <span
+                class="w-28 rounded-md bg-[var(--surface-hover)] px-2.5 py-1 text-xs font-semibold"
+                >Bib Number</span
+              >
+            </div>
+            <div data-stage-item class="flex items-center gap-3">
+              <span
+                class="w-24 text-right font-['Geist_Mono',_monospace] text-xs text-[var(--text-color-secondary)]"
+                >tshirt_sz</span
+              >
+              <i class="pi pi-arrow-right text-xs text-[#16a34a]"></i>
+              <span
+                class="w-28 rounded-md bg-[var(--surface-hover)] px-2.5 py-1 text-xs font-semibold"
+                >Shirt Size</span
+              >
+            </div>
           </div>
         }
         @case (2) {
-          <div class="flex h-full items-center justify-center py-4">
-            <!-- Box 1: QR code, scanned in place. Always centered — everything else grows in
-                 to its right, and the row re-centers itself as it widens. -->
+          <div
+            class="flex h-full flex-col items-center justify-center gap-4 py-4 min-[640px]:flex-row"
+          >
             <div
-              class="motion-safe:animate-fade-slide-up relative flex h-24 w-28 shrink-0 items-center justify-center overflow-hidden rounded-lg border-2 border-[var(--text-color)] bg-[var(--surface-ground)]"
+              data-stage-item
+              class="relative flex h-24 w-28 shrink-0 items-center justify-center overflow-hidden rounded-lg border-2 border-[var(--text-color)] bg-[var(--surface-ground)]"
             >
               <svg viewBox="0 0 70 70" class="h-12 w-12" aria-hidden="true">
                 <rect
@@ -191,62 +180,59 @@
                 <rect x="44" y="54" width="5" height="5" fill="var(--text-color)" />
               </svg>
               <div
-                class="motion-safe:animate-scan-sweep absolute inset-x-0 top-0 h-[3px] bg-[#16a34a] shadow-[0_0_12px_2px_rgba(22,163,74,0.6)] [animation-delay:200ms]"
-                (animationend)="advanceStage(1, $event, 250)"
+                data-stage-sweep
+                class="absolute inset-x-0 top-0 h-[3px] bg-[#16a34a] shadow-[0_0_12px_2px_rgba(22,163,74,0.6)]"
               ></div>
             </div>
 
-            <!-- Group 2: only enters the DOM once the QR has actually finished being scanned —
-                 an arrow, then its own bib box. Chained via (animationend), not a guessed delay. -->
-            @if (stageProgress() >= 1) {
+            <!-- The timeline scans the QR box first, then grows the next groups in -->
+            <div
+              data-stage-item
+              class="flex shrink-0 flex-col items-center gap-4 min-[640px]:flex-row"
+            >
+              <i
+                class="pi pi-arrow-right shrink-0 rotate-90 text-sm text-[var(--text-color-secondary)] min-[640px]:rotate-0"
+              ></i>
               <div
-                class="motion-safe:animate-grow-fade-in flex shrink-0 items-center gap-4"
-                (animationend)="advanceStage(2, $event, 550)"
+                class="flex h-24 w-28 shrink-0 flex-col items-center justify-center rounded-lg border-2 border-[var(--text-color)] bg-[var(--surface-ground)]"
               >
-                <i
-                  class="pi pi-arrow-right shrink-0 text-sm text-[var(--text-color-secondary)]"
-                ></i>
-                <div
-                  class="flex h-24 w-28 shrink-0 flex-col items-center justify-center rounded-lg border-2 border-[var(--text-color)] bg-[var(--surface-ground)]"
-                >
-                  <div class="font-['Geist_Mono',_monospace] text-xl font-extrabold tabular-nums">
-                    12044
-                  </div>
-                  <div class="mt-1 text-[10px] text-[var(--text-color-secondary)]">M 30–34</div>
+                <div class="font-['Geist_Mono',_monospace] text-xl font-extrabold tabular-nums">
+                  12044
                 </div>
+                <div class="mt-1 text-[10px] text-[var(--text-color-secondary)]">M 30–34</div>
               </div>
-            }
+            </div>
 
-            <!-- Group 3: only enters once the bib has been matched — an arrow, then the two outcomes -->
-            @if (stageProgress() >= 2) {
-              <div class="motion-safe:animate-grow-fade-in flex shrink-0 items-center gap-4">
-                <i
-                  class="pi pi-arrow-right shrink-0 text-sm text-[var(--text-color-secondary)]"
-                ></i>
-                <div class="flex shrink-0 flex-col gap-2">
-                  <div
-                    class="inline-flex items-center gap-1.5 rounded-md border-[2px] border-[#16a34a] px-3 py-1.5 font-['Geist_Mono',_monospace] text-xs font-extrabold tracking-[0.06em] text-[#16a34a]"
-                  >
-                    <i class="pi pi-check text-[10px]"></i> COLLECTED
-                  </div>
-                  <div
-                    class="flex items-center gap-2 rounded-md bg-[var(--surface-hover)] px-3 py-1.5 text-[11px] text-[var(--text-color-secondary)]"
-                  >
-                    <i class="pi pi-comment text-[11px]"></i>
-                    <i class="pi pi-whatsapp text-[11px]"></i>
-                    <i class="pi pi-envelope text-[11px]"></i>
-                    <span>Notification sent</span>
-                  </div>
+            <div
+              data-stage-item
+              class="flex shrink-0 flex-col items-center gap-4 min-[640px]:flex-row"
+            >
+              <i
+                class="pi pi-arrow-right shrink-0 rotate-90 text-sm text-[var(--text-color-secondary)] min-[640px]:rotate-0"
+              ></i>
+              <div class="flex shrink-0 flex-col gap-2">
+                <div
+                  class="inline-flex items-center gap-1.5 rounded-md border-[2px] border-[#16a34a] px-3 py-1.5 font-['Geist_Mono',_monospace] text-xs font-extrabold tracking-[0.06em] text-[#16a34a]"
+                >
+                  <i class="pi pi-check text-[10px]"></i> COLLECTED
+                </div>
+                <div
+                  class="flex items-center gap-2 rounded-md bg-[var(--surface-hover)] px-3 py-1.5 text-[11px] text-[var(--text-color-secondary)]"
+                >
+                  <i class="pi pi-comment text-[11px]"></i>
+                  <i class="pi pi-whatsapp text-[11px]"></i>
+                  <i class="pi pi-envelope text-[11px]"></i>
+                  <span>Notification sent</span>
                 </div>
               </div>
-            }
+            </div>
           </div>
         }
         @case (3) {
           <div class="flex h-full flex-col justify-center gap-2 py-2">
             <div
-              class="motion-safe:animate-grow-fade-in flex items-center justify-between gap-3 rounded-md bg-[var(--surface-ground)] px-3 py-2 text-xs"
-              (animationend)="advanceStage(1, $event)"
+              data-stage-item
+              class="flex items-center justify-between gap-3 rounded-md bg-[var(--surface-ground)] px-3 py-2 text-xs"
             >
               <span class="font-['Geist_Mono',_monospace] text-[var(--text-color-secondary)]"
                 >10:42</span
@@ -254,29 +240,26 @@
               <span class="flex-1">Bib 12044 collected</span>
               <i class="pi pi-check-circle text-[#16a34a]"></i>
             </div>
-            @if (stageProgress() >= 1) {
-              <div
-                class="motion-safe:animate-grow-fade-in flex items-center justify-between gap-3 rounded-md bg-[var(--surface-ground)] px-3 py-2 text-xs"
-                (animationend)="advanceStage(2, $event)"
+            <div
+              data-stage-item
+              class="flex items-center justify-between gap-3 rounded-md bg-[var(--surface-ground)] px-3 py-2 text-xs"
+            >
+              <span class="font-['Geist_Mono',_monospace] text-[var(--text-color-secondary)]"
+                >10:41</span
               >
-                <span class="font-['Geist_Mono',_monospace] text-[var(--text-color-secondary)]"
-                  >10:41</span
-                >
-                <span class="flex-1">Bib 08871 reissued</span>
-                <i class="pi pi-refresh text-[var(--text-color-secondary)]"></i>
-              </div>
-            }
-            @if (stageProgress() >= 2) {
-              <div
-                class="motion-safe:animate-grow-fade-in flex items-center justify-between gap-3 rounded-md bg-[var(--surface-ground)] px-3 py-2 text-xs"
+              <span class="flex-1">Bib 08871 reissued</span>
+              <i class="pi pi-refresh text-[var(--text-color-secondary)]"></i>
+            </div>
+            <div
+              data-stage-item
+              class="flex items-center justify-between gap-3 rounded-md bg-[var(--surface-ground)] px-3 py-2 text-xs"
+            >
+              <span class="font-['Geist_Mono',_monospace] text-[var(--text-color-secondary)]"
+                >10:38</span
               >
-                <span class="font-['Geist_Mono',_monospace] text-[var(--text-color-secondary)]"
-                  >10:38</span
-                >
-                <span class="flex-1">Roster imported — 1,284 rows</span>
-                <i class="pi pi-upload text-[var(--text-color-secondary)]"></i>
-              </div>
-            }
+              <span class="flex-1">Roster imported — 1,284 rows</span>
+              <i class="pi pi-upload text-[var(--text-color-secondary)]"></i>
+            </div>
           </div>
         }
       }

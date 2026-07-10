@@ -1,10 +1,12 @@
 <section class="py-24">
   <div class="mx-auto max-w-[1440px] px-7">
     <div
+      appScrollReveal="zoom"
       class="relative overflow-hidden rounded-2xl bg-[var(--primary-color)] px-14 py-20 text-center text-[var(--primary-contrast-color)] before:absolute before:inset-0 before:bg-[repeating-linear-gradient(-8deg,transparent_0,transparent_60px,rgba(255,255,255,0.04)_60px,rgba(255,255,255,0.04)_61px)] before:content-['']"
     >
       <div class="relative z-[1]">
         <h2
+          appLetterPop
           class="mx-auto mb-4 max-w-[720px] text-[clamp(36px,5vw,56px)] leading-[1.05] font-extrabold tracking-[-0.03em]"
         >
           Your next expo shouldn't feel like the last one.
@@ -15,6 +17,7 @@
         <div class="flex flex-wrap justify-center gap-3">
           <a
             pButton
+            appMagnetic
             href="#demo"
             label="Book a demo"
             icon="pi pi-arrow-right"
@@ -24,6 +27,7 @@
           ></a>
           <a
             pButton
+            appMagnetic
             routerLink="/login"
             label="Sign in"
             size="large"

@@ -1,8 +1,10 @@
 <section
+  #heroSection
   id="top"
   class="relative flex min-h-[calc(100vh-var(--topbar-height))] scroll-mt-[var(--topbar-height)] items-center overflow-hidden py-16"
 >
   <div
+    #heroBg
     class="pointer-events-none absolute inset-0 z-0 bg-[repeating-linear-gradient(-8deg,transparent_0,transparent_38px,color-mix(in_srgb,var(--text-color),transparent_96%)_38px,color-mix(in_srgb,var(--text-color),transparent_96%)_39px)] [mask:linear-gradient(180deg,black_0%,transparent_80%)] [-webkit-mask:linear-gradient(180deg,black_0%,transparent_80%)]"
   ></div>
   <div class="relative z-[1] mx-auto w-full max-w-[1440px] px-7">
@@ -15,13 +17,25 @@
           >Bib expo platform · distribution, done right</span
         >
         <h1
+          appLetterPop
+          popLabel="Bib distribution that doesn't melt down at the expo."
           class="motion-safe:animate-fade-slide-up mt-4 text-[clamp(48px,7vw,96px)] leading-[0.96] font-extrabold tracking-[-0.04em] text-[var(--text-color)] [animation-delay:100ms]"
         >
           Bib distribution<br />
           that doesn't
           <span
-            class="font-medium text-[var(--text-color-secondary)] line-through decoration-[#16a34a] decoration-[4px]"
-            >melt down</span
+            #meltWrap
+            class="relative inline-block font-medium text-[var(--text-color-secondary)]"
+          >
+            <span class="sr-only">melt down</span>
+            @for (ch of meltChars; track $index) {
+              <span data-melt-char aria-hidden="true" class="inline-block">{{ ch }}</span>
+            }
+            <span
+              data-melt-line
+              aria-hidden="true"
+              class="pointer-events-none absolute inset-x-0 top-[calc(50%-2px)] h-[4px] rounded-full bg-[#16a34a]"
+            ></span> </span
           ><br />
           at the expo.
         </h1>
@@ -36,13 +50,21 @@
         <div class="motion-safe:animate-fade-slide-up flex flex-wrap gap-3 [animation-delay:300ms]">
           <a
             pButton
+            appMagnetic
             href="#demo"
             label="Book a demo"
             icon="pi pi-arrow-right"
             iconPos="right"
             size="large"
           ></a>
-          <a pButton routerLink="/login" label="Sign in" [outlined]="true" size="large"></a>
+          <a
+            pButton
+            appMagnetic
+            routerLink="/login"
+            label="Sign in"
+            [outlined]="true"
+            size="large"
+          ></a>
         </div>
         <div
           class="motion-safe:animate-fade-slide-up mt-8 flex flex-wrap items-center gap-6 text-[13px] text-[var(--text-color-secondary)] [animation-delay:400ms]"
@@ -60,20 +82,18 @@
           </div>
         </div>
       </div>
-      <div class="flex flex-col items-center gap-4">
+      <div #demoCol class="flex flex-col items-center gap-4">
         <button
           type="button"
+          appCardFly
           (click)="scan()"
-          class="motion-safe:animate-fade-slide-up group relative block w-full max-w-[460px] cursor-pointer appearance-none border-0 bg-transparent p-0 text-left [animation-delay:450ms]"
-          [attr.aria-label]="
-            isCollected()
-              ? 'Bib ' + current().bib + ' collected. Tap to scan the next runner.'
-              : 'Tap to simulate scanning bib ' + current().bib
-          "
+          class="motion-safe:animate-fade-slide-up group relative block w-full max-w-[500px] cursor-pointer appearance-none border-0 bg-transparent p-0 text-left [animation-delay:450ms]"
+          [attr.aria-label]="'Tap to simulate scanning bib ' + current().bib"
+          [attr.aria-busy]="busy()"
         >
-          <div class="relative aspect-[400/480] w-full">
+          <div class="relative aspect-[4/3] w-full">
             <svg
-              viewBox="0 0 400 480"
+              viewBox="0 0 400 300"
               width="100%"
               class="absolute inset-0 block h-full w-full"
               aria-hidden="true"
@@ -88,13 +108,13 @@
                 </linearGradient>
               </defs>
 
-              <!-- Bib body -->
+              <!-- Bib body — standard 8in × 6in (4:3) race bib -->
               <g>
                 <rect
                   x="20"
-                  y="40"
+                  y="16"
                   width="360"
-                  height="400"
+                  height="268"
                   rx="8"
                   fill="url(#bib-shade)"
                   stroke="var(--text-color)"
@@ -102,32 +122,32 @@
                 />
                 <!-- Top safety-pin holes -->
                 <circle
-                  cx="60"
-                  cy="74"
+                  cx="55"
+                  cy="42"
                   r="6"
                   fill="var(--surface-card)"
                   stroke="var(--text-color)"
                   stroke-width="2"
                 />
                 <circle
-                  cx="340"
-                  cy="74"
+                  cx="345"
+                  cy="42"
                   r="6"
                   fill="var(--surface-card)"
                   stroke="var(--text-color)"
                   stroke-width="2"
                 />
                 <circle
-                  cx="60"
-                  cy="410"
+                  cx="55"
+                  cy="258"
                   r="6"
                   fill="var(--surface-card)"
                   stroke="var(--text-color)"
                   stroke-width="2"
                 />
                 <circle
-                  cx="340"
-                  cy="410"
+                  cx="345"
+                  cy="258"
                   r="6"
                   fill="var(--surface-card)"
                   stroke="var(--text-color)"
@@ -136,10 +156,10 @@
                 <!-- Event name -->
                 <text
                   x="200"
-                  y="118"
+                  y="72"
                   text-anchor="middle"
                   font-family="var(--font-sans)"
-                  font-size="18"
+                  font-size="17"
                   font-weight="700"
                   letter-spacing="6"
                   fill="var(--text-color)"
@@ -149,9 +169,9 @@
                 <!-- Divider line -->
                 <line
                   x1="60"
-                  y1="138"
+                  y1="88"
                   x2="340"
-                  y2="138"
+                  y2="88"
                   stroke="var(--text-color)"
                   stroke-opacity="0.2"
                   stroke-width="2"
@@ -159,14 +179,14 @@
                 <!-- Big number — constrained to fit within the bib width -->
                 <text
                   x="200"
-                  y="290"
+                  y="182"
                   text-anchor="middle"
                   font-family="var(--font-sans)"
-                  font-size="148"
+                  font-size="100"
                   font-weight="800"
-                  letter-spacing="-6"
+                  letter-spacing="-4"
                   fill="var(--text-color)"
-                  textLength="300"
+                  textLength="290"
                   lengthAdjust="spacingAndGlyphs"
                   class="tabular-nums"
                 >
@@ -175,19 +195,19 @@
                 <!-- Category footer -->
                 <line
                   x1="60"
-                  y1="330"
+                  y1="204"
                   x2="340"
-                  y2="330"
+                  y2="204"
                   stroke="var(--text-color)"
                   stroke-opacity="0.2"
                   stroke-width="2"
                 />
                 <text
                   x="200"
-                  y="362"
+                  y="230"
                   text-anchor="middle"
                   font-family="var(--font-mono)"
-                  font-size="14"
+                  font-size="13"
                   font-weight="600"
                   letter-spacing="3"
                   fill="var(--text-color-secondary)"
@@ -196,30 +216,30 @@
                 </text>
                 <!-- Chip strip -->
                 <rect
-                  x="80"
-                  y="378"
-                  width="240"
-                  height="14"
+                  x="100"
+                  y="242"
+                  width="200"
+                  height="12"
                   rx="2"
                   fill="currentColor"
                   opacity="0.9"
                 />
-                <rect x="80" y="378" width="240" height="14" rx="2" fill="url(#bib-perf)" />
+                <rect x="100" y="242" width="200" height="12" rx="2" fill="url(#bib-perf)" />
               </g>
 
               <!-- Floating speed line accents -->
               <g opacity="0.5" stroke="var(--text-color)" stroke-width="2" stroke-linecap="round">
-                <line x1="0" y1="60" x2="-15" y2="60" />
-                <line x1="0" y1="200" x2="-25" y2="200" />
-                <line x1="0" y1="380" x2="-15" y2="380" />
-                <line x1="400" y1="120" x2="420" y2="120" />
-                <line x1="400" y1="280" x2="425" y2="280" />
+                <line x1="0" y1="40" x2="-15" y2="40" />
+                <line x1="0" y1="140" x2="-25" y2="140" />
+                <line x1="0" y1="260" x2="-15" y2="260" />
+                <line x1="400" y1="80" x2="420" y2="80" />
+                <line x1="400" y1="190" x2="425" y2="190" />
               </g>
             </svg>
 
             <!-- Scan-line sweep -->
             <div
-              class="pointer-events-none absolute top-[8%] left-[5%] h-[84%] w-[90%] overflow-hidden rounded-[6px]"
+              class="pointer-events-none absolute top-[6%] left-[5%] h-[88%] w-[90%] overflow-hidden rounded-[6px]"
             >
               @if (isScanning()) {
                 <div
@@ -238,12 +258,12 @@
             }
 
             <!-- Tap hint -->
-            @if (!isScanning()) {
+            @if (!busy()) {
               <span
                 class="absolute -top-3 -right-3 inline-flex items-center gap-1.5 rounded-full bg-[var(--text-color)] px-3 py-1.5 text-[11px] font-bold tracking-[0.04em] text-[var(--surface-card)] uppercase shadow-lg group-hover:animate-none motion-safe:animate-pulse"
               >
                 <i class="pi pi-qrcode text-[11px]"></i>
-                {{ isCollected() ? 'Scan next' : 'Tap to scan' }}
+                Tap to scan
               </span>
             }
           </div>

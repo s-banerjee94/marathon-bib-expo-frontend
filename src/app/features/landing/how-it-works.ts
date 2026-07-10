@@ -1,4 +1,21 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  DestroyRef,
+  ElementRef,
+  NgZone,
+  afterRenderEffect,
+  inject,
+  signal,
+  untracked,
+  viewChild,
+} from '@angular/core';
+import gsap from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import { LetterPop } from './letter-pop';
+import { ScrollReveal } from './scroll-reveal';
+
+gsap.registerPlugin(ScrollTrigger);
 
 interface Step {
   num: string;
@@ -8,44 +25,93 @@ interface Step {
 
 @Component({
   selector: 'app-how-it-works',
+  imports: [ScrollReveal, LetterPop],
   templateUrl: './how-it-works.html',
   host: { class: 'block' },
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class HowItWorks {
-  private readonly destroyRef = inject(DestroyRef);
-  private holdTimeoutId?: ReturnType<typeof setTimeout>;
+  private readonly zone = inject(NgZone);
+  private readonly stageBox = viewChild.required<ElementRef<HTMLElement>>('stageBox');
 
   readonly activeStep = signal(0);
+  /** Bumped on every step click so re-selecting the active step replays its visual. */
+  private readonly stageNonce = signal(0);
 
-  /** How far the active step's mini-visual has revealed. Each stage's element only enters
-   *  the DOM once the previous one's `animationend` actually fires — not a guessed delay —
-   *  so the reveal is genuinely one-by-one regardless of how long any stage takes. */
-  readonly stageProgress = signal(0);
+  private stageTl?: gsap.core.Timeline;
+  private firstPlayTrigger?: ScrollTrigger;
+  private hasScheduled = false;
 
   constructor() {
-    this.destroyRef.onDestroy(() => clearTimeout(this.holdTimeoutId));
+    // Runs after the @switch content is in the DOM but before paint, so items
+    // can be hidden without a visible flash.
+    afterRenderEffect(() => {
+      this.stageNonce();
+      untracked(() => this.setupStage());
+    });
+    inject(DestroyRef).onDestroy(() => {
+      this.stageTl?.kill();
+      this.firstPlayTrigger?.kill();
+    });
   }
 
   selectStep(index: number): void {
     this.activeStep.set(index);
-    this.stageProgress.set(0);
-    clearTimeout(this.holdTimeoutId);
+    this.stageNonce.update((n) => n + 1);
   }
 
-  /** Advances to the next stage once the triggering element's own animation finishes.
-   *  `holdMs` adds a deliberate pause after that so the just-revealed stage has a moment
-   *  to register before the next one starts growing in — without it, stages chain into
-   *  each other instantly and the sequence feels rushed. */
-  advanceStage(stage: number, event: AnimationEvent, holdMs = 0): void {
-    if (event.target !== event.currentTarget) {
+  private setupStage(): void {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
       return;
     }
-    if (holdMs > 0) {
-      this.holdTimeoutId = setTimeout(() => this.stageProgress.set(stage), holdMs);
-    } else {
-      this.stageProgress.set(stage);
+    this.zone.runOutsideAngular(() => {
+      this.firstPlayTrigger?.kill();
+      this.firstPlayTrigger = undefined;
+      if (!this.hasScheduled) {
+        this.hasScheduled = true;
+        this.hideItems();
+        this.firstPlayTrigger = ScrollTrigger.create({
+          trigger: this.stageBox().nativeElement,
+          start: 'top 80%',
+          once: true,
+          onEnter: () => this.playStage(),
+        });
+        return;
+      }
+      this.playStage();
+    });
+  }
+
+  private hideItems(): { items: HTMLElement[]; sweep: HTMLElement | null } {
+    const box = this.stageBox().nativeElement;
+    const items = Array.from(box.querySelectorAll<HTMLElement>('[data-stage-item]'));
+    const sweep = box.querySelector<HTMLElement>('[data-stage-sweep]');
+    this.stageTl?.kill();
+    gsap.set(items, { opacity: 0, y: 12, scale: 0.92 });
+    if (sweep) {
+      gsap.set(sweep, { opacity: 0 });
     }
+    return { items, sweep };
+  }
+
+  /** Grows the stage's pieces in one by one; in the scan stage the sweep line
+   *  crosses the QR box before the rest of the flow appears. */
+  private playStage(): void {
+    const { items, sweep } = this.hideItems();
+    const tl = gsap.timeline();
+    items.forEach((item, i) => {
+      tl.to(
+        item,
+        { opacity: 1, y: 0, scale: 1, duration: 0.45, ease: 'back.out(1.6)' },
+        i === 0 ? 0 : '+=0.3',
+      );
+      if (i === 0 && sweep) {
+        tl.set(sweep, { top: '0%', opacity: 1 })
+          .to(sweep, { top: '97%', duration: 0.7, ease: 'power1.inOut' })
+          .to(sweep, { opacity: 0, duration: 0.15 });
+      }
+    });
+    this.stageTl = tl;
   }
 
   readonly steps: readonly Step[] = [

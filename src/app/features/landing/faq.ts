@@ -1,4 +1,6 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { LetterPop } from './letter-pop';
+import { ScrollReveal } from './scroll-reveal';
 
 interface Qa {
   q: string;
@@ -7,6 +9,7 @@ interface Qa {
 
 @Component({
   selector: 'app-faq',
+  imports: [ScrollReveal, LetterPop],
   templateUrl: './faq.html',
   host: { class: 'block' },
   changeDetection: ChangeDetectionStrategy.OnPush,

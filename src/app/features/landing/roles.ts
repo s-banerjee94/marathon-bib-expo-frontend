@@ -1,4 +1,7 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { LetterPop } from './letter-pop';
+import { ScrollReveal } from './scroll-reveal';
+import { TiltCard } from './tilt-card';
 
 interface Role {
   tag: string;
@@ -9,6 +12,7 @@ interface Role {
 
 @Component({
   selector: 'app-roles',
+  imports: [ScrollReveal, TiltCard, LetterPop],
   templateUrl: './roles.html',
   host: { class: 'block' },
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -18,34 +22,34 @@ export class Roles {
     {
       tag: 'ORGANIZER ADMIN',
       title: 'For the organizer',
-      body: 'You own the event end-to-end. Create races, set limits, run SMS/WhatsApp/email campaigns, review the audit trail, manage your team.',
+      body: 'The owner seat. Everything in your organization answers to this role — events, races, campaigns, the audit trail, and who on your team does what.',
       caps: [
-        'Full event CRUD',
-        'Drag-to-map roster import',
+        'Full control of the organization',
+        'Create & run events end-to-end',
         'SMS · WhatsApp · Email campaigns',
-        'Live, role-aware dashboard',
+        'Manage the team & audit trail',
       ],
     },
     {
       tag: 'ORGANIZER USER',
       title: 'For your team',
-      body: 'Your ops people add participants, fix typos, build message templates, and run reports day-to-day.',
+      body: 'The day-to-day operators. They keep events moving and distributors organized — import rosters, fix participant details, build message templates.',
       caps: [
-        'Manage participants',
+        'Manage events & distributors',
+        'Import & maintain the roster',
         'Build campaign templates',
-        'Run roster imports',
         'View live stats',
       ],
     },
     {
       tag: 'DISTRIBUTOR',
       title: 'For expo-day scanning',
-      body: 'You’re at the table on distribution day, bound to one event. One screen, one task: scan or search, hand over the kit, move on.',
+      body: 'At the table on distribution day, bound to one event. They see the distribution screen and nothing else: scan or search, hand over the kit, move on.',
       caps: [
         'QR scan or manual lookup',
         'Goodies checklist',
         'Works offline at the table',
-        'Bound to a single event',
+        'Distribution only — nothing else',
       ],
     },
   ];

@@ -1,7 +1,9 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { ScrollReveal } from './scroll-reveal';
 
 @Component({
   selector: 'app-logo-wall',
+  imports: [ScrollReveal],
   templateUrl: './logo-wall.html',
   host: { class: 'block' },
   changeDetection: ChangeDetectionStrategy.OnPush,

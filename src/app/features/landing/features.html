@@ -1,11 +1,12 @@
 <section id="features" class="scroll-mt-[var(--topbar-height)] py-24">
   <div class="mx-auto max-w-[1440px] px-7">
-    <div class="mb-14 max-w-[720px]">
+    <div appScrollReveal revealStagger="0.12" class="mb-14 max-w-[720px]">
       <span
         class="inline-flex items-center gap-2.5 text-xs font-bold tracking-[0.12em] text-[var(--text-color-secondary)] uppercase before:h-px before:w-6 before:bg-current before:content-['']"
         >Capabilities</span
       >
       <h2
+        appLetterPop
         class="my-4 text-[clamp(36px,4.5vw,56px)] leading-[1.05] font-extrabold tracking-[-0.03em] text-[var(--text-color)]"
       >
         Everything race ops actually needs.<br />Nothing they don't.
@@ -16,7 +17,7 @@
         assistant for the busywork, and a link runners can check without ever logging in.
       </p>
     </div>
-    <div class="grid grid-cols-1 gap-6 min-[900px]:grid-cols-3">
+    <div appScrollReveal revealStagger="0.1" class="grid grid-cols-1 gap-6 min-[900px]:grid-cols-3">
       @for (f of items; track f.title) {
         <p-card styleClass="h-full">
           <ng-template #title>

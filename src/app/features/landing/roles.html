@@ -1,11 +1,12 @@
 <section id="roles" class="scroll-mt-[var(--topbar-height)] py-24">
   <div class="mx-auto max-w-[1440px] px-7">
-    <div class="mb-14 max-w-[720px]">
+    <div appScrollReveal revealStagger="0.12" class="mb-14 max-w-[720px]">
       <span
         class="inline-flex items-center gap-2.5 text-xs font-bold tracking-[0.12em] text-[var(--text-color-secondary)] uppercase before:h-px before:w-6 before:bg-current before:content-['']"
         >Three roles, three jobs</span
       >
       <h2
+        appLetterPop
         class="my-4 text-[clamp(36px,4.5vw,56px)] leading-[1.05] font-extrabold tracking-[-0.03em] text-[var(--text-color)]"
       >
         The right screen for the right hands.
@@ -17,7 +18,7 @@
       </p>
     </div>
 
-    <div class="grid grid-cols-1 gap-6 min-[900px]:grid-cols-3">
+    <div appScrollReveal revealStagger="0.1" class="grid grid-cols-1 gap-6 min-[900px]:grid-cols-3">
       @for (r of roles; track r.tag) {
         <div
           class="relative flex min-h-[280px] flex-col gap-4 rounded-xl border border-[var(--surface-border)] bg-[var(--surface-card)] p-8"
@@ -41,7 +42,7 @@
 
     <!-- A peek at the admin view -->
     <div class="mt-12 grid grid-cols-1 items-center gap-6 min-[900px]:grid-cols-2">
-      <div>
+      <div appScrollReveal="left">
         <span
           class="inline-flex items-center gap-2.5 text-xs font-bold tracking-[0.12em] text-[var(--text-color-secondary)] uppercase before:h-px before:w-6 before:bg-current before:content-['']"
           >A peek at the admin view</span
@@ -57,6 +58,9 @@
         </p>
       </div>
       <div
+        appScrollReveal="right"
+        appTiltCard
+        tiltMax="6"
         class="overflow-hidden rounded-[10px] border border-[var(--surface-border)] bg-[var(--surface-card)] shadow-[0_20px_40px_-20px_rgba(0,0,0,0.3)]"
       >
         <div
@@ -99,7 +103,7 @@
             </div>
           </div>
           <div class="h-1.5 overflow-hidden rounded-[3px] bg-[var(--surface-ground)]">
-            <div class="h-full w-[66%] bg-[#16a34a]"></div>
+            <div appScrollReveal="bar" revealDelay="0.4" class="h-full w-[66%] bg-[#16a34a]"></div>
           </div>
           <div class="flex justify-between text-[10px] text-[var(--text-color-secondary)]">
             <span>Bib collection progress</span>
