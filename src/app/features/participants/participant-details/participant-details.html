@@ -1,5 +1,6 @@
 @if (isLoading()) {
-  <div class="grid grid-cols-2 lg:grid-cols-3 gap-2">
+  <p-skeleton height="6rem" borderRadius="0.75rem" styleClass="mb-4" />
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
     <p-skeleton height="10rem" />
     <p-skeleton height="10rem" />
     <p-skeleton height="10rem" />
@@ -8,40 +9,54 @@
     <p-skeleton height="10rem" />
   </div>
 } @else if (participant(); as p) {
-  <!-- Header strip with primary identifiers -->
+  <!-- Identity hero -->
   <div
-    class="flex flex-wrap items-center gap-2 mb-2.5 pb-2 border-b border-surface-200 dark:border-surface-700"
+    class="mb-4 rounded-xl border border-surface-200 bg-surface-0 p-4 dark:border-surface-700 dark:bg-surface-900"
   >
-    <div class="flex-1 min-w-0">
-      <p class="text-xs uppercase tracking-wide text-gray-500">BIB Number</p>
-      <p class="text-2xl font-bold leading-tight">{{ p.bibNumber }}</p>
-    </div>
-    <div class="flex-1 min-w-0">
-      <p class="text-xs uppercase tracking-wide text-gray-500">Full Name</p>
-      <p class="text-base font-semibold truncate">{{ p.fullName | defaultValue }}</p>
-    </div>
-    <div class="flex items-center gap-2 flex-shrink-0">
-      @if (p.bibCollectedAt) {
-        <p-tag [rounded]="true" severity="success" value="BIB Collected" />
-      } @else {
-        <p-tag [rounded]="true" severity="warn" value="BIB Pending" />
-      }
-      <p-tag
-        [rounded]="true"
-        [severity]="getGenderSeverity(p.gender)"
-        [value]="getGenderDisplay(p.gender)"
+    <div class="flex items-start gap-3">
+      <p-avatar
+        [label]="p.fullName | initials: 2"
+        shape="circle"
+        size="large"
+        styleClass="shrink-0"
       />
+      <div class="min-w-0 flex-1">
+        <p class="truncate text-lg font-bold leading-tight">{{ p.fullName | defaultValue }}</p>
+        <p class="mt-0.5 truncate text-sm text-muted-color">
+          <span class="font-semibold">BIB {{ p.bibNumber }}</span>
+          @if (p.raceName) {
+            <span> · {{ p.raceName }}</span>
+          }
+          @if (p.categoryName) {
+            <span> · {{ p.categoryName }}</span>
+          }
+        </p>
+        <div class="mt-2 flex flex-wrap gap-2">
+          @if (p.bibCollectedAt) {
+            <p-tag [rounded]="true" severity="success" value="BIB Collected" />
+          } @else {
+            <p-tag [rounded]="true" severity="warn" value="BIB Pending" />
+          }
+          <p-tag
+            [rounded]="true"
+            [severity]="getGenderSeverity(p.gender)"
+            [value]="getGenderDisplay(p.gender)"
+          />
+        </div>
+      </div>
     </div>
   </div>
 
-  <!-- 9 sections: 2-col mobile, 3-col desktop -->
-  <div class="grid grid-cols-2 lg:grid-cols-3 gap-2">
+  <!-- Sections: single column on mobile, 2 up at md, 3 up at lg -->
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
     <!-- 1. Personal -->
     <p-card>
       <ng-template pTemplate="header">
-        <div class="px-4 pt-2.5 flex items-center gap-2">
-          <i class="pi pi-user text-base"></i>
-          <h3 class="font-semibold text-sm">Personal</h3>
+        <div
+          class="flex items-center gap-2 border-b border-surface-200 px-4 pb-2 pt-3 dark:border-surface-700"
+        >
+          <i class="pi pi-user text-primary"></i>
+          <h3 class="text-sm font-semibold">Personal</h3>
         </div>
       </ng-template>
 
@@ -138,9 +153,11 @@
     <!-- 2. Contact -->
     <p-card>
       <ng-template pTemplate="header">
-        <div class="px-4 pt-2.5 flex items-center gap-2">
-          <i class="pi pi-envelope text-base"></i>
-          <h3 class="font-semibold text-sm">Contact</h3>
+        <div
+          class="flex items-center gap-2 border-b border-surface-200 px-4 pb-2 pt-3 dark:border-surface-700"
+        >
+          <i class="pi pi-envelope text-primary"></i>
+          <h3 class="text-sm font-semibold">Contact</h3>
         </div>
       </ng-template>
 
@@ -192,9 +209,11 @@
     <!-- 3. Location -->
     <p-card>
       <ng-template pTemplate="header">
-        <div class="px-4 pt-2.5 flex items-center gap-2">
-          <i class="pi pi-map-marker text-base"></i>
-          <h3 class="font-semibold text-sm">Location</h3>
+        <div
+          class="flex items-center gap-2 border-b border-surface-200 px-4 pb-2 pt-3 dark:border-surface-700"
+        >
+          <i class="pi pi-map-marker text-primary"></i>
+          <h3 class="text-sm font-semibold">Location</h3>
         </div>
       </ng-template>
 
@@ -244,9 +263,11 @@
     <!-- 4. Race & Category -->
     <p-card>
       <ng-template pTemplate="header">
-        <div class="px-4 pt-2.5 flex items-center gap-2">
-          <i class="pi pi-flag text-base"></i>
-          <h3 class="font-semibold text-sm">Race &amp; Category</h3>
+        <div
+          class="flex items-center gap-2 border-b border-surface-200 px-4 pb-2 pt-3 dark:border-surface-700"
+        >
+          <i class="pi pi-flag text-primary"></i>
+          <h3 class="text-sm font-semibold">Race &amp; Category</h3>
         </div>
       </ng-template>
 
@@ -274,7 +295,7 @@
             appendTo="body"
             (onChange)="onRaceSelectionChange()"
           />
-          <p class="text-xs text-gray-500 mt-1">
+          <p class="mt-1 text-xs text-muted-color">
             Changing race resets the category — pick a new one.
           </p>
           <p-select
@@ -320,9 +341,11 @@
     <!-- 5. BIB & Chip -->
     <p-card>
       <ng-template pTemplate="header">
-        <div class="px-4 pt-2.5 flex items-center gap-2">
-          <i class="pi pi-id-card text-base"></i>
-          <h3 class="font-semibold text-sm">BIB &amp; Chip</h3>
+        <div
+          class="flex items-center gap-2 border-b border-surface-200 px-4 pb-2 pt-3 dark:border-surface-700"
+        >
+          <i class="pi pi-id-card text-primary"></i>
+          <h3 class="text-sm font-semibold">BIB &amp; Chip</h3>
         </div>
       </ng-template>
 
@@ -359,53 +382,67 @@
     <!-- 6. Collection (read-only) -->
     <p-card>
       <ng-template pTemplate="header">
-        <div class="px-4 pt-2.5 flex items-center gap-2">
-          <i class="pi pi-check-circle text-base"></i>
-          <h3 class="font-semibold text-sm">Collection</h3>
+        <div
+          class="flex items-center gap-2 border-b border-surface-200 px-4 pb-2 pt-3 dark:border-surface-700"
+        >
+          <i class="pi pi-check-circle text-primary"></i>
+          <h3 class="text-sm font-semibold">Collection</h3>
         </div>
       </ng-template>
 
-      <app-editable-field-row
-        label="Collected At"
-        [displayValue]="p.bibCollectedAt | date: 'dd-MMM-yyyy, hh:mm a'"
-        [editable]="false"
-        [editing]="false"
-        [saving]="false"
-      />
-      <app-editable-field-row
-        label="Collected By"
-        [displayValue]="p.bibCollectedByName"
-        [editable]="false"
-        [editing]="false"
-        [saving]="false"
-      />
-      <app-editable-field-row
-        label="Collector Phone"
-        [displayValue]="p.bibCollectedByPhone"
-        [editable]="false"
-        [editing]="false"
-        [saving]="false"
-      />
-      <app-editable-field-row
-        label="Distributed By"
-        [displayValue]="p.bibDistributedBy | userName"
-        [editable]="false"
-        [editing]="false"
-        [saving]="false"
-      />
+      @if (!p.bibCollectedAt) {
+        <div class="flex items-center gap-2 py-2 text-sm text-muted-color">
+          <i class="pi pi-clock"></i>
+          <span>BIB not collected yet</span>
+        </div>
+      } @else {
+        <app-editable-field-row
+          label="Collected At"
+          [displayValue]="p.bibCollectedAt | date: 'dd-MMM-yyyy, hh:mm a'"
+          [editable]="false"
+          [editing]="false"
+          [saving]="false"
+        />
+        <app-editable-field-row
+          label="Collected By"
+          [displayValue]="p.bibCollectedByName"
+          [editable]="false"
+          [editing]="false"
+          [saving]="false"
+        />
+        <app-editable-field-row
+          label="Collector Phone"
+          [displayValue]="p.bibCollectedByPhone"
+          [editable]="false"
+          [editing]="false"
+          [saving]="false"
+        />
+        <app-editable-field-row
+          label="Distributed By"
+          [displayValue]="p.bibDistributedBy | userName"
+          [editable]="false"
+          [editing]="false"
+          [saving]="false"
+        />
+      }
     </p-card>
 
     <!-- 7. Goodies (read-only) -->
     <p-card>
       <ng-template pTemplate="header">
-        <div class="px-4 pt-2.5 flex items-center gap-2">
-          <i class="pi pi-gift text-base"></i>
-          <h3 class="font-semibold text-sm">Goodies</h3>
+        <div
+          class="flex items-center gap-2 border-b border-surface-200 px-4 pb-2 pt-3 dark:border-surface-700"
+        >
+          <i class="pi pi-gift text-primary"></i>
+          <h3 class="text-sm font-semibold">Goodies</h3>
         </div>
       </ng-template>
 
       @if (goodiesEntries().length === 0) {
-        <p class="text-sm text-gray-500">--</p>
+        <div class="flex items-center gap-2 py-2 text-sm text-muted-color">
+          <i class="pi pi-inbox"></i>
+          <span>No goodies assigned</span>
+        </div>
       } @else {
         <div class="space-y-1.5">
           @for (entry of distributionEntries(); track entry.key) {
@@ -427,9 +464,11 @@
     <!-- 8. Emergency -->
     <p-card>
       <ng-template pTemplate="header">
-        <div class="px-4 pt-2.5 flex items-center gap-2">
-          <i class="pi pi-phone text-base"></i>
-          <h3 class="font-semibold text-sm">Emergency</h3>
+        <div
+          class="flex items-center gap-2 border-b border-surface-200 px-4 pb-2 pt-3 dark:border-surface-700"
+        >
+          <i class="pi pi-phone text-primary"></i>
+          <h3 class="text-sm font-semibold">Emergency</h3>
         </div>
       </ng-template>
 
@@ -479,12 +518,14 @@
 
     <!-- Additional Information — full width, editable via PATCH merge semantics -->
     @if (additionalFieldsEntries().length > 0 || editable()) {
-      <p-card styleClass="col-span-2 lg:col-span-3">
+      <p-card styleClass="col-span-1 md:col-span-2 lg:col-span-3">
         <ng-template pTemplate="header">
-          <div class="px-4 pt-2.5 flex items-center justify-between gap-2">
+          <div
+            class="flex items-center justify-between gap-2 border-b border-surface-200 px-4 pb-2 pt-3 dark:border-surface-700"
+          >
             <div class="flex items-center gap-2">
-              <i class="pi pi-list text-base"></i>
-              <h3 class="font-semibold text-sm">Additional Information</h3>
+              <i class="pi pi-list text-primary"></i>
+              <h3 class="text-sm font-semibold">Additional Information</h3>
             </div>
             @if (editable() && additionalFieldsEntries().length < 10 && editingAddlKey() === null) {
               <p-button
@@ -504,24 +545,24 @@
         </ng-template>
 
         @if (additionalFieldsEntries().length === 0 && editingAddlKey() !== 'new') {
-          <p class="text-sm text-gray-500 py-1">No additional fields.</p>
+          <p class="py-1 text-sm text-muted-color">No additional fields.</p>
         }
 
         <div class="divide-y divide-surface-200 dark:divide-surface-700">
           @for (entry of additionalFieldsEntries(); track entry.key) {
             @if (editingAddlKey() === entry.key) {
-              <div class="flex gap-2 items-center py-2">
+              <div class="flex flex-wrap items-center gap-2 py-2">
                 <input
                   [(ngModel)]="workingAddlKey"
                   [pSize]="inputSize"
-                  class="flex-1"
+                  class="flex-1 min-w-[8rem]"
                   pInputText
                   placeholder="Field name"
                 />
                 <input
                   [(ngModel)]="workingAddlValue"
                   [pSize]="inputSize"
-                  class="flex-1"
+                  class="flex-1 min-w-[8rem]"
                   pInputText
                   placeholder="Value"
                 />
@@ -554,7 +595,7 @@
             } @else {
               <div class="flex items-center justify-between gap-2 py-1.5">
                 <div class="min-w-0 flex-1">
-                  <p class="text-xs uppercase tracking-wide text-gray-500 truncate">
+                  <p class="truncate text-xs uppercase tracking-wide text-muted-color">
                     {{ entry.key }}
                   </p>
                   <p class="text-sm font-medium break-words">{{ entry.value | defaultValue }}</p>
@@ -590,18 +631,18 @@
           }
 
           @if (editingAddlKey() === 'new') {
-            <div class="flex gap-2 items-center py-2">
+            <div class="flex flex-wrap items-center gap-2 py-2">
               <input
                 [(ngModel)]="workingAddlKey"
                 [pSize]="inputSize"
-                class="flex-1"
+                class="flex-1 min-w-[8rem]"
                 pInputText
                 placeholder="Field name"
               />
               <input
                 [(ngModel)]="workingAddlValue"
                 [pSize]="inputSize"
-                class="flex-1"
+                class="flex-1 min-w-[8rem]"
                 pInputText
                 placeholder="Value"
               />
@@ -637,15 +678,17 @@
     }
 
     <!-- Audit (read-only) — full width, after Additional Information -->
-    <p-card styleClass="col-span-2 lg:col-span-3">
+    <p-card styleClass="col-span-1 md:col-span-2 lg:col-span-3">
       <ng-template pTemplate="header">
-        <div class="px-4 pt-2.5 flex items-center gap-2">
-          <i class="pi pi-history text-base"></i>
-          <h3 class="font-semibold text-sm">Audit</h3>
+        <div
+          class="flex items-center gap-2 border-b border-surface-200 px-4 pb-2 pt-3 dark:border-surface-700"
+        >
+          <i class="pi pi-history text-primary"></i>
+          <h3 class="text-sm font-semibold">Audit</h3>
         </div>
       </ng-template>
 
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-x-3 gap-y-2">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-3">
         <app-editable-field-row
           label="Created"
           [displayValue]="p.createdAt | date: 'dd-MMM-yyyy, hh:mm a'"
@@ -678,11 +721,13 @@
     </p-card>
 
     <!-- Notes — full width -->
-    <p-card styleClass="col-span-2 lg:col-span-3">
+    <p-card styleClass="col-span-1 md:col-span-2 lg:col-span-3">
       <ng-template pTemplate="header">
-        <div class="px-4 pt-2.5 flex items-center gap-2">
-          <i class="pi pi-pencil text-base"></i>
-          <h3 class="font-semibold text-sm">Notes</h3>
+        <div
+          class="flex items-center gap-2 border-b border-surface-200 px-4 pb-2 pt-3 dark:border-surface-700"
+        >
+          <i class="pi pi-pencil text-primary"></i>
+          <h3 class="text-sm font-semibold">Notes</h3>
         </div>
       </ng-template>
 

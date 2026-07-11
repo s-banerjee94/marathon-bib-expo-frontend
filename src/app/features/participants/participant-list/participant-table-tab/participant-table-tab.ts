@@ -28,6 +28,8 @@ import { InputIconModule } from 'primeng/inputicon';
 import { FloatLabelModule } from 'primeng/floatlabel';
 import { PopoverModule } from 'primeng/popover';
 import { DividerModule } from 'primeng/divider';
+import { CheckboxModule } from 'primeng/checkbox';
+import { CardModule } from 'primeng/card';
 import { ConfirmationService } from 'primeng/api';
 import { Participant } from '../../../../core/models/participant.model';
 import { EventService } from '../../../../core/services/event.service';
@@ -56,6 +58,7 @@ import { STORAGE_KEYS } from '../../../../shared/constants/storage-keys.constant
 import { TableColumn } from '../../../../shared/models/table-config.model';
 import { ParticipantListState } from '../participant-list-state.service';
 import { EmptyIllustration } from '../../../../shared/illustrations/empty-illustration';
+import { BreakpointService } from '../../../../core/services/breakpoint.service';
 
 @Component({
   selector: 'app-participant-table-tab',
@@ -78,6 +81,8 @@ import { EmptyIllustration } from '../../../../shared/illustrations/empty-illust
     FloatLabelModule,
     PopoverModule,
     DividerModule,
+    CheckboxModule,
+    CardModule,
     DefaultValuePipe,
     EmptyIllustration,
   ],
@@ -91,6 +96,11 @@ export class ParticipantTableTab {
   private confirmationService = inject(ConfirmationService);
   private listState = inject(ParticipantListState);
   private appRef = inject(ApplicationRef);
+
+  // Below the mobile breakpoint the 22-column table is unusable (horizontal scroll
+  // hides most fields), so we render a card per participant instead — same data
+  // source and cursor pagination, just a touch-friendly layout.
+  protected readonly isMobile = inject(BreakpointService).isMobile;
 
   // Router-bound input — the parent route is `event/:eventId`. Accepts string (from
   // router path params) or number (when bound directly by a host component).
@@ -574,6 +584,24 @@ export class ParticipantTableTab {
 
   hasSelection(): boolean {
     return this.selectedParticipants.length > 0;
+  }
+
+  // Mobile cards can't use p-tableCheckbox, so selection is toggled by hand against
+  // the same `selectedParticipants` array the desktop table binds to.
+  isSelected(participant: Participant): boolean {
+    return this.selectedParticipants.some((p) => p.bibNumber === participant.bibNumber);
+  }
+
+  toggleSelection(participant: Participant, checked: boolean): void {
+    if (checked) {
+      if (!this.isSelected(participant)) {
+        this.selectedParticipants = [...this.selectedParticipants, participant];
+      }
+    } else {
+      this.selectedParticipants = this.selectedParticipants.filter(
+        (p) => p.bibNumber !== participant.bibNumber,
+      );
+    }
   }
 
   // ---------- Goodies display helpers ----------

@@ -13,7 +13,7 @@ import { DefaultValuePipe } from '../../../shared/pipes/default-value.pipe';
       class="flex items-start justify-between gap-2 py-1.5 border-b border-surface-200 dark:border-surface-700 last:border-b-0"
     >
       <div class="flex-1 min-w-0">
-        <p class="text-xs uppercase tracking-wide text-gray-500 mb-0.5">{{ label() }}</p>
+        <p class="text-xs uppercase tracking-wide text-muted-color mb-0.5">{{ label() }}</p>
         @if (editing()) {
           <ng-content />
         } @else {

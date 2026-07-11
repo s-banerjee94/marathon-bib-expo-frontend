@@ -13,6 +13,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
+import { AvatarModule } from 'primeng/avatar';
 import { TagModule } from 'primeng/tag';
 import { SelectModule } from 'primeng/select';
 import { InputTextModule } from 'primeng/inputtext';
@@ -29,6 +30,7 @@ import { ErrorHandlerService } from '../../../core/services/error-handler.servic
 import { ToastService } from '../../../core/services/toast.service';
 import { DefaultValuePipe } from '../../../shared/pipes/default-value.pipe';
 import { UserNamePipe } from '../../../shared/pipes/user-name-pipe';
+import { InitialsPipe } from '../../../shared/pipes/initials-pipe';
 import {
   formatGoodiesKey,
   getGenderDisplay,
@@ -66,6 +68,7 @@ type FieldKey =
     FormsModule,
     ButtonModule,
     CardModule,
+    AvatarModule,
     TagModule,
     SelectModule,
     InputTextModule,
@@ -76,6 +79,7 @@ type FieldKey =
     TooltipModule,
     DefaultValuePipe,
     UserNamePipe,
+    InitialsPipe,
     EditableFieldRow,
   ],
 })
