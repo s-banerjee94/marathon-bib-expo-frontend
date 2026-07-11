@@ -104,6 +104,28 @@ export const REQUIRED_TO_MAP: ReadonlySet<string> = new Set([
   'phoneNumber',
 ]);
 
+/**
+ * Applies one new connection to an existing set under the mapper's rules:
+ * a CSV column participates in at most one connection, and single (non-multi)
+ * fields hold one connection — a new drop replaces the old one. Returns the
+ * next connections array; unknown target fields leave the set unchanged.
+ * Shared by the drag mapper (desktop) and the tap-to-select mapper (mobile).
+ */
+export function applyConnection(
+  connections: Mapping[],
+  csvColumn: string,
+  targetField: string,
+  fields: TargetField[],
+): Mapping[] {
+  const field = fields.find((f) => f.key === targetField);
+  if (!field) return connections;
+  let next = connections.filter((c) => c.csvColumn !== csvColumn);
+  if (!field.multi) {
+    next = next.filter((c) => c.targetField !== targetField);
+  }
+  return [...next, { csvColumn, targetField }];
+}
+
 /** Optional hints shown under known scalar fields (labels come from the backend). */
 export const FIELD_HINTS: Record<string, string> = {
   gender: 'M / F / O',

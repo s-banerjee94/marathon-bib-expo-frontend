@@ -98,6 +98,7 @@
         icon="pi pi-search"
         label="Search"
         severity="primary"
+        styleClass="w-full sm:w-auto"
       />
       @if (isSearchMode()) {
         <p-button
@@ -107,6 +108,7 @@
           icon="pi pi-times"
           label="Clear"
           severity="secondary"
+          styleClass="w-full sm:w-auto"
         />
       }
     </div>
@@ -126,6 +128,7 @@
           icon="pi pi-upload"
           label="Import Participants"
           severity="primary"
+          styleClass="w-full sm:w-auto"
         ></p-button>
         <p-button
           (onClick)="createRequested.emit()"
@@ -133,6 +136,7 @@
           icon="pi pi-plus"
           label="Add Participant"
           severity="success"
+          styleClass="w-full sm:w-auto"
         ></p-button>
         <p-button
           (onClick)="exportRequested.emit()"
@@ -140,6 +144,7 @@
           [size]="buttonSize"
           icon="pi pi-download"
           label="Export CSV"
+          styleClass="w-full sm:w-auto"
         ></p-button>
       }
 
@@ -151,6 +156,7 @@
           icon="pi pi-trash"
           label="Delete Selected ({{ selectedParticipants.length }})"
           severity="danger"
+          styleClass="w-full sm:w-auto"
         ></p-button>
       }
     </div>

@@ -1,47 +1,33 @@
 <div class="p-2 sm:p-3 md:p-4">
+  <p-confirmdialog />
   <div class="mb-5">
-    <h1 class="text-3xl font-bold">{{ isAddOn() ? 'Add On' : 'Import Participants' }}</h1>
-    <p class="mt-2">
+    <h1 class="text-2xl font-bold sm:text-3xl">
+      {{ isAddOn() ? 'Add On' : 'Import Participants' }}
+    </h1>
+    <p class="mt-2 text-sm sm:text-base">
       @if (isAddOn()) {
-        Upload a CSV, map its columns to participant fields by dragging, then add these participants
-        to the event — existing participants are kept.
+        Upload a CSV, map its columns to participant fields, then add these participants to the
+        event — existing participants are kept.
       } @else {
-        Upload a CSV, map its columns to participant fields by dragging, then run a full import that
-        replaces all existing participants.
+        Upload a CSV, map its columns to participant fields, then run a full import that replaces
+        all existing participants.
       }
     </p>
   </div>
 
-  <!-- Step header -->
-  <div class="mb-5 flex items-center">
-    @for (s of steps; track s.n; let last = $last) {
-      <div class="flex items-center gap-2">
-        <span
-          class="flex h-8 w-8 items-center justify-center rounded-full border-2 text-sm font-medium transition-colors"
-          [class.bg-primary]="activeStep() >= s.n"
-          [class.text-primary-contrast]="activeStep() >= s.n"
-          [class.border-primary]="activeStep() >= s.n"
-          [class.border-surface]="activeStep() < s.n"
-          [class.text-muted-color]="activeStep() < s.n"
-          >{{ s.n }}</span
-        >
-        <span
-          class="whitespace-nowrap text-sm"
-          [class.font-semibold]="activeStep() === s.n"
-          [class.text-muted-color]="activeStep() !== s.n"
-          >{{ s.label }}</span
-        >
-      </div>
-      @if (!last) {
-        <div
-          class="mx-3 h-0.5 flex-1 rounded transition-colors"
-          [class.bg-primary]="activeStep() > s.n"
-          [class.bg-surface-300]="activeStep() <= s.n"
-          [class.dark:bg-surface-700]="activeStep() <= s.n"
-        ></div>
-      }
-    }
-  </div>
+  <!-- Step header — indicator only; the @switch below renders the step content -->
+  <!-- Step titles collapse to just the numbered circles below sm -->
+  <p-stepper
+    [value]="activeStep()"
+    [linear]="true"
+    class="mb-5 block [&_.p-step-title]:hidden sm:[&_.p-step-title]:block"
+  >
+    <p-step-list>
+      <p-step [value]="1">Upload CSV</p-step>
+      <p-step [value]="2">Map Fields</p-step>
+      <p-step [value]="3">Review & Import</p-step>
+    </p-step-list>
+  </p-stepper>
 
   <!-- Step 1 — Upload -->
   @switch (activeStep()) {
@@ -64,17 +50,54 @@
           </div>
         }
 
-        <div>
-          <p-fileUpload
-            (onSelect)="onFileSelect($event)"
-            [auto]="false"
-            [maxFileSize]="20000000"
-            accept=".csv"
-            chooseIcon="pi pi-file"
-            chooseLabel="Choose CSV File"
-            mode="basic"
-          ></p-fileUpload>
-        </div>
+        <p-fileUpload
+          (onSelect)="onFileSelect($event)"
+          (onRemove)="onFileCleared()"
+          (onClear)="onFileCleared()"
+          [customUpload]="true"
+          [multiple]="false"
+          [showUploadButton]="false"
+          [showCancelButton]="false"
+          [maxFileSize]="10485760"
+          accept=".csv"
+          chooseIcon="pi pi-file-import"
+          chooseLabel="Browse"
+        >
+          <!-- compact selected-file row (the default list renders an image preview,
+               which is broken for CSVs) -->
+          <ng-template #content let-files let-removeFileCallback="removeFileCallback">
+            @if (files.length) {
+              <div class="flex items-center gap-3 rounded-lg border border-surface px-3 py-2">
+                <i class="pi pi-file text-xl text-muted-color" aria-hidden="true"></i>
+                <span class="min-w-0 flex-1">
+                  <span class="block truncate text-sm font-medium">{{ files[0].name }}</span>
+                  <span class="block text-xs text-muted-color">{{
+                    formatFileSize(files[0].size)
+                  }}</span>
+                </span>
+                <p-button
+                  (onClick)="removeFileCallback($event, 0)"
+                  [text]="true"
+                  [rounded]="true"
+                  [ariaLabel]="'Remove ' + files[0].name"
+                  icon="pi pi-times"
+                  severity="secondary"
+                  size="small"
+                />
+              </div>
+            }
+          </ng-template>
+          <ng-template #file></ng-template>
+          <ng-template #empty>
+            <div class="flex flex-col items-center gap-2 py-8 text-center">
+              <i class="pi pi-cloud-upload text-4xl text-muted-color" aria-hidden="true"></i>
+              <p class="font-medium">Drag and drop your CSV here</p>
+              <p class="text-sm text-muted-color">
+                or Browse — one file up to 10 MB, with a header row
+              </p>
+            </div>
+          </ng-template>
+        </p-fileUpload>
 
         @if (parseError(); as err) {
           <p-message severity="error">{{ err }}</p-message>
@@ -83,9 +106,11 @@
         @if (hasFile()) {
           <div class="w-full min-w-0 space-y-2">
             <div class="flex flex-wrap items-center gap-2 text-sm text-muted-color">
-              <i class="pi pi-check-circle text-primary"></i>
-              <span class="font-medium text-color">{{ fileName() }}</span>
-              <span>· {{ csvColumns().length }} columns · {{ totalRows() }} rows</span>
+              <i class="pi pi-check-circle text-primary" aria-hidden="true"></i>
+              <span>
+                <span class="font-medium text-color">{{ csvColumns().length }} columns</span>
+                · {{ totalRows() }} rows detected
+              </span>
             </div>
             <p class="text-sm font-medium">Preview (first {{ previewRows().length }} rows)</p>
             <div class="min-w-0 overflow-hidden rounded-lg border border-surface">
@@ -128,98 +153,129 @@
     }
 
     @case (2) {
-      <!-- Step 2 — Map (single screen) -->
-      <div class="flex h-[calc(100dvh-16rem)] w-full min-w-0 flex-col gap-3">
-        <!-- legend -->
-        <div class="flex shrink-0 flex-wrap items-center gap-x-6 gap-y-1 text-sm text-muted-color">
-          <span class="flex items-center gap-2">
-            <span class="h-3 w-3 rounded-full bg-primary"></span> Mapped
-          </span>
-          <span class="flex items-center gap-2">
-            <span class="h-3 w-3 rounded-full border-2 border-surface"></span> Not mapped
-          </span>
-          <span>Drag a dot onto a field on the other side. Click a line or chip to remove.</span>
-        </div>
+      <!-- Step 2 — Map. Desktop: fixed-height two-pane screen with inner scroll.
+           Mobile: natural page flow, tap-to-select mapper, collapsible status panel. -->
+      <ng-template #requiredList>
+        <ul class="space-y-2 text-sm">
+          @for (r of requiredStatus(); track r.label) {
+            <li class="flex items-center justify-between gap-2">
+              <span class="flex items-center gap-2">
+                @if (r.mapped) {
+                  <i class="pi pi-check-circle text-primary" aria-hidden="true"></i>
+                } @else {
+                  <i class="pi pi-circle text-muted-color" aria-hidden="true"></i>
+                }
+                <span>{{ r.label }}</span>
+              </span>
+              @if (r.mapped) {
+                <p-tag value="Mapped" severity="success"></p-tag>
+              } @else {
+                <p-tag value="Required" severity="warn"></p-tag>
+              }
+            </li>
+          }
+        </ul>
+        @if (canProceed()) {
+          <div
+            class="mt-3 flex items-center gap-2 rounded-md bg-surface-100 p-2 text-sm text-primary dark:bg-surface-800"
+          >
+            <i class="pi pi-check-circle" aria-hidden="true"></i>
+            <span>All required fields are mapped. You can continue.</span>
+          </div>
+        }
+      </ng-template>
 
-        <!-- mapper + summary fill the remaining height -->
-        <div class="flex min-h-0 flex-1 gap-6">
-          <div class="min-w-0 flex-1 overflow-y-auto pr-1">
-            <app-column-mapper
-              [csvColumns]="csvColumns()"
-              [targetFields]="targetFields()"
-              [connections]="connections()"
-              (connectionsChange)="connections.set($event)"
-            ></app-column-mapper>
+      <div class="flex w-full min-w-0 flex-col gap-3 lg:h-[calc(100dvh-16rem)]">
+        @if (isMobile()) {
+          <!-- Mobile — collapsible required-fields status, then the tap mapper -->
+          <p-panel
+            [toggleable]="true"
+            [collapsed]="true"
+            [header]="
+              'Required fields · ' + requiredProgress().mapped + '/' + requiredProgress().total
+            "
+          >
+            <ng-container [ngTemplateOutlet]="requiredList"></ng-container>
+          </p-panel>
+
+          <app-mobile-column-mapper
+            [csvColumns]="csvColumns()"
+            [targetFields]="targetFields()"
+            [samples]="sampleByColumn()"
+            [connections]="connections()"
+            (connectionsChange)="connections.set($event)"
+          ></app-mobile-column-mapper>
+        } @else {
+          <!-- legend -->
+          <div
+            class="flex shrink-0 flex-wrap items-center gap-x-6 gap-y-1 text-sm text-muted-color"
+          >
+            <span class="flex items-center gap-2">
+              <span class="h-3 w-3 rounded-full bg-primary"></span> Mapped
+            </span>
+            <span class="flex items-center gap-2">
+              <span class="h-3 w-3 rounded-full border-2 border-surface"></span> Not mapped
+            </span>
+            <span>Drag a dot onto a field on the other side. Click a line or chip to remove.</span>
           </div>
 
-          <!-- Validation summary — two cards (matches the design) -->
-          <aside class="hidden w-72 shrink-0 space-y-4 overflow-y-auto lg:block">
-            <!-- Required Fields Status -->
-            <div class="rounded-lg border border-surface p-4">
-              <h3 class="mb-3 font-semibold">Required Fields Status</h3>
-              <ul class="space-y-2 text-sm">
-                @for (r of requiredStatus(); track r.label) {
-                  <li class="flex items-center justify-between gap-2">
-                    <span class="flex items-center gap-2">
-                      @if (r.mapped) {
-                        <i class="pi pi-check-circle text-primary"></i>
-                      } @else {
-                        <i class="pi pi-circle text-muted-color"></i>
-                      }
-                      <span>{{ r.label }}</span>
-                    </span>
-                    @if (r.mapped) {
-                      <p-tag value="Mapped" severity="success"></p-tag>
-                    } @else {
-                      <p-tag value="Required" severity="warn"></p-tag>
-                    }
-                  </li>
-                }
-              </ul>
-              @if (canProceed()) {
-                <div
-                  class="mt-3 flex items-center gap-2 rounded-md bg-surface-100 p-2 text-sm text-primary dark:bg-surface-800"
-                >
-                  <i class="pi pi-check-circle"></i>
-                  <span>All required fields are mapped. You can continue.</span>
-                </div>
-              }
+          <!-- mapper + summary fill the remaining height -->
+          <div class="flex min-h-0 flex-1 gap-6">
+            <div class="min-w-0 flex-1 overflow-y-auto pr-1">
+              <app-column-mapper
+                [csvColumns]="csvColumns()"
+                [targetFields]="targetFields()"
+                [samples]="sampleByColumn()"
+                [connections]="connections()"
+                (connectionsChange)="connections.set($event)"
+              ></app-column-mapper>
             </div>
 
-            <!-- Mapping Summary -->
-            <div class="rounded-lg border border-surface p-4">
-              <h3 class="mb-3 font-semibold">Mapping Summary</h3>
-              <ul class="space-y-2 text-sm">
-                <li class="flex items-center justify-between">
-                  <span class="text-muted-color">Total Columns</span>
-                  <span class="font-medium">{{ summary().totalColumns }}</span>
-                </li>
-                <li class="flex items-center justify-between">
-                  <span class="text-muted-color">Mapped Fields</span>
-                  <span class="font-medium">{{ summary().mappedFields }}</span>
-                </li>
-                <li class="flex items-center justify-between">
-                  <span class="text-muted-color">Extra Columns</span>
-                  <span class="font-medium">{{ summary().extraColumns }}</span>
-                </li>
-                <li class="flex items-center justify-between">
-                  <span class="text-muted-color">Unmapped Required</span>
-                  <span class="font-medium">{{ summary().unmappedRequired }}</span>
-                </li>
-              </ul>
-            </div>
-          </aside>
-        </div>
+            <!-- Validation summary — two cards (matches the design) -->
+            <aside class="hidden w-72 shrink-0 space-y-4 overflow-y-auto lg:block">
+              <!-- Required Fields Status -->
+              <div class="rounded-lg border border-surface p-4">
+                <h3 class="mb-3 font-semibold">Required Fields Status</h3>
+                <ng-container [ngTemplateOutlet]="requiredList"></ng-container>
+              </div>
+
+              <!-- Mapping Summary -->
+              <div class="rounded-lg border border-surface p-4">
+                <h3 class="mb-3 font-semibold">Mapping Summary</h3>
+                <ul class="space-y-2 text-sm">
+                  <li class="flex items-center justify-between">
+                    <span class="text-muted-color">Total Columns</span>
+                    <span class="font-medium">{{ summary().totalColumns }}</span>
+                  </li>
+                  <li class="flex items-center justify-between">
+                    <span class="text-muted-color">Mapped Fields</span>
+                    <span class="font-medium">{{ summary().mappedFields }}</span>
+                  </li>
+                  <li class="flex items-center justify-between">
+                    <span class="text-muted-color">Extra Columns</span>
+                    <span class="font-medium">{{ summary().extraColumns }}</span>
+                  </li>
+                  <li class="flex items-center justify-between">
+                    <span class="text-muted-color">Unmapped Required</span>
+                    <span class="font-medium">{{ summary().unmappedRequired }}</span>
+                  </li>
+                </ul>
+              </div>
+            </aside>
+          </div>
+        }
 
         <!-- actions — three buttons (Back · Reset Mapping · Preview & Continue) -->
-        <div class="flex shrink-0 items-center justify-between border-t border-surface pt-3">
+        <div
+          class="flex shrink-0 flex-wrap items-center justify-between gap-2 border-t border-surface pt-3"
+        >
           <p-button
             (onClick)="activeStep.set(1)"
             icon="pi pi-arrow-left"
             label="Back"
             severity="secondary"
           ></p-button>
-          <div class="flex gap-2">
+          <div class="flex flex-wrap gap-2">
             <p-button
               (onClick)="resetMapping()"
               [disabled]="connections().length === 0"
@@ -264,7 +320,7 @@
         </p>
 
         <!-- read-only one-to-one confirmation — one bar per mapping -->
-        <div class="min-w-0 space-y-2 overflow-y-auto max-h-[calc(100dvh-30rem)]">
+        <div class="min-w-0 space-y-2">
           <div
             class="flex items-center gap-3 px-4 text-xs font-medium uppercase tracking-wide text-muted-color"
           >

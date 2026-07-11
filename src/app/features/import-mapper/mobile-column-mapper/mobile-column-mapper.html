@@ -1,0 +1,139 @@
+<div class="flex flex-col gap-2.5">
+  @for (row of rows(); track row.column) {
+    <div
+      class="flex min-h-12 items-center gap-1 rounded-lg border bg-surface-0 pl-3 pr-1 transition dark:bg-surface-900"
+      [class.border-primary]="row.field"
+      [class.border-surface]="!row.field"
+    >
+      <button
+        type="button"
+        (click)="openPicker(row.column)"
+        class="flex min-w-0 flex-1 items-center justify-between gap-2 py-2 text-left"
+        [attr.aria-label]="
+          row.field
+            ? row.column + ' — mapped to ' + row.field.label + '. Change mapping'
+            : row.column + ' — not mapped. Choose field'
+        "
+      >
+        <span class="min-w-0">
+          <span class="block truncate font-medium">{{ row.column }}</span>
+          @if (samples()[row.column]) {
+            <span class="block truncate text-xs text-muted-color"
+              >e.g. {{ samples()[row.column] }}</span
+            >
+          }
+          @if (row.field) {
+            <span class="flex items-center gap-1 text-xs text-primary">
+              <i class="pi pi-arrow-right text-[10px]" aria-hidden="true"></i>
+              <span class="truncate">{{ row.field.label }}</span>
+            </span>
+          } @else {
+            <span class="text-xs text-muted-color">Tap to map</span>
+          }
+        </span>
+        <i
+          class="pi shrink-0 text-muted-color"
+          [class.pi-check-circle]="row.field"
+          [class.text-primary]="row.field"
+          [class.pi-angle-right]="!row.field"
+          aria-hidden="true"
+        ></i>
+      </button>
+      @if (row.field) {
+        <p-button
+          (onClick)="unmap(row.column)"
+          [text]="true"
+          [rounded]="true"
+          icon="pi pi-times"
+          severity="secondary"
+          size="small"
+          [ariaLabel]="'Remove mapping for ' + row.column"
+        />
+      }
+    </div>
+  }
+</div>
+
+<!-- Bottom-sheet field picker -->
+<p-dialog
+  [(visible)]="sheetOpen"
+  position="bottom"
+  [modal]="true"
+  [dismissableMask]="true"
+  [draggable]="false"
+  [resizable]="false"
+  [blockScroll]="true"
+  styleClass="!m-0 !w-full !max-w-full !rounded-b-none !rounded-t-2xl max-h-[85dvh]"
+>
+  <ng-template #header>
+    <span class="min-w-0">
+      <span class="block text-xs font-normal text-muted-color">Map column</span>
+      <span class="block truncate font-semibold">{{ pickerColumn() }}</span>
+      @if (pickerColumn(); as column) {
+        @if (samples()[column]) {
+          <span class="block truncate text-xs font-normal text-muted-color"
+            >e.g. {{ samples()[column] }}</span
+          >
+        }
+      }
+    </span>
+  </ng-template>
+
+  <div class="flex flex-col gap-1.5 pb-2">
+    @for (entry of pickerFields(); track entry.field.key) {
+      <button
+        type="button"
+        (click)="pick(entry.field)"
+        class="flex min-h-12 items-start gap-3 rounded-lg border px-3 py-2.5 text-left transition"
+        [class.border-primary]="entry.isCurrent"
+        [class.border-surface]="!entry.isCurrent"
+      >
+        <i
+          class="pi mt-0.5 shrink-0"
+          [class.pi-check-circle]="entry.isCurrent"
+          [class.text-primary]="entry.isCurrent"
+          [class.pi-circle]="!entry.isCurrent"
+          [class.text-muted-color]="!entry.isCurrent"
+          aria-hidden="true"
+        ></i>
+        <span class="min-w-0 flex-1">
+          <span class="flex flex-wrap items-center gap-2">
+            <span class="font-medium">{{ entry.field.label }}</span>
+            @switch (entry.field.kind) {
+              @case ('required') {
+                <span class="text-xs text-primary">required</span>
+              }
+              @case ('bucket') {
+                <span class="text-xs text-muted-color">multi</span>
+              }
+            }
+          </span>
+          @if (entry.field.hint) {
+            <span class="block text-xs text-muted-color">{{ entry.field.hint }}</span>
+          }
+          @if (!entry.isCurrent && entry.occupants.length) {
+            <span class="block text-xs text-muted-color">
+              @if (entry.field.multi) {
+                {{ entry.occupants.length }} column{{ entry.occupants.length === 1 ? '' : 's' }}
+                mapped — this one is added
+              } @else {
+                Replaces “{{ entry.occupants[0] }}”
+              }
+            </span>
+          }
+        </span>
+      </button>
+    }
+
+    @if (pickerHasMapping()) {
+      <p-button
+        (onClick)="unmapCurrent()"
+        [text]="true"
+        fluid
+        icon="pi pi-times"
+        label="Remove mapping"
+        severity="danger"
+      />
+    }
+  </div>
+</p-dialog>

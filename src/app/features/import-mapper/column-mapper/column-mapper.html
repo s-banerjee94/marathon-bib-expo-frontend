@@ -3,33 +3,39 @@
   class="relative flex select-none justify-between gap-8"
   (pointermove)="onPointerMove($event)"
   (pointerup)="onPointerUp($event)"
-  (pointercancel)="onPointerUp($event)"
+  (pointercancel)="cancelDrag()"
 >
-  <!-- CSV columns (left) — narrower than the fields column -->
-  <div class="flex w-[24.33rem] shrink-0 flex-col gap-2.5">
+  <!-- CSV columns (left) — fluid, capped at the design width -->
+  <div class="flex w-full min-w-0 max-w-[24.33rem] flex-col gap-2.5">
     @for (col of csvColumns(); track col) {
       <div
         [attr.data-anchor]="csvAnchor(col)"
-        class="flex min-h-11 items-center justify-between gap-2 rounded-lg border border-surface bg-surface-0 px-3 transition dark:bg-surface-900"
+        (pointerdown)="startDrag($event, 'csv', col)"
+        class="flex min-h-11 cursor-grab items-center justify-between gap-2 rounded-lg border border-surface bg-surface-0 px-3 transition active:cursor-grabbing dark:bg-surface-900"
         [class.border-primary]="isSource('csv', col) || draggingSide() === 'field'"
       >
-        <span class="min-w-0 truncate py-2 font-medium">{{ col }}</span>
+        <span class="min-w-0 py-2">
+          <span class="block truncate font-medium">{{ col }}</span>
+          @if (samples()[col]) {
+            <span class="block truncate text-xs text-muted-color">e.g. {{ samples()[col] }}</span>
+          }
+        </span>
         <div class="flex shrink-0 items-center gap-2">
           @if (mappedField(col); as f) {
             <button
               type="button"
               (click)="removeByColumn(col)"
+              [attr.aria-label]="'Remove mapping for ' + col"
               class="inline-flex items-center gap-1 rounded-full bg-surface-100 px-2 py-0.5 text-xs dark:bg-surface-800"
             >
               <span class="h-2 w-2 rounded-full" [style.background-color]="colorFor(col)"></span>
-              <i class="pi pi-lock text-[10px]"></i>
-              <i class="pi pi-times text-[10px]"></i>
+              <i class="pi pi-lock text-[10px]" aria-hidden="true"></i>
+              <i class="pi pi-times text-[10px]" aria-hidden="true"></i>
             </button>
           }
           <span
             [attr.data-anchor]="csvAnchor(col)"
-            (pointerdown)="startDrag($event, 'csv', col)"
-            class="h-4 w-4 shrink-0 cursor-grab touch-none rounded-full border-2 border-surface transition hover:ring-2 hover:ring-primary active:cursor-grabbing"
+            class="h-4 w-4 shrink-0 touch-none rounded-full border-2 border-surface transition hover:ring-2 hover:ring-primary"
             [style.background-color]="mappedField(col) ? colorFor(col) : ''"
             [style.border-color]="mappedField(col) ? colorFor(col) : ''"
           ></span>
@@ -38,18 +44,18 @@
     }
   </div>
 
-  <!-- Target fields (right) — same card width as the CSV column -->
-  <div class="flex w-[24.33rem] shrink-0 flex-col gap-2.5">
+  <!-- Target fields (right) — same fluid width as the CSV column -->
+  <div class="flex w-full min-w-0 max-w-[24.33rem] flex-col gap-2.5">
     @for (field of targetFields(); track field.key) {
       <div
         [attr.data-anchor]="fieldAnchor(field.key)"
-        class="flex min-h-11 items-start gap-3 rounded-lg border border-surface bg-surface-0 px-3 py-2 transition dark:bg-surface-900"
+        (pointerdown)="startDrag($event, 'field', field.key)"
+        class="flex min-h-11 cursor-grab items-start gap-3 rounded-lg border border-surface bg-surface-0 px-3 py-2 transition active:cursor-grabbing dark:bg-surface-900"
         [class.border-primary]="isSource('field', field.key) || draggingSide() === 'csv'"
       >
         <span
           [attr.data-anchor]="fieldAnchor(field.key)"
-          (pointerdown)="startDrag($event, 'field', field.key)"
-          class="mt-1 h-4 w-4 shrink-0 cursor-grab touch-none rounded-full border-2 border-surface transition hover:ring-2 hover:ring-primary active:cursor-grabbing"
+          class="mt-1 h-4 w-4 shrink-0 touch-none rounded-full border-2 border-surface transition hover:ring-2 hover:ring-primary"
           [style.background-color]="fieldColor(field.key)"
           [style.border-color]="fieldColor(field.key)"
         ></span>
@@ -81,6 +87,7 @@
                 <button
                   type="button"
                   (click)="removeByColumn(name)"
+                  [attr.aria-label]="'Remove ' + name + ' from ' + field.label"
                   class="inline-flex items-center gap-1 rounded-full bg-surface-100 px-2 py-0.5 text-xs dark:bg-surface-800"
                 >
                   <span
@@ -88,7 +95,7 @@
                     [style.background-color]="colorFor(name)"
                   ></span>
                   <span class="max-w-28 truncate">{{ name }}</span>
-                  <i class="pi pi-times text-[10px]"></i>
+                  <i class="pi pi-times text-[10px]" aria-hidden="true"></i>
                 </button>
               }
             </div>

@@ -2,6 +2,7 @@ import { Routes } from '@angular/router';
 import { roleGuard } from '../../core/guards/auth.guard';
 import { UserRole } from '../../core/models/user.model';
 import { pageTitle } from '../../shared/constants/app.constant';
+import { unsavedMappingGuard } from '../import-mapper/unsaved-mapping.guard';
 
 const PARTICIPANT_ROLES = [
   UserRole.ROOT,
@@ -17,6 +18,7 @@ export const PARTICIPANTS_ROUTES: Routes = [
     path: 'import-map',
     loadComponent: () => import('../import-mapper/import-mapper').then((m) => m.ImportMapper),
     canActivate: [roleGuard(PARTICIPANT_ROLES)],
+    canDeactivate: [unsavedMappingGuard],
     title: pageTitle('Import Mapper'),
   },
   {

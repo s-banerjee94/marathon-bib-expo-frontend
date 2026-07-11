@@ -1,16 +1,18 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  DestroyRef,
   ElementRef,
   afterNextRender,
   computed,
   effect,
+  inject,
   input,
   model,
   signal,
   viewChild,
 } from '@angular/core';
-import { TargetField, Mapping } from '../../../core/models/import-mapper.model';
+import { TargetField, Mapping, applyConnection } from '../../../core/models/import-mapper.model';
 
 interface Point {
   x: number;
@@ -58,10 +60,14 @@ export class ColumnMapper {
   /** Target fields (right side) — fetched per-event plus the fixed buckets. */
   targetFields = input.required<TargetField[]>();
 
+  /** Sample values per CSV column, rendered under the column name. */
+  samples = input<Record<string, string>>({});
+
   /** Committed connections — two-way bound so the parent can build the JSON. */
   connections = model<Mapping[]>([]);
 
   private host = viewChild<ElementRef<HTMLElement>>('host');
+  private destroyRef = inject(DestroyRef);
 
   /** Measured anchor centres (host-relative px), keyed `csv:<name>` / `field:<key>`. */
   private anchors = signal<Map<string, Point>>(new Map());
@@ -78,7 +84,9 @@ export class ColumnMapper {
       this.measure();
       const hostEl = this.host()?.nativeElement;
       if (hostEl) {
-        new ResizeObserver(() => this.measure()).observe(hostEl);
+        const observer = new ResizeObserver(() => this.measure());
+        observer.observe(hostEl);
+        this.destroyRef.onDestroy(() => observer.disconnect());
       }
     });
 
@@ -198,18 +206,16 @@ export class ColumnMapper {
     this.connect(csvColumn, targetField);
   }
 
-  private connect(csvColumn: string, targetField: string): void {
-    const field = this.targetFields().find((f) => f.key === targetField);
-    if (!field) return;
+  /** Aborted drag (e.g. the browser took the gesture for scrolling) — no drop. */
+  protected cancelDrag(): void {
+    this.dragFrom.set(null);
+    this.dragCursor.set(null);
+  }
 
-    // A CSV column participates in at most one connection.
-    let next = this.connections().filter((c) => c.csvColumn !== csvColumn);
-    // Single fields hold one connection — replace whatever was there.
-    if (!field.multi) {
-      next = next.filter((c) => c.targetField !== targetField);
-    }
-    next.push({ csvColumn, targetField });
-    this.connections.set(next);
+  private connect(csvColumn: string, targetField: string): void {
+    this.connections.set(
+      applyConnection(this.connections(), csvColumn, targetField, this.targetFields()),
+    );
   }
 
   protected removeConnection(conn: Mapping): void {

@@ -1,10 +1,14 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { NgTemplateOutlet } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
+import { ConfirmationService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
+import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { FileUploadModule } from 'primeng/fileupload';
 import { MessageModule } from 'primeng/message';
 import { PanelModule } from 'primeng/panel';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
+import { StepperModule } from 'primeng/stepper';
 import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
 import Papa from 'papaparse';
@@ -13,10 +17,12 @@ import { ErrorHandlerService } from '../../core/services/error-handler.service';
 import { ParticipantService } from '../../core/services/participant.service';
 import { EventService } from '../../core/services/event.service';
 import { ImportProgressService } from '../../core/services/import-progress.service';
+import { BreakpointService } from '../../core/services/breakpoint.service';
 import { Event } from '../../core/models/event.model';
 import { ImportMode } from '../../core/models/participant.model';
 import { copyToClipboard } from '../../shared/utils/clipboard.utils';
 import { ColumnMapper } from './column-mapper/column-mapper';
+import { MobileColumnMapper } from './mobile-column-mapper/mobile-column-mapper';
 import {
   BUCKET_FIELDS,
   BUCKET_KEYS,
@@ -43,15 +49,20 @@ import {
 @Component({
   selector: 'app-import-mapper',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  providers: [ConfirmationService],
   imports: [
+    NgTemplateOutlet,
     ButtonModule,
+    ConfirmDialogModule,
     FileUploadModule,
     TableModule,
     MessageModule,
     TagModule,
     ProgressSpinnerModule,
+    StepperModule,
     PanelModule,
     ColumnMapper,
+    MobileColumnMapper,
   ],
   templateUrl: './import-mapper.html',
 })
@@ -61,16 +72,15 @@ export class ImportMapper {
   private participantService = inject(ParticipantService);
   private eventService = inject(EventService);
   private importProgress = inject(ImportProgressService);
+  private confirmation = inject(ConfirmationService);
   private router = inject(Router);
   private route = inject(ActivatedRoute);
 
+  /** ≤768px viewports get the tap-to-select mapper instead of drag-to-connect. */
+  protected readonly isMobile = inject(BreakpointService).isMobile;
+
   /** Active wizard step (1 = Upload, 2 = Map, 3 = Review & Import). */
   protected readonly activeStep = signal(1);
-  protected readonly steps = [
-    { n: 1, label: 'Upload CSV' },
-    { n: 2, label: 'Map Fields' },
-    { n: 3, label: 'Review & Import' },
-  ];
 
   // --- event (supplied via ?eventId) + run mode (?mode) + target fields ---
   protected readonly selectedEventId = signal<number | null>(null);
@@ -87,14 +97,18 @@ export class ImportMapper {
   protected readonly delimiter = signal(',');
   protected readonly totalRows = signal(0);
   protected readonly csvColumns = signal<string[]>([]);
+  /** Physical CSV position per (deduped) column name — the backend maps positionally. */
+  protected readonly columnIndexByName = signal<Record<string, number>>({});
   protected readonly previewRows = signal<Record<string, string>[]>([]);
   protected readonly parseError = signal<string | null>(null);
 
-  // --- mapping state (two-way bound to <app-column-mapper>) ---
+  // --- mapping state (two-way bound to the mappers) ---
   protected readonly connections = signal<Mapping[]>([]);
 
   // --- import state ---
   protected readonly isImporting = signal(false);
+  /** Set once the batch job is launched so the leave guard stops prompting. */
+  private importLaunched = false;
 
   protected readonly hasFile = computed(() => this.csvColumns().length > 0);
   protected readonly selectedEventName = computed(() => this.selectedEvent()?.eventName ?? '');
@@ -121,6 +135,12 @@ export class ImportMapper {
       .map((f) => ({ label: f.label, mapped: mapped.has(f.key) }));
   });
 
+  /** Mapped-vs-total required fields, for the mobile summary panel header. */
+  protected readonly requiredProgress = computed(() => {
+    const rows = this.requiredStatus();
+    return { mapped: rows.filter((r) => r.mapped).length, total: rows.length };
+  });
+
   /** Counts for the "Mapping Summary" card. */
   protected readonly summary = computed(() => {
     const cfg = this.mappingConfig();
@@ -140,10 +160,27 @@ export class ImportMapper {
       this.mappingConfig().mappings.length > 0,
   );
 
+  /** First couple of distinct sample values per column, shown under its name. */
+  protected readonly sampleByColumn = computed<Record<string, string>>(() => {
+    const rows = this.previewRows();
+    const out: Record<string, string> = {};
+    for (const col of this.csvColumns()) {
+      const values: string[] = [];
+      for (const row of rows) {
+        const value = (row[col] ?? '').trim();
+        if (value && !values.includes(value)) values.push(value);
+        if (values.length === 2) break;
+      }
+      out[col] = values.join(' · ');
+    }
+    return out;
+  });
+
   protected readonly mappingConfig = computed<MappingConfig>(() => {
     const conns = this.connections();
     const cols = this.csvColumns();
-    const indexOf = (name: string) => cols.indexOf(name);
+    const physicalIndex = this.columnIndexByName();
+    const indexOf = (name: string) => physicalIndex[name] ?? cols.indexOf(name);
     return {
       fileName: this.fileName(),
       delimiter: this.delimiter(),
@@ -182,13 +219,13 @@ export class ImportMapper {
    */
   protected readonly confirmRows = computed(() => {
     const fields = this.targetFields();
-    const cols = this.csvColumns();
+    const physicalIndex = this.columnIndexByName();
     const labelOf = (key: string) => fields.find((f) => f.key === key)?.label ?? key;
     return this.connections()
       .map((c) => ({
         csvColumn: c.csvColumn,
         fieldLabel: labelOf(c.targetField),
-        index: cols.indexOf(c.csvColumn),
+        index: physicalIndex[c.csvColumn] ?? 0,
       }))
       .sort((a, b) => a.index - b.index);
   });
@@ -245,26 +282,84 @@ export class ImportMapper {
     if (!file) return;
     this.parseError.set(null);
 
-    Papa.parse<Record<string, string>>(file, {
-      header: true,
+    // worker: true keeps large files from blocking the UI. Function options
+    // (e.g. transformHeader) cannot cross the worker boundary, so the file is
+    // parsed as raw rows and the header row is split off here instead.
+    Papa.parse<string[]>(file, {
+      worker: true,
       skipEmptyLines: true,
-      transformHeader: (h) => h.trim(),
       complete: (result) => {
-        const fields = (result.meta.fields ?? []).filter((f) => f.length > 0);
-        if (fields.length === 0) {
+        const [headerRow, ...rows] = result.data;
+        const columns: string[] = [];
+        const indexByName: Record<string, number> = {};
+        const seen = new Map<string, number>();
+        (headerRow ?? []).forEach((header, i) => {
+          const trimmed = header.trim();
+          if (!trimmed) return;
+          // Duplicate headers get a numeric suffix (display name only — the
+          // backend maps by physical column position).
+          const count = seen.get(trimmed) ?? 0;
+          seen.set(trimmed, count + 1);
+          const name = count === 0 ? trimmed : `${trimmed}_${count}`;
+          columns.push(name);
+          indexByName[name] = i;
+        });
+        if (columns.length === 0) {
           this.parseError.set('No columns found — make sure the CSV has a header row.');
           return;
         }
-        const rows = result.data;
+        const preview = rows.slice(0, 5).map((row) => {
+          const record: Record<string, string> = {};
+          for (const name of columns) record[name] = row[indexByName[name]] ?? '';
+          return record;
+        });
         this.selectedFile.set(file);
         this.fileName.set(file.name);
         this.delimiter.set(result.meta.delimiter || ',');
-        this.csvColumns.set(fields);
-        this.previewRows.set(rows.slice(0, 5));
+        this.csvColumns.set(columns);
+        this.columnIndexByName.set(indexByName);
+        this.previewRows.set(preview);
         this.totalRows.set(rows.length);
         this.connections.set([]);
       },
       error: (err) => this.parseError.set(err.message),
+    });
+  }
+
+  protected formatFileSize(bytes: number): string {
+    if (bytes >= 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+    if (bytes >= 1024) return `${Math.round(bytes / 1024)} KB`;
+    return `${bytes} B`;
+  }
+
+  /** File removed/cleared in the upload widget — drop everything derived from it. */
+  protected onFileCleared(): void {
+    this.selectedFile.set(null);
+    this.fileName.set('');
+    this.csvColumns.set([]);
+    this.columnIndexByName.set({});
+    this.previewRows.set([]);
+    this.totalRows.set(0);
+    this.connections.set([]);
+    this.parseError.set(null);
+  }
+
+  /**
+   * Route-leave check (see `unsavedMappingGuard`): confirm before discarding
+   * an uploaded file and its mapping; free to leave otherwise.
+   */
+  canLeave(): boolean | Promise<boolean> {
+    if (this.importLaunched || !this.hasFile()) return true;
+    return new Promise((resolve) => {
+      this.confirmation.confirm({
+        header: 'Discard import?',
+        message: 'Your uploaded file and column mapping will be lost.',
+        icon: 'pi pi-exclamation-triangle',
+        acceptButtonProps: { label: 'Discard', severity: 'danger' },
+        rejectButtonProps: { label: 'Stay', severity: 'secondary', outlined: true },
+        accept: () => resolve(true),
+        reject: () => resolve(false),
+      });
     });
   }
 
@@ -307,6 +402,7 @@ export class ImportMapper {
       .launchBatchImport(eventId, file, this.mappingConfigJson(), this.importMode())
       .subscribe({
         next: (response) => {
+          this.importLaunched = true;
           this.importProgress.start(eventId, response.jobExecutionId);
           this.toast.success(
             `${this.isAddOn() ? 'Add-on import' : 'Import'} job #${response.jobExecutionId} started — track progress in the corner.`,
