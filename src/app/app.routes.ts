@@ -148,6 +148,14 @@ export const routes: Routes = [
     title: pageTitle('Verify Registration'),
   },
   {
+    // Public phone-side page of the landing hero's live QR demo (no auth, no
+    // app shell). Reached by scanning the QR rendered on the hero bib.
+    path: 'demo/:code',
+    loadComponent: () =>
+      import('./features/landing/demo-collect/demo-collect').then((m) => m.DemoCollect),
+    title: pageTitle('Live Demo'),
+  },
+  {
     // Public invite-acceptance page (no auth, no app shell). Reached via the
     // /accept-invite?token=… link the backend bakes into issued invites.
     path: 'accept-invite',

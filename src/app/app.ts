@@ -76,7 +76,13 @@ export class App {
   ];
   isPublicRoute = computed(() => {
     const url = this.currentUrl().split('?')[0];
-    return this.publicPaths.includes(url) || url === '/s' || url.startsWith('/s/');
+    return (
+      this.publicPaths.includes(url) ||
+      url === '/s' ||
+      url.startsWith('/s/') ||
+      url === '/demo' ||
+      url.startsWith('/demo/')
+    );
   });
 
   layoutClasses = computed(() => {
