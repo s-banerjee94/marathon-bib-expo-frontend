@@ -7,7 +7,7 @@
 >
   <ng-template pTemplate="start">
     <div class="flex items-center">
-      @if (isAuthenticated()) {
+      @if (isAuthenticated() && !isLandingRoute()) {
         <p-button
           (onClick)="onMenuToggle($event)"
           [rounded]="true"
@@ -16,14 +16,38 @@
           ariaLabel="Toggle navigation menu"
         />
       }
-      <img src="logo.png" alt="Marathon Bib Expo" class="mx-4 h-8 w-auto invert dark:invert-0" />
+      <a routerLink="/" ariaLabel="Marathon Bib Expo home" class="flex items-center no-underline">
+        <img src="logo.png" alt="Marathon Bib Expo" class="mx-4 h-8 w-auto invert dark:invert-0" />
+      </a>
+
+      <!-- Landing in-page navigation — only on the public root route.
+           Absolutely centered within the fixed topbar (its positioned ancestor),
+           independent of the start/end slot widths on either side. -->
+      @if (isLandingRoute()) {
+        <nav
+          class="absolute inset-x-0 top-0 mx-auto hidden h-[var(--topbar-height)] w-fit items-center gap-[22px] text-sm min-[900px]:flex"
+        >
+          @for (s of landingSections; track s.id) {
+            <a
+              [href]="'#' + s.id"
+              class="font-semibold no-underline transition-colors"
+              [class]="
+                activeSection() === s.id
+                  ? 'text-[#15803d] dark:text-[#4ade80]'
+                  : 'text-[var(--text-color)] hover:text-[#15803d] dark:hover:text-[#4ade80]'
+              "
+              >{{ s.label }}</a
+            >
+          }
+        </nav>
+      }
     </div>
   </ng-template>
 
   <ng-template pTemplate="end">
     <div class="flex items-center gap-2 pr-4">
-      <!-- Command Palette search trigger (first item) — opens the global Ctrl/Cmd+K search -->
-      @if (isAuthenticated() && commandPalette.available()) {
+      <!-- Command Palette search trigger — app pages only -->
+      @if (isAuthenticated() && !isLandingRoute() && commandPalette.available()) {
         <p-button
           (onClick)="commandPalette.open()"
           [outlined]="true"
@@ -47,7 +71,7 @@
         </p-button>
       }
 
-      <!-- Dark Mode Toggle -->
+      <!-- Dark Mode Toggle — available to everyone -->
       <p-button
         (onClick)="layoutService.toggleDarkMode()"
         [icon]="layoutService.isDarkTheme() ? 'pi pi-moon' : 'pi pi-sun'"
@@ -56,8 +80,8 @@
         [text]="true"
       />
 
-      @if (isAuthenticated()) {
-        <!-- Theme Configurator -->
+      <!-- Theme Configurator — app pages only; not needed on the landing -->
+      @if (!isLandingRoute()) {
         <p-button
           (onClick)="themePopover.toggle($event)"
           [rounded]="true"
@@ -68,7 +92,37 @@
         <p-popover #themePopover appendTo="body">
           <app-theme-configurator />
         </p-popover>
+      }
 
+      @if (isLandingRoute()) {
+        <!-- Landing CTAs: signed-in users get a Dashboard shortcut instead of auth buttons -->
+        @if (isAuthenticated()) {
+          <a
+            pButton
+            routerLink="/dashboard"
+            label="Dashboard"
+            icon="pi pi-th-large"
+            size="small"
+          ></a>
+        } @else {
+          <a
+            pButton
+            routerLink="/login"
+            label="Sign in"
+            severity="contrast"
+            [text]="true"
+            size="small"
+            class="!whitespace-nowrap"
+          ></a>
+          <a
+            pButton
+            href="#demo"
+            label="Book a demo"
+            size="small"
+            class="!border-[#15803d] !bg-[#15803d] !whitespace-nowrap !text-white hover:!border-[#166534] hover:!bg-[#166534]"
+          ></a>
+        }
+      } @else if (isAuthenticated()) {
         <!-- Notification Bell -->
         <p-button
           (onClick)="notifPopover.toggle($event)"
@@ -183,10 +237,8 @@
             ariaLabel="Open AI assistant"
           />
         }
-      }
 
-      <!-- User Avatar Menu — only for authenticated users -->
-      @if (isAuthenticated()) {
+        <!-- User Avatar Menu -->
         <p-avatar
           (click)="menu.toggle($event)"
           (onImageError)="onAvatarImageError()"

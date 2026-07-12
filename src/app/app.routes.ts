@@ -1,17 +1,19 @@
 import { Routes } from '@angular/router';
-import { authGuard, roleGuard } from './core/guards/auth.guard';
+import { authGuard, redirectIfAuthenticatedGuard, roleGuard } from './core/guards/auth.guard';
 import { UserRole } from './core/models/user.model';
 import { pageTitle } from './shared/constants/app.constant';
 
 export const routes: Routes = [
   {
     path: '',
-    redirectTo: '/dashboard',
+    loadComponent: () => import('./features/landing/landing').then((m) => m.Landing),
     pathMatch: 'full',
+    title: 'Marathon Bib Expo — Bib distribution for the expo',
   },
   {
     path: 'login',
     loadComponent: () => import('./features/auth/login/login').then((m) => m.Login),
+    canActivate: [redirectIfAuthenticatedGuard],
     title: pageTitle('Login'),
   },
   {
@@ -144,6 +146,14 @@ export const routes: Routes = [
         (m) => m.PublicVerification,
       ),
     title: pageTitle('Verify Registration'),
+  },
+  {
+    // Public phone-side page of the landing hero's live QR demo (no auth, no
+    // app shell). Reached by scanning the QR rendered on the hero bib.
+    path: 'demo/:code',
+    loadComponent: () =>
+      import('./features/landing/demo-collect/demo-collect').then((m) => m.DemoCollect),
+    title: pageTitle('Live Demo'),
   },
   {
     // Public invite-acceptance page (no auth, no app shell). Reached via the

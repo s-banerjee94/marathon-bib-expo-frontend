@@ -1,0 +1,30 @@
+<section class="border-y border-[var(--surface-border)] bg-[var(--surface-ground)] py-12">
+  <div class="mx-auto max-w-[1440px] px-7">
+    <div
+      class="mb-6 text-center text-xs font-semibold tracking-[0.1em] text-[var(--text-color-secondary)] uppercase"
+    >
+      Built for every distance and format
+    </div>
+    <!-- Infinite marquee; under reduced motion only the first copy shows, wrapped and static -->
+    <div
+      class="overflow-hidden motion-safe:[-webkit-mask:linear-gradient(90deg,transparent,black_10%,black_90%,transparent)] motion-safe:[mask:linear-gradient(90deg,transparent,black_10%,black_90%,transparent)]"
+    >
+      <div #marqueeTrack class="flex w-max motion-reduce:w-full">
+        @for (c of copies; track c) {
+          <div
+            [attr.aria-hidden]="c > 0 ? true : null"
+            class="flex items-center gap-16 pr-16 motion-reduce:w-full motion-reduce:flex-wrap motion-reduce:justify-center motion-reduce:gap-x-8 motion-reduce:gap-y-6 motion-reduce:pr-0"
+            [class]="c > 0 ? 'motion-reduce:hidden' : ''"
+          >
+            @for (org of orgs; track org) {
+              <span
+                class="text-base font-bold tracking-[-0.01em] whitespace-nowrap text-[var(--text-color)] opacity-[0.55] transition-opacity hover:opacity-100"
+                >{{ org }}</span
+              >
+            }
+          </div>
+        }
+      </div>
+    </div>
+  </div>
+</section>

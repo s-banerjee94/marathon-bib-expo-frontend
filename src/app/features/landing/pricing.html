@@ -1,0 +1,69 @@
+<section id="pricing" class="scroll-mt-[var(--topbar-height)] py-24">
+  <div class="mx-auto max-w-[1440px] px-7">
+    <div appScrollReveal revealStagger="0.12" class="mb-14 max-w-[720px]">
+      <span
+        class="inline-flex items-center gap-2.5 text-xs font-bold tracking-[0.12em] text-[var(--text-color-secondary)] uppercase before:h-px before:w-6 before:bg-current before:content-['']"
+        >Pricing</span
+      >
+      <h2
+        appLetterPop
+        class="my-4 text-[clamp(36px,4.5vw,56px)] leading-[1.05] font-extrabold tracking-[-0.03em] text-[var(--text-color)]"
+      >
+        Three tiers.<br />One built for your season.
+      </h2>
+      <p class="max-w-[620px] text-lg leading-[1.55] text-[var(--text-color-secondary)]">
+        Every organization starts on Pay-as-you-go. Move up when your calendar needs more headroom —
+        we'll size it with you, not a self-serve checkout.
+      </p>
+    </div>
+    <div
+      appScrollReveal
+      revealStagger="0.12"
+      class="grid grid-cols-1 overflow-hidden rounded-xl border border-[var(--surface-border)] min-[900px]:grid-cols-3"
+    >
+      @for (t of tiers; track t.name) {
+        <div
+          class="flex flex-col gap-[18px] border-b border-[var(--surface-border)] bg-[var(--surface-card)] px-8 py-9 last:border-b-0 min-[900px]:border-r min-[900px]:border-b-0 min-[900px]:last:border-r-0"
+          [class]="
+            t.featured ? '!bg-[var(--primary-color)] text-[var(--primary-contrast-color)]' : ''
+          "
+        >
+          <div
+            class="font-['Geist_Mono',_monospace] text-xs font-bold tracking-[0.08em] uppercase opacity-70"
+          >
+            {{ t.name }}
+          </div>
+          <div class="text-[32px] leading-tight font-extrabold tracking-[-0.03em]">
+            {{ t.price }}
+          </div>
+          <div class="text-sm opacity-75">{{ t.desc }}</div>
+          <ul
+            class="m-0 flex list-none flex-col gap-2.5 border-t border-[color-mix(in_srgb,currentColor,transparent_88%)] p-0 pt-3"
+          >
+            @for (c of t.caps; track c) {
+              <li class="flex items-start gap-2.5 text-[13.5px]">
+                <i
+                  class="pi pi-check mt-1 shrink-0 text-xs"
+                  [class]="t.featured ? 'text-current opacity-90' : 'text-[#16a34a]'"
+                ></i>
+                {{ c }}
+              </li>
+            }
+          </ul>
+          <a
+            pButton
+            href="#demo"
+            class="mt-auto"
+            [label]="t.cta"
+            [severity]="t.featured ? 'secondary' : 'primary'"
+            [class]="
+              t.featured
+                ? '!border-[#16a34a] !bg-[#16a34a] !text-white hover:!border-[#15803d] hover:!bg-[#15803d]'
+                : ''
+            "
+          ></a>
+        </div>
+      }
+    </div>
+  </div>
+</section>

@@ -12,6 +12,76 @@
   --animate-illustration-fade-in: illustration-fade-in 0.5s ease-out both;
   --animate-illustration-float: illustration-float 3.6s ease-in-out 0.5s infinite;
   --animate-illustration-twinkle: illustration-twinkle 2.6s ease-in-out infinite;
+  --animate-scan-sweep: scan-sweep 700ms ease-in-out both;
+  --animate-stamp-in: stamp-in 420ms cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
+  --animate-fade-slide-up: fade-slide-up 420ms ease-out both;
+  --animate-channel-pulse: channel-pulse 2.4s ease-in-out infinite;
+  --animate-grow-fade-in: grow-fade-in 620ms cubic-bezier(0.16, 1, 0.3, 1) both;
+
+  @keyframes grow-fade-in {
+    from {
+      opacity: 0;
+      transform: translateX(-12px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  @keyframes channel-pulse {
+    0%,
+    76%,
+    100% {
+      transform: scale(1);
+      color: var(--text-color-secondary);
+    }
+    38% {
+      transform: scale(1.15);
+      color: #16a34a;
+    }
+  }
+
+  @keyframes scan-sweep {
+    0% {
+      top: 0%;
+      opacity: 0;
+    }
+    12% {
+      opacity: 1;
+    }
+    88% {
+      opacity: 1;
+    }
+    100% {
+      top: 97%;
+      opacity: 0;
+    }
+  }
+  @keyframes stamp-in {
+    0% {
+      transform: scale(2.4) rotate(-12deg);
+      opacity: 0;
+    }
+    60% {
+      transform: scale(0.94) rotate(-12deg);
+      opacity: 1;
+    }
+    100% {
+      transform: scale(1) rotate(-12deg);
+      opacity: 1;
+    }
+  }
+  @keyframes fade-slide-up {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
 
   @keyframes illustration-fade-in {
     from {

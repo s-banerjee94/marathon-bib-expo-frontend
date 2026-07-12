@@ -1,0 +1,25 @@
+<div
+  class="font-['Geist',_sans-serif] overflow-x-hidden bg-[var(--surface-card)] text-[var(--text-color)]"
+>
+  <!-- Scroll-progress runner — page-position indicator pinned under the topbar -->
+  <div
+    aria-hidden="true"
+    class="pointer-events-none fixed inset-x-0 top-[var(--topbar-height)] z-[998] h-[3px] motion-reduce:hidden"
+  >
+    <div #progressBar class="h-full w-full origin-left scale-x-0 bg-[#16a34a]"></div>
+    <span #progressRunner class="absolute top-[3px] left-0">
+      <span class="inline-block -scale-x-100 text-sm leading-none">🏃</span>
+    </span>
+  </div>
+  <app-hero />
+  <app-logo-wall />
+  <app-stats-strip />
+  <app-features />
+  <app-how-it-works />
+  <app-roles />
+  <app-runner-spotlight />
+  <app-pricing />
+  <app-faq />
+  <app-final-cta />
+  <app-site-footer />
+</div>

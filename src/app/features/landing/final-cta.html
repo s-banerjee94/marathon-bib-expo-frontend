@@ -1,0 +1,49 @@
+<section class="py-24">
+  <div class="mx-auto max-w-[1440px] px-7">
+    <div
+      appScrollReveal="zoom"
+      class="relative overflow-hidden rounded-2xl bg-[var(--primary-color)] px-14 py-20 text-center text-[var(--primary-contrast-color)] before:absolute before:inset-0 before:bg-[repeating-linear-gradient(-8deg,transparent_0,transparent_60px,rgba(255,255,255,0.04)_60px,rgba(255,255,255,0.04)_61px)] before:content-['']"
+    >
+      <div
+        aria-hidden="true"
+        class="pointer-events-none absolute inset-0 bg-[radial-gradient(700px_circle_at_80%_15%,rgba(22,163,74,0.25),transparent_60%)]"
+      ></div>
+      <div
+        appSpotlight
+        aria-hidden="true"
+        class="pointer-events-none absolute inset-0 bg-[radial-gradient(360px_circle_at_var(--spot-x,50%)_var(--spot-y,50%),rgba(255,255,255,0.08),transparent_70%)] opacity-0 transition-opacity duration-500"
+      ></div>
+      <div class="relative z-[1]">
+        <h2
+          appLetterPop
+          class="mx-auto mb-4 max-w-[720px] text-[clamp(36px,5vw,56px)] leading-[1.05] font-extrabold tracking-[-0.03em]"
+        >
+          Your next expo shouldn't feel like the last one.
+        </h2>
+        <p class="mx-auto mb-8 max-w-[540px] text-[17px] opacity-75">
+          Book a 20-minute demo. We'll set up your first event with you, on the call.
+        </p>
+        <div class="flex flex-wrap justify-center gap-3">
+          <a
+            pButton
+            appMagnetic
+            href="#demo"
+            label="Book a demo"
+            icon="pi pi-arrow-right"
+            iconPos="right"
+            size="large"
+            class="!border-[#16a34a] !bg-[#16a34a] !text-white hover:!border-[#15803d] hover:!bg-[#15803d]"
+          ></a>
+          <a
+            pButton
+            appMagnetic
+            routerLink="/login"
+            label="Sign in"
+            size="large"
+            class="!border !border-solid !border-[color-mix(in_srgb,var(--primary-contrast-color),transparent_70%)] !bg-transparent !text-[var(--primary-contrast-color)] hover:!bg-[color-mix(in_srgb,var(--primary-contrast-color),transparent_90%)]"
+          ></a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

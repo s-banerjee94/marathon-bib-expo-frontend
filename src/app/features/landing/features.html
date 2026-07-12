@@ -1,0 +1,52 @@
+<section id="features" class="scroll-mt-[var(--topbar-height)] py-24">
+  <div class="mx-auto max-w-[1440px] px-7">
+    <div appScrollReveal revealStagger="0.12" class="mb-14 max-w-[720px]">
+      <span
+        class="inline-flex items-center gap-2.5 text-xs font-bold tracking-[0.12em] text-[var(--text-color-secondary)] uppercase before:h-px before:w-6 before:bg-current before:content-['']"
+        >Capabilities</span
+      >
+      <h2
+        appLetterPop
+        class="my-4 text-[clamp(36px,4.5vw,56px)] leading-[1.05] font-extrabold tracking-[-0.03em] text-[var(--text-color)]"
+      >
+        Everything race ops actually needs.<br />Nothing they don't.
+      </h2>
+      <p class="max-w-[620px] text-lg leading-[1.55] text-[var(--text-color-secondary)]">
+        Registration happens on your own platform, before any of this starts. Marathon Bib Expo
+        picks up from there: get bibs into the right hands, fast, with an audit trail — plus an AI
+        assistant for the busywork, and a link runners can check without ever logging in.
+      </p>
+    </div>
+    <div appScrollReveal revealStagger="0.1" class="grid grid-cols-1 gap-6 min-[900px]:grid-cols-3">
+      @for (f of items; track f.title) {
+        <!-- Explicit border: in dark mode the card fill matches the page bg and the shadow is invisible -->
+        <p-card styleClass="h-full !border !border-[var(--surface-border)]">
+          <ng-template #title>
+            <div class="flex items-center gap-3">
+              <div
+                class="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-[color-mix(in_srgb,#16a34a,transparent_88%)] text-lg text-[#15803d] dark:text-[#4ade80]"
+              >
+                <i class="pi pi-{{ f.icon }}"></i>
+              </div>
+              <span class="text-lg font-bold tracking-[-0.015em]">{{ f.title }}</span>
+            </div>
+          </ng-template>
+          <p class="text-base leading-[1.6] text-[var(--text-color-secondary)]">{{ f.body }}</p>
+          @if (f.icon === 'send') {
+            <div class="mt-3 flex items-center gap-2" aria-hidden="true">
+              <i class="pi pi-comment motion-safe:animate-channel-pulse text-base"></i>
+              <span class="h-px w-3 bg-[var(--surface-border)]"></span>
+              <i
+                class="pi pi-whatsapp motion-safe:animate-channel-pulse text-base [animation-delay:400ms]"
+              ></i>
+              <span class="h-px w-3 bg-[var(--surface-border)]"></span>
+              <i
+                class="pi pi-envelope motion-safe:animate-channel-pulse text-base [animation-delay:800ms]"
+              ></i>
+            </div>
+          }
+        </p-card>
+      }
+    </div>
+  </div>
+</section>

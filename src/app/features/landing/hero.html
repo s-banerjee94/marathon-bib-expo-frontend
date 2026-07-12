@@ -1,0 +1,388 @@
+<section
+  #heroSection
+  id="top"
+  class="relative flex min-h-[calc(100vh-var(--topbar-height))] scroll-mt-[var(--topbar-height)] items-center overflow-hidden py-16"
+>
+  <!-- Soft brand-color wash — landing-only, sits behind the diagonal lines -->
+  <div
+    aria-hidden="true"
+    class="pointer-events-none absolute inset-0 z-0 bg-[radial-gradient(900px_circle_at_12%_8%,color-mix(in_srgb,#16a34a,transparent_90%),transparent_55%),radial-gradient(800px_circle_at_88%_30%,color-mix(in_srgb,#2563eb,transparent_93%),transparent_60%)]"
+  ></div>
+  <div
+    #heroBg
+    class="pointer-events-none absolute inset-0 z-0 bg-[repeating-linear-gradient(-8deg,transparent_0,transparent_38px,color-mix(in_srgb,var(--text-color),transparent_96%)_38px,color-mix(in_srgb,var(--text-color),transparent_96%)_39px)] [mask:linear-gradient(180deg,black_0%,transparent_80%)] [-webkit-mask:linear-gradient(180deg,black_0%,transparent_80%)]"
+  ></div>
+  <div class="relative z-[1] mx-auto w-full max-w-[1440px] px-7">
+    <div
+      class="grid grid-cols-1 items-center gap-12 min-[900px]:grid-cols-[1.1fr_0.9fr] min-[900px]:gap-16"
+    >
+      <div>
+        <span
+          class="motion-safe:animate-fade-slide-up inline-flex items-center gap-2.5 text-xs font-bold tracking-[0.12em] text-[var(--text-color-secondary)] uppercase before:h-px before:w-6 before:bg-current before:content-['']"
+          >Bib expo platform · distribution, done right</span
+        >
+        <h1
+          appLetterPop
+          popLabel="Bib distribution that doesn't melt down at the expo."
+          class="motion-safe:animate-fade-slide-up mt-4 text-[clamp(48px,7vw,96px)] leading-[0.96] font-extrabold tracking-[-0.04em] text-[var(--text-color)] [animation-delay:100ms]"
+        >
+          Bib distribution<br />
+          that doesn't
+          <span
+            #meltWrap
+            class="relative inline-block font-medium text-[var(--text-color-secondary)]"
+          >
+            <span class="sr-only">melt down</span>
+            @for (ch of meltChars; track $index) {
+              <span data-melt-char aria-hidden="true" class="inline-block">{{ ch }}</span>
+            }
+            <span
+              data-melt-line
+              aria-hidden="true"
+              class="pointer-events-none absolute inset-x-0 top-[calc(50%-2px)] h-[4px] rounded-full bg-[#16a34a]"
+            ></span> </span
+          ><br />
+          at the expo.
+        </h1>
+        <p
+          class="motion-safe:animate-fade-slide-up mt-6 mb-8 max-w-[520px] text-[19px] leading-[1.55] text-[var(--text-color-secondary)] [animation-delay:200ms]"
+        >
+          From a drag-to-map roster import to a QR scan at the table — Marathon Bib Expo runs the
+          whole participant ops backend: races, categories, SMS/WhatsApp/email campaigns, an AI
+          assistant for the busywork, and an audit trail for every bib and goodie. Built for events
+          with thousands of runners and one or two days to hand it all out.
+        </p>
+        <div class="motion-safe:animate-fade-slide-up flex flex-wrap gap-3 [animation-delay:300ms]">
+          <a
+            pButton
+            appMagnetic
+            href="#demo"
+            label="Book a demo"
+            icon="pi pi-arrow-right"
+            iconPos="right"
+            size="large"
+            class="!border-[#15803d] !bg-[#15803d] !text-white hover:!border-[#166534] hover:!bg-[#166534]"
+          ></a>
+          <a
+            pButton
+            appMagnetic
+            routerLink="/login"
+            label="Sign in"
+            [outlined]="true"
+            size="large"
+          ></a>
+        </div>
+        <div
+          class="motion-safe:animate-fade-slide-up mt-8 flex flex-wrap items-center gap-6 text-[13px] text-[var(--text-color-secondary)] [animation-delay:400ms]"
+        >
+          <div class="flex items-center gap-2">
+            <i class="pi pi-qrcode text-[#16a34a]"></i> Scan or search — bib, name, phone
+          </div>
+          <div class="h-3.5 w-px bg-[var(--surface-border)]"></div>
+          <div class="flex items-center gap-2">
+            <i class="pi pi-bolt text-[#16a34a]"></i> SMS, WhatsApp &amp; email, one console
+          </div>
+          <div class="h-3.5 w-px bg-[var(--surface-border)]"></div>
+          <div class="flex items-center gap-2">
+            <i class="pi pi-mobile text-[#16a34a]"></i> Works offline at the table
+          </div>
+        </div>
+      </div>
+      <div #demoCol class="flex flex-col items-center gap-4">
+        <button
+          type="button"
+          appCardFly
+          (click)="scan()"
+          class="motion-safe:animate-fade-slide-up group relative block w-full max-w-[500px] cursor-pointer appearance-none border-0 bg-transparent p-0 text-left [animation-delay:450ms]"
+          [attr.aria-label]="
+            qrDataUrl()
+              ? 'Scan the QR code with your phone to collect bib ' +
+                current().bib +
+                ', or tap to simulate'
+              : 'Tap to simulate scanning bib ' + current().bib
+          "
+          [attr.aria-busy]="busy()"
+        >
+          <div class="relative aspect-[4/3] w-full">
+            <svg
+              viewBox="0 0 400 300"
+              width="100%"
+              class="absolute inset-0 block h-full w-full"
+              aria-hidden="true"
+            >
+              <defs>
+                <pattern id="bib-perf" width="14" height="14" patternUnits="userSpaceOnUse">
+                  <circle cx="7" cy="7" r="2.4" fill="var(--surface-card)" />
+                </pattern>
+                <linearGradient id="bib-shade" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0" stop-color="var(--surface-card)" />
+                  <stop offset="1" stop-color="var(--surface-ground)" />
+                </linearGradient>
+              </defs>
+
+              <!-- Bib body — standard 8in × 6in (4:3) race bib -->
+              <g>
+                <rect
+                  x="20"
+                  y="16"
+                  width="360"
+                  height="268"
+                  rx="8"
+                  fill="url(#bib-shade)"
+                  stroke="var(--text-color)"
+                  stroke-width="3"
+                />
+                <!-- Race-color header band (squared off at its bottom edge) -->
+                <rect x="20" y="16" width="360" height="76" rx="8" [attr.fill]="theme().band" />
+                <rect x="20" y="56" width="360" height="36" [attr.fill]="theme().band" />
+                <!-- Top safety-pin holes -->
+                <circle
+                  cx="55"
+                  cy="42"
+                  r="6"
+                  fill="var(--surface-card)"
+                  stroke="var(--text-color)"
+                  stroke-width="2"
+                />
+                <circle
+                  cx="345"
+                  cy="42"
+                  r="6"
+                  fill="var(--surface-card)"
+                  stroke="var(--text-color)"
+                  stroke-width="2"
+                />
+                <circle
+                  cx="55"
+                  cy="258"
+                  r="6"
+                  fill="var(--surface-card)"
+                  stroke="var(--text-color)"
+                  stroke-width="2"
+                />
+                <circle
+                  cx="345"
+                  cy="258"
+                  r="6"
+                  fill="var(--surface-card)"
+                  stroke="var(--text-color)"
+                  stroke-width="2"
+                />
+                <!-- Event name -->
+                <text
+                  x="200"
+                  y="52"
+                  text-anchor="middle"
+                  font-family="var(--font-sans)"
+                  font-size="17"
+                  font-weight="700"
+                  letter-spacing="6"
+                  [attr.fill]="theme().bandInk"
+                >
+                  BAY MARATHON
+                </text>
+                <!-- Race name inside the band -->
+                <text
+                  x="200"
+                  y="76"
+                  text-anchor="middle"
+                  font-family="var(--font-mono)"
+                  font-size="11"
+                  font-weight="600"
+                  letter-spacing="4"
+                  opacity="0.85"
+                  [attr.fill]="theme().bandInk"
+                >
+                  {{ theme().race }}
+                </text>
+                <!-- Big number — constrained to fit within the bib width; shifts
+                     left and shrinks while the live QR occupies the right side -->
+                <text
+                  #bibText
+                  [attr.x]="qrDataUrl() ? 160 : 200"
+                  y="182"
+                  text-anchor="middle"
+                  font-family="var(--font-sans)"
+                  [attr.font-size]="qrDataUrl() ? 76 : 100"
+                  font-weight="800"
+                  letter-spacing="-4"
+                  fill="var(--text-color)"
+                  [attr.textLength]="qrDataUrl() ? 200 : 290"
+                  lengthAdjust="spacingAndGlyphs"
+                  class="tabular-nums"
+                >
+                  {{ current().bib }}
+                </text>
+                <!-- Category footer -->
+                <line
+                  x1="60"
+                  y1="204"
+                  [attr.x2]="qrDataUrl() ? 260 : 340"
+                  y2="204"
+                  stroke="var(--text-color)"
+                  stroke-opacity="0.2"
+                  stroke-width="2"
+                />
+                @if (qrDataUrl() && liveRunner(); as live) {
+                  <!-- Live runner identity — matches what the phone shows -->
+                  <text
+                    x="160"
+                    y="228"
+                    text-anchor="middle"
+                    font-family="var(--font-sans)"
+                    font-size="14"
+                    font-weight="700"
+                    letter-spacing="1"
+                    fill="var(--text-color)"
+                  >
+                    {{ live.name | uppercase }}
+                  </text>
+                  <text
+                    x="160"
+                    y="248"
+                    text-anchor="middle"
+                    font-family="var(--font-mono)"
+                    font-size="11"
+                    font-weight="600"
+                    letter-spacing="2"
+                    fill="var(--text-color-secondary)"
+                  >
+                    {{ live.category }}
+                  </text>
+                } @else {
+                  <text
+                    x="200"
+                    y="230"
+                    text-anchor="middle"
+                    font-family="var(--font-mono)"
+                    font-size="13"
+                    font-weight="600"
+                    letter-spacing="3"
+                    fill="var(--text-color-secondary)"
+                  >
+                    {{ current().category }}
+                  </text>
+                  <!-- Chip strip (the live QR takes its place on the right) -->
+                  <rect
+                    x="100"
+                    y="242"
+                    width="200"
+                    height="12"
+                    rx="2"
+                    fill="currentColor"
+                    opacity="0.9"
+                  />
+                  <rect x="100" y="242" width="200" height="12" rx="2" fill="url(#bib-perf)" />
+                }
+                @if (qrDataUrl(); as qr) {
+                  <!-- Scannable QR — part of the card, so it flies out with the runner.
+                       Fixed white backing keeps it readable in dark mode. -->
+                  <g>
+                    <rect
+                      x="268"
+                      y="108"
+                      width="100"
+                      height="100"
+                      rx="6"
+                      fill="#ffffff"
+                      stroke="var(--text-color)"
+                      stroke-opacity="0.15"
+                      stroke-width="1.5"
+                    />
+                    <image [attr.href]="qr" x="272" y="112" width="92" height="92" />
+                    <text
+                      x="318"
+                      y="224"
+                      text-anchor="middle"
+                      font-family="var(--font-mono)"
+                      font-size="9"
+                      font-weight="600"
+                      letter-spacing="1.5"
+                      fill="var(--text-color-secondary)"
+                    >
+                      SCAN TO COLLECT
+                    </text>
+                  </g>
+                }
+                <!-- Border re-stroke so the band sits cleanly inside the outline -->
+                <rect
+                  x="20"
+                  y="16"
+                  width="360"
+                  height="268"
+                  rx="8"
+                  fill="none"
+                  stroke="var(--text-color)"
+                  stroke-width="3"
+                />
+              </g>
+
+              <!-- Floating speed line accents -->
+              <g opacity="0.5" stroke="var(--text-color)" stroke-width="2" stroke-linecap="round">
+                <line x1="0" y1="40" x2="-15" y2="40" />
+                <line x1="0" y1="140" x2="-25" y2="140" />
+                <line x1="0" y1="260" x2="-15" y2="260" />
+                <line x1="400" y1="80" x2="420" y2="80" />
+                <line x1="400" y1="190" x2="425" y2="190" />
+              </g>
+            </svg>
+
+            <!-- Scan-line sweep -->
+            <div
+              class="pointer-events-none absolute top-[6%] left-[5%] h-[88%] w-[90%] overflow-hidden rounded-[6px]"
+            >
+              @if (isScanning()) {
+                <div
+                  class="motion-safe:animate-scan-sweep absolute inset-x-0 h-[3px] bg-[#16a34a] shadow-[0_0_16px_2px_rgba(22,163,74,0.6)]"
+                ></div>
+              }
+            </div>
+
+            <!-- Collected stamp -->
+            @if (isCollected()) {
+              <div
+                class="motion-safe:animate-stamp-in pointer-events-none absolute top-[34%] left-1/2 -translate-x-1/2 -rotate-12 rounded-md border-[3px] border-[#16a34a] bg-[var(--surface-card)]/90 px-4 py-1.5 font-['Geist_Mono',_monospace] text-lg font-extrabold tracking-[0.08em] text-[#16a34a]"
+              >
+                COLLECTED
+              </div>
+            }
+
+            <!-- Tap hint -->
+            @if (!busy()) {
+              <span
+                class="absolute -top-3 -right-3 inline-flex items-center gap-1.5 rounded-full bg-[var(--text-color)] px-3 py-1.5 text-[11px] font-bold tracking-[0.04em] text-[var(--surface-card)] uppercase shadow-lg group-hover:animate-none motion-safe:animate-pulse"
+              >
+                <i class="pi pi-qrcode text-[11px]"></i>
+                {{ qrDataUrl() ? 'Scan with your phone' : 'Tap to scan' }}
+              </span>
+            }
+          </div>
+        </button>
+
+        <div
+          class="motion-safe:animate-fade-slide-up flex items-center gap-2 font-['Geist_Mono',_monospace] text-[13px] text-[var(--text-color-secondary)] [animation-delay:750ms]"
+        >
+          <span class="relative flex h-2 w-2">
+            <span
+              class="motion-safe:animate-ping absolute inline-flex h-full w-full rounded-full bg-[#16a34a] opacity-60"
+            ></span>
+            <span class="relative inline-flex h-2 w-2 rounded-full bg-[#16a34a]"></span>
+          </span>
+          <span class="tabular-nums">{{ collectedCount() | number }}</span> collected this expo
+        </div>
+
+        <!-- Fixed-height slot so the hint appearing never shifts the layout -->
+        <div class="flex h-5 items-center" aria-live="polite">
+          @if (phoneConnected() && !busy()) {
+            <span
+              class="flex items-center gap-2 font-['Geist_Mono',_monospace] text-[13px] text-[#16a34a]"
+            >
+              <i class="pi pi-mobile text-[13px]"></i>
+              Phone connected — tap Mark Collected
+            </span>
+          }
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

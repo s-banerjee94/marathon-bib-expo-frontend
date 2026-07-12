@@ -1,0 +1,43 @@
+<section id="faq" class="scroll-mt-[var(--topbar-height)] py-24">
+  <div class="mx-auto max-w-[1440px] px-7">
+    <div appScrollReveal revealStagger="0.12" class="mb-14 max-w-[720px]">
+      <span
+        class="inline-flex items-center gap-2.5 text-xs font-bold tracking-[0.12em] text-[var(--text-color-secondary)] uppercase before:h-px before:w-6 before:bg-current before:content-['']"
+        >FAQ</span
+      >
+      <h2
+        appLetterPop
+        class="my-4 text-[clamp(36px,4.5vw,56px)] leading-[1.05] font-extrabold tracking-[-0.03em] text-[var(--text-color)]"
+      >
+        Questions race directors ask us.
+      </h2>
+    </div>
+    <div
+      appScrollReveal
+      revealStagger="0.06"
+      class="grid grid-cols-1 gap-x-14 min-[900px]:grid-cols-2"
+    >
+      @for (item of qa; track item.q) {
+        <details
+          appFaqReveal
+          class="group border-b border-[var(--surface-border)] py-6 last:border-b-0"
+        >
+          <summary
+            class="flex cursor-pointer list-none items-center justify-between text-[17px] font-bold tracking-[-0.01em] text-[var(--text-color)] [&::-webkit-details-marker]:hidden"
+          >
+            {{ item.q }}
+            <i
+              class="pi pi-plus text-sm text-[var(--text-color-secondary)] transition-transform duration-200 group-open:rotate-45"
+            ></i>
+          </summary>
+          <div
+            data-faq-body
+            class="mt-3 max-w-[540px] text-[14.5px] leading-[1.6] text-[var(--text-color-secondary)]"
+          >
+            {{ item.a }}
+          </div>
+        </details>
+      }
+    </div>
+  </div>
+</section>
