@@ -1,10 +1,7 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { Location } from '@angular/common';
-import { toSignal } from '@angular/core/rxjs-interop';
-import { filter, map, startWith } from 'rxjs/operators';
 import {
   ActivatedRoute,
-  NavigationEnd,
   Router,
   RouterLink,
   RouterLinkActive,
@@ -21,6 +18,7 @@ import { ToastService } from '../../core/services/toast.service';
 import { AuthService } from '../../core/services/auth.service';
 import { UserRole } from '../../core/models/user.model';
 import { MobileTabBar, TabItem } from '../../shared/components/mobile-tab-bar/mobile-tab-bar';
+import { activeChildRouteSignal, firstChildPath } from '../../shared/utils/active-route.utils';
 import { OrganizationAccountState } from './organization-account-state.service';
 
 const DEFAULT_TAB = 'account';
@@ -73,14 +71,7 @@ export class OrganizationAccount implements OnInit {
   // Set from the route param when ROOT/ADMIN edit a specific org; null = "my org".
   private orgId: number | null = null;
 
-  readonly activeTab = toSignal(
-    this.router.events.pipe(
-      filter((e): e is NavigationEnd => e instanceof NavigationEnd),
-      startWith(null),
-      map(() => this.route.snapshot.firstChild?.routeConfig?.path ?? DEFAULT_TAB),
-    ),
-    { initialValue: this.route.snapshot.firstChild?.routeConfig?.path ?? DEFAULT_TAB },
-  );
+  readonly activeTab = activeChildRouteSignal(firstChildPath, DEFAULT_TAB);
 
   readonly tabs: TabItem[] = [
     { id: 'account', label: 'Account', icon: 'pi-building' },

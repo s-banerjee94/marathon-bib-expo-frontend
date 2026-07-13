@@ -1,9 +1,6 @@
 import { Component, inject } from '@angular/core';
-import { toSignal } from '@angular/core/rxjs-interop';
-import { filter, map, startWith } from 'rxjs/operators';
 import {
   ActivatedRoute,
-  NavigationEnd,
   Router,
   RouterLink,
   RouterLinkActive,
@@ -11,6 +8,7 @@ import {
 } from '@angular/router';
 import { TabsModule } from 'primeng/tabs';
 import { MobileTabBar, TabItem } from '../../../shared/components/mobile-tab-bar/mobile-tab-bar';
+import { activeChildRouteSignal, firstChildPath } from '../../../shared/utils/active-route.utils';
 
 const DEFAULT_TAB = 'overview';
 
@@ -26,14 +24,7 @@ export class PlatformBilling {
 
   // Active tab is driven by the URL (the child route path), so deep links and
   // refreshes land on the right tab.
-  protected readonly activeTab = toSignal(
-    this.router.events.pipe(
-      filter((e): e is NavigationEnd => e instanceof NavigationEnd),
-      startWith(null),
-      map(() => this.route.snapshot.firstChild?.routeConfig?.path ?? DEFAULT_TAB),
-    ),
-    { initialValue: this.route.snapshot.firstChild?.routeConfig?.path ?? DEFAULT_TAB },
-  );
+  protected readonly activeTab = activeChildRouteSignal(firstChildPath, DEFAULT_TAB);
 
   protected readonly tabs: TabItem[] = [
     { id: 'overview', label: 'Overview', icon: 'pi-chart-bar' },

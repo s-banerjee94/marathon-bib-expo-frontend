@@ -8,7 +8,7 @@ import {
   signal,
   ViewChild,
 } from '@angular/core';
-import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup } from '@angular/forms';
 import {
@@ -21,7 +21,8 @@ import {
   RouterLinkActive,
   RouterOutlet,
 } from '@angular/router';
-import { filter, map, startWith } from 'rxjs/operators';
+import { filter } from 'rxjs/operators';
+import { activeChildRouteSignal, deepestChildPath } from '../../../shared/utils/active-route.utils';
 import { CardModule } from 'primeng/card';
 import { TabsModule } from 'primeng/tabs';
 import { ButtonModule } from 'primeng/button';
@@ -114,23 +115,8 @@ export class ManageDistribution implements OnInit {
     this.detailsBibNumber.set(null);
   }
 
-  // Active tab derived from router state — reads from deepest child route
-  activeTab = toSignal(
-    this.router.events.pipe(
-      filter((e): e is NavigationEnd => e instanceof NavigationEnd),
-      startWith(null),
-      map(() => this.getDeepestChildPath() ?? 'lookup'),
-    ),
-    { initialValue: this.route.snapshot.firstChild?.firstChild?.routeConfig?.path ?? 'lookup' },
-  );
-
-  private getDeepestChildPath(): string | undefined {
-    let snapshot = this.route.snapshot.firstChild;
-    while (snapshot?.firstChild) {
-      snapshot = snapshot.firstChild;
-    }
-    return snapshot?.routeConfig?.path;
-  }
+  // Active tab derived from router state — reads from the deepest child route.
+  activeTab = activeChildRouteSignal(deepestChildPath, 'lookup');
 
   // Role permissions
   canUndoBib = computed(() =>

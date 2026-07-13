@@ -8,7 +8,7 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
-import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import {
   ActivatedRoute,
   NavigationEnd,
@@ -19,7 +19,8 @@ import {
   RouterLinkActive,
   RouterOutlet,
 } from '@angular/router';
-import { filter, map, startWith } from 'rxjs/operators';
+import { filter } from 'rxjs/operators';
+import { activeChildRouteSignal, deepestChildPath } from '../../../shared/utils/active-route.utils';
 import { CardModule } from 'primeng/card';
 import { TabsModule } from 'primeng/tabs';
 import { DialogModule } from 'primeng/dialog';
@@ -151,27 +152,8 @@ export class ParticipantList implements OnInit {
     );
   });
 
-  // Active tab derived from router state — reads the deepest child route path
-  activeTab = toSignal(
-    this.router.events.pipe(
-      filter((e): e is NavigationEnd => e instanceof NavigationEnd),
-      startWith(null),
-      map(() => this.getDeepestChildPath() ?? 'list'),
-    ),
-    { initialValue: this.getInitialDeepestChildPath() ?? 'list' },
-  );
-
-  private getDeepestChildPath(): string | undefined {
-    let snapshot = this.route.snapshot.firstChild;
-    while (snapshot?.firstChild) {
-      snapshot = snapshot.firstChild;
-    }
-    return snapshot?.routeConfig?.path;
-  }
-
-  private getInitialDeepestChildPath(): string | undefined {
-    return this.route.snapshot.firstChild?.firstChild?.routeConfig?.path;
-  }
+  // Active tab derived from router state — reads the deepest child route path.
+  activeTab = activeChildRouteSignal(deepestChildPath, 'list');
 
   // Viewport tracking — drives dialog sizing (full-screen on mobile, modal on desktop).
   // Backed by the shared BreakpointService (one app-wide signal/listener).

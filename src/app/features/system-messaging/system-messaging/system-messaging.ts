@@ -1,9 +1,6 @@
 import { Component, inject } from '@angular/core';
-import { toSignal } from '@angular/core/rxjs-interop';
-import { filter, map, startWith } from 'rxjs/operators';
 import {
   ActivatedRoute,
-  NavigationEnd,
   Router,
   RouterLink,
   RouterLinkActive,
@@ -12,6 +9,7 @@ import {
 import { TabsModule } from 'primeng/tabs';
 import { MobileTabBar, TabItem } from '../../../shared/components/mobile-tab-bar/mobile-tab-bar';
 import { DEFAULT_CHANNEL, SYSTEM_MESSAGING_CHANNELS } from '../system-messaging.constants';
+import { activeChildRouteSignal } from '../../../shared/utils/active-route.utils';
 
 @Component({
   selector: 'app-system-messaging',
@@ -32,20 +30,12 @@ export class SystemMessaging {
     icon: c.icon.replace('pi ', ''),
   }));
 
-  protected readonly activeTab = toSignal(
-    this.router.events.pipe(
-      filter((e): e is NavigationEnd => e instanceof NavigationEnd),
-      startWith(null),
-      map(() => this.currentChannel()),
-    ),
-    { initialValue: this.currentChannel() },
-  );
-
   // The active channel is the :channel param of whichever child is showing
   // (console or template editor), falling back to the default tab.
-  private currentChannel(): string {
-    return this.route.snapshot.firstChild?.paramMap.get('channel') ?? DEFAULT_CHANNEL;
-  }
+  protected readonly activeTab = activeChildRouteSignal(
+    (root) => root.firstChild?.paramMap.get('channel') ?? undefined,
+    DEFAULT_CHANNEL,
+  );
 
   onTabChange(tabId: string): void {
     this.router.navigate([tabId], { relativeTo: this.route });

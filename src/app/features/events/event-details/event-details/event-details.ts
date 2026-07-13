@@ -1,10 +1,9 @@
 import { Component, DestroyRef, inject, input, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
-import { filter, finalize, map, startWith } from 'rxjs/operators';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { finalize } from 'rxjs/operators';
 import {
   ActivatedRoute,
-  NavigationEnd,
   Router,
   RouterLink,
   RouterLinkActive,
@@ -25,6 +24,10 @@ import { Event, EventStatus } from '../../../../core/models/event.model';
 import { EventService } from '../../../../core/services/event.service';
 import { ImageUploadService } from '../../../../core/services/image-upload.service';
 import { ImageUpload } from '../../../../shared/components/image-upload/image-upload';
+import {
+  activeChildRouteSignal,
+  firstChildPath,
+} from '../../../../shared/utils/active-route.utils';
 import { EventListBus } from '../../event-list-bus.service';
 import { AuthService } from '../../../../core/services/auth.service';
 import { UserRole } from '../../../../core/models/user.model';
@@ -108,14 +111,7 @@ export class EventDetails implements OnInit {
   protected readonly imagePreviewVisible = signal(false);
   protected readonly uploadDialogVisible = signal(false);
 
-  activeTab = toSignal(
-    this.router.events.pipe(
-      filter((e): e is NavigationEnd => e instanceof NavigationEnd),
-      startWith(null),
-      map(() => this.route.snapshot.firstChild?.routeConfig?.path ?? DEFAULT_TAB),
-    ),
-    { initialValue: this.route.snapshot.firstChild?.routeConfig?.path ?? DEFAULT_TAB },
-  );
+  activeTab = activeChildRouteSignal(firstChildPath, DEFAULT_TAB);
 
   protected readonly getStatusSeverity = getEventStatusSeverity;
   protected readonly getStatusLabel = getEventStatusLabel;
