@@ -156,13 +156,13 @@ export class UserForm implements OnInit {
 
     // Validate organizationId is set when the role requires it.
     if (roleRequiresOrganization(this.selectedRole()) && !this.user.organizationId) {
-      this.toast.error('Organization is required. Please select an organization.');
+      this.toast.warn('Organization is required. Please select an organization.');
       return;
     }
 
     // A distributor must be bound to an event.
     if (roleRequiresEvent(this.selectedRole()) && !this.user.eventId) {
-      this.toast.error('Event is required. Please select an event for the distributor.');
+      this.toast.warn('Event is required. Please select an event for the distributor.');
       return;
     }
 

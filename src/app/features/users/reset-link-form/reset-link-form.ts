@@ -76,7 +76,7 @@ export class ResetLinkForm {
   onSend(): void {
     const channels = this.selectedChannels();
     if (channels.length === 0) {
-      this.toast.error('Select WhatsApp or SMS to send the link.');
+      this.toast.warn('Select WhatsApp or SMS to send the link.');
       return;
     }
     this.issue({ deliveryChannels: channels });

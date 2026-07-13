@@ -578,7 +578,7 @@ export class EventList extends BaseTableComponent<Event, EventFilterPreferences>
             | undefined,
         ) => {
           if (result?.message) {
-            this.toast.show(result.message);
+            this.showResultMessage(result.message);
           }
           this.returnToList();
         },
@@ -613,7 +613,7 @@ export class EventList extends BaseTableComponent<Event, EventFilterPreferences>
             | undefined,
         ) => {
           if (result?.message) {
-            this.toast.show(result.message);
+            this.showResultMessage(result.message);
           }
           this.returnToList();
         },
@@ -630,6 +630,14 @@ export class EventList extends BaseTableComponent<Event, EventFilterPreferences>
     }
     this.dialogKey = null;
     this.router.navigate(['/events'], { queryParamsHandling: 'preserve' });
+  }
+
+  private showResultMessage(message: { severity: string; summary: string; detail: string }): void {
+    const { severity, summary, detail } = message;
+    if (severity === 'error') this.toast.error(detail, summary);
+    else if (severity === 'warn') this.toast.warn(detail, summary);
+    else if (severity === 'info') this.toast.info(detail, summary);
+    else this.toast.success(detail, summary);
   }
 
   private buildEventSearchParams(): PageableParams {

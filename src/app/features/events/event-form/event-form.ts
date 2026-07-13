@@ -204,7 +204,7 @@ export class EventForm implements OnInit {
 
     // Validate organizationId is set
     if (!this.event.organizationId) {
-      this.toast.error('Organization is required. Please select an organization.');
+      this.toast.warn('Organization is required. Please select an organization.');
       return;
     }
 

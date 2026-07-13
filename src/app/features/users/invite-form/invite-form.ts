@@ -182,7 +182,7 @@ export class InviteForm implements OnInit {
 
     const channels = this.selectedChannels();
     if (channels.length === 0) {
-      this.toast.error('Select WhatsApp or SMS to send the link.');
+      this.toast.warn('Select WhatsApp or SMS to send the link.');
       return;
     }
 
@@ -202,11 +202,11 @@ export class InviteForm implements OnInit {
     if (!role) return null;
     this.attemptedIssue.set(true);
     if (roleRequiresOrganization(role) && !this.organizationId()) {
-      this.toast.error('Organization is required. Please select an organization.');
+      this.toast.warn('Organization is required. Please select an organization.');
       return null;
     }
     if (roleRequiresEvent(role) && !this.eventId()) {
-      this.toast.error('Event is required. Please select an event for the distributor.');
+      this.toast.warn('Event is required. Please select an event for the distributor.');
       return null;
     }
     const request: CreateInvitationRequest = { role };

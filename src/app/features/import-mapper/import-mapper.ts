@@ -235,7 +235,7 @@ export class ImportMapper {
     const params = this.route.snapshot.queryParamMap;
     const eventId = Number(params.get('eventId'));
     if (!Number.isFinite(eventId) || eventId <= 0) {
-      this.toast.error('Select an event to import participants.');
+      this.toast.warn('Select an event to import participants.');
       this.router.navigate(['/participants']);
       return;
     }
