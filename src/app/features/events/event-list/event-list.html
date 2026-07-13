@@ -261,7 +261,7 @@
                   } @else if (col.field === 'logoUrl') {
                     @if (getCellValue(event, col.field)) {
                       <a
-                        class="hover:underline text-blue-600"
+                        class="hover:underline text-primary"
                         href="{{ getCellValue(event, col.field) }}"
                         rel="noopener noreferrer"
                         target="_blank"
@@ -288,7 +288,7 @@
                   } @else if (col.field === 'organizationId' && event.organizationId) {
                     <span
                       (click)="openOrganizationPopover($event, event.organizationId)"
-                      class="cursor-pointer border-b border-dotted border-gray-400"
+                      class="cursor-pointer border-b border-dotted border-surface"
                     >
                       {{ getCellValue(event, col.field) | defaultValue }}
                     </span>
@@ -368,7 +368,7 @@
               @if (isRootOrAdmin && event.organizationId) {
                 <span
                   (click)="openOrganizationPopover($event, event.organizationId)"
-                  class="text-sm cursor-pointer border-b border-dotted border-gray-400 truncate w-fit"
+                  class="text-sm cursor-pointer border-b border-dotted border-surface truncate w-fit"
                 >
                   View Organization
                 </span>
@@ -507,18 +507,18 @@
 
         <div class="space-y-1">
           <div class="flex items-center gap-2">
-            <i class="pi pi-envelope text-gray-500 text-sm w-4"></i>
+            <i class="pi pi-envelope text-muted-color text-sm w-4"></i>
             <a
-              class="text-blue-600 hover:underline text-sm"
+              class="text-primary hover:underline text-sm"
               href="mailto:{{ currentOrganizationDetails()!.email }}"
             >
               {{ currentOrganizationDetails()!.email }}
             </a>
           </div>
           <div class="flex items-center gap-2">
-            <i class="pi pi-phone text-gray-500 text-sm w-4"></i>
+            <i class="pi pi-phone text-muted-color text-sm w-4"></i>
             <a
-              class="text-blue-600 hover:underline text-sm"
+              class="text-primary hover:underline text-sm"
               href="tel:{{ currentOrganizationDetails()!.phoneNumber }}"
             >
               {{ currentOrganizationDetails()!.phoneNumber }}

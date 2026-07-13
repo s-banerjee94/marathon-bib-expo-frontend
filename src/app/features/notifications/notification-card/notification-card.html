@@ -21,13 +21,13 @@
         >
           {{ notification().title }}
         </span>
-        <span class="text-[11px] shrink-0" style="color: var(--text-color-secondary)">
+        <span class="text-[11px] shrink-0 text-muted-color">
           {{ notification().createdAt | date: 'dd MMM yyyy, hh:mm a' }}
         </span>
       </div>
 
       <!-- Description (full message, wraps) -->
-      <p class="text-xs leading-snug break-words mt-0.5" style="color: var(--text-color-secondary)">
+      <p class="text-xs leading-snug break-words mt-0.5 text-muted-color">
         {{ notification().message }}
       </p>
 
@@ -38,10 +38,7 @@
             <p-tag [value]="label" severity="secondary" />
           }
           @if (notification().actorName; as actor) {
-            <span
-              class="text-[11px] flex items-center gap-1 min-w-0"
-              style="color: var(--text-color-secondary)"
-            >
+            <span class="text-[11px] flex items-center gap-1 min-w-0 text-muted-color">
               <i class="pi pi-user text-[10px]"></i>
               <span class="font-medium truncate">{{ actor }}</span>
             </span>

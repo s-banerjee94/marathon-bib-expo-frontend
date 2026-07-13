@@ -14,15 +14,14 @@
             @if (org.website) {
               <a
                 [href]="org.website"
-                class="text-sm truncate"
+                class="text-sm truncate text-primary"
                 rel="noopener"
-                style="color: var(--primary-color)"
                 target="_blank"
               >
                 {{ org.website }}
               </a>
             } @else {
-              <span class="text-sm" style="color: var(--text-color-secondary)">
+              <span class="text-sm text-muted-color">
                 {{ org.email | defaultValue }}
               </span>
             }
@@ -66,9 +65,7 @@
                   </span>
                   <div class="min-w-0">
                     <h2 class="text-lg font-semibold leading-tight">Organization Details</h2>
-                    <p class="text-sm mt-0.5" style="color: var(--text-color-secondary)">
-                      Contact and business information.
-                    </p>
+                    <p class="text-sm mt-0.5 text-muted-color">Contact and business information.</p>
                   </div>
                 </div>
                 <!-- ORGANIZER_ADMIN saves from here; ROOT/ADMIN use the bottom action bar. -->
@@ -107,7 +104,7 @@
                 </span>
                 <div class="min-w-0">
                   <h2 class="text-lg font-semibold leading-tight">Subscription &amp; Usage</h2>
-                  <p class="text-sm mt-0.5" style="color: var(--text-color-secondary)">
+                  <p class="text-sm mt-0.5 text-muted-color">
                     @if (canEditGovernance) {
                       Plan, billing, and user limits.
                     } @else {
@@ -143,10 +140,7 @@
                     <div class="flex flex-wrap items-center gap-x-4 gap-y-2 -mt-2">
                       @if (org.subscriptionStatus) {
                         <div class="flex items-center gap-2">
-                          <span
-                            class="text-xs uppercase tracking-wide"
-                            style="color: var(--text-color-secondary)"
-                          >
+                          <span class="text-xs uppercase tracking-wide text-muted-color">
                             Status
                           </span>
                           <p-tag
@@ -158,10 +152,7 @@
                       }
                       @if (org.subscriptionStartDate || org.subscriptionEndDate) {
                         <div class="flex items-center gap-2">
-                          <span
-                            class="text-xs uppercase tracking-wide"
-                            style="color: var(--text-color-secondary)"
-                          >
+                          <span class="text-xs uppercase tracking-wide text-muted-color">
                             Period
                           </span>
                           <span class="text-sm font-medium">
@@ -199,10 +190,7 @@
                   </div>
 
                   <div class="flex flex-col gap-3">
-                    <span
-                      class="text-xs uppercase tracking-wide"
-                      style="color: var(--text-color-secondary)"
-                    >
+                    <span class="text-xs uppercase tracking-wide text-muted-color">
                       User Quotas (max)
                     </span>
                     <div class="flex flex-col gap-3">
@@ -249,12 +237,7 @@
                 <!-- Read-only governance (ORGANIZER_ADMIN) -->
                 <div class="flex flex-col gap-5">
                   <div class="flex flex-col gap-1">
-                    <span
-                      class="text-xs uppercase tracking-wide"
-                      style="color: var(--text-color-secondary)"
-                    >
-                      Plan
-                    </span>
+                    <span class="text-xs uppercase tracking-wide text-muted-color"> Plan </span>
                     <div class="flex items-center gap-2">
                       @if (org.subscriptionTier) {
                         <p-tag [value]="tierLabel()" />
@@ -273,10 +256,7 @@
 
                   @if (org.subscriptionStartDate || org.subscriptionEndDate) {
                     <div class="flex flex-col gap-1">
-                      <span
-                        class="text-xs uppercase tracking-wide"
-                        style="color: var(--text-color-secondary)"
-                      >
+                      <span class="text-xs uppercase tracking-wide text-muted-color">
                         Subscription Period
                       </span>
                       <span class="text-sm font-medium">
@@ -287,10 +267,7 @@
                   }
 
                   <div class="flex flex-col gap-1">
-                    <span
-                      class="text-xs uppercase tracking-wide"
-                      style="color: var(--text-color-secondary)"
-                    >
+                    <span class="text-xs uppercase tracking-wide text-muted-color">
                       Billing Email
                     </span>
                     <span class="text-sm font-medium break-all">
@@ -299,10 +276,7 @@
                   </div>
 
                   <div class="flex flex-col gap-3">
-                    <span
-                      class="text-xs uppercase tracking-wide"
-                      style="color: var(--text-color-secondary)"
-                    >
+                    <span class="text-xs uppercase tracking-wide text-muted-color">
                       User Quotas
                     </span>
                     @for (row of quotaRows(); track row.label) {
@@ -327,26 +301,15 @@
               }
 
               <!-- Read-only meta (both modes) -->
-              <div
-                class="flex flex-col gap-5 pt-4 border-t"
-                style="border-color: var(--surface-border)"
-              >
+              <div class="flex flex-col gap-5 pt-4 border-t border-surface">
                 <div class="flex flex-col gap-1">
-                  <span
-                    class="text-xs uppercase tracking-wide"
-                    style="color: var(--text-color-secondary)"
-                  >
-                    Created
-                  </span>
+                  <span class="text-xs uppercase tracking-wide text-muted-color"> Created </span>
                   <span class="text-sm font-medium">
                     {{ org.createdAt ? (org.createdAt | date: 'mediumDate') : '--' }}
                   </span>
                 </div>
                 <div class="flex flex-col gap-1">
-                  <span
-                    class="text-xs uppercase tracking-wide"
-                    style="color: var(--text-color-secondary)"
-                  >
+                  <span class="text-xs uppercase tracking-wide text-muted-color">
                     Last updated
                   </span>
                   <span class="text-sm font-medium">

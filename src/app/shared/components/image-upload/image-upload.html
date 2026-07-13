@@ -22,10 +22,9 @@
       />
     } @else {
       <i
-        class="pi text-2xl"
+        class="pi text-2xl text-muted-color"
         [class.pi-user]="shape === 'circle'"
         [class.pi-image]="shape === 'square'"
-        style="color: var(--text-color-secondary)"
       ></i>
     }
 
@@ -63,7 +62,7 @@
       }
     </div>
     @if (helpText) {
-      <span class="text-xs" style="color: var(--text-color-secondary)">{{ helpText }}</span>
+      <span class="text-xs text-muted-color">{{ helpText }}</span>
     }
   </div>
 

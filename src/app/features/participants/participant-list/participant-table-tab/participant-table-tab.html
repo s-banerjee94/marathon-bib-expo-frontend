@@ -181,7 +181,7 @@
       />
     </div>
 
-    <div class="text-sm text-gray-600">
+    <div class="text-sm text-muted-color">
       @if (totalCount() > 0) {
         Total: <strong>{{ totalCount() }}</strong> participant(s)
         @if (participants().length < totalCount()) {
@@ -206,7 +206,7 @@
   <div class="border border-surface-200 dark:border-surface-700 rounded-md py-16 text-center">
     <app-empty-illustration name="no-participants" [size]="104" class="inline-block mb-3" />
     <p class="text-base font-medium">No participants found</p>
-    <p class="text-sm text-gray-500 mt-1">
+    <p class="text-sm text-muted-color mt-1">
       @if (isSearchMode()) {
         Try adjusting your search or
         <button type="button" class="underline cursor-pointer" (click)="clearSearch()">
@@ -881,7 +881,7 @@
     }
 
     @if (!hasMore() && participants().length > 0) {
-      <p class="text-sm text-gray-600">
+      <p class="text-sm text-muted-color">
         @if (isSearchMode()) {
           Showing {{ participants().length }} participant(s)
           @if (totalCount() > 0) {

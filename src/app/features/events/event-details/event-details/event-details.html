@@ -164,7 +164,7 @@
       <!-- Info grid -->
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
         <div>
-          <p class="text-sm text-gray-600 mb-1">Event Dates</p>
+          <p class="text-sm text-muted-color mb-1">Event Dates</p>
           <p class="font-medium">
             {{
               event()!.eventStartDate
@@ -187,7 +187,7 @@
 
         @if (event()!.venueName) {
           <div>
-            <p class="text-sm text-gray-600 mb-1">Venue</p>
+            <p class="text-sm text-muted-color mb-1">Venue</p>
             <p class="font-medium">{{ event()!.venueName }}</p>
             @if (event()!.addressLine1) {
               <p class="text-sm">{{ event()!.addressLine1 }}</p>
@@ -196,15 +196,15 @@
               <p class="text-sm">{{ event()!.addressLine2 }}</p>
             }
             @if (formatAddress(event())) {
-              <p class="text-sm text-gray-600">{{ formatAddress(event()) }}</p>
+              <p class="text-sm text-muted-color">{{ formatAddress(event()) }}</p>
             }
           </div>
         }
 
         @if (event()!.eventDescription) {
           <div class="md:col-span-2">
-            <p class="text-sm text-gray-600 mb-1">Description</p>
-            <p class="text-gray-800">{{ event()!.eventDescription }}</p>
+            <p class="text-sm text-muted-color mb-1">Description</p>
+            <p class="text-color">{{ event()!.eventDescription }}</p>
           </div>
         }
       </div>

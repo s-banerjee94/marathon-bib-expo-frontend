@@ -465,14 +465,14 @@
         <p-message severity="warn" variant="simple">{{ scanError() }}</p-message>
       }
 
-      <p class="text-sm text-center" style="color: var(--text-color-secondary)">
+      <p class="text-sm text-center text-muted-color">
         Point the camera at the participant's QR code — it scans automatically.
       </p>
     } @else {
       <div class="flex flex-col items-center justify-center py-6 gap-2">
         <i class="pi pi-exclamation-triangle text-4xl opacity-40"></i>
         <p class="font-medium">QR scanning not supported</p>
-        <p class="text-sm text-center" style="color: var(--text-color-secondary)">
+        <p class="text-sm text-center text-muted-color">
           Use Chrome on Android or Safari 17.4+. Type the BIB number manually instead.
         </p>
       </div>

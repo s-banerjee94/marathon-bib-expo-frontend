@@ -14,7 +14,7 @@
 >
   <div class="flex flex-col" (keydown)="onKeydown($event)">
     <!-- Search field -->
-    <div class="p-2 border-b" style="border-color: var(--surface-border)">
+    <div class="p-2 border-b border-surface">
       <p-iconfield>
         <p-inputicon class="pi pi-search" />
         <input
@@ -47,8 +47,7 @@
       @if (palette.hasResults()) {
         @for (group of displayGroups(); track group.type) {
           <div
-            class="flex items-center gap-2 px-3 pt-3 pb-1 text-xs font-semibold uppercase tracking-wide"
-            style="color: var(--text-color-secondary)"
+            class="flex items-center gap-2 px-3 pt-3 pb-1 text-xs font-semibold uppercase tracking-wide text-muted-color"
           >
             <i [class]="group.icon" class="text-[11px]"></i>
             <span>{{ group.label }}</span>
@@ -77,16 +76,13 @@
                 <span class="flex flex-col min-w-0">
                   <span class="text-sm font-medium truncate">{{ result.title }}</span>
                   @if (result.subtitle) {
-                    <span class="text-xs truncate" style="color: var(--text-color-secondary)">
+                    <span class="text-xs truncate text-muted-color">
                       {{ result.subtitle }}
                     </span>
                   }
                 </span>
                 @if (result.flatIndex === activeIndex()) {
-                  <i
-                    class="pi pi-arrow-right ml-auto text-xs"
-                    style="color: var(--text-color-secondary)"
-                  ></i>
+                  <i class="pi pi-arrow-right ml-auto text-xs text-muted-color"></i>
                 }
               </li>
             }
@@ -100,10 +96,7 @@
               class="w-12 h-12 rounded-full flex items-center justify-center"
               style="background: var(--surface-hover)"
             >
-              <i
-                class="pi pi-spin pi-spinner text-xl"
-                style="color: var(--text-color-secondary)"
-              ></i>
+              <i class="pi pi-spin pi-spinner text-xl text-muted-color"></i>
             </span>
             <p class="text-sm font-medium">Searching…</p>
           } @else if (!canSearch()) {
@@ -111,28 +104,23 @@
               class="w-12 h-12 rounded-full flex items-center justify-center"
               style="background: var(--surface-hover)"
             >
-              <i class="pi pi-search text-xl" style="color: var(--text-color-secondary)"></i>
+              <i class="pi pi-search text-xl text-muted-color"></i>
             </span>
             <p class="text-sm font-medium">Search everything</p>
-            <p class="text-xs" style="color: var(--text-color-secondary)">
+            <p class="text-xs text-muted-color">
               {{ palette.searchHint() }}
             </p>
           } @else {
             <app-empty-illustration name="no-search-results" [size]="80" class="mb-1" />
             <p class="text-sm font-medium">No results found</p>
-            <p class="text-xs" style="color: var(--text-color-secondary)">
-              Nothing matches “{{ palette.query() }}”
-            </p>
+            <p class="text-xs text-muted-color">Nothing matches “{{ palette.query() }}”</p>
           }
         </div>
       }
     </div>
 
     <!-- Keyboard hints -->
-    <div
-      class="flex items-center gap-4 px-3 py-2 border-t text-xs"
-      style="border-color: var(--surface-border); color: var(--text-color)"
-    >
+    <div class="flex items-center gap-4 px-3 py-2 border-t text-xs border-surface text-color">
       <span class="flex items-center gap-1.5">
         <kbd
           class="inline-flex items-center justify-center h-5 w-5 rounded border text-[11px] font-semibold"

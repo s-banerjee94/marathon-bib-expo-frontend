@@ -102,10 +102,7 @@
       </section>
 
       <!-- ─────────────────────── Sign-in form panel ─────────────────────── -->
-      <section
-        class="flex flex-col justify-center p-8 sm:p-10 md:border-l"
-        style="border-color: var(--surface-border)"
-      >
+      <section class="flex flex-col justify-center p-8 sm:p-10 md:border-l border-surface">
         <img
           src="logo.png"
           alt="Marathon Bib Expo"
@@ -114,9 +111,7 @@
 
         <div class="mb-6 flex flex-col gap-1">
           <h1 class="m-0 text-2xl font-bold">Welcome Back!</h1>
-          <p class="m-0 text-sm" style="color: var(--text-color-secondary)">
-            Sign in to your Marathon Bib Expo account
-          </p>
+          <p class="m-0 text-sm text-muted-color">Sign in to your Marathon Bib Expo account</p>
         </div>
 
         <div aria-live="assertive">
@@ -164,8 +159,7 @@
             <label class="text-sm font-semibold" for="password">Password</label>
             <div class="relative">
               <i
-                class="pi pi-lock absolute left-3 top-1/2 z-10 -translate-y-1/2 pointer-events-none"
-                style="color: var(--text-color-secondary)"
+                class="pi pi-lock absolute left-3 top-1/2 z-10 -translate-y-1/2 pointer-events-none text-muted-color"
                 aria-hidden="true"
               ></i>
               <p-password
@@ -226,21 +220,16 @@
           ></p-button>
         </form>
 
-        <p class="mt-6 text-center text-xs" style="color: var(--text-color-secondary)">
+        <p class="mt-6 text-center text-xs text-muted-color">
           Need help? Contact your administrator.
         </p>
       </section>
     </div>
 
     <!-- ───────────────────── Secure-access footer strip ───────────────────── -->
-    <div
-      class="flex items-center justify-center gap-2 border-t px-6 py-3"
-      style="border-color: var(--surface-border)"
-    >
-      <i class="pi pi-shield text-sm" style="color: var(--text-color-secondary)"></i>
-      <span class="text-xs" style="color: var(--text-color-secondary)">
-        Secure access to your event management system
-      </span>
+    <div class="flex items-center justify-center gap-2 border-t px-6 py-3 border-surface">
+      <i class="pi pi-shield text-sm text-muted-color"></i>
+      <span class="text-xs text-muted-color"> Secure access to your event management system </span>
     </div>
   </div>
 </div>

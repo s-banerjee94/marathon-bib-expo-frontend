@@ -55,7 +55,7 @@
         }
       </p-message>
     } @else {
-      <small class="text-xs" style="color: var(--text-color-secondary)">
+      <small class="text-xs text-muted-color">
         The approved template is created in the Twilio Console; paste its Content SID here.
       </small>
     }
@@ -89,7 +89,7 @@
         }
       </p-message>
     } @else {
-      <small class="text-xs" style="color: var(--text-color-secondary)">
+      <small class="text-xs text-muted-color">
         Paste the approved body exactly as it appears on Twilio, with its {{ '{{1}}' }}, {{ '{{2}}'
         }} … positional markers.
       </small>
@@ -133,7 +133,7 @@
         }
       </div>
       @if (hasUnmappedMarker()) {
-        <small class="text-xs" style="color: var(--text-color-secondary)">
+        <small class="text-xs text-muted-color">
           <i class="pi pi-info-circle"></i>
           Some markers have no variable at that position — add or reorder variables so each
           {{ '{{n}}' }} has a match.

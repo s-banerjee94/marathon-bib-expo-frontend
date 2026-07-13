@@ -12,16 +12,13 @@
       (onClick)="add()"
     />
   </div>
-  <small class="text-xs" style="color: var(--text-color-secondary)">
+  <small class="text-xs text-muted-color">
     Each entry fills the matching Content template variable in order — variable 1, variable 2, and
     so on. Up to {{ maxVariables() }} variables.
   </small>
 
   @if (variables().length === 0) {
-    <div
-      class="rounded-lg border border-dashed px-3 py-4 text-center text-sm"
-      style="color: var(--text-color-secondary)"
-    >
+    <div class="rounded-lg border border-dashed px-3 py-4 text-center text-sm text-muted-color">
       No variables. Add one if this template expects dynamic values.
     </div>
   } @else {

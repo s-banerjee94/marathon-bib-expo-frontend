@@ -40,11 +40,7 @@
 
       <!-- Send reset link -->
       @if (canSendResetLink(au)) {
-        <div
-          [class.border-t]="canToggleEnabled(au)"
-          class="p-1.5"
-          style="border-color: var(--surface-border)"
-        >
+        <div [class.border-t]="canToggleEnabled(au)" class="p-1.5 border-surface">
           <p-button
             (onClick)="requestResetLink(au)"
             [text]="true"
@@ -59,7 +55,7 @@
 
       <!-- Delete -->
       @if (canManageUser(au)) {
-        <div class="border-t p-1.5" style="border-color: var(--surface-border)">
+        <div class="border-t p-1.5 border-surface">
           <p-button
             (onClick)="requestDelete(au)"
             [text]="true"
@@ -235,7 +231,7 @@
                 } @else if (col.field === 'organizationName' && user.organizationId) {
                   <span
                     (click)="openOrganizationPopover($event, user.organizationId)"
-                    class="cursor-pointer border-b border-dotted border-gray-400"
+                    class="cursor-pointer border-b border-dotted border-surface"
                   >
                     {{ getCellValue(user, col.field) | defaultValue }}
                   </span>
@@ -417,7 +413,7 @@
               <i class="pi pi-building opacity-60 w-4"></i>
               <span
                 (click)="openOrganizationPopover($event, user.organizationId)"
-                class="cursor-pointer border-b border-dotted border-gray-400 truncate"
+                class="cursor-pointer border-b border-dotted border-surface truncate"
               >
                 {{ user.organizationName }}
               </span>
@@ -511,18 +507,18 @@
 
       <div class="space-y-1">
         <div class="flex items-center gap-2">
-          <i class="pi pi-envelope text-gray-500 text-sm w-4"></i>
+          <i class="pi pi-envelope text-muted-color text-sm w-4"></i>
           <a
-            class="text-blue-600 hover:underline text-sm"
+            class="text-primary hover:underline text-sm"
             href="mailto:{{ currentOrganizationDetails()!.email }}"
           >
             {{ currentOrganizationDetails()!.email }}
           </a>
         </div>
         <div class="flex items-center gap-2">
-          <i class="pi pi-phone text-gray-500 text-sm w-4"></i>
+          <i class="pi pi-phone text-muted-color text-sm w-4"></i>
           <a
-            class="text-blue-600 hover:underline text-sm"
+            class="text-primary hover:underline text-sm"
             href="tel:{{ currentOrganizationDetails()!.phoneNumber }}"
           >
             {{ currentOrganizationDetails()!.phoneNumber }}

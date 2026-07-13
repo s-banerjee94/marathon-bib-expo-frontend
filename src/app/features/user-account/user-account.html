@@ -3,7 +3,7 @@
   <div class="mb-6 flex items-start justify-between gap-3">
     <div class="min-w-0">
       <h1 class="text-3xl font-bold mb-2">Manage User</h1>
-      <p class="text-color-secondary">View and update this user's information.</p>
+      <p class="text-muted-color">View and update this user's information.</p>
     </div>
     <p-button
       (onClick)="goBack()"
@@ -64,9 +64,7 @@
                   <p-tag severity="danger" value="Locked" />
                 }
               </div>
-              <span class="text-sm" style="color: var(--text-color-secondary)">
-                &#64;{{ u.username }}
-              </span>
+              <span class="text-sm text-muted-color"> &#64;{{ u.username }} </span>
             </div>
 
             <div class="flex flex-wrap gap-2 sm:ml-auto">
@@ -130,9 +128,7 @@
                 </span>
                 <div class="min-w-0">
                   <h2 class="text-lg font-semibold leading-tight">Personal Information</h2>
-                  <p class="text-sm mt-0.5" style="color: var(--text-color-secondary)">
-                    Update name and contact details.
-                  </p>
+                  <p class="text-sm mt-0.5 text-muted-color">Update name and contact details.</p>
                 </div>
               </div>
 
@@ -232,10 +228,7 @@
                 </div>
               </div>
 
-              <div
-                class="flex justify-end gap-3 pt-4 mt-auto border-t"
-                style="border-color: var(--surface-border)"
-              >
+              <div class="flex justify-end gap-3 pt-4 mt-auto border-t border-surface">
                 <p-button
                   (onClick)="resetProfile(profileForm)"
                   [disabled]="savingProfile() || profileForm.pristine"
@@ -281,9 +274,7 @@
                 </span>
                 <div class="min-w-0">
                   <h2 class="text-lg font-semibold leading-tight">Account</h2>
-                  <p class="text-sm mt-0.5" style="color: var(--text-color-secondary)">
-                    Status and account details.
-                  </p>
+                  <p class="text-sm mt-0.5 text-muted-color">Status and account details.</p>
                 </div>
               </div>
 
@@ -295,9 +286,7 @@
                     <div class="flex items-center justify-between gap-3">
                       <div class="flex flex-col min-w-0">
                         <span class="text-sm font-medium">Enabled</span>
-                        <span class="text-xs" style="color: var(--text-color-secondary)">
-                          Allow this user to sign in.
-                        </span>
+                        <span class="text-xs text-muted-color"> Allow this user to sign in. </span>
                       </div>
                       <p-toggleswitch
                         [dt]="switchStatusDt"
@@ -312,7 +301,7 @@
                     <div class="flex items-center justify-between gap-3">
                       <div class="flex flex-col min-w-0">
                         <span class="text-sm font-medium">Unlocked</span>
-                        <span class="text-xs" style="color: var(--text-color-secondary)">
+                        <span class="text-xs text-muted-color">
                           A locked account can't sign in until unlocked.
                         </span>
                       </div>
@@ -330,7 +319,7 @@
                     <div class="flex items-center justify-between gap-3">
                       <div class="flex flex-col min-w-0">
                         <span class="text-sm font-medium">Password</span>
-                        <span class="text-xs" style="color: var(--text-color-secondary)">
+                        <span class="text-xs text-muted-color">
                           Issue a one-time link for this user to set a new password.
                         </span>
                       </div>
@@ -347,33 +336,17 @@
                 </div>
               }
 
-              <div
-                class="grid grid-cols-2 gap-x-4 gap-y-5 pt-5 border-t"
-                style="border-color: var(--surface-border)"
-              >
+              <div class="grid grid-cols-2 gap-x-4 gap-y-5 pt-5 border-t border-surface">
                 <div class="flex flex-col gap-1 min-w-0">
-                  <span
-                    class="text-xs uppercase tracking-wide"
-                    style="color: var(--text-color-secondary)"
-                  >
-                    Username
-                  </span>
+                  <span class="text-xs uppercase tracking-wide text-muted-color"> Username </span>
                   <span class="text-sm font-medium truncate">{{ u.username | defaultValue }}</span>
                 </div>
                 <div class="flex flex-col gap-1 min-w-0">
-                  <span
-                    class="text-xs uppercase tracking-wide"
-                    style="color: var(--text-color-secondary)"
-                  >
-                    Role
-                  </span>
+                  <span class="text-xs uppercase tracking-wide text-muted-color"> Role </span>
                   <span class="text-sm font-medium truncate">{{ roleLabel() | defaultValue }}</span>
                 </div>
                 <div class="col-span-2 flex flex-col gap-1 min-w-0">
-                  <span
-                    class="text-xs uppercase tracking-wide"
-                    style="color: var(--text-color-secondary)"
-                  >
+                  <span class="text-xs uppercase tracking-wide text-muted-color">
                     Organization
                   </span>
                   <span class="text-sm font-medium truncate">
@@ -381,10 +354,7 @@
                   </span>
                 </div>
                 <div class="flex flex-col gap-1 min-w-0">
-                  <span
-                    class="text-xs uppercase tracking-wide"
-                    style="color: var(--text-color-secondary)"
-                  >
+                  <span class="text-xs uppercase tracking-wide text-muted-color">
                     Account created
                   </span>
                   <span class="text-sm font-medium">
@@ -392,19 +362,11 @@
                   </span>
                 </div>
                 <div class="flex flex-col gap-1 min-w-0">
-                  <span
-                    class="text-xs uppercase tracking-wide"
-                    style="color: var(--text-color-secondary)"
-                  >
-                    Created by
-                  </span>
+                  <span class="text-xs uppercase tracking-wide text-muted-color"> Created by </span>
                   <span class="text-sm font-medium truncate">{{ u.createdBy | defaultValue }}</span>
                 </div>
                 <div class="flex flex-col gap-1 min-w-0">
-                  <span
-                    class="text-xs uppercase tracking-wide"
-                    style="color: var(--text-color-secondary)"
-                  >
+                  <span class="text-xs uppercase tracking-wide text-muted-color">
                     Last updated
                   </span>
                   <span class="text-sm font-medium">
@@ -412,10 +374,7 @@
                   </span>
                 </div>
                 <div class="flex flex-col gap-1 min-w-0">
-                  <span
-                    class="text-xs uppercase tracking-wide"
-                    style="color: var(--text-color-secondary)"
-                  >
+                  <span class="text-xs uppercase tracking-wide text-muted-color">
                     Last updated by
                   </span>
                   <span class="text-sm font-medium truncate">
@@ -446,17 +405,14 @@
                 </span>
                 <div class="min-w-0">
                   <h2 class="text-lg font-semibold leading-tight">Assigned Event</h2>
-                  <p class="text-sm mt-0.5" style="color: var(--text-color-secondary)">
+                  <p class="text-sm mt-0.5 text-muted-color">
                     This distributor can only access the event assigned here.
                   </p>
                 </div>
               </div>
 
               <div class="flex flex-col gap-1">
-                <span
-                  class="text-xs uppercase tracking-wide"
-                  style="color: var(--text-color-secondary)"
-                >
+                <span class="text-xs uppercase tracking-wide text-muted-color">
                   Current event
                 </span>
                 <span class="text-sm font-medium">{{ u.eventName | defaultValue }}</span>

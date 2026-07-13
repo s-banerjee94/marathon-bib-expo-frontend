@@ -57,14 +57,14 @@
                 {{ '{{' + ($index + 1) + '}}' }}
               </span>
               <p-tag [value]="variable" severity="success" [rounded]="true" />
-              <span class="text-xs" style="color: var(--text-color-secondary)">
+              <span class="text-xs text-muted-color">
                 {{ variableLabel(variable) }}
               </span>
             </div>
           }
         </div>
       } @else {
-        <span class="text-sm" style="color: var(--text-color-secondary)">No variables.</span>
+        <span class="text-sm text-muted-color">No variables.</span>
       }
     </div>
 

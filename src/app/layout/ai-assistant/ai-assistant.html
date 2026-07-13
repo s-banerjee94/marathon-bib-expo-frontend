@@ -6,10 +6,7 @@
   <ng-template #editFields let-ai="ai" let-action="action" let-draft="draft">
     @if (hasReadonly(draft)) {
       <div class="flex flex-wrap items-center gap-1.5">
-        <span
-          class="text-[11px] flex items-center gap-1"
-          style="color: var(--text-color-secondary)"
-        >
+        <span class="text-[11px] flex items-center gap-1 text-muted-color">
           <i class="pi pi-id-card text-[11px]"></i> Applies to
         </span>
         @for (field of draft.fields; track field.key) {
@@ -18,7 +15,7 @@
               class="inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-[11px]"
               style="border-color: var(--surface-border); background: var(--surface-hover)"
             >
-              <span style="color: var(--text-color-secondary)">{{ field.label }}</span>
+              <span class="text-muted-color">{{ field.label }}</span>
               <span class="font-mono">{{ field.display || '—' }}</span>
             </span>
           }
@@ -28,11 +25,7 @@
     @for (field of draft.fields; track field.key; let fi = $index) {
       @if (!field.readonly) {
         <div class="flex flex-col gap-1">
-          <label
-            class="text-xs font-medium"
-            style="color: var(--text-color-secondary)"
-            [for]="'f-' + action.id + '-' + fi"
-          >
+          <label class="text-xs font-medium text-muted-color" [for]="'f-' + action.id + '-' + fi">
             {{ field.label }}
           </label>
           @if (field.kind === 'boolean') {
@@ -55,10 +48,7 @@
               fluid="true"
             />
             @if (field.masked) {
-              <span
-                class="text-[11px] flex items-center gap-1"
-                style="color: var(--text-color-secondary)"
-              >
+              <span class="text-[11px] flex items-center gap-1 text-muted-color">
                 <i class="pi pi-lock text-[11px]"></i> Masked — leave blank to keep current
               </span>
             }
@@ -140,7 +130,7 @@
               pTooltip="Attachment no longer available"
               tooltipPosition="top"
             >
-              <i class="pi pi-image text-sm" style="color: var(--text-color-secondary)"></i>
+              <i class="pi pi-image text-sm text-muted-color"></i>
             </span>
           } @else if (att.previewUrl || att.url) {
             <!-- Click to view full-size (zoom/rotate); no hover tooltip -->
@@ -157,7 +147,7 @@
             />
           } @else {
             <span class="w-full h-full flex items-center justify-center">
-              <i class="pi pi-image" style="color: var(--text-color-secondary)"></i>
+              <i class="pi pi-image text-muted-color"></i>
             </span>
           }
           @if (att.status === 'uploading') {
@@ -165,7 +155,7 @@
               class="absolute inset-0 flex items-center justify-center"
               style="background: color-mix(in srgb, var(--surface-card), transparent 25%)"
             >
-              <i class="pi pi-spin pi-spinner text-sm" style="color: var(--primary-color)"></i>
+              <i class="pi pi-spin pi-spinner text-sm text-primary"></i>
             </span>
           } @else if (att.status === 'error') {
             <span
@@ -204,7 +194,7 @@
           </span>
           <span class="flex flex-col min-w-0">
             <span class="text-xs font-medium truncate">{{ att.filename }}</span>
-            <span class="text-[10px]" style="color: var(--text-color-secondary)">
+            <span class="text-[10px] text-muted-color">
               @if (att.broken) {
                 No longer available
               } @else if (att.status === 'error') {
@@ -251,25 +241,22 @@
           class="flex flex-col items-center gap-2 rounded-xl border-2 border-dashed px-6 py-5"
           style="border-color: var(--primary-color); background: var(--surface-card)"
         >
-          <i class="pi pi-cloud-upload text-2xl" style="color: var(--primary-color)"></i>
+          <i class="pi pi-cloud-upload text-2xl text-primary"></i>
           <span class="text-sm font-medium">Drop to attach</span>
-          <span class="text-xs" style="color: var(--text-color-secondary)">
+          <span class="text-xs text-muted-color">
             Images or PDF · up to {{ assistant.maxAttachments }} files
           </span>
         </div>
       </div>
     }
     <!-- Header -->
-    <div
-      class="flex items-center justify-between gap-2 px-3 py-2 border-b shrink-0"
-      style="border-color: var(--surface-border)"
-    >
+    <div class="flex items-center justify-between gap-2 px-3 py-2 border-b shrink-0 border-surface">
       <div class="flex items-center gap-2">
         <span
           class="w-8 h-8 rounded-full flex items-center justify-center"
           style="background: color-mix(in srgb, var(--primary-color), transparent 88%)"
         >
-          <i class="pi pi-sparkles" style="color: var(--primary-color)"></i>
+          <i class="pi pi-sparkles text-primary"></i>
         </span>
         <span class="font-semibold">AI Assistant</span>
       </div>
@@ -318,7 +305,7 @@
       <!-- First-open restore: history in flight with nothing shown yet -->
       @if (assistant.historyLoading() && assistant.messages().length === 0) {
         <div class="flex items-center justify-center h-full">
-          <i class="pi pi-spin pi-spinner text-xl" style="color: var(--text-color-secondary)"></i>
+          <i class="pi pi-spin pi-spinner text-xl text-muted-color"></i>
         </div>
       }
 
@@ -330,10 +317,10 @@
             class="w-14 h-14 rounded-full flex items-center justify-center"
             style="background: color-mix(in srgb, var(--primary-color), transparent 88%)"
           >
-            <i class="pi pi-sparkles text-2xl" style="color: var(--primary-color)"></i>
+            <i class="pi pi-sparkles text-2xl text-primary"></i>
           </span>
           <p class="font-medium">How can I help?</p>
-          <p class="text-sm" style="color: var(--text-color-secondary)">
+          <p class="text-sm text-muted-color">
             Ask me to create an event, add a race, invite a distributor, and more — in plain words.
           </p>
         </div>
@@ -344,15 +331,14 @@
           <!-- Server summarized earlier turns: a divider, with the recap below -->
           <div class="flex items-center gap-2 py-1">
             <span class="flex-1 h-px" style="background: var(--surface-border)"></span>
-            <span class="text-xs whitespace-nowrap" style="color: var(--text-color-secondary)">
+            <span class="text-xs whitespace-nowrap text-muted-color">
               Earlier conversation summarized
             </span>
             <span class="flex-1 h-px" style="background: var(--surface-border)"></span>
           </div>
           @if (msg.text) {
             <div
-              class="text-xs italic px-2 break-words [&>*:first-child]:!mt-0 [&>*:last-child]:!mb-0 [&_p]:my-1 [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:my-1 [&_li]:my-0.5"
-              style="color: var(--text-color-secondary)"
+              class="text-xs italic px-2 break-words [&>*:first-child]:!mt-0 [&>*:last-child]:!mb-0 [&_p]:my-1 [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:my-1 [&_li]:my-0.5 text-muted-color"
               [innerHTML]="msg.text | markdown"
             ></div>
           }
@@ -385,7 +371,7 @@
               class="w-7 h-7 shrink-0 rounded-full flex items-center justify-center"
               style="background: color-mix(in srgb, var(--primary-color), transparent 88%)"
             >
-              <i class="pi pi-sparkles text-sm" style="color: var(--primary-color)"></i>
+              <i class="pi pi-sparkles text-sm text-primary"></i>
             </span>
             <div class="flex flex-col gap-2 max-w-[92%] min-w-0">
               @if (msg.text) {
@@ -422,13 +408,9 @@
                         <span class="font-semibold">{{
                           question ? 'Question' : actionTitle(action)
                         }}</span>
-                        <span style="color: var(--text-color-secondary)">
-                          · {{ resolvedLabel(action, dec) }}</span
-                        >
+                        <span class="text-muted-color"> · {{ resolvedLabel(action, dec) }}</span>
                         @if (dec.message) {
-                          <span class="italic" style="color: var(--text-color-secondary)">
-                            — “{{ dec.message }}”</span
-                          >
+                          <span class="italic text-muted-color"> — “{{ dec.message }}”</span>
                         }
                       </div>
                     </div>
@@ -465,10 +447,7 @@
                             {{ question ? 'One quick question' : actionTitle(action) }}
                           </div>
                           @if (question) {
-                            <div
-                              class="text-[11px] mt-0.5"
-                              style="color: var(--text-color-secondary)"
-                            >
+                            <div class="text-[11px] mt-0.5 text-muted-color">
                               Pick one so I can continue
                             </div>
                           }
@@ -564,10 +543,7 @@
                           } @else {
                             @switch (draft.type) {
                               @case ('edit') {
-                                <div
-                                  class="flex flex-col gap-2 px-3 py-3 border-t"
-                                  style="border-color: var(--surface-border)"
-                                >
+                                <div class="flex flex-col gap-2 px-3 py-3 border-t border-surface">
                                   <ng-container
                                     *ngTemplateOutlet="
                                       editFields;
@@ -598,8 +574,7 @@
                               }
                               @case ('reject') {
                                 <div
-                                  class="px-3 py-3 border-t flex flex-col gap-1.5"
-                                  style="border-color: var(--surface-border)"
+                                  class="px-3 py-3 border-t flex flex-col gap-1.5 border-surface"
                                 >
                                   <textarea
                                     pTextarea
@@ -612,8 +587,7 @@
                                     class="text-sm w-full"
                                   ></textarea>
                                   <span
-                                    class="text-[11px] flex items-center gap-1"
-                                    style="color: var(--text-color-secondary)"
+                                    class="text-[11px] flex items-center gap-1 text-muted-color"
                                   >
                                     <i class="pi pi-info-circle text-[11px]"></i>
                                     Add a note and the assistant retries — or reject blank to
@@ -758,10 +732,7 @@
                     class="flex items-center justify-between gap-2 rounded-xl border px-3 py-2.5"
                     style="border-color: var(--surface-border); background: var(--surface-card)"
                   >
-                    <span
-                      class="text-xs flex items-center gap-1.5"
-                      style="color: var(--text-color-secondary)"
-                    >
+                    <span class="text-xs flex items-center gap-1.5 text-muted-color">
                       <i class="pi pi-clock text-[11px]"></i>
                       {{ activePending()?.pending?.length }} actions to confirm
                     </span>
@@ -788,7 +759,7 @@
             class="w-7 h-7 shrink-0 rounded-full flex items-center justify-center"
             style="background: color-mix(in srgb, var(--primary-color), transparent 88%)"
           >
-            <i class="pi pi-sparkles text-sm" style="color: var(--primary-color)"></i>
+            <i class="pi pi-sparkles text-sm text-primary"></i>
           </span>
           <div
             class="rounded-2xl rounded-bl-sm px-3 py-3 flex items-center gap-1"
@@ -821,10 +792,7 @@
     }
 
     <!-- Composer -->
-    <div
-      class="shrink-0 border-t p-2 flex flex-col gap-2"
-      style="border-color: var(--surface-border)"
-    >
+    <div class="shrink-0 border-t p-2 flex flex-col gap-2 border-surface">
       <!-- Mode picker (left) · daily token budget meter + tools toggle (right) -->
       <div class="flex items-center justify-between gap-2">
         <p-button
@@ -843,16 +811,13 @@
               [pTooltip]="usageTooltip()"
               tooltipPosition="top"
             >
-              <i class="pi pi-chart-bar text-xs" style="color: var(--text-color-secondary)"></i>
+              <i class="pi pi-chart-bar text-xs text-muted-color"></i>
               <p-progressbar
                 [value]="usagePercent()"
                 [showValue]="false"
                 styleClass="!h-1.5 w-16"
               />
-              <span
-                class="text-[10px] whitespace-nowrap"
-                style="color: var(--text-color-secondary)"
-              >
+              <span class="text-[10px] whitespace-nowrap text-muted-color">
                 {{ usageResetLabel() }}
               </span>
             </div>
@@ -897,7 +862,7 @@
         [breakpoints]="{ '640px': '95vw' }"
       >
         <div class="flex flex-col gap-3">
-          <span class="text-sm -mt-1" style="color: var(--text-color-secondary)">
+          <span class="text-sm -mt-1 text-muted-color">
             Turn tools off to save tokens. This only changes what the assistant is offered — your
             permissions are unchanged.
           </span>
@@ -910,7 +875,7 @@
           >
             <span class="flex flex-col">
               <span class="text-sm font-medium">Enable tools</span>
-              <span class="text-xs" style="color: var(--text-color-secondary)">
+              <span class="text-xs text-muted-color">
                 Off = the assistant can chat but won't take actions.
               </span>
             </span>
@@ -924,22 +889,19 @@
 
           @if (assistant.toolsLoading() && assistant.tools().length === 0) {
             <div class="flex items-center justify-center py-6">
-              <i class="pi pi-spin pi-spinner" style="color: var(--text-color-secondary)"></i>
+              <i class="pi pi-spin pi-spinner text-muted-color"></i>
             </div>
           } @else if (assistant.mcpEnabled()) {
             @if (assistant.tools().length === 0) {
-              <p class="text-xs text-center py-4" style="color: var(--text-color-secondary)">
+              <p class="text-xs text-center py-4 text-muted-color">
                 No tools are available for your role.
               </p>
             } @else {
               <div class="flex items-center justify-between">
-                <span
-                  class="text-[11px] font-semibold uppercase tracking-wide"
-                  style="color: var(--text-color-secondary)"
-                >
+                <span class="text-[11px] font-semibold uppercase tracking-wide text-muted-color">
                   Available tools
                 </span>
-                <span class="text-[11px]" style="color: var(--text-color-secondary)">
+                <span class="text-[11px] text-muted-color">
                   {{ activeToolCount() }}/{{ assistant.tools().length }} on
                 </span>
               </div>
@@ -947,8 +909,7 @@
               @if (showToolSearch()) {
                 <span class="relative block">
                   <i
-                    class="pi pi-search absolute left-2.5 top-1/2 -translate-y-1/2 text-xs"
-                    style="color: var(--text-color-secondary)"
+                    class="pi pi-search absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-muted-color"
                   ></i>
                   <input
                     pInputText
@@ -963,7 +924,7 @@
 
               <div class="max-h-[45vh] overflow-y-auto -mx-1 px-1">
                 @if (filteredTools().length === 0) {
-                  <p class="text-xs text-center py-4" style="color: var(--text-color-secondary)">
+                  <p class="text-xs text-center py-4 text-muted-color">
                     No tools match “{{ toolSearch() }}”.
                   </p>
                 } @else {
@@ -988,10 +949,7 @@
               </div>
             }
           } @else {
-            <p
-              class="text-xs px-1 py-4 flex items-center gap-2"
-              style="color: var(--text-color-secondary)"
-            >
+            <p class="text-xs px-1 py-4 flex items-center gap-2 text-muted-color">
               <i class="pi pi-power-off text-[11px]"></i>
               Tools are off. The assistant will answer from chat only.
             </p>
@@ -1010,7 +968,7 @@
               <i [class]="option.icon" style="color: var(--primary-color)"></i>
               <span class="flex flex-col">
                 <span class="text-sm font-medium">{{ option.label }}</span>
-                <span class="text-xs" style="color: var(--text-color-secondary)">
+                <span class="text-xs text-muted-color">
                   {{ option.hint }}
                 </span>
               </span>

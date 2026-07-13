@@ -6,7 +6,7 @@
   </ul>
 
   @if (filteredBottomMenu().length > 0) {
-    <ul class="list-none p-0 m-0 mt-auto pt-4 border-t" style="border-color: var(--surface-border)">
+    <ul class="list-none p-0 m-0 mt-auto pt-4 border-t border-surface">
       @for (item of filteredBottomMenu(); track item.label) {
         <app-menuitem [item]="item" />
       }
