@@ -16,23 +16,25 @@
       Preview · ID-1 card ratio (85.6 × 54 mm)
     </span>
 
-    <!-- fixed-size card; centered in the dialog, CSS-scaled down on small screens (capture forces full res) -->
+    <!-- Fixed-size card preview, centered and CSS-scaled down on small screens. The
+         downloaded PNG is rendered separately on a canvas, so this scale never affects it. -->
     <div class="flex w-full justify-center">
       <div class="h-85 w-135 max-[620px]:h-50 max-[620px]:w-79.5">
-        <app-expo-card
-          #card
-          class="origin-top-left max-[620px]:scale-[0.589]"
-          [bibNumber]="data().bibNumber"
-          [categoryName]="data().categoryName"
-          [chipNumber]="data().chipNumber"
-          [dateLine]="dateLine()"
-          [eventName]="data().eventName"
-          [fullName]="data().fullName"
-          [gender]="data().gender"
-          [photoSrc]="photoSrc()"
-          [qrSrc]="qrSrc()"
-          [raceName]="data().raceName"
-        />
+        <div class="origin-top-left max-[620px]:scale-[0.589]">
+          <app-expo-card
+            #card
+            [bibNumber]="data().bibNumber"
+            [categoryName]="data().categoryName"
+            [chipNumber]="data().chipNumber"
+            [dateLine]="dateLine()"
+            [eventName]="data().eventName"
+            [fullName]="data().fullName"
+            [gender]="data().gender"
+            [photoSrc]="photoSrc()"
+            [qrSrc]="qrSrc()"
+            [raceName]="data().raceName"
+          />
+        </div>
       </div>
     </div>
 

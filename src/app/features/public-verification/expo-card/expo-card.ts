@@ -1,9 +1,9 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 import { formatGender, getInitials } from '../participant-format.util';
 
-// Presentational, fixed-size (ISO ID-1, 540x340) bib card. The host element is
-// what the dialog rasterizes to PNG via html-to-image, so it carries explicit
-// dimensions and self-contained, token-driven styling.
+// Presentational, fixed-size (ISO ID-1, 540x340) bib card — the on-screen preview.
+// The downloaded PNG is drawn separately in expo-card-canvas.util.ts; keep the two
+// in visual sync (fixed colours, same layout) if the design changes.
 @Component({
   selector: 'app-expo-card',
   standalone: true,

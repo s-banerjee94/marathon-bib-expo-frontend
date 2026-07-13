@@ -1,22 +1,14 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  ElementRef,
-  inject,
-  input,
-  model,
-  signal,
-  viewChild,
-} from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, input, model, signal } from '@angular/core';
 import { DialogModule } from 'primeng/dialog';
 import { ButtonModule } from 'primeng/button';
 import { ExpoCard } from '../expo-card/expo-card';
 import { ParticipantVerificationResponse } from '../../../core/models/participant-verification.model';
 import { ErrorHandlerService } from '../../../core/services/error-handler.service';
+import { renderExpoCardPng } from '../expo-card-canvas.util';
 
 // "Download Expo Card" dialog: live preview + optional selfie/upload photo +
-// rasterize-to-PNG (html-to-image, lazy-loaded) + Web Share fallback. The photo
-// stays client-side and is never sent to the backend.
+// deterministic canvas render to PNG + Web Share fallback. The photo stays
+// client-side and is never sent to the backend.
 @Component({
   selector: 'app-download-card-dialog',
   standalone: true,
@@ -30,7 +22,6 @@ export class DownloadCardDialog {
   dateLine = input<string>(''); // pre-formatted event date range (date only)
   qrSrc = input<string | null>(null);
 
-  private cardRef = viewChild('card', { read: ElementRef });
   private errorHandler = inject(ErrorHandlerService);
 
   photoSrc = signal<string | null>(null);
@@ -94,21 +85,22 @@ export class DownloadCardDialog {
     }
   }
 
-  // Rasterize the fixed 540x340 card host. The preview may be CSS-scaled on small
-  // screens, so transform is reset and explicit dimensions are forced for crisp output.
-  private async renderPng(): Promise<string | null> {
-    const host = this.cardRef()?.nativeElement;
-    if (!host) return null;
-    const { toPng } = await import('html-to-image');
-    return toPng(host, {
-      width: 540,
-      height: 340,
-      pixelRatio: 3,
-      cacheBust: true,
-      // The app ships no web font; skip embedding to avoid reading cross-origin
-      // stylesheets (e.g. the flag-icons CDN) and speed up rasterization.
-      skipFonts: true,
-      style: { transform: 'none', transformOrigin: 'top left', margin: '0' },
+  // Deterministic canvas render — the card is painted onto a fixed 540x340 canvas, so
+  // the PNG is identical on every device/viewport/theme with no capture-frame or
+  // scale/aspect conflicts (the source of the old transparent border).
+  private renderPng(): Promise<string> {
+    const d = this.data();
+    return renderExpoCardPng({
+      eventName: d.eventName,
+      dateLine: this.dateLine(),
+      bibNumber: d.bibNumber,
+      fullName: d.fullName,
+      chipNumber: d.chipNumber,
+      gender: d.gender,
+      raceName: d.raceName,
+      categoryName: d.categoryName,
+      qrSrc: this.qrSrc(),
+      photoSrc: this.photoSrc(),
     });
   }
 

@@ -1,8 +1,11 @@
+<!-- Fixed, theme-independent colours: this card is a downloadable/printed artifact,
+     so it must look identical regardless of the app's dark/light theme. Do NOT swap
+     these for --surface/--text/--primary tokens, which flip with the theme. -->
 <div
-  class="flex h-85 w-135 flex-col overflow-hidden rounded-2xl border border-(--surface-border) bg-(--surface-card) text-(--text-color)"
+  class="flex h-85 w-135 flex-col overflow-hidden rounded-2xl border border-[#e2e8f0] bg-[#ffffff] text-[#1e293b]"
 >
   <!-- band -->
-  <div class="bg-(--primary-color) px-5 py-3.25 text-(--primary-contrast-color)">
+  <div class="bg-[#0f172a] px-5 py-3.25 text-[#ffffff]">
     <div class="text-[9.5px] font-semibold uppercase tracking-[0.16em] opacity-60">
       Marathon Bib Expo
     </div>
@@ -22,11 +25,11 @@
   </div>
 
   <!-- body -->
-  <div class="grid min-h-0 flex-1 grid-cols-[124px_1fr_126px] gap-4 px-5 py-4">
+  <div class="grid min-h-0 flex-1 grid-cols-[124px_1fr_136px] gap-4 px-5 py-4">
     <!-- photo + identity -->
     <div class="flex flex-col items-center gap-2.25">
       <div
-        class="flex h-28 w-24 items-center justify-center overflow-hidden rounded-xl bg-surface-400 text-(--surface-card)"
+        class="flex h-28 w-24 items-center justify-center overflow-hidden rounded-xl bg-[#94a3b8] text-[#ffffff]"
       >
         @if (photoSrc()) {
           <img [src]="photoSrc()" alt="Participant photo" class="h-full w-full object-cover" />
@@ -34,11 +37,11 @@
           <span class="text-[30px] font-bold">{{ initials() }}</span>
         }
       </div>
-      <div class="text-center text-[14px] font-bold leading-tight text-(--text-color)">
+      <div class="text-center text-[14px] font-bold leading-tight text-[#1e293b]">
         {{ fullName() }}
       </div>
       @if (genderLabel()) {
-        <div class="text-[11px] uppercase tracking-[0.08em] text-(--text-color-secondary)">
+        <div class="text-[11px] uppercase tracking-[0.08em] text-[#64748b]">
           {{ genderLabel() }}
         </div>
       }
@@ -47,25 +50,21 @@
     <!-- bib + details -->
     <div class="flex min-w-0 flex-col justify-center gap-2.75">
       <div>
-        <div
-          class="text-[9px] font-semibold uppercase tracking-[0.14em] text-(--text-color-secondary)"
-        >
+        <div class="text-[9px] font-semibold uppercase tracking-[0.14em] text-[#64748b]">
           Bib Number
         </div>
-        <div class="mt-0.5 font-mono text-[42px] font-semibold leading-none text-(--text-color)">
+        <div class="mt-0.5 font-mono text-[42px] font-semibold leading-none text-[#1e293b]">
           {{ bibNumber() }}
         </div>
       </div>
 
       @if (chipNumber()) {
-        <div class="h-px bg-(--surface-border)"></div>
+        <div class="h-px bg-[#e2e8f0]"></div>
         <div>
-          <div
-            class="text-[9px] font-semibold uppercase tracking-[0.14em] text-(--text-color-secondary)"
-          >
+          <div class="text-[9px] font-semibold uppercase tracking-[0.14em] text-[#64748b]">
             Chip
           </div>
-          <div class="mt-0.5 font-mono text-[13px] font-semibold text-(--text-color)">
+          <div class="mt-0.5 font-mono text-[13px] font-semibold text-[#1e293b]">
             {{ chipNumber() }}
           </div>
         </div>
@@ -75,24 +74,20 @@
         <div class="flex gap-4.5">
           @if (raceName()) {
             <div class="min-w-0">
-              <div
-                class="text-[9px] font-semibold uppercase tracking-[0.14em] text-(--text-color-secondary)"
-              >
+              <div class="text-[9px] font-semibold uppercase tracking-[0.14em] text-[#64748b]">
                 Race
               </div>
-              <div class="mt-0.5 text-[13px] font-semibold text-(--text-color)">
+              <div class="mt-0.5 text-[13px] font-semibold text-[#1e293b]">
                 {{ raceName() }}
               </div>
             </div>
           }
           @if (categoryName()) {
             <div class="min-w-0">
-              <div
-                class="text-[9px] font-semibold uppercase tracking-[0.14em] text-(--text-color-secondary)"
-              >
+              <div class="text-[9px] font-semibold uppercase tracking-[0.14em] text-[#64748b]">
                 Category
               </div>
-              <div class="mt-0.5 text-[13px] font-semibold text-(--text-color)">
+              <div class="mt-0.5 text-[13px] font-semibold text-[#1e293b]">
                 {{ categoryName() }}
               </div>
             </div>
@@ -103,9 +98,7 @@
 
     <!-- qr -->
     <div class="flex flex-col items-center justify-center gap-1.75">
-      <div
-        class="h-28 w-28 rounded-[10px] border border-(--surface-border) bg-(--surface-card) p-1.75"
-      >
+      <div class="h-32 w-32 rounded-[10px] border border-[#e2e8f0] bg-[#ffffff] p-1.75">
         @if (qrSrc()) {
           <img
             [src]="qrSrc()"
@@ -113,7 +106,7 @@
             class="block h-full w-full [image-rendering:pixelated]"
           />
         } @else {
-          <div class="flex h-full w-full items-center justify-center text-(--text-color-secondary)">
+          <div class="flex h-full w-full items-center justify-center text-[#64748b]">
             <i class="pi pi-qrcode text-[40px]"></i>
           </div>
         }
