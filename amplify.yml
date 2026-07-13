@@ -1,0 +1,18 @@
+version: 1
+frontend:
+  phases:
+    preBuild:
+      commands:
+        - nvm use 22 || nvm install 22
+        - npm ci
+    build:
+      commands:
+        - npm run build
+  artifacts:
+    # Angular 21 (@angular/build) emits the browser bundle under browser/
+    baseDirectory: dist/marathon-bib-expo-frontend/browser
+    files:
+      - '**/*'
+  cache:
+    paths:
+      - node_modules/**/*
