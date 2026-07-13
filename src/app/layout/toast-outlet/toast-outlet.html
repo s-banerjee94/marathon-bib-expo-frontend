@@ -1,0 +1,48 @@
+<p-toast (onClose)="onClose($event)" />
+
+<p-toast [key]="actionKey" (onClose)="onClose($event)">
+  <ng-template let-message #headless let-closeFn="closeFn">
+    @if (message) {
+      <div
+        class="flex w-full flex-col gap-3 rounded-xl border p-4 shadow-lg bg-[var(--p-content-background)] border-[var(--p-content-border-color)] text-[var(--p-text-color)]"
+      >
+        <div class="flex items-start gap-3">
+          <i [class]="iconOf(message)" class="mt-0.5 text-lg" aria-hidden="true"></i>
+          <div class="flex min-w-0 flex-1 flex-col gap-1">
+            @if (message.summary) {
+              <span class="font-semibold">{{ message.summary }}</span>
+            }
+            @if (message.detail) {
+              <span class="text-sm text-[var(--p-text-muted-color)]">{{ message.detail }}</span>
+            }
+          </div>
+          @if (message.closable !== false) {
+            <p-button
+              class="shrink-0"
+              icon="pi pi-times"
+              [text]="true"
+              [rounded]="true"
+              size="small"
+              severity="secondary"
+              ariaLabel="Dismiss"
+              (onClick)="closeFn($event)"
+            />
+          }
+        </div>
+
+        @if (actionsOf(message).length) {
+          <div class="flex flex-wrap justify-end gap-2">
+            @for (action of actionsOf(message); track action.label) {
+              <p-button
+                size="small"
+                [label]="action.label"
+                [text]="action.emphasis !== 'primary'"
+                (onClick)="runAction(action, closeFn, $event)"
+              />
+            }
+          </div>
+        }
+      </div>
+    }
+  </ng-template>
+</p-toast>

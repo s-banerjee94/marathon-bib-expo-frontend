@@ -31,6 +31,7 @@ import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { ConfirmationService } from 'primeng/api';
 import { AuthService } from '../../../core/services/auth.service';
 import { ErrorHandlerService } from '../../../core/services/error-handler.service';
+import { ToastService } from '../../../core/services/toast.service';
 import { DistributionService } from '../../../core/services/distribution.service';
 import { UserRole } from '../../../core/models/user.model';
 import {
@@ -80,6 +81,7 @@ export class ManageDistribution implements OnInit {
 
   private authService = inject(AuthService);
   private errorHandler = inject(ErrorHandlerService);
+  private toast = inject(ToastService);
   private distributionService = inject(DistributionService);
   private confirmationService = inject(ConfirmationService);
   private fb = inject(FormBuilder);
@@ -329,6 +331,10 @@ export class ManageDistribution implements OnInit {
         next: () => {
           this.collectBibLoading.set(false);
           this.collectBibVisible.set(false);
+          this.toast.success(
+            `BIB ${participant.bibNumber} collected for ${participant.fullName}.`,
+            'Collected',
+          );
           this.dialogState.triggerReload();
         },
         error: (error) => {
@@ -375,6 +381,10 @@ export class ManageDistribution implements OnInit {
         next: () => {
           this.distributeGoodiesLoading.set(false);
           this.distributeGoodiesVisible.set(false);
+          this.toast.success(
+            `Goodies distributed for BIB ${participant.bibNumber}.`,
+            'Distributed',
+          );
           this.dialogState.triggerReload();
         },
         error: (error) => {
@@ -396,7 +406,10 @@ export class ManageDistribution implements OnInit {
         const eventId = this.selectedEventId();
         if (!eventId) return;
         this.distributionService.undoBib(eventId, participant.bibNumber).subscribe({
-          next: () => this.dialogState.triggerReload(),
+          next: () => {
+            this.toast.success(`BIB ${participant.bibNumber} collection undone.`, 'Undone');
+            this.dialogState.triggerReload();
+          },
           error: (error) => this.errorHandler.showError(error, 'Failed to undo BIB collection'),
         });
       },

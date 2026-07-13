@@ -3,8 +3,8 @@ import { CommonModule, DOCUMENT, isPlatformBrowser } from '@angular/common';
 import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { filter, map } from 'rxjs';
-import { ToastModule } from 'primeng/toast';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
+import { ToastOutlet } from './layout/toast-outlet/toast-outlet';
 import { Navbar } from './layout/navbar/navbar';
 import { OfflineBanner } from './layout/offline-banner/offline-banner';
 import { SidebarComponent } from './layout/sidebar/sidebar';
@@ -27,7 +27,7 @@ import { ImportProgressFloating } from './layout/import-progress-floating/import
     Navbar,
     OfflineBanner,
     SidebarComponent,
-    ToastModule,
+    ToastOutlet,
     ConfirmDialogModule,
     ImportProgressFloating,
     AiAssistant,

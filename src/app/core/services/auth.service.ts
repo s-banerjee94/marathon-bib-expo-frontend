@@ -6,8 +6,13 @@ import { catchError, finalize, map, shareReplay, switchMap, tap } from 'rxjs/ope
 import { AuthResponse, LoginRequest, User, UserRole } from '../models/user.model';
 import { BASE_URI } from '../../shared/constants/api.constant';
 import { LocalStorageService } from './local-storage.service';
+import { ToastService } from './toast.service';
 
 const SESSION_INVALIDATED_MESSAGE = 'Session invalidated by another login. Please log in again.';
+
+// On teardown several in-flight requests 401 at once, each firing an error toast.
+// Swallow that burst briefly and show one notice instead.
+const SESSION_TEARDOWN_QUIET_MS = 2500;
 
 // Treat an access token with less than this much life left as already expired, so
 // callers refresh *before* a send instead of racing an expiry mid-request. Sized to
@@ -37,6 +42,7 @@ export class AuthService {
   private readonly http = inject(HttpClient);
   private readonly storage = inject(LocalStorageService);
   private readonly router = inject(Router);
+  private readonly toast = inject(ToastService);
   private readonly authBase = `${BASE_URI}/auth`;
   private readonly loginUrl = `${this.authBase}/login`;
   private readonly refreshUrl = `${this.authBase}/refresh`;
@@ -139,6 +145,10 @@ export class AuthService {
    */
   handleSessionInvalidated(): void {
     this.clearLocalState();
+    // Replace the 401 burst with a single notice.
+    this.toast.suppressErrorsFor(SESSION_TEARDOWN_QUIET_MS);
+    this.toast.clear();
+    this.toast.emit('session-ended', { force: true });
   }
 
   // ============================================================================
