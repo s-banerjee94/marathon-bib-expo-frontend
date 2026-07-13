@@ -9,6 +9,7 @@ import { provideAnimations } from '@angular/platform-browser/animations';
 import {
   provideRouter,
   withComponentInputBinding,
+  withInMemoryScrolling,
   withRouterConfig,
   withViewTransitions,
 } from '@angular/router';
@@ -84,18 +85,17 @@ export const appConfig: ApplicationConfig = {
       routes,
       withComponentInputBinding(),
       withRouterConfig({ paramsInheritanceStrategy: 'always' }),
+      withInMemoryScrolling({
+        scrollPositionRestoration: 'enabled',
+        anchorScrolling: 'enabled',
+      }),
       withViewTransitions({
         skipInitialTransition: true,
         onViewTransitionCreated: ({ transition }) => {
-          // Tag the route transition so CSS keeps the page swap instant and only
-          // animates the active-nav indicator (see styles.css). The dark-mode
-          // toggle runs its own startViewTransition without this marker.
           const root = inject(DOCUMENT).documentElement;
           root.classList.add('route-transition');
           transition.finished
             .finally(() => root.classList.remove('route-transition'))
-            // Rapid navigations abort the previous transition; `finished` then
-            // rejects and would otherwise surface as an unhandled-promise error.
             .catch(() => {});
         },
       }),
