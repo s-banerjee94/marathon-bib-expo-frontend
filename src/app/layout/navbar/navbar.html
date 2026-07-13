@@ -17,7 +17,11 @@
         />
       }
       <a routerLink="/" ariaLabel="Marathon Bib Expo home" class="flex items-center no-underline">
-        <img src="logo.png" alt="Marathon Bib Expo" class="mx-4 h-8 w-auto invert dark:invert-0" />
+        <img
+          src="logo.png"
+          alt="Marathon Bib Expo"
+          class="mx-2 h-8 w-auto invert sm:mx-4 dark:invert-0"
+        />
       </a>
 
       <!-- Landing in-page navigation — only on the public root route.
@@ -45,22 +49,31 @@
   </ng-template>
 
   <ng-template pTemplate="end">
-    <div class="flex items-center gap-2 pr-4">
-      <!-- Command Palette search trigger — app pages only -->
+    <div class="flex items-center gap-1 pr-2 sm:gap-2 sm:pr-4">
+      <!-- Command Palette search — app pages only. Phones get a compact icon button;
+           md+ gets the full labelled box with the ⌘K hint. -->
       @if (isAuthenticated() && !isLandingRoute() && commandPalette.available()) {
+        <p-button
+          (onClick)="commandPalette.open()"
+          [rounded]="true"
+          [text]="true"
+          icon="pi pi-search"
+          styleClass="!h-9 !w-9 sm:!h-12 sm:!w-12"
+          class="md:hidden"
+          ariaLabel="Open search command palette"
+        />
         <p-button
           (onClick)="commandPalette.open()"
           [outlined]="true"
           severity="secondary"
           styleClass="!gap-2 !px-2.5 !py-1.5"
+          class="hidden md:inline-flex"
           ariaLabel="Open search command palette"
         >
           <i class="pi pi-search text-sm"></i>
-          <span class="hidden md:inline text-sm" style="color: var(--text-color-secondary)"
-            >Search</span
-          >
+          <span class="text-sm" style="color: var(--text-color-secondary)">Search</span>
           <kbd
-            class="hidden md:inline-flex items-center h-5 px-1.5 rounded border text-[11px] font-semibold"
+            class="inline-flex items-center h-5 px-1.5 rounded border text-[11px] font-semibold"
             style="
               background: var(--surface-hover);
               border-color: var(--surface-border);
@@ -78,18 +91,22 @@
         [ariaLabel]="layoutService.isDarkTheme() ? 'Switch to light mode' : 'Switch to dark mode'"
         [rounded]="true"
         [text]="true"
+        styleClass="!h-9 !w-9 sm:!h-12 sm:!w-12"
       />
 
-      <!-- Theme Configurator — app pages only; not needed on the landing -->
+      <!-- Theme Configurator — app pages only; not needed on the landing. -->
       @if (!isLandingRoute()) {
         <p-button
           (onClick)="themePopover.toggle($event)"
           [rounded]="true"
           [text]="true"
           icon="pi pi-palette"
+          styleClass="!h-9 !w-9 sm:!h-12 sm:!w-12"
           ariaLabel="Open theme settings"
         />
-        <p-popover #themePopover appendTo="body">
+        <!-- absolute keeps the teleported (appendTo body) host out of the flex flow
+             so it doesn't add a phantom gap between the topbar action icons. -->
+        <p-popover #themePopover appendTo="body" class="absolute">
           <app-theme-configurator />
         </p-popover>
       }
@@ -123,11 +140,16 @@
           ></a>
         }
       } @else if (isAuthenticated()) {
-        <!-- Notification Bell -->
+        <!-- Notification Bell.
+             styleClass forces the same circle as the icon-only sibling buttons
+             (this one projects content, so it isn't p-button-icon-only), and
+             overflow-visible stops the p-button box from clipping the overlay
+             badge, which is translated outside the icon. -->
         <p-button
           (onClick)="notifPopover.toggle($event)"
           [rounded]="true"
           [text]="true"
+          styleClass="!h-9 !w-9 sm:!h-12 sm:!w-12 !rounded-full !overflow-visible"
           [ariaLabel]="
             notificationService.unreadCount() > 0
               ? 'Notifications, ' + notificationService.unreadCount() + ' unread'
@@ -149,7 +171,12 @@
         </p-button>
 
         <!-- Notification Popover -->
-        <p-popover #notifPopover appendTo="body" (onShow)="notificationService.openNotifications()">
+        <p-popover
+          #notifPopover
+          appendTo="body"
+          class="absolute"
+          (onShow)="notificationService.openNotifications()"
+        >
           <div class="flex flex-col w-80 sm:w-96">
             <!-- Header -->
             <div class="flex items-center justify-between gap-1 p-1">
@@ -234,6 +261,7 @@
             [rounded]="true"
             [text]="true"
             icon="pi pi-sparkles"
+            styleClass="!h-9 !w-9 sm:!h-12 sm:!w-12"
             ariaLabel="Open AI assistant"
           />
         }
@@ -249,7 +277,14 @@
           styleClass="cursor-pointer shrink-0"
           ariaLabel="Open user menu"
         ></p-avatar>
-        <p-menu #menu [model]="items" popup="true" appendTo="body" styleClass="min-w-56 w-max">
+        <p-menu
+          #menu
+          [model]="items"
+          popup="true"
+          appendTo="body"
+          class="absolute"
+          styleClass="min-w-56 w-max"
+        >
           <!-- Identity header (industry-standard account menu) -->
           <ng-template #start>
             <div
