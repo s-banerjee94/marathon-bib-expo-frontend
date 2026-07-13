@@ -1,8 +1,6 @@
 import { Component, computed, effect, inject, PLATFORM_ID } from '@angular/core';
-import { CommonModule, DOCUMENT, isPlatformBrowser } from '@angular/common';
-import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
-import { toSignal } from '@angular/core/rxjs-interop';
-import { filter, map } from 'rxjs';
+import { CommonModule, isPlatformBrowser } from '@angular/common';
+import { RouterOutlet } from '@angular/router';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { ToastOutlet } from './layout/toast-outlet/toast-outlet';
 import { Navbar } from './layout/navbar/navbar';
@@ -45,45 +43,19 @@ export class App {
   // Instantiated app-load so its document-level keydown listener is attached;
   // the service itself gates on auth before acting.
   private keyboard = inject(KeyboardService);
-  private router = inject(Router);
   isAuthenticated = this.authService.isAuthenticated;
+  // Route classification is owned centrally by LayoutService (single source of
+  // truth for the router URL), so the navbar/shell can't drift out of sync.
   isLanding = this.layoutService.isLandingRoute;
+  // Bare routes (login + public links like /s/:shortCode) render with no navbar,
+  // sidebar, or layout chrome — just the routed page filling the viewport.
+  isPublicRoute = this.layoutService.isPublicRoute;
 
   // Sidebar + static-menu offsets only belong to the authenticated app pages,
   // never the public landing (which an authenticated user may also view).
   showSidebar = computed(() => this.isAuthenticated() && !this.isLanding());
   // The landing is full-bleed; app pages get the standard content padding.
   contentClass = computed(() => (this.isLanding() ? '' : 'p-3 sm:p-4 md:p-5'));
-
-  private document = inject(DOCUMENT);
-
-  // Bare routes (login + public links like /s/:shortCode) render with no navbar,
-  // sidebar, or layout chrome — just the routed page filling the viewport.
-  // Seed from the real browser path (not router.url, which is still '/' before the
-  // initial navigation resolves) so bare routes never flash the layout chrome on load.
-  private currentUrl = toSignal(
-    this.router.events.pipe(
-      filter((e): e is NavigationEnd => e instanceof NavigationEnd),
-      map((e) => e.urlAfterRedirects),
-    ),
-    { initialValue: this.document.location?.pathname ?? this.router.url },
-  );
-  private readonly publicPaths = [
-    '/login',
-    '/accept-invite',
-    '/forgot-password',
-    '/reset-password',
-  ];
-  isPublicRoute = computed(() => {
-    const url = this.currentUrl().split('?')[0];
-    return (
-      this.publicPaths.includes(url) ||
-      url === '/s' ||
-      url.startsWith('/s/') ||
-      url === '/demo' ||
-      url.startsWith('/demo/')
-    );
-  });
 
   layoutClasses = computed(() => {
     if (this.isLanding()) {

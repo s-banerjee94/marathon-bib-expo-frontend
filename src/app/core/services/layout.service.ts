@@ -1,6 +1,6 @@
 import { computed, effect, inject, Injectable, PLATFORM_ID, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { isPlatformBrowser } from '@angular/common';
+import { DOCUMENT, isPlatformBrowser } from '@angular/common';
 import { NavigationEnd, Router } from '@angular/router';
 import { filter, map } from 'rxjs';
 import { $t, updatePreset, updateSurfacePalette } from '@primeuix/themes';
@@ -119,6 +119,7 @@ export class LayoutService {
   private primengConfig = inject(PrimeNG);
   private storage = inject(LocalStorageService);
   private router = inject(Router);
+  private document = inject(DOCUMENT);
 
   layoutConfig = signal<LayoutConfig>(this.loadConfig());
   layoutState = signal<LayoutState>(DEFAULT_LAYOUT_STATE);
@@ -126,17 +127,40 @@ export class LayoutService {
 
   // Tracks the active URL so the shell/navbar can adapt to the public landing
   // (root path) vs. the authenticated app pages.
+  // Seed from the real browser path — this service is constructed in an
+  // APP_INITIALIZER, before the router resolves the first navigation, so
+  // router.url is still '/' at that point and would wrongly flag every
+  // hard-loaded deep route (e.g. /users) as the landing page.
   private currentUrl = toSignal(
     this.router.events.pipe(
       filter((e): e is NavigationEnd => e instanceof NavigationEnd),
       map((e) => e.urlAfterRedirects),
     ),
-    { initialValue: this.router.url },
+    { initialValue: this.document.location?.pathname ?? this.router.url },
   );
   /** True while the public marketing landing (root path) is showing. */
   isLandingRoute = computed(() => {
     const url = (this.currentUrl() ?? '/').split(/[?#]/)[0];
     return url === '/' || url === '';
+  });
+  // Bare public pages (login + public links like /s/:shortCode, /demo/:code)
+  // render with no app shell — no navbar, sidebar, or layout chrome.
+  private readonly publicPaths = [
+    '/login',
+    '/accept-invite',
+    '/forgot-password',
+    '/reset-password',
+  ];
+  /** True on bare public routes that render without any app shell. */
+  isPublicRoute = computed(() => {
+    const url = (this.currentUrl() ?? '/').split(/[?#]/)[0];
+    return (
+      this.publicPaths.includes(url) ||
+      url === '/s' ||
+      url.startsWith('/s/') ||
+      url === '/demo' ||
+      url.startsWith('/demo/')
+    );
   });
   selectedPrimary = computed(() => this.layoutConfig().primary);
   selectedSurface = computed(() => this.layoutConfig().surface);
