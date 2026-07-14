@@ -52,11 +52,13 @@ export const errorInterceptor: HttpInterceptorFn = (request, next) => {
         return throwError(() => error);
       }
 
-      // Single-device eviction: backend reports the session was killed by a newer
-      // login. Don't try to refresh — that token is dead. Clear state, send to login.
-      const message = (error.error as { message?: unknown } | null)?.message;
-      if (authService.isSessionInvalidatedMessage(message)) {
-        authService.handleSessionInvalidated();
+      // Terminal auth codes (evicted / locked / disabled): refreshing cannot help.
+      // Tear down once and surface the backend's own message on the notice.
+      const body = error.error as { code?: unknown; message?: unknown } | null;
+      if (authService.isTerminalAuthCode(body?.code)) {
+        authService.handleSessionInvalidated(
+          typeof body?.message === 'string' && body.message ? body.message : undefined,
+        );
         router.navigate(['/login']);
         return throwError(() => error);
       }

@@ -8,7 +8,9 @@ import { BASE_URI } from '../../shared/constants/api.constant';
 import { LocalStorageService } from './local-storage.service';
 import { ToastService } from './toast.service';
 
-const SESSION_INVALIDATED_MESSAGE = 'Session invalidated by another login. Please log in again.';
+// Machine-readable 401 codes (backend AuthErrorCode) that end the session outright —
+// refreshing cannot help, so the interceptor tears down immediately.
+const TERMINAL_AUTH_CODES = ['SESSION_INVALIDATED', 'ACCOUNT_LOCKED', 'ACCOUNT_DISABLED'];
 
 // On teardown several in-flight requests 401 at once, each firing an error toast.
 // Swallow that burst briefly and show one notice instead.
@@ -32,12 +34,15 @@ export class AuthService {
 
   private accessTokenSignal = signal<string | null>(null);
   // Absolute expiry (ms epoch) of the in-memory access token, derived from the
-  // server's `expiresIn`; null when unknown. Drives isTokenExpiringSoon().
+  // server's `expiresInMs`; null when unknown. Drives isTokenExpiringSoon().
   private accessTokenExpiresAt: number | null = null;
   // Single-flight refresh shared across callers (the interceptor's 401 retry AND the
   // AI refresh-before-send) so two overlapping refreshes can't each rotate the
   // refresh cookie server-side and invalidate one another.
   private refreshInFlight$: Observable<string> | null = null;
+  // Guards the one-shot session-eviction teardown so a burst of 401s can't run it
+  // repeatedly; reset on the next successful authentication (setUserState).
+  private sessionInvalidatedHandled = false;
 
   private readonly http = inject(HttpClient);
   private readonly storage = inject(LocalStorageService);
@@ -103,7 +108,9 @@ export class AuthService {
     return this.refresh().pipe(
       catchError((error: HttpErrorResponse) => {
         if (error.status === 401 || error.status === 403) {
-          this.handleSessionInvalidated();
+          // Surface the server's own reason (expiry / locked / disabled / evicted)
+          // instead of always claiming a login on another device.
+          this.handleSessionInvalidated(this.serverMessageOf(error));
           void this.router.navigate(['/login']);
         }
         return throwError(() => error);
@@ -128,7 +135,9 @@ export class AuthService {
   }
 
   /**
-   * POST /auth/logout — server ends the session and closes any SSE streams.
+   * POST /auth/logout — server ends the session and clears both auth cookies.
+   * Driven by the refresh cookie + CSRF double-submit (the interceptor attaches
+   * the header), so it works even with an expired/absent access token.
    * Always clears local state, even if the server call fails (e.g. network down).
    */
   logout(): Observable<void> {
@@ -139,16 +148,21 @@ export class AuthService {
   }
 
   /**
-   * Called by the error interceptor when the server reports the session was
-   * invalidated by a login on another device. Skips the server logout call
-   * (the session is already gone).
+   * Called when the server reports the session is terminally dead — evicted by a
+   * newer login, account locked/disabled, or a rejected refresh. Skips the server
+   * logout call (the session is already gone). `detail` overrides the default
+   * eviction text on the notice with the server's own message.
    */
-  handleSessionInvalidated(): void {
+  handleSessionInvalidated(detail?: string): void {
+    // One eviction fans out into a burst of concurrent 401s (plus the interceptor
+    // and refresh paths both landing here). Collapse them to a single teardown +
+    // notice; re-armed on the next successful login (setUserState).
+    if (this.sessionInvalidatedHandled) return;
+    this.sessionInvalidatedHandled = true;
     this.clearLocalState();
-    // Replace the 401 burst with a single notice.
     this.toast.suppressErrorsFor(SESSION_TEARDOWN_QUIET_MS);
     this.toast.clear();
-    this.toast.emit('session-ended', { force: true });
+    this.toast.emit('session-ended', { force: true, ...(detail ? { detail } : {}) });
   }
 
   // ============================================================================
@@ -196,9 +210,15 @@ export class AuthService {
     return this.accessTokenExpiresAt - Date.now() <= TOKEN_EXPIRY_SKEW_MS;
   }
 
-  /** True when a 401 carries the single-device eviction message. */
-  isSessionInvalidatedMessage(message: unknown): boolean {
-    return typeof message === 'string' && message === SESSION_INVALIDATED_MESSAGE;
+  /** True when a 401 body carries a terminal auth code (evicted / locked / disabled). */
+  isTerminalAuthCode(code: unknown): boolean {
+    return typeof code === 'string' && TERMINAL_AUTH_CODES.includes(code);
+  }
+
+  /** Backend error-body message, when present (ErrorResponse.message). */
+  private serverMessageOf(error: HttpErrorResponse): string | undefined {
+    const message = (error.error as { message?: unknown } | null)?.message;
+    return typeof message === 'string' && message ? message : undefined;
   }
 
   // ============================================================================
@@ -219,14 +239,18 @@ export class AuthService {
 
   private applyAccessToken(res: AuthResponse): void {
     this.accessTokenSignal.set(res.accessToken);
-    // The server hands us the lifetime in seconds — track absolute expiry so we can
-    // refresh proactively (before a send) rather than reactively (after a 401).
-    this.accessTokenExpiresAt = res.expiresIn > 0 ? Date.now() + res.expiresIn * 1000 : null;
+    // Track absolute expiry so we can refresh proactively (before a send) rather
+    // than reactively (after a 401).
+    this.accessTokenExpiresAt = res.expiresInMs > 0 ? Date.now() + res.expiresInMs : null;
   }
 
   private setUserState(user: User): void {
     this.currentUserSignal.set(user);
     this.isAuthenticatedSignal.set(true);
+    // A fresh session re-arms the one-shot eviction notice and clears any stale
+    // cross-document dedupe marker, so a later eviction will surface again.
+    this.sessionInvalidatedHandled = false;
+    this.toast.resetIntent('session-ended');
   }
 
   private clearLocalState(): void {

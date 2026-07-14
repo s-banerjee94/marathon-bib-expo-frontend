@@ -104,7 +104,8 @@ export interface LoginRequest {
  */
 export interface AuthResponse {
   accessToken: string;
-  expiresIn: number;
+  /** Access-token lifetime in milliseconds (self-documenting backend field name). */
+  expiresInMs: number;
   username: string;
   role: string;
   organizationId?: number;
