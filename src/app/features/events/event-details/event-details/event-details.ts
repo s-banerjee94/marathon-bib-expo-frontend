@@ -178,6 +178,10 @@ export class EventDetails implements OnInit {
     const ref = this.dialogService.open(EventForm, {
       header: 'Edit Event',
       width: '800px',
+      breakpoints: {
+        '960px': '95vw',
+        '640px': '100vw',
+      },
       modal: true,
       showHeader: false,
       data: {

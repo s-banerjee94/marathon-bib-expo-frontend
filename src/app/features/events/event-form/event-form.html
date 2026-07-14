@@ -1,6 +1,6 @@
 <!-- Loading Skeleton -->
 @if (isLoading()) {
-  <div [class]="!isDialogMode() ? 'flex justify-center items-start min-h-screen p-6' : ''">
+  <div [class]="!isDialogMode() ? 'flex justify-center items-start min-h-screen p-4 sm:p-6' : ''">
     <div class="flex flex-col gap-4 w-full">
       <p-skeleton height="3rem" />
       <p-skeleton height="3rem" />
@@ -10,7 +10,7 @@
   </div>
 } @else {
   @if (!isDialogMode()) {
-    <div class="flex justify-center items-start min-h-screen p-6">
+    <div class="flex justify-center items-start min-h-screen p-4 sm:p-6">
       <p-card class="w-full max-w-4xl shadow-lg">
         <ng-template pTemplate="title">
           <h2 class="text-2xl font-bold">{{ getTitle() }}</h2>
@@ -70,7 +70,7 @@
 
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
       <!-- Event Name -->
-      <div class="flex flex-col gap-1 col-span-2">
+      <div class="flex flex-col gap-1 md:col-span-2">
         <p-floatlabel variant="on">
           <input
             #eventName="ngModel"
@@ -103,7 +103,7 @@
       </div>
 
       <!-- Event Description -->
-      <div class="flex flex-col gap-1 col-span-2">
+      <div class="flex flex-col gap-1 md:col-span-2">
         <p-floatlabel variant="on">
           <textarea
             [(ngModel)]="event.eventDescription"
@@ -246,13 +246,13 @@
       </div>
 
       @if (event.timezone) {
-        <div class="col-span-2">
+        <div class="md:col-span-2">
           <small class="text-sm">Times are in event timezone: {{ event.timezone }}</small>
         </div>
       }
 
       <!-- Venue Name -->
-      <div class="flex flex-col gap-1 col-span-2">
+      <div class="flex flex-col gap-1 md:col-span-2">
         <p-floatlabel variant="on">
           <input
             #venueName="ngModel"
@@ -285,7 +285,7 @@
       </div>
 
       <!-- Address Line 1 -->
-      <div class="flex flex-col gap-1 col-span-2">
+      <div class="flex flex-col gap-1 md:col-span-2">
         <p-floatlabel variant="on">
           <input
             [(ngModel)]="event.addressLine1"
@@ -301,7 +301,7 @@
       </div>
 
       <!-- Address Line 2 -->
-      <div class="flex flex-col gap-1 col-span-2">
+      <div class="flex flex-col gap-1 md:col-span-2">
         <p-floatlabel variant="on">
           <input
             [(ngModel)]="event.addressLine2"
