@@ -529,7 +529,7 @@
                   </span>
                 </div>
               </td>
-              <td>
+              <td class="whitespace-nowrap">
                 <p-tag
                   [value]="tierLabel(org.subscriptionTier || 'PAY_AS_YOU_GO')"
                   [severity]="tierSeverity(org.subscriptionTier)"
@@ -540,7 +540,7 @@
               <td class="whitespace-nowrap text-color-secondary">
                 {{ org.createdAt | date: 'MMM yyyy' }}
               </td>
-              <td class="text-right">
+              <td class="text-right whitespace-nowrap">
                 <p-tag
                   [value]="orgStatusLabel(org.subscriptionStatus)"
                   [severity]="orgStatusSeverity(org.subscriptionStatus)"
