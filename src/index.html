@@ -8,16 +8,33 @@
     <meta name="theme-color" content="#020617" />
     <link href="favicon.ico" rel="icon" type="image/x-icon" />
     <link href="icons/icon-192x192.png" rel="apple-touch-icon" />
+    <!-- Third-party CSS loads non-blocking (media="print" swap) so first paint never
+         waits on a CDN. flag-icons is only used by the admin event form; the fonts
+         are display=swap, so text renders with the fallback until they arrive. -->
     <link
       href="https://cdn.jsdelivr.net/npm/flag-icons@7.5.0/css/flag-icons.min.css"
       rel="stylesheet"
+      media="print"
+      onload="this.media = 'all'"
     />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
       href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&family=Geist+Mono:wght@400;500;600&display=swap"
       rel="stylesheet"
+      media="print"
+      onload="this.media = 'all'"
     />
+    <noscript>
+      <link
+        href="https://cdn.jsdelivr.net/npm/flag-icons@7.5.0/css/flag-icons.min.css"
+        rel="stylesheet"
+      />
+      <link
+        href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&family=Geist+Mono:wght@400;500;600&display=swap"
+        rel="stylesheet"
+      />
+    </noscript>
     <link rel="manifest" href="manifest.webmanifest" />
   </head>
   <body>
