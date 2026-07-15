@@ -10,11 +10,11 @@
          The field fills in once a link is issued; generating is always allowed. -->
     <div class="flex flex-col gap-1">
       <label class="text-sm font-medium" for="resetLink">Reset link</label>
-      <div class="flex items-center gap-2">
+      <div class="flex flex-wrap items-center gap-2">
         <input
           [pSize]="inputSize"
           [value]="resetUrl() ?? ''"
-          class="flex-1 min-w-0"
+          class="w-full min-w-0 sm:w-auto sm:flex-1"
           fluid="true"
           id="resetLink"
           pInputText
