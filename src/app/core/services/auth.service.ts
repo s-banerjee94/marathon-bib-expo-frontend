@@ -1,10 +1,11 @@
 import { inject, Injectable, signal } from '@angular/core';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Router } from '@angular/router';
-import { Observable, of, throwError } from 'rxjs';
+import { firstValueFrom, from, Observable, of, throwError } from 'rxjs';
 import { catchError, finalize, map, shareReplay, switchMap, tap } from 'rxjs/operators';
 import { AuthResponse, LoginRequest, User, UserRole } from '../models/user.model';
 import { BASE_URI } from '../../shared/constants/api.constant';
+import { STORAGE_KEYS } from '../../shared/constants/storage-keys.constant';
 import { LocalStorageService } from './local-storage.service';
 import { ToastService } from './toast.service';
 
@@ -20,6 +21,11 @@ const SESSION_TEARDOWN_QUIET_MS = 2500;
 // callers refresh *before* a send instead of racing an expiry mid-request. Sized to
 // cover a multi-tool agent turn that runs for a minute or two after the send.
 const TOKEN_EXPIRY_SKEW_MS = 120_000;
+
+// The initializer blocks first paint, so cap how long the silent session restore may
+// hold it — a dark/hanging backend must never blank the app (the public landing page
+// especially). The restore itself keeps running in the background past this deadline.
+const BOOTSTRAP_PAINT_DEADLINE_MS = 3_000;
 
 @Injectable({
   providedIn: 'root',
@@ -65,17 +71,41 @@ export class AuthService {
    * Called once at app startup (APP_INITIALIZER). Tries to silently recover the
    * session from the refresh-token cookie. Never rejects — failure simply leaves
    * the app in an unauthenticated state.
+   *
+   * The initializer blocks first paint until this resolves, so visitors who have
+   * never signed in (no SESSION_HINT — e.g. everyone on the public landing page)
+   * resolve immediately instead of paying a refresh round trip that can only fail.
    */
   bootstrap(): Observable<void> {
-    return this.refresh().pipe(
-      switchMap(() => this.fetchCurrentUser()),
-      tap((user) => this.setUserState(user)),
-      switchMap(() => of(void 0)),
-      catchError(() => {
-        this.clearLocalState();
-        return of(void 0);
-      }),
+    if (!this.storage.getString(STORAGE_KEYS.SESSION_HINT)) {
+      return of(void 0);
+    }
+    // firstValueFrom (not the returned observable) drives the restore so it runs to
+    // completion even after the paint deadline below releases the initializer —
+    // cancelling a refresh mid-flight could lose the rotated refresh cookie.
+    const restore = firstValueFrom(
+      this.refresh().pipe(
+        switchMap(() => this.fetchCurrentUser()),
+        tap((user) => this.setUserState(user)),
+        map(() => void 0),
+        catchError((error: unknown) => {
+          // Only a genuine refresh rejection means the session is dead. A dark
+          // backend (network error, 5xx, hang) must not wipe storage — render
+          // logged-out now and let the next load try the restore again.
+          if (
+            error instanceof HttpErrorResponse &&
+            (error.status === 401 || error.status === 403)
+          ) {
+            this.clearLocalState();
+          }
+          return of(void 0);
+        }),
+      ),
     );
+    const paintDeadline = new Promise<void>((resolve) =>
+      setTimeout(resolve, BOOTSTRAP_PAINT_DEADLINE_MS),
+    );
+    return from(Promise.race([restore, paintDeadline]));
   }
 
   /**
@@ -247,6 +277,9 @@ export class AuthService {
   private setUserState(user: User): void {
     this.currentUserSignal.set(user);
     this.isAuthenticatedSignal.set(true);
+    // Lets the next bootstrap know a silent refresh is worth attempting; cleared
+    // with the rest of storage in clearLocalState().
+    this.storage.setString(STORAGE_KEYS.SESSION_HINT, '1');
     // A fresh session re-arms the one-shot eviction notice and clears any stale
     // cross-document dedupe marker, so a later eviction will surface again.
     this.sessionInvalidatedHandled = false;

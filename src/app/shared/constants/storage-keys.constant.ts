@@ -7,6 +7,10 @@ export const STORAGE_KEYS = {
   // Auth
   AUTH_TOKEN: 'marathon_auth_token',
   USER: 'marathon_user',
+  // "Probably has a session" hint: set on successful auth, wiped with the rest of
+  // storage on logout/teardown. Bootstrap only attempts the silent refresh when
+  // this is present, so anonymous visitors (landing page) skip the round trip.
+  SESSION_HINT: 'marathon_has_session',
 
   // Table preferences
   USER_TABLE_COLUMNS: 'marathon_user_table_columns',
