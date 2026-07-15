@@ -14,8 +14,9 @@ export interface DemoSessionResponse {
   /** 22-char URL-safe code — path-safe as-is, no encoding needed. */
   code: string;
   runner: DemoRunner;
-  /** ISO-8601 UTC instant; parse with `new Date()`, never string-compare. */
-  expiresAt: string;
+  /** Server-computed seconds of remaining validity. Anchor on receipt
+   * (`Date.now() + expiresInSeconds * 1000`) — the client clock never matters. */
+  expiresInSeconds: number;
 }
 
 export interface DemoSessionStatusResponse {

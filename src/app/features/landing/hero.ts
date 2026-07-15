@@ -49,12 +49,18 @@ const POLL_INTERVAL_MS = 1000;
 /** If the stream hasn't opened by then (per-origin connection limit — another
  * tab holds the SSE slot), demote this page to polling until it's reloaded. */
 const SSE_CONNECT_TIMEOUT_MS = 5000;
-/** After any failed create, stay in the offline demo this long before retrying. */
-const MINT_COOLDOWN_MS = 30_000;
-/** Re-mint this long before expiry so a visitor never scans a QR that dies mid-scan. */
+/** The demo is auxiliary: after a failed connect, retry ONCE this much later. */
+const RETRY_DELAY_MS = 60_000;
+/** After this many consecutive failures, stop trying until the page is reloaded.
+ * Failures are always silent — the offline tap-to-scan bib is the whole fallback UX. */
+const MAX_CONSECUTIVE_MINT_FAILURES = 2;
+/** Re-mint this long before expiry so a visitor never scans a QR that dies mid-scan.
+ * Ceiling — capped to 20% of the session's actual TTL so short (test) TTLs still cycle. */
 const EXPIRY_SAFETY_MS = 15_000;
-/** Floor between proactive re-mints — guards the rate limit against a skewed client clock. */
+/** Floor between proactive re-mints — keeps a near-zero TTL from looping into the
+ * create rate limit. Ceiling — capped to 50% of the session's actual TTL, min 5s. */
 const MIN_SESSION_AGE_MS = 60_000;
+const MIN_SESSION_AGE_FLOOR_MS = 5_000;
 
 @Component({
   selector: 'app-hero',
@@ -127,8 +133,17 @@ export class Hero {
   private tabVisible = typeof document !== 'undefined' ? !document.hidden : true;
   private minting = false;
   private mintCooldownUntil = 0;
+  private mintFailCount = 0;
+  /** Two consecutive failed connects turn the live demo off until reload. */
+  private demoDisabled = false;
+  /** The demo is auxiliary — never mint before the page has fully loaded. */
+  private pageLoaded = typeof document !== 'undefined' && document.readyState === 'complete';
   private sessionMintedAt = 0;
   private sessionExpiresAt = 0;
+  // Margins derived per session from the backend's expiresInSeconds (see
+  // adoptSession), so the loop adapts to whatever TTL the backend is configured with.
+  private expirySafetyMs = EXPIRY_SAFETY_MS;
+  private minSessionAgeMs = MIN_SESSION_AGE_MS;
 
   constructor() {
     this.destroyRef.onDestroy(() => {
@@ -240,6 +255,10 @@ export class Hero {
 
   private setupLiveDemo(): void {
     this.zone.runOutsideAngular(() => {
+      if (!this.pageLoaded) {
+        window.addEventListener('load', this.onPageLoad, { once: true });
+        this.destroyRef.onDestroy(() => window.removeEventListener('load', this.onPageLoad));
+      }
       this.intersectionObserver = new IntersectionObserver(
         (entries) => {
           this.heroInView = entries[0]?.isIntersecting ?? false;
@@ -251,6 +270,11 @@ export class Hero {
       document.addEventListener('visibilitychange', this.onVisibilityChange);
     });
   }
+
+  private readonly onPageLoad = (): void => {
+    this.pageLoaded = true;
+    this.evaluateLoop();
+  };
 
   private readonly onVisibilityChange = (): void => {
     this.tabVisible = !document.hidden;
@@ -277,7 +301,9 @@ export class Hero {
       return;
     }
     if (!this.liveSession()) {
-      void this.mintInPlace();
+      if (this.pageLoaded && !this.demoDisabled) {
+        void this.mintInPlace();
+      }
       return;
     }
     this.startWatching();
@@ -303,11 +329,11 @@ export class Hero {
 
   private sessionNearExpiry(): boolean {
     const now = Date.now();
-    // The age floor keeps a skewed client clock from re-minting in a tight
-    // loop straight into the create rate limit.
+    // The age floor keeps a misconfigured/too-short TTL from re-minting in a
+    // tight loop straight into the create rate limit.
     return (
-      now >= this.sessionExpiresAt - EXPIRY_SAFETY_MS &&
-      now - this.sessionMintedAt >= MIN_SESSION_AGE_MS
+      now >= this.sessionExpiresAt - this.expirySafetyMs &&
+      now - this.sessionMintedAt >= this.minSessionAgeMs
     );
   }
 
@@ -317,7 +343,7 @@ export class Hero {
    * depend on the backend — and starts a cooldown before the next attempt.
    */
   private async mintNext(): Promise<LiveMint | null> {
-    if (this.minting || Date.now() < this.mintCooldownUntil) {
+    if (this.demoDisabled || this.minting || Date.now() < this.mintCooldownUntil) {
       return null;
     }
     this.minting = true;
@@ -326,17 +352,30 @@ export class Hero {
       const qr = await this.buildQr(session.code);
       return { session, qr };
     } catch {
-      this.mintCooldownUntil = Date.now() + MINT_COOLDOWN_MS;
-      this.scheduleRetry();
+      this.registerMintFailure();
       return null;
     } finally {
       this.minting = false;
     }
   }
 
+  /** Any failed connect (backend down, 429, offline — no distinction) counts here.
+   * One silent retry after RETRY_DELAY_MS; the second consecutive failure turns the
+   * demo off for good. A reload starts the budget fresh; a success resets it. */
+  private registerMintFailure(): void {
+    this.mintFailCount += 1;
+    if (this.mintFailCount >= MAX_CONSECUTIVE_MINT_FAILURES) {
+      this.demoDisabled = true;
+      clearTimeout(this.retryTimerId);
+      return;
+    }
+    this.mintCooldownUntil = Date.now() + RETRY_DELAY_MS;
+    this.scheduleRetry();
+  }
+
   /** Mint outside the collect animation: initial session, expiry, dead code. */
   private async mintInPlace(): Promise<void> {
-    if (this.minting) {
+    if (this.demoDisabled || this.minting) {
       return;
     }
     if (Date.now() < this.mintCooldownUntil) {
@@ -369,7 +408,18 @@ export class Hero {
     this.qrDataUrl.set(next.qr);
     this.phoneConnected.set(false);
     this.sessionMintedAt = Date.now();
-    this.sessionExpiresAt = new Date(next.session.expiresAt).getTime();
+    // Duration-based contract: anchoring the server-computed TTL on receipt makes
+    // client-clock skew irrelevant — both sides of every comparison share one clock.
+    const ttl = Math.max(0, next.session.expiresInSeconds * 1000);
+    this.sessionExpiresAt = this.sessionMintedAt + ttl;
+    // A working session proves the endpoint is reachable — the failure budget resets.
+    this.mintFailCount = 0;
+    this.mintCooldownUntil = 0;
+    this.expirySafetyMs = Math.min(EXPIRY_SAFETY_MS, ttl * 0.2);
+    this.minSessionAgeMs = Math.max(
+      MIN_SESSION_AGE_FLOOR_MS,
+      Math.min(MIN_SESSION_AGE_MS, ttl * 0.5),
+    );
     this.armExpiryTimer();
   }
 
@@ -388,8 +438,8 @@ export class Hero {
     this.zone.runOutsideAngular(() => {
       clearTimeout(this.expiryTimerId);
       const wait = Math.max(
-        this.sessionExpiresAt - EXPIRY_SAFETY_MS - Date.now(),
-        MIN_SESSION_AGE_MS,
+        this.sessionExpiresAt - this.expirySafetyMs - Date.now(),
+        this.minSessionAgeMs,
       );
       this.expiryTimerId = setTimeout(() => {
         if (this.heroInView && this.tabVisible && !this.busy() && this.liveSession()) {
@@ -400,9 +450,12 @@ export class Hero {
   }
 
   private scheduleRetry(): void {
+    if (this.demoDisabled) {
+      return;
+    }
     this.zone.runOutsideAngular(() => {
       clearTimeout(this.retryTimerId);
-      this.retryTimerId = setTimeout(() => this.evaluateLoop(), MINT_COOLDOWN_MS + 1000);
+      this.retryTimerId = setTimeout(() => this.evaluateLoop(), RETRY_DELAY_MS + 1000);
     });
   }
 
@@ -516,9 +569,9 @@ export class Hero {
           void this.mintInPlace();
           return;
         }
+        // Lost the demo service mid-session — same silent budget as a failed create.
         this.zone.run(() => this.enterFallback());
-        this.mintCooldownUntil = Date.now() + MINT_COOLDOWN_MS;
-        this.scheduleRetry();
+        this.registerMintFailure();
       },
     });
   }

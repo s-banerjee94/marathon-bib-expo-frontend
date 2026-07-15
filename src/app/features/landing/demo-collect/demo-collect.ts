@@ -90,11 +90,21 @@ export class DemoCollect implements OnInit {
       this.state.set('gone');
       return;
     }
-    this.errorMessage.set('Could not reach the demo service. Check your connection and try again.');
+    // 429/5xx: the session may still be alive, so keep the button usable and
+    // show the backend's display-ready message (e.g. rate limit) when there is one.
+    this.errorMessage.set(
+      this.backendMessage(
+        error,
+        'Could not reach the demo service. Check your connection and try again.',
+      ),
+    );
   }
 
-  private backendMessage(error: HttpErrorResponse): string {
+  private backendMessage(
+    error: HttpErrorResponse,
+    fallback = 'This demo session is no longer active.',
+  ): string {
     const message = (error.error as { message?: string } | null)?.message;
-    return message || 'This demo session is no longer active.';
+    return message || fallback;
   }
 }
