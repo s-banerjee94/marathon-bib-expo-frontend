@@ -131,7 +131,14 @@
           >Privacy</a
         >
         <a href="#terms" class="text-inherit no-underline hover:text-[var(--text-color)]">Terms</a>
-        <span class="font-['Geist_Mono',_monospace]">status: green</span>
+        <span class="flex items-center gap-1.5 font-['Geist_Mono',_monospace]" role="status">
+          <span
+            class="inline-block h-2 w-2 rounded-full"
+            [style.background]="apiLive() === false ? 'var(--p-red-500)' : 'var(--p-green-500)'"
+            aria-hidden="true"
+          ></span>
+          status: {{ apiLive() === false ? 'red' : 'green' }}
+        </span>
       </span>
     </div>
   </div>
