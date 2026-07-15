@@ -9,6 +9,7 @@ import { FORM_INPUT_SIZE } from '../../../constants/form.constants';
   imports: [IconFieldModule, InputIconModule, InputTextModule],
   templateUrl: './list-search.html',
   styleUrl: './list-search.css',
+  host: { class: 'flex flex-1 min-w-0' },
 })
 export class ListSearch {
   value = input<string>('');
