@@ -366,11 +366,6 @@
       [dataKey]="'bibNumber'"
       [scrollable]="true"
       [value]="isInitialLoading() ? skeletonRows : participants()"
-      [virtualScroll]="!printing()"
-      [virtualScrollItemSize]="virtualRowHeight"
-      [lazy]="true"
-      [lazyLoadOnInit]="false"
-      (onLazyLoad)="onVirtualScroll($event)"
       scrollHeight="500px"
       size="small"
     >
@@ -463,7 +458,7 @@
 
       <!-- Table Body -->
       <ng-template let-participant pTemplate="body">
-        <tr [style.height.px]="virtualRowHeight">
+        <tr>
           @if (isInitialLoading()) {
             <!-- Frozen Left: Checkbox Skeleton -->
             @if (showSelectionColumn()) {
