@@ -25,7 +25,7 @@
     } @else {
       <ng-content select="[banner]" />
 
-      <form #form="ngForm" (ngSubmit)="onSubmit(form)" class="flex flex-col">
+      <form #form="ngForm" (ngSubmit)="onSubmit(form)" autocomplete="off" class="flex flex-col">
         <!-- Endpoint -->
         <div class="form-section">
           <div class="form-section__heading">
@@ -42,7 +42,7 @@
                   id="baseUrl"
                   name="baseUrl"
                   fluid="true"
-                  autocomplete="off"
+                  autocomplete="url"
                   placeholder="https://www.fast2sms.com/dev/bulkV2"
                   [(ngModel)]="model.baseUrl"
                   [invalid]="shouldShowError(baseUrl, form.submitted)"
@@ -109,7 +109,7 @@
                     inputId="authToken"
                     name="authToken"
                     fluid="true"
-                    autocomplete="off"
+                    autocomplete="new-password"
                     [placeholder]="provider()?.authTokenMasked ?? ''"
                     [invalid]="shouldShowError(authToken, form.submitted)"
                     [required]="!provider()?.authTokenMasked"
@@ -136,15 +136,15 @@
                     #username="ngModel"
                     pInputText
                     [pSize]="inputSize"
-                    id="username"
-                    name="username"
+                    id="providerAuthUser"
+                    name="providerAuthUser"
                     fluid="true"
                     autocomplete="off"
                     [(ngModel)]="model.username"
                     [invalid]="shouldShowError(username, form.submitted)"
                     required
                   />
-                  <label for="username">Username *</label>
+                  <label for="providerAuthUser">Username *</label>
                 </p-floatlabel>
                 @if (shouldShowError(username, form.submitted)) {
                   <p-message [size]="inputSize" severity="error" variant="simple">
@@ -160,15 +160,17 @@
                     [feedback]="false"
                     [toggleMask]="true"
                     [size]="inputSize"
-                    inputId="password"
-                    name="password"
+                    inputId="providerAuthSecret"
+                    name="providerAuthSecret"
                     fluid="true"
-                    autocomplete="off"
+                    autocomplete="new-password"
                     [placeholder]="provider()?.passwordMasked ?? ''"
                     [invalid]="shouldShowError(password, form.submitted)"
                     [required]="!provider()?.passwordMasked"
                   />
-                  <label for="password">Password {{ provider()?.passwordMasked ? '' : '*' }}</label>
+                  <label for="providerAuthSecret"
+                    >Password {{ provider()?.passwordMasked ? '' : '*' }}</label
+                  >
                 </p-floatlabel>
                 @if (shouldShowError(password, form.submitted)) {
                   <p-message [size]="inputSize" severity="error" variant="simple">
