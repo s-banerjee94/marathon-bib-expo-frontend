@@ -177,7 +177,7 @@
       </ng-template>
       @if (timelineChart(); as chart) {
         <div class="h-[260px]">
-          <p-chart type="line" [data]="chart" [options]="timelineOptions()" height="260px" />
+          <p-chart type="line" [data]="chart" [options]="timelineOptions()" height="100%" />
         </div>
       } @else {
         <div class="flex flex-col items-center justify-center h-[260px] gap-2 text-color-secondary">
@@ -195,7 +195,9 @@
           <p-tag value="OVERALL" severity="secondary" styleClass="!text-[10px]" />
         </div>
       </ng-template>
-      <div class="flex items-center justify-center h-44">
+      <!-- px height on purpose: the knob is a fixed 168px SVG, and rem-based h-44
+           is only 154px at the app's 14px root font — it would clip the knob. -->
+      <div class="flex items-center justify-center h-[176px]">
         <p-knob
           [ngModel]="overallPercent()"
           [readonly]="true"
@@ -232,7 +234,7 @@
             type="doughnut"
             [data]="genderChart()!"
             [options]="doughnutOptions"
-            height="176px"
+            height="100%"
           />
           <div
             class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none"
@@ -270,7 +272,7 @@
             type="doughnut"
             [data]="raceDistChart()!"
             [options]="doughnutOptions"
-            height="176px"
+            height="100%"
           />
           <div
             class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none"
