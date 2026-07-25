@@ -6,6 +6,7 @@ import { TableColumn } from '../models/table-config.model';
 export const SMS_TEMPLATE_COLUMNS: TableColumn[] = [
   { field: 'name', header: 'Name', required: true, disabled: true },
   { field: 'smsTemplateId', header: 'DLT Template ID' },
+  { field: 'senderId', header: 'Sender ID' },
   { field: 'template', header: 'Template', required: true, disabled: true },
   { field: 'note', header: 'Note' },
   { field: 'createdAt', header: 'Created At' },
@@ -17,7 +18,13 @@ export const SMS_TEMPLATE_COLUMNS: TableColumn[] = [
 /**
  * Default visible SMS template columns
  */
-export const DEFAULT_SMS_TEMPLATE_COLUMNS = ['name', 'smsTemplateId', 'template', 'note'];
+export const DEFAULT_SMS_TEMPLATE_COLUMNS = [
+  'name',
+  'smsTemplateId',
+  'senderId',
+  'template',
+  'note',
+];
 
 /**
  * SMS Template sort options for dropdown

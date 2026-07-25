@@ -1,194 +1,325 @@
-<form #templateForm="ngForm" (ngSubmit)="onSubmit(templateForm)" class="flex flex-col gap-4 mt-2">
-  <!-- Template Name -->
-  <div class="flex flex-col gap-1">
-    <p-floatlabel variant="on">
-      <input
-        pInputText
-        id="name"
-        name="name"
-        [(ngModel)]="formData.name"
-        [pSize]="inputSize"
-        fluid="true"
-        placeholder="e.g., Bib Collection Reminder"
-        required
-        maxlength="100"
-        #name="ngModel"
-      />
-      <label for="name">Template Name *</label>
-    </p-floatlabel>
-    @if (name.invalid && name.touched) {
-      <p-message [size]="inputSize" severity="error" variant="simple">
-        @if (name.hasError('required')) {
-          Template name is required.
-        }
-        @if (name.hasError('maxlength')) {
-          Template name must not exceed 100 characters.
-        }
-      </p-message>
-    }
+@if (loading()) {
+  <!-- Resolving the event's SMS provider to decide the template shape -->
+  <div class="flex flex-col gap-4 mt-2">
+    <p-skeleton height="3rem" />
+    <p-skeleton height="3rem" />
+    <p-skeleton height="8rem" />
   </div>
-
-  <!-- SMS Template ID (DLT ID) -->
-  <div class="flex flex-col gap-1">
-    <p-floatlabel variant="on">
-      <input
-        pInputText
-        id="smsTemplateId"
-        name="smsTemplateId"
-        [(ngModel)]="formData.smsTemplateId"
-        [pSize]="inputSize"
-        fluid="true"
-        placeholder="e.g., 11071612345678901234"
-        required
-        minlength="20"
-        maxlength="200"
-        pattern="^[0-9]+$"
-        #smsTemplateId="ngModel"
-      />
-      <label for="smsTemplateId">DLT Template ID *</label>
-    </p-floatlabel>
-    @if (smsTemplateId.invalid && smsTemplateId.touched) {
-      <p-message [size]="inputSize" severity="error" variant="simple">
-        @if (smsTemplateId.hasError('required')) {
-          DLT Template ID is required.
-        }
-        @if (smsTemplateId.hasError('minlength')) {
-          DLT Template ID must be at least 20 characters.
-        }
-        @if (smsTemplateId.hasError('maxlength')) {
-          DLT Template ID must not exceed 200 characters.
-        }
-        @if (smsTemplateId.hasError('pattern')) {
-          DLT Template ID must contain only numbers.
-        }
-      </p-message>
-    }
+} @else if (loadError()) {
+  <div class="flex flex-col items-center justify-center gap-3 text-center py-8">
+    <i class="pi pi-exclamation-triangle text-3xl text-muted-color"></i>
+    <div>
+      <div class="font-semibold">Couldn't load provider settings</div>
+      <p class="text-sm text-muted-color m-0 mt-1">
+        We couldn't determine how this event's SMS templates are rendered. Please try again.
+      </p>
+    </div>
+    <div class="flex flex-wrap justify-center gap-3">
+      <button
+        pButton
+        type="button"
+        label="Close"
+        severity="secondary"
+        [outlined]="true"
+        (click)="onCancel()"
+      ></button>
+      <button
+        pButton
+        type="button"
+        label="Retry"
+        icon="pi pi-refresh"
+        (click)="loadStyle()"
+      ></button>
+    </div>
   </div>
-
-  <!-- SMS Template Text -->
-  <div class="flex flex-col gap-1">
-    <p-floatlabel variant="on">
-      <textarea
-        pTextarea
-        id="template"
-        name="template"
-        [(ngModel)]="formData.template"
-        (ngModelChange)="onTemplateChange($event)"
-        rows="4"
-        fluid="true"
-        placeholder="e.g., Dear #{fullName}, your bib #{bibNumber} is ready for collection!"
-        required
-        minlength="2"
-        maxlength="1000"
-        #templateCtrl="ngModel"
-      ></textarea>
-      <label for="template">Template Text *</label>
-    </p-floatlabel>
-    @if (templateCtrl.invalid && templateCtrl.touched) {
-      <p-message [size]="inputSize" severity="error" variant="simple">
-        @if (templateCtrl.hasError('required')) {
-          Template text is required.
+} @else if (hasProvider() === false) {
+  <div class="flex flex-col items-center justify-center gap-3 text-center py-8">
+    <i class="pi pi-cog text-3xl text-muted-color"></i>
+    <div>
+      <div class="font-semibold">No SMS sender configured</div>
+      <p class="text-sm text-muted-color m-0 mt-1">
+        An SMS campaign sender must be set up for this event's organization before you can create
+        templates.
+        @if (!canConfigureProviders) {
+          Contact your administrator to set one up.
         }
-        @if (templateCtrl.hasError('minlength')) {
-          Template text must be at least 2 characters.
-        }
-        @if (templateCtrl.hasError('maxlength')) {
-          Template text must not exceed 1000 characters.
-        }
-      </p-message>
-    }
-  </div>
-
-  <!-- Template Preview with Inline Variable Chips -->
-  @if (detectedVars().length > 0) {
-    <div class="flex flex-col gap-1">
-      <span class="text-xs font-medium">Preview — click a red placeholder to replace it:</span>
-      <div class="border rounded-lg px-3 py-2 text-sm leading-loose">
-        @for (seg of segments(); track $index) {
-          @if (seg.type === 'text') {
-            <span class="whitespace-pre-wrap">{{ seg.content }}</span>
-          } @else {
-            <span
-              class="inline-flex cursor-pointer align-middle"
-              (click)="onVarChipClick(seg.field, $event)"
-            >
-              @if (seg.valid) {
-                <p-tag [value]="'#{' + seg.field + '}'" severity="success" [rounded]="true" />
-              } @else {
-                <p-tag
-                  [value]="'#{' + (seg.field || 'empty') + '}'"
-                  severity="danger"
-                  icon="pi pi-exclamation-triangle"
-                  [rounded]="true"
-                />
-              }
-            </span>
-          }
-        }
-      </div>
-      @if (hasInvalidVars()) {
-        <small class="text-xs">
-          <i class="pi pi-info-circle"></i>
-          Save is disabled until all invalid placeholders are replaced.
-        </small>
+      </p>
+    </div>
+    <div class="flex flex-wrap justify-center gap-3">
+      <button
+        pButton
+        type="button"
+        label="Close"
+        severity="secondary"
+        [outlined]="true"
+        (click)="onCancel()"
+      ></button>
+      <button
+        pButton
+        type="button"
+        label="Retry"
+        icon="pi pi-refresh"
+        severity="secondary"
+        [outlined]="true"
+        (click)="loadStyle()"
+      ></button>
+      @if (canConfigureProviders) {
+        <button
+          pButton
+          type="button"
+          label="Configure providers"
+          icon="pi pi-arrow-right"
+          iconPos="right"
+          (click)="goToProviderSettings()"
+        ></button>
       }
     </div>
-  }
+  </div>
+} @else {
+  <form #templateForm="ngForm" (ngSubmit)="onSubmit(templateForm)" class="flex flex-col gap-4 mt-2">
+    <!-- Template Name -->
+    <div class="flex flex-col gap-1">
+      <p-floatlabel variant="on">
+        <input
+          pInputText
+          id="name"
+          name="name"
+          [(ngModel)]="formData.name"
+          [pSize]="inputSize"
+          fluid="true"
+          placeholder="e.g., Bib Collection Reminder"
+          required
+          maxlength="100"
+          #name="ngModel"
+        />
+        <label for="name">Template Name *</label>
+      </p-floatlabel>
+      @if (name.invalid && name.touched) {
+        <p-message [size]="inputSize" severity="error" variant="simple">
+          @if (name.hasError('required')) {
+            Template name is required.
+          }
+          @if (name.hasError('maxlength')) {
+            Template name must not exceed 100 characters.
+          }
+        </p-message>
+      }
+    </div>
 
-  <!-- Note -->
-  <div class="flex flex-col gap-1">
-    <p-floatlabel variant="on">
-      <textarea
-        pTextarea
-        id="note"
-        name="note"
-        [(ngModel)]="formData.note"
-        rows="2"
-        fluid="true"
-        placeholder="Optional note or description"
-        maxlength="500"
-        #note="ngModel"
-      ></textarea>
-      <label for="note">Note</label>
-    </p-floatlabel>
-    @if (note.invalid && note.touched) {
-      <p-message [size]="inputSize" severity="error" variant="simple">
-        Note must not exceed 500 characters.
-      </p-message>
+    <!-- SMS Template ID (DLT ID) -->
+    <div class="flex flex-col gap-1">
+      <p-floatlabel variant="on">
+        <input
+          pInputText
+          id="smsTemplateId"
+          name="smsTemplateId"
+          [(ngModel)]="formData.smsTemplateId"
+          [pSize]="inputSize"
+          fluid="true"
+          placeholder="e.g., 11071612345678901234"
+          required
+          minlength="20"
+          maxlength="200"
+          pattern="^[0-9]+$"
+          #smsTemplateId="ngModel"
+        />
+        <label for="smsTemplateId">DLT Template ID *</label>
+      </p-floatlabel>
+      @if (smsTemplateId.invalid && smsTemplateId.touched) {
+        <p-message [size]="inputSize" severity="error" variant="simple">
+          @if (smsTemplateId.hasError('required')) {
+            DLT Template ID is required.
+          }
+          @if (smsTemplateId.hasError('minlength')) {
+            DLT Template ID must be at least 20 characters.
+          }
+          @if (smsTemplateId.hasError('maxlength')) {
+            DLT Template ID must not exceed 200 characters.
+          }
+          @if (smsTemplateId.hasError('pattern')) {
+            DLT Template ID must contain only numbers.
+          }
+        </p-message>
+      }
+    </div>
+
+    <!-- Sender ID (DLT header) -->
+    <div class="flex flex-col gap-1">
+      <p-floatlabel variant="on">
+        <input
+          pInputText
+          id="senderId"
+          name="senderId"
+          [(ngModel)]="formData.senderId"
+          [pSize]="inputSize"
+          fluid="true"
+          placeholder="e.g., BIBEXP"
+          maxlength="32"
+          #senderId="ngModel"
+        />
+        <label for="senderId">Sender ID (DLT header)</label>
+      </p-floatlabel>
+      <small class="text-xs text-muted-color">
+        Optional. The registered sender header shown on the SMS, e.g. BIBEXP.
+      </small>
+      @if (senderId.invalid && senderId.touched) {
+        <p-message [size]="inputSize" severity="error" variant="simple">
+          Sender ID must not exceed 32 characters.
+        </p-message>
+      }
+    </div>
+
+    @if (usesVariables()) {
+      <!-- Provider-rendered: the gateway renders the approved template; we send the
+           ordered #{...} variables that fill its positional {{VAR:n}} slots. -->
+      <app-placeholder-variable-picker
+        [variables]="bodyVariables()"
+        (variablesChange)="bodyVariables.set($event)"
+      />
+
+      @if (bodyVariables().length) {
+        <div class="flex flex-col gap-1">
+          <span class="text-xs font-medium">Preview — value sent for each positional slot:</span>
+          <div class="flex flex-wrap gap-2 border rounded-lg px-3 py-2">
+            @for (variable of bodyVariables(); track $index) {
+              <p-tag
+                [value]="'{{' + ($index + 1) + '}} ' + variable"
+                severity="success"
+                [rounded]="true"
+              />
+            }
+          </div>
+        </div>
+      }
+    } @else {
+      <!-- Client-rendered: we render the message text with #{...} placeholders. -->
+      <div class="flex flex-col gap-1">
+        <p-floatlabel variant="on">
+          <textarea
+            pTextarea
+            id="template"
+            name="template"
+            [(ngModel)]="formData.template"
+            (ngModelChange)="onTemplateChange($event)"
+            rows="4"
+            fluid="true"
+            placeholder="e.g., Dear #{fullName}, your bib #{bibNumber} is ready for collection!"
+            required
+            minlength="2"
+            maxlength="1000"
+            #templateCtrl="ngModel"
+          ></textarea>
+          <label for="template">Template Text *</label>
+        </p-floatlabel>
+        @if (templateCtrl.invalid && templateCtrl.touched) {
+          <p-message [size]="inputSize" severity="error" variant="simple">
+            @if (templateCtrl.hasError('required')) {
+              Template text is required.
+            }
+            @if (templateCtrl.hasError('minlength')) {
+              Template text must be at least 2 characters.
+            }
+            @if (templateCtrl.hasError('maxlength')) {
+              Template text must not exceed 1000 characters.
+            }
+          </p-message>
+        }
+      </div>
+
+      <!-- Template Preview with Inline Variable Chips -->
+      @if (detectedVars().length > 0) {
+        <div class="flex flex-col gap-1">
+          <span class="text-xs font-medium">Preview — click a red placeholder to replace it:</span>
+          <div class="border rounded-lg px-3 py-2 text-sm leading-loose">
+            @for (seg of segments(); track $index) {
+              @if (seg.type === 'text') {
+                <span class="whitespace-pre-wrap">{{ seg.content }}</span>
+              } @else {
+                <span
+                  class="inline-flex cursor-pointer align-middle"
+                  (click)="onVarChipClick(seg.field, $event)"
+                >
+                  @if (seg.valid) {
+                    <p-tag [value]="'#{' + seg.field + '}'" severity="success" [rounded]="true" />
+                  } @else {
+                    <p-tag
+                      [value]="'#{' + (seg.field || 'empty') + '}'"
+                      severity="danger"
+                      icon="pi pi-exclamation-triangle"
+                      [rounded]="true"
+                    />
+                  }
+                </span>
+              }
+            }
+          </div>
+          @if (hasInvalidVars()) {
+            <small class="text-xs">
+              <i class="pi pi-info-circle"></i>
+              Save is disabled until all invalid placeholders are replaced.
+            </small>
+          }
+        </div>
+      }
     }
-  </div>
 
-  <!-- Actions -->
-  <div class="flex justify-end gap-3 pt-4 border-t">
-    <button
-      pButton
-      type="button"
-      label="Cancel"
-      severity="secondary"
-      [outlined]="true"
-      (click)="onCancel()"
-    ></button>
-    <button
-      pButton
-      type="submit"
-      [label]="isEditMode() ? 'Update Template' : 'Create Template'"
-      [disabled]="templateForm.invalid || hasInvalidVars() || isSubmitting()"
-    ></button>
-  </div>
-</form>
+    <!-- Note -->
+    <div class="flex flex-col gap-1">
+      <p-floatlabel variant="on">
+        <textarea
+          pTextarea
+          id="note"
+          name="note"
+          [(ngModel)]="formData.note"
+          rows="2"
+          fluid="true"
+          placeholder="Optional note or description"
+          maxlength="500"
+          #note="ngModel"
+        ></textarea>
+        <label for="note">Note</label>
+      </p-floatlabel>
+      @if (note.invalid && note.touched) {
+        <p-message [size]="inputSize" severity="error" variant="simple">
+          Note must not exceed 500 characters.
+        </p-message>
+      }
+    </div>
 
-<!-- Replacement picker popover (always in DOM for ViewChild) -->
-<p-popover #replacerOp>
-  <div class="w-72 overflow-y-auto" style="max-height: 260px">
-    @for (opt of pickerOptions; track opt.field) {
+    <!-- Actions -->
+    <div class="flex justify-end gap-3 pt-4">
       <button
+        pButton
         type="button"
-        class="flex items-center gap-2 w-full px-3 py-2 text-left border-none bg-transparent cursor-pointer hover:bg-emphasis"
-        (click)="onPickReplacement(opt.field)"
-      >
-        <code class="font-mono text-xs shrink-0">{{ '#{' + opt.field + '}' }}</code>
-        <span class="text-xs text-color-secondary">{{ opt.label }}</span>
-      </button>
-    }
-  </div>
-</p-popover>
+        label="Cancel"
+        severity="secondary"
+        [outlined]="true"
+        (click)="onCancel()"
+      ></button>
+      <button
+        pButton
+        type="submit"
+        [label]="isEditMode() ? 'Update Template' : 'Create Template'"
+        [disabled]="
+          templateForm.invalid || (!usesVariables() && hasInvalidVars()) || isSubmitting()
+        "
+      ></button>
+    </div>
+  </form>
+
+  <!-- Replacement picker popover (client-rendered mode only) -->
+  <p-popover #replacerOp>
+    <div class="w-72 overflow-y-auto" style="max-height: 260px">
+      @for (opt of pickerOptions; track opt.field) {
+        <button
+          type="button"
+          class="flex items-center gap-2 w-full px-3 py-2 text-left border-none bg-transparent cursor-pointer hover:bg-emphasis"
+          (click)="onPickReplacement(opt.field)"
+        >
+          <code class="font-mono text-xs shrink-0">{{ '#{' + opt.field + '}' }}</code>
+          <span class="text-xs text-color-secondary">{{ opt.label }}</span>
+        </button>
+      }
+    </div>
+  </p-popover>
+}

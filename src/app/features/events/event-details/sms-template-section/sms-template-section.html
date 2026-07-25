@@ -130,10 +130,21 @@
                     @case ('smsTemplateId') {
                       {{ template.smsTemplateId }}
                     }
+                    @case ('senderId') {
+                      {{ template.senderId | defaultValue }}
+                    }
                     @case ('template') {
-                      <div class="max-w-md truncate" [title]="template.template">
-                        {{ template.template | truncate: 40 }}
-                      </div>
+                      @if (template.template) {
+                        <div class="max-w-md truncate" [title]="template.template">
+                          {{ template.template | truncate: 40 }}
+                        </div>
+                      } @else if (template.bodyVariables?.length) {
+                        <span class="text-color-secondary">
+                          {{ template.bodyVariables?.length }} variable(s)
+                        </span>
+                      } @else {
+                        --
+                      }
                     }
                     @case ('note') {
                       <div class="max-w-[50ch] truncate" [title]="template.note">
@@ -229,8 +240,13 @@
                   <span class="text-xs opacity-50 shrink-0">ID: {{ template.smsTemplateId }}</span>
                 }
               </div>
+              @if (template.senderId) {
+                <span class="text-xs opacity-50 truncate">Sender: {{ template.senderId }}</span>
+              }
               @if (template.template) {
                 <p class="text-sm opacity-70 line-clamp-2">{{ template.template }}</p>
+              } @else if (template.bodyVariables?.length) {
+                <p class="text-xs opacity-50">{{ template.bodyVariables?.length }} variable(s)</p>
               }
               @if (template.note) {
                 <p class="text-xs opacity-50 truncate">{{ template.note }}</p>

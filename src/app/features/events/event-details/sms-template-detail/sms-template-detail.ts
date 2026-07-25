@@ -2,14 +2,16 @@ import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/cor
 import { CommonModule } from '@angular/common';
 import { DividerModule } from 'primeng/divider';
 import { ButtonModule } from 'primeng/button';
+import { TagModule } from 'primeng/tag';
 import { DynamicDialogConfig, DynamicDialogRef } from 'primeng/dynamicdialog';
 import { SmsTemplate } from '../../../../core/models/sms-template.model';
 import { DefaultValuePipe } from '../../../../shared/pipes/default-value.pipe';
+import { PLACEHOLDER_MAP } from '../../../../shared/constants/sms-template-placeholders.constant';
 
 @Component({
   selector: 'app-sms-template-detail',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, DividerModule, ButtonModule, DefaultValuePipe],
+  imports: [CommonModule, DividerModule, ButtonModule, TagModule, DefaultValuePipe],
   templateUrl: './sms-template-detail.html',
 })
 export class SmsTemplateDetail {
@@ -17,6 +19,12 @@ export class SmsTemplateDetail {
   private ref = inject(DynamicDialogRef);
 
   template = signal<SmsTemplate | null>(this.config.data?.template ?? null);
+
+  // Human label for a #{field} expression, e.g. '#{fullName}' → "Participant's full name".
+  variableLabel(expression: string): string {
+    const field = expression.replace(/^#\{|\}$/g, '');
+    return PLACEHOLDER_MAP[field] ?? expression;
+  }
 
   onClose(): void {
     this.ref.close();

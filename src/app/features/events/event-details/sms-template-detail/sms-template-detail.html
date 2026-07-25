@@ -8,19 +8,49 @@
 
     <p-divider styleClass="my-0" />
 
-    <!-- DLT Template ID -->
-    <div class="flex flex-col gap-1">
-      <span class="text-xs font-medium uppercase tracking-wide">DLT Template ID</span>
-      <span class="font-mono">{{ t.smsTemplateId }}</span>
-    </div>
-
-    <!-- Template Text -->
-    <div class="flex flex-col gap-2">
-      <span class="text-xs font-medium uppercase tracking-wide">Template Text</span>
-      <div class="rounded border p-3 font-mono text-sm leading-relaxed whitespace-pre-wrap">
-        {{ t.template }}
+    <!-- DLT Template ID + Sender ID -->
+    <div class="grid grid-cols-2 gap-x-6 gap-y-3">
+      <div class="flex flex-col gap-1">
+        <span class="text-xs font-medium uppercase tracking-wide">DLT Template ID</span>
+        <span class="font-mono">{{ t.smsTemplateId }}</span>
+      </div>
+      <div class="flex flex-col gap-1">
+        <span class="text-xs font-medium uppercase tracking-wide">Sender ID</span>
+        <span class="font-mono">{{ t.senderId | defaultValue }}</span>
       </div>
     </div>
+
+    @if (t.bodyVariables?.length) {
+      <!-- Provider-rendered: ordered variables that fill the gateway template's slots -->
+      <div class="flex flex-col gap-2">
+        <span class="text-xs font-medium uppercase tracking-wide">Message Variables</span>
+        <div class="flex flex-col gap-2">
+          @for (variable of t.bodyVariables; track $index) {
+            <div class="flex items-center gap-2">
+              <span
+                class="flex h-7 min-w-7 items-center justify-center rounded-md px-2 font-mono text-xs"
+                style="
+                  background: color-mix(in srgb, var(--primary-color), transparent 88%);
+                  color: var(--primary-color);
+                "
+              >
+                {{ '{{' + ($index + 1) + '}}' }}
+              </span>
+              <p-tag [value]="variable" severity="success" [rounded]="true" />
+              <span class="text-xs text-muted-color">{{ variableLabel(variable) }}</span>
+            </div>
+          }
+        </div>
+      </div>
+    } @else {
+      <!-- Client-rendered: message text -->
+      <div class="flex flex-col gap-2">
+        <span class="text-xs font-medium uppercase tracking-wide">Template Text</span>
+        <div class="rounded border p-3 font-mono text-sm leading-relaxed whitespace-pre-wrap">
+          {{ t.template | defaultValue }}
+        </div>
+      </div>
+    }
 
     <!-- Note -->
     @if (t.note) {
