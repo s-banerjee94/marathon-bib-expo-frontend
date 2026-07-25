@@ -220,19 +220,9 @@
                   <p class="text-xs text-muted-color">No notifications yet</p>
                 </div>
               } @else {
+                <!-- Latest few only (POPOVER_LIMIT) — the full paginated list is /notifications -->
                 @for (notif of notificationService.notifications(); track notif.id) {
                   <app-notification-card [notification]="notif" (navigated)="notifPopover.hide()" />
-                }
-
-                @if (notificationService.hasMore()) {
-                  <p-button
-                    (onClick)="notificationService.loadMore()"
-                    [label]="notificationService.loadingMore() ? 'Loading…' : 'Load more'"
-                    [loading]="notificationService.loadingMore()"
-                    [text]="true"
-                    size="small"
-                    styleClass="w-full !text-xs"
-                  />
                 }
               }
             </div>
