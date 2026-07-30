@@ -2,6 +2,10 @@
 
 An Angular 21 single-page application for managing marathon bib distribution operations. It provides role-based dashboards, event and participant management, bib/goodies distribution with QR scanning, messaging campaigns, billing, and public bib verification for the Marathon Bib Expo platform.
 
+The product covers the **pre-race expo**: organizers load a participant roster and
+distributors hand out bibs and goodies at the counter. Runners never self-register in
+this app, and race day itself is out of scope.
+
 ## Prerequisites
 
 - Node.js 20.19 or higher (22.12+ / 24+ also supported)
@@ -23,17 +27,25 @@ environment files:
 - `src/environments/environment.ts` — development
 - `src/environments/environment.prod.ts` — production (swapped in at build time via `fileReplacements` in `angular.json`)
 
-Both default to the **relative, same-origin path `/api`**, so one build artifact
-works on any host:
+| Build | `apiBaseUrl`                              | How it resolves                                                                    |
+| ----- | ----------------------------------------- | ---------------------------------------------------------------------------------- |
+| Dev   | `/api`                                    | Dev server proxies `/api/*` to `http://localhost:8080` via `proxy.conf.json`       |
+| Prod  | `https://api.connectwithsandeepan.in/api` | App is served from `app.connectwithsandeepan.in` — different origin, **same site** |
 
-- **Dev** — the dev server proxies `/api/*` to the backend at `http://localhost:8080` via `proxy.conf.json`.
-- **Prod** — nginx serves the built app and proxies `/api` to the Spring Boot backend on the same box.
+Cookie auth requires the frontend and backend to stay **same-site**: that is what
+lets the HttpOnly refresh cookie and the readable CSRF cookie work — in dev even
+over plain HTTP from another device on the LAN, and in prod across the `app.` /
+`api.` subdomains (the backend sets the cookie domain to `.connectwithsandeepan.in`).
 
-Keeping the frontend and backend same-origin is what lets the HttpOnly refresh
-cookie and the CSRF cookie work — including over plain HTTP from another device
-on the LAN. **Avoid pointing `apiBaseUrl` at an absolute cross-origin URL**; that
-breaks the cookie auth model. To reach a backend on a different machine in dev,
-change the `target` in `proxy.conf.json` instead.
+**Never point `apiBaseUrl` at a genuinely cross-site URL** — a raw `*.amplifyapp.com`
+host, or a LAN IP such as `http://192.168.0.106:8080/api` in dev — that breaks the
+cookie auth model. To reach a backend on a different machine in dev, change the
+`target` in `proxy.conf.json` instead.
+
+The optional AI assistant talks to a **separate Python service** via
+`environment.aiBaseUrl` (`/ai` prefix). It uses Bearer-token auth with no cookies, so
+it may be cross-origin, and it is called directly rather than through the dev proxy so
+its SSE stream arrives unbuffered.
 
 ### 3. Start the Development Server
 
@@ -41,25 +53,30 @@ change the `target` in `proxy.conf.json` instead.
 npm start
 ```
 
-The application starts at **http://localhost:4200**.
+The application starts at **http://localhost:4200** (bound to `0.0.0.0`, so you can
+also open it from a phone on the same network at `http://<your-ip>:4200`).
 
 ---
 
 ## Tech Stack
 
-| Layer             | Technology                        |
-| ----------------- | --------------------------------- |
-| Language          | TypeScript 5.x                    |
-| Framework         | Angular 21 (standalone, signals)  |
-| Component Library | PrimeNG 21                        |
-| Styling           | Tailwind CSS 4.x                  |
-| HTTP              | Angular HttpClient + Interceptors |
-| Routing           | Angular Router (lazy-loaded)      |
-| Offline / PWA     | Angular Service Worker            |
-| Testing           | Vitest 4.x                        |
-| Linting           | ESLint + Angular ESLint           |
-| Formatting        | Prettier                          |
-| Git Hooks         | Husky + lint-staged               |
+| Layer             | Technology                                  |
+| ----------------- | ------------------------------------------- |
+| Language          | TypeScript 5.x                              |
+| Framework         | Angular 21 (standalone, signals)            |
+| Component Library | PrimeNG 21 (Aura preset, custom monochrome) |
+| Styling           | Tailwind CSS 4.x + tailwindcss-primeui      |
+| Forms             | Template-driven (`FormsModule` + `ngModel`) |
+| HTTP              | Angular HttpClient + Interceptors           |
+| Routing           | Angular Router (lazy-loaded)                |
+| Charts            | Chart.js                                    |
+| Animation         | GSAP + ScrollTrigger (landing page only)    |
+| Offline / PWA     | Angular Service Worker                      |
+| Testing           | Vitest 4.x (configured; no suite yet)       |
+| Linting           | ESLint + Angular ESLint                     |
+| Formatting        | Prettier                                    |
+| Git Hooks         | Husky + lint-staged                         |
+| Hosting           | AWS Amplify                                 |
 
 ---
 
@@ -72,6 +89,7 @@ src/app/
 ├── core/          # Guards, interceptors, singleton services, domain models
 ├── layout/        # App shell: navbar, sidebar, AI assistant, command palette, theme
 ├── features/      # Lazy-loaded feature areas
+│   ├── landing/             # public marketing page at '/' with a live cross-device QR demo
 │   ├── auth/                # login, password reset, invitations
 │   ├── dashboard/           # role-aware sub-dashboards (root, admin, org, distributor)
 │   ├── events/              # event CRUD + nested tabs (races, categories, campaigns, limits, bills)
@@ -95,18 +113,20 @@ src/app/
 
 ## Key Features
 
-- **Role-Based Dashboards** — scope-aware views for ROOT, ADMIN, ORGANIZER_ADMIN, ORGANIZER_USER, and DISTRIBUTOR roles with statistics and charts
-- **Event Management** — events with races, categories, participant limits, billing, and SMS/WhatsApp campaign tabs
-- **Participant Management** — CRUD, cursor-paginated virtualized tables, CSV import with a drag-to-map column wizard, and export
+- **Role-Based Dashboards** — scope-aware views for ROOT, ADMIN, ORGANIZER_ADMIN, ORGANIZER_USER, and DISTRIBUTOR roles with statistics and theme-reactive charts
+- **Event Management** — events with races, categories, participant limits, billing, a per-event dashboard, and SMS/WhatsApp/email template and campaign tabs
+- **Participant Management** — CRUD, cursor-paginated tables with explicit "Load More", CSV import with a drag-to-map column wizard, import history, and export
 - **Distribution** — bib/goodies handout with QR bib scanning, pending queues, and activity logs
-- **Messaging Campaigns** — SMS/WhatsApp templates and campaigns with configurable sender providers
-- **Public Verification** — unauthenticated bib verification and downloadable expo cards via short links
-- **AI Assistant** — in-app conversational assistant with human-in-the-loop action approvals
+- **Messaging Campaigns** — templates and campaigns driven by the sender provider's style: client-rendered providers author free message text, provider-rendered ones bind body variables to an approved template
+- **Public Verification** — unauthenticated bib verification and downloadable expo cards (canvas-rendered) via short links
+- **Landing Page** — public marketing page with a live cross-device QR demo and a footer chip that pulses real backend health
+- **AI Assistant** — in-app conversational assistant with human-in-the-loop action approvals, streamed over SSE from a separate Python service
 - **PWA / Offline** — installable app, cached shell, offline write guarding, and update prompts
-- **Notifications** — in-app notification bell and full notification page
-- **Audit Logs** — filterable audit trail of user actions
+- **Notifications** — navbar bell popover plus a full notification page
+- **Audit Logs** — filterable audit trail with resolved user avatars and deep links
+- **Responsive / Mobile** — mobile card lists, a bottom tab bar, and one app-wide breakpoint signal
 - **Shared Table Base** — debounced search, pagination, persisted column/filter preferences, and skeleton loading via `BaseTableComponent`
-- **Centralized Error Handling** — `ErrorHandlerService` with toast notifications; components never implement custom error parsing
+- **Centralized Toasts & Errors** — one `ToastService` (de-duplication, intents, action toasts) and `ErrorHandlerService`, which surfaces the backend's message verbatim
 
 ---
 
@@ -137,9 +157,9 @@ The app authenticates against the [Marathon Bib Expo Service](https://github.com
 
 ```bash
 npm start          # Start dev server at http://localhost:4200
-npm run build      # Production build (outputs to dist/)
+npm run build      # Production build (outputs to dist/marathon-bib-expo-frontend/browser)
 npm run watch      # Watch mode build
-npm test           # Run Vitest unit tests
+npm test           # Run Vitest (configured, but the project ships no test suite yet)
 npm run lint       # Lint TypeScript and HTML files
 npm run format     # Format all files with Prettier
 ```
@@ -150,6 +170,31 @@ npm run format     # Format all files with Prettier
 # Generate a standalone component
 ng generate component features/module-name/component-name --skip-tests --skip-import
 ```
+
+---
+
+## Deployment
+
+The app is hosted on **AWS Amplify** at `app.connectwithsandeepan.in`, with the Spring
+Boot API and the Python AI service behind `api.connectwithsandeepan.in` (`/api` and
+`/ai`).
+
+- **`amplify.yml`** — build spec. Artifacts are taken from
+  `dist/marathon-bib-expo-frontend/browser` (Angular 21's `@angular/build` emits the
+  browser bundle in a `browser/` subfolder).
+- **`customHttp.yml`** — response headers. `index.html`, `ngsw.json`, `ngsw-worker.js`
+  and `manifest.webmanifest` are served `no-cache` so PWA users can't get pinned to a
+  stale build, while fingerprinted `*.js` / `*.css` are cached immutably. Also sets
+  HSTS, `X-Content-Type-Options`, `Referrer-Policy`, `X-Frame-Options` and
+  `Permissions-Policy`.
+
+> The `Permissions-Policy` header must keep `camera=(self)`. With an empty `camera=()`
+> the browser rejects `getUserMedia` outright — no permission prompt — and the QR bib
+> scanner stops working.
+
+Because the SPA and the API are on different subdomains of the same site, the
+production origin must stay under `connectwithsandeepan.in`; serving from the raw
+`*.amplifyapp.com` URL is cross-site and breaks the refresh/CSRF cookies.
 
 ---
 
