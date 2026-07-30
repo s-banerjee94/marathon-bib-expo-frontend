@@ -158,15 +158,17 @@ export class EventLimitsSection implements OnInit {
   private loadUsage(): void {
     const id = this.eventId();
     forkJoin({
-      stats: this.participantService.getParticipantStatistics(id).pipe(catchError(() => of(null))),
+      participants: this.participantService
+        .getParticipantCount(id)
+        .pipe(catchError(() => of(null))),
       races: this.eventService.getRaces(id).pipe(catchError(() => of(null))),
       templates: this.smsTemplateService
         .getSmsTemplatesByEvent(id)
         .pipe(catchError(() => of(null))),
       campaigns: this.smsCampaignService.getCampaignsByEvent(id).pipe(catchError(() => of(null))),
-    }).subscribe(({ stats, races, templates, campaigns }) => {
+    }).subscribe(({ participants, races, templates, campaigns }) => {
       this.usage.set({
-        maxParticipants: stats?.totalParticipants ?? null,
+        maxParticipants: participants?.count ?? null,
         maxRaces: races?.length ?? null,
         maxCategoriesPerRace: races?.length
           ? Math.max(0, ...races.map((r) => r.categoryCount ?? 0))

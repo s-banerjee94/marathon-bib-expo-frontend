@@ -19,25 +19,20 @@ import { AvatarModule } from 'primeng/avatar';
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
 import { ChartModule } from 'primeng/chart';
-import { ConfirmPopupModule } from 'primeng/confirmpopup';
 import { KnobModule } from 'primeng/knob';
-import { Menu } from 'primeng/menu';
 import { ProgressBarModule } from 'primeng/progressbar';
 import { SelectModule } from 'primeng/select';
 import { SelectButtonModule } from 'primeng/selectbutton';
 import { SkeletonModule } from 'primeng/skeleton';
 import { TagModule } from 'primeng/tag';
 import { TooltipModule } from 'primeng/tooltip';
-import { ConfirmationService, MenuItem } from 'primeng/api';
 
 import { EventDashboardService } from '../../../../core/services/event-dashboard.service';
 import { DistributionService } from '../../../../core/services/distribution.service';
-import { ParticipantService } from '../../../../core/services/participant.service';
 import { ImportProgressService } from '../../../../core/services/import-progress.service';
 import { AuthService } from '../../../../core/services/auth.service';
 import { LayoutService } from '../../../../core/services/layout.service';
 import { ErrorHandlerService } from '../../../../core/services/error-handler.service';
-import { ToastService } from '../../../../core/services/toast.service';
 import {
   CategoryStat,
   EventActivity,
@@ -96,13 +91,15 @@ interface LegendItem {
 }
 
 interface BarRow {
+  /** Stable identity for `@for` tracking — names can collide (two distributors
+   *  sharing a name, a category name reused across races). */
+  key: string;
   name: string;
   count: number;
   total?: number;
   percent: number;
 }
 
-const REBUILD_ROLES = [UserRole.ROOT, UserRole.ADMIN, UserRole.ORGANIZER_ADMIN];
 // Roles the backend allows to read distribution logs (Recent Collections feed).
 // Mirrors the distribution Activity Logs tab guard; distributors are excluded.
 const LOG_VIEW_ROLES = [UserRole.ROOT, UserRole.ADMIN, UserRole.ORGANIZER_ADMIN];
@@ -128,6 +125,10 @@ const MONTH_ABBR = [
 // plain records, so JSON.stringify is sufficient and cheap.
 const deepEqual = (a: unknown, b: unknown): boolean => JSON.stringify(a) === JSON.stringify(b);
 
+// Bucket for categories the backend reports with a null raceId (the race was
+// deleted while participants still referenced the category).
+const ORPHAN_RACE_KEY = '__unassigned__';
+
 const EMPTY_TOTALS: ParticipantTotals = { total: 0, collected: 0, pending: 0, collectedPercent: 0 };
 const EMPTY_GENDER: GenderBreakdown = { male: 0, female: 0, other: 0 };
 
@@ -143,9 +144,7 @@ const EMPTY_GENDER: GenderBreakdown = { male: 0, female: 0, other: 0 };
     ButtonModule,
     CardModule,
     ChartModule,
-    ConfirmPopupModule,
     KnobModule,
-    Menu,
     ProgressBarModule,
     SelectModule,
     SelectButtonModule,
@@ -155,18 +154,14 @@ const EMPTY_GENDER: GenderBreakdown = { male: 0, female: 0, other: 0 };
     InitialsPipe,
     UserNamePipe,
   ],
-  providers: [ConfirmationService],
 })
 export class EventDashboardSection implements OnInit {
   private readonly dashboardService = inject(EventDashboardService);
   private readonly distributionService = inject(DistributionService);
-  private readonly participantService = inject(ParticipantService);
   private readonly importProgress = inject(ImportProgressService);
   private readonly authService = inject(AuthService);
   private readonly layout = inject(LayoutService);
   private readonly errorHandler = inject(ErrorHandlerService);
-  private readonly toast = inject(ToastService);
-  private readonly confirmation = inject(ConfirmationService);
   // Present when hosted inside the event-details shell (/events/:id/dashboard);
   // absent in the distribution shell (/distribution/event/:eventId/dashboard),
   // where the eventId comes from the route instead.
@@ -189,7 +184,6 @@ export class EventDashboardSection implements OnInit {
   protected readonly range = signal<EventDashboardRange>('TODAY');
   protected readonly isLoading = signal<boolean>(true);
   protected readonly isRefreshing = signal<boolean>(false);
-  protected readonly isReconciling = signal<boolean>(false);
   // Race filter for the category breakdown (raceId; categories carry their own
   // raceId so filtering is purely client-side — no extra round-trips).
   protected readonly selectedRaceFilter = signal<string | null>(null);
@@ -203,11 +197,6 @@ export class EventDashboardSection implements OnInit {
   private hasLoaded = false;
   private recentLoaded = false;
   private fetchInFlight = false;
-
-  protected readonly overflowMenuItems = signal<MenuItem[]>([]);
-  private lastMenuTarget: EventTarget | null = null;
-
-  protected readonly canRebuild = computed(() => this.authService.hasAnyRole(REBUILD_ROLES));
 
   // Recent Collections reads the distribution logs endpoint, which the backend
   // restricts to log-viewing roles (the same set the distribution Activity Logs
@@ -325,6 +314,7 @@ export class EventDashboardSection implements OnInit {
   // Race-wise collection bars (event-wide).
   protected readonly raceBars = computed<BarRow[]>(() =>
     this.racesSlice().map((r) => ({
+      key: r.raceId,
       name: r.raceName,
       count: r.collected,
       total: r.total,
@@ -332,27 +322,40 @@ export class EventDashboardSection implements OnInit {
     })),
   );
 
-  // Category breakdown for the selected race (relative to that race's max).
-  protected readonly raceFilterOptions = computed<{ label: string; value: string }[]>(() =>
-    this.racesSlice().map((r) => ({ label: r.raceName, value: r.raceId })),
-  );
+  // Category collection progress for the selected race.
+  protected readonly raceFilterOptions = computed<{ label: string; value: string }[]>(() => {
+    const options = this.racesSlice().map((r) => ({ label: r.raceName, value: r.raceId }));
+    // Categories whose race is gone arrive with a null raceId. They still hold
+    // participants, so give them a bucket rather than dropping them silently.
+    if (this.categoriesSlice().some((c) => c.raceId == null)) {
+      options.push({ label: 'Unassigned', value: ORPHAN_RACE_KEY });
+    }
+    return options;
+  });
   protected readonly filteredCategories = computed<BarRow[]>(() => {
     const raceId = this.selectedRaceFilter();
     if (!raceId) return [];
-    const cats = this.categoriesSlice().filter((c) => c.raceId === raceId);
-    const max = cats.reduce((m, c) => Math.max(m, c.total), 0) || 1;
-    return cats.map((c) => ({
-      name: c.categoryName,
-      count: c.total,
-      percent: (c.total / max) * 100,
-    }));
+    return this.categoriesSlice()
+      .filter((c) => (c.raceId ?? ORPHAN_RACE_KEY) === raceId)
+      .map((c) => ({
+        key: c.categoryId,
+        name: c.categoryName,
+        count: c.collected,
+        total: c.total,
+        percent: c.total ? (c.collected / c.total) * 100 : 0,
+      }));
   });
 
   // Distributor activity bars (range-scoped, relative to the busiest).
   protected readonly distributorBars = computed<BarRow[]>(() => {
     const dist = this.activitySlice()?.distributors ?? [];
     const max = dist.reduce((m, d) => Math.max(m, d.count), 0) || 1;
-    return dist.map((d) => ({ name: d.name, count: d.count, percent: (d.count / max) * 100 }));
+    return dist.map((d) => ({
+      key: d.distributorId,
+      name: d.name,
+      count: d.count,
+      percent: (d.count / max) * 100,
+    }));
   });
 
   private readonly hasTimelineLegend = computed(() => {
@@ -384,7 +387,6 @@ export class EventDashboardSection implements OnInit {
   }
 
   ngOnInit(): void {
-    this.buildOverflowMenu();
     this.fetch();
     this.fetchRecentLogs();
 
@@ -443,7 +445,7 @@ export class EventDashboardSection implements OnInit {
     this.dashboardService.getEventDashboard(id, this.range()).subscribe({
       next: (res) => {
         this.dashboard.set(res);
-        this.seedRaceFilter(res.races);
+        this.seedRaceFilter();
         this.hasLoaded = true;
         this.isLoading.set(false);
         this.isRefreshing.set(false);
@@ -483,16 +485,17 @@ export class EventDashboardSection implements OnInit {
       });
   }
 
-  // Default the category filter to the first race; refreshes keep the user's
-  // pick when it still exists in the new race list.
-  private seedRaceFilter(races: RaceStat[]): void {
-    if (races.length === 0) {
+  // Default the category filter to the first option; refreshes keep the user's
+  // pick when it still exists in the new list.
+  private seedRaceFilter(): void {
+    const options = this.raceFilterOptions();
+    if (options.length === 0) {
       this.selectedRaceFilter.set(null);
       return;
     }
     const current = this.selectedRaceFilter();
-    if (!current || !races.some((r) => r.raceId === current)) {
-      this.selectedRaceFilter.set(races[0].raceId);
+    if (!current || !options.some((o) => o.value === current)) {
+      this.selectedRaceFilter.set(options[0].value);
     }
   }
 
@@ -610,54 +613,6 @@ export class EventDashboardSection implements OnInit {
           fill: true,
         },
       ],
-    });
-  }
-
-  // ── Rebuild counters (admin action; the rollup reads from these counters) ──
-  protected showOverflowMenu(menu: Menu, event: MouseEvent): void {
-    this.lastMenuTarget = event.currentTarget;
-    menu.toggle(event);
-  }
-
-  private buildOverflowMenu(): void {
-    this.overflowMenuItems.set([
-      {
-        label: 'Rebuild counters',
-        icon: 'pi pi-refresh',
-        visible: this.canRebuild(),
-        command: () => this.confirmRebuild(),
-      },
-    ]);
-  }
-
-  private confirmRebuild(): void {
-    this.confirmation.confirm({
-      target: this.lastMenuTarget as EventTarget,
-      message: 'Rebuild counters from a full participant scan? This can be slow on large events.',
-      icon: 'pi pi-exclamation-triangle',
-      acceptLabel: 'Rebuild',
-      rejectLabel: 'Cancel',
-      acceptButtonStyleClass: 'p-button-sm',
-      rejectButtonStyleClass: 'p-button-text p-button-sm',
-      accept: () => this.rebuildCounters(),
-    });
-  }
-
-  private rebuildCounters(): void {
-    const id = this.eventId();
-    if (id == null || this.isReconciling()) return;
-
-    this.isReconciling.set(true);
-    this.participantService.reconcileParticipantStatistics(id).subscribe({
-      next: () => {
-        this.isReconciling.set(false);
-        this.toast.success('Statistics counters rebuilt', 'Counters refreshed');
-        this.fetch(true);
-      },
-      error: (err) => {
-        this.isReconciling.set(false);
-        this.errorHandler.showError(err, 'Failed to rebuild counters');
-      },
     });
   }
 

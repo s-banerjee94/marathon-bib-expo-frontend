@@ -1,6 +1,6 @@
 /**
  * Event-details Dashboard tab rollup — matches the backend
- * `GET /api/events/{eventId}/dashboard?range=` contract (group 12-dashboard).
+ * `GET /api/events/{eventId}/dashboard?range=` contract (group 11-dashboard).
  *
  * Everything here is either event-wide (constant) or range-scoped (changes with
  * `range`). Recent Collections is NOT part of this rollup — the dashboard reads
@@ -41,12 +41,16 @@ export interface RaceStat {
   collectedPercent: number;
 }
 
-/** Per-category total, tagged with its race for client-side filtering. */
+/** Per-category totals, tagged with its race for client-side filtering. */
 export interface CategoryStat {
-  raceId: string;
+  /** Owning race; null when the category no longer exists. */
+  raceId: string | null;
   categoryId: string;
+  /** Category name, or an "Unknown category (#id)" placeholder for a deleted category. */
   categoryName: string;
   total: number;
+  collected: number;
+  collectedPercent: number;
 }
 
 export interface DashboardRate {

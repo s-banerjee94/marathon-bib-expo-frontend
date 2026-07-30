@@ -80,35 +80,6 @@ export interface ImportParticipantsResponse {
   message: string;
 }
 
-export interface ParticipantStatisticsResponse {
-  eventId: number;
-  totalParticipants: number;
-  bibCollectedCount: number;
-  pendingCount: number;
-  raceBreakdown: RaceStatistics[];
-  categoryBreakdown: CategoryStatistics[];
-  genderBreakdown: GenderStatistics;
-}
-
-export interface RaceStatistics {
-  raceId: string;
-  raceName: string;
-  count: number;
-  bibCollectedCount: number;
-}
-
-export interface CategoryStatistics {
-  categoryId: string;
-  categoryName: string;
-  count: number;
-}
-
-export interface GenderStatistics {
-  male: number;
-  female: number;
-  other: number;
-}
-
 export interface CreateParticipantRequest {
   chipNumber: string;
   bibNumber: string;

@@ -15,7 +15,6 @@ import {
   ParticipantListResponse,
   ParticipantLookupParams,
   ParticipantSearchParams,
-  ParticipantStatisticsResponse,
   UpdateParticipantRequest,
 } from '../models/participant.model';
 import { BASE_URI } from '../../shared/constants/api.constant';
@@ -249,27 +248,6 @@ export class ParticipantService {
     return this.http.get<ImportErrorListResponse>(
       `${this.apiUrl}/${eventId}/participants/batch-import/latest/errors`,
       { params: httpParams },
-    );
-  }
-
-  /**
-   * Get participant statistics for an event (live aggregated counts).
-   */
-  getParticipantStatistics(eventId: number): Observable<ParticipantStatisticsResponse> {
-    return this.http.get<ParticipantStatisticsResponse>(
-      `${this.apiUrl}/${eventId}/participants/statistics`,
-    );
-  }
-
-  /**
-   * Rebuild participant statistics counters from source-of-truth data
-   * (used for initial backfill or drift recovery). Returns the freshly
-   * computed statistics so the caller does not need a follow-up GET.
-   */
-  reconcileParticipantStatistics(eventId: number): Observable<ParticipantStatisticsResponse> {
-    return this.http.post<ParticipantStatisticsResponse>(
-      `${this.apiUrl}/${eventId}/participants/statistics/reconcile`,
-      null,
     );
   }
 
