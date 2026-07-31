@@ -8,11 +8,11 @@
 
     <p-divider styleClass="my-0" />
 
-    <!-- DLT Template ID + Sender ID -->
+    <!-- Provider template id + Sender ID -->
     <div class="grid grid-cols-2 gap-x-6 gap-y-3">
       <div class="flex flex-col gap-1">
-        <span class="text-xs font-medium uppercase tracking-wide">DLT Template ID</span>
-        <span class="font-mono">{{ t.smsTemplateId }}</span>
+        <span class="text-xs font-medium uppercase tracking-wide">Provider Template ID</span>
+        <span class="font-mono">{{ t.smsTemplateId | defaultValue }}</span>
       </div>
       <div class="flex flex-col gap-1">
         <span class="text-xs font-medium uppercase tracking-wide">Sender ID</span>

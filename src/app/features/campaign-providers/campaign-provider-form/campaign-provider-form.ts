@@ -2,6 +2,7 @@ import { Component, computed, effect, inject, input, signal } from '@angular/cor
 import { HttpErrorResponse } from '@angular/common/http';
 import { MessageModule } from 'primeng/message';
 import { ConfirmPopupModule } from 'primeng/confirmpopup';
+import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { ConfirmationService } from 'primeng/api';
 import { DialogService } from 'primeng/dynamicdialog';
 import { CampaignProviderService } from '../../../core/services/campaign-provider.service';
@@ -23,7 +24,7 @@ import { CampaignProviderTestDialog } from '../campaign-provider-test-dialog/cam
 // falls back to the platform default.
 @Component({
   selector: 'app-campaign-provider-form',
-  imports: [ProviderConnectionForm, MessageModule, ConfirmPopupModule],
+  imports: [ProviderConnectionForm, MessageModule, ConfirmPopupModule, ConfirmDialogModule],
   providers: [ConfirmationService, DialogService],
   templateUrl: './campaign-provider-form.html',
 })
@@ -76,18 +77,40 @@ export class CampaignProviderForm {
     });
   }
 
-  onSave(request: SaveMessagingProviderRequest): void {
+  onSave(request: SaveMessagingProviderRequest, force = false): void {
     this.saving.set(true);
-    this.service.save(this.scope(), this.channel(), request).subscribe({
+    this.service.save(this.scope(), this.channel(), request, force).subscribe({
       next: (saved) => {
         this.saving.set(false);
         this.toast.success('Provider connection saved');
         this.provider.set(saved);
       },
-      error: (error) => {
+      error: (error: HttpErrorResponse) => {
         this.saving.set(false);
+        // 409 = armed campaigns still depend on this sender. The platform sender can be
+        // overridden, but only after the operator sees the blast radius the server names.
+        if (error.status === 409 && !this.isOrg() && !force) {
+          this.confirmForce(this.errorHandler.extract(error).detail, () =>
+            this.onSave(request, true),
+          );
+          return;
+        }
         this.errorHandler.showError(error);
       },
+    });
+  }
+
+  // Never sent silently: the platform sender is shared by every organization, so the
+  // override is an explicit decision made against the server's own count.
+  private confirmForce(message: string, retry: () => void): void {
+    this.confirmation.confirm({
+      key: 'forceOverride',
+      header: 'Campaigns are still armed',
+      message: `${message}\n\nForcing this through will stop those campaigns from sending.`,
+      icon: 'pi pi-exclamation-triangle',
+      acceptButtonProps: { label: 'Override anyway', severity: 'danger' },
+      rejectButtonProps: { label: 'Cancel', severity: 'secondary', outlined: true },
+      accept: retry,
     });
   }
 
@@ -120,6 +143,9 @@ export class CampaignProviderForm {
         this.toast.success('Override removed');
         this.load(this.scope(), this.channel());
       },
+      // A 409 here means armed campaigns still depend on the override. The org scope has
+      // no force escape hatch, so the server's message (which names the count) is the
+      // whole answer — disarm them first.
       error: (error) => {
         this.removing.set(false);
         this.errorHandler.showError(error);

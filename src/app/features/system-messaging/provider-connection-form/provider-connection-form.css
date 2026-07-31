@@ -70,6 +70,15 @@
   color: var(--p-surface-400);
 }
 
+/* Explains the muted rows once, instead of repeating it on every row. */
+.token-panel__legend {
+  margin-left: auto;
+  font-weight: 400;
+  letter-spacing: normal;
+  text-transform: none;
+  color: var(--p-surface-500);
+}
+
 .token-panel__grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -97,6 +106,13 @@
   background: var(--p-surface-800);
 }
 
+/* Tokens the current mode/channel ignores. Muted via the surface ramp rather than
+   opacity — the panel sits on a fixed dark surface, where opacity erases the text. */
+.token-row--muted .token-chip,
+.token-row--muted .token-desc {
+  color: var(--p-surface-500);
+}
+
 .token-chip {
   font-size: 0.6875rem;
   color: var(--p-cyan-400, #22d3ee);
@@ -105,12 +121,21 @@
   font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
 }
 
+/* Wraps rather than truncating — several descriptions are longer than one column. */
 .token-desc {
   font-size: 0.6875rem;
   color: var(--p-surface-400);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  min-width: 0;
+}
+
+/* Inside the panel's overflow:hidden, so it needs its own padding or it clips. */
+.token-panel__note {
+  margin: 0;
+  padding: 0.5rem 0.875rem;
+  border-top: 1px solid var(--p-surface-700);
+  font-size: 0.6875rem;
+  line-height: 1.5;
+  color: var(--p-surface-400);
 }
 
 /* ── Footer ───────────────────────────────────────────────────────────────── */

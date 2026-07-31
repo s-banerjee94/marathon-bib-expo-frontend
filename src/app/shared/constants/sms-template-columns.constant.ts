@@ -5,7 +5,7 @@ import { TableColumn } from '../models/table-config.model';
  */
 export const SMS_TEMPLATE_COLUMNS: TableColumn[] = [
   { field: 'name', header: 'Name', required: true, disabled: true },
-  { field: 'smsTemplateId', header: 'DLT Template ID' },
+  { field: 'smsTemplateId', header: 'Provider Template ID' },
   { field: 'senderId', header: 'Sender ID' },
   { field: 'template', header: 'Template', required: true, disabled: true },
   { field: 'note', header: 'Note' },
@@ -30,8 +30,8 @@ export const DEFAULT_SMS_TEMPLATE_COLUMNS = [
  * SMS Template sort options for dropdown
  */
 export const SMS_TEMPLATE_SORT_OPTIONS = [
-  { label: 'DLT ID (A-Z)', value: 'smsTemplateId,asc' },
-  { label: 'DLT ID (Z-A)', value: 'smsTemplateId,desc' },
+  { label: 'Template ID (A-Z)', value: 'smsTemplateId,asc' },
+  { label: 'Template ID (Z-A)', value: 'smsTemplateId,desc' },
   { label: 'Created (Newest First)', value: 'createdAt,desc' },
   { label: 'Created (Oldest First)', value: 'createdAt,asc' },
   { label: 'Updated (Recently Updated)', value: 'updatedAt,desc' },

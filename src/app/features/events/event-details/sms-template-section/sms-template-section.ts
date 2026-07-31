@@ -12,6 +12,7 @@ import { InputIconModule } from 'primeng/inputicon';
 import { MultiSelectModule } from 'primeng/multiselect';
 import { SkeletonModule } from 'primeng/skeleton';
 import { TooltipModule } from 'primeng/tooltip';
+import { TagModule } from 'primeng/tag';
 import { DialogService } from 'primeng/dynamicdialog';
 import { ConfirmationService } from 'primeng/api';
 import { CardModule } from 'primeng/card';
@@ -19,6 +20,11 @@ import { AvatarModule } from 'primeng/avatar';
 import { ConfirmPopupModule } from 'primeng/confirmpopup';
 import { SmsTemplate } from '../../../../core/models/sms-template.model';
 import { SmsTemplateService } from '../../../../core/services/sms-template.service';
+import { CampaignProviderStyleService } from '../../../../core/services/campaign-provider-style.service';
+import {
+  CampaignProviderSource,
+  TemplateMode,
+} from '../../../../core/models/campaign-provider-style.model';
 import { ErrorHandlerService } from '../../../../core/services/error-handler.service';
 import { ToastService } from '../../../../core/services/toast.service';
 import { SmsTemplateForm } from '../sms-template-form/sms-template-form';
@@ -57,6 +63,7 @@ import { EmptyIllustration } from '../../../../shared/illustrations/empty-illust
     MultiSelectModule,
     SkeletonModule,
     TooltipModule,
+    TagModule,
     ConfirmPopupModule,
     CardModule,
     AvatarModule,
@@ -75,6 +82,7 @@ export class SmsTemplateSection implements OnInit, OnDestroy {
   eventId = input.required<number, string>({ transform: (v) => Number(v) });
 
   private smsTemplateService = inject(SmsTemplateService);
+  private styleService = inject(CampaignProviderStyleService);
   private errorHandler = inject(ErrorHandlerService);
   private toast = inject(ToastService);
   private dialogService = inject(DialogService);
@@ -91,6 +99,21 @@ export class SmsTemplateSection implements OnInit, OnDestroy {
     this.isLoading() ? (Array(5).fill({}) as SmsTemplate[]) : this.smsTemplates(),
   );
   searchTerm = signal('');
+
+  // The sender in force, used only to flag templates that no longer match it — they are
+  // refused at arm/send time, so surface it in the list before anyone tries.
+  senderMode = signal<TemplateMode | null>(null);
+  senderSource = signal<CampaignProviderSource | null>(null);
+  readonly modeMismatchHint = computed(() =>
+    this.senderMode() === 'PROVIDER_RENDERED'
+      ? 'This template holds message text, but the current SMS sender expects template variables. It cannot be sent until re-authored.'
+      : 'This template holds template variables, but the current SMS sender expects the message text. It cannot be sent until re-authored.',
+  );
+  readonly sourceMismatchHint = computed(() =>
+    this.senderSource() === 'ORGANIZATION'
+      ? 'This template was built for the platform SMS sender, but your own sender is now in use — rebuild the template for it.'
+      : 'This template was built for your own SMS sender, which is no longer in use — switch it back on, or rebuild the template for the platform sender.',
+  );
 
   readonly inputSize = FORM_INPUT_SIZE;
   readonly buttonSize = BUTTON_SIZE;
@@ -115,6 +138,29 @@ export class SmsTemplateSection implements OnInit, OnDestroy {
     });
 
     this.loadSmsTemplates();
+    // Best-effort: without it no template is flagged, which is the current behaviour.
+    this.styleService.getStyle(this.eventId(), 'SMS').subscribe({
+      next: (style) => {
+        this.senderMode.set(style.templateMode ?? null);
+        this.senderSource.set(style.source ?? null);
+      },
+      error: () => {
+        this.senderMode.set(null);
+        this.senderSource.set(null);
+      },
+    });
+  }
+
+  // Authored for the other content shape.
+  hasModeMismatch(template: SmsTemplate): boolean {
+    const mode = this.senderMode();
+    return !!mode && !!template.renderMode && template.renderMode !== mode;
+  }
+
+  // Registered against the other vendor account — its template id means nothing here.
+  hasSourceMismatch(template: SmsTemplate): boolean {
+    const source = this.senderSource();
+    return !!source && !!template.providerSource && template.providerSource !== source;
   }
 
   ngOnDestroy(): void {

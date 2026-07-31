@@ -192,24 +192,53 @@
             <span class="section-icon section-icon--render"><i class="pi pi-sliders-h"></i></span>
             <span class="text-sm font-semibold">Message rendering</span>
           </div>
-          <div class="flex flex-col gap-1 md:max-w-md">
-            <p-floatlabel variant="on">
-              <p-select
-                [size]="inputSize"
-                styleClass="w-full"
-                inputId="templateMode"
-                name="templateMode"
-                [options]="templateModeOptions"
-                optionLabel="label"
-                optionValue="value"
-                [(ngModel)]="model.templateMode"
-              />
-              <label for="templateMode">Template mode</label>
-            </p-floatlabel>
-            <span class="text-xs text-color-secondary mt-1">
-              Client-rendered builds the text from the template body; provider-rendered uses the
-              vendor's registered template with positional variables.
-            </span>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="flex flex-col gap-1">
+              <p-floatlabel variant="on">
+                <p-select
+                  [size]="inputSize"
+                  styleClass="w-full"
+                  inputId="templateMode"
+                  name="templateMode"
+                  [options]="templateModeOptions"
+                  optionLabel="label"
+                  optionValue="value"
+                  [(ngModel)]="model.templateMode"
+                />
+                <label for="templateMode">Template mode</label>
+              </p-floatlabel>
+              <span class="text-xs text-color-secondary mt-1">
+                Client-rendered builds the text from the template body; provider-rendered uses the
+                vendor's registered template with positional variables.
+              </span>
+              @if (templateModeChanged()) {
+                <p-message [size]="inputSize" severity="warn" variant="simple">
+                  Templates created for the previous mode will need their content re-authored before
+                  they can be sent.
+                </p-message>
+              }
+            </div>
+
+            <div class="flex flex-col gap-1">
+              <p-floatlabel variant="on">
+                <input
+                  pInputText
+                  [pSize]="inputSize"
+                  id="defaultCountryCode"
+                  name="defaultCountryCode"
+                  fluid="true"
+                  autocomplete="off"
+                  placeholder="91"
+                  maxlength="6"
+                  [(ngModel)]="model.defaultCountryCode"
+                />
+                <label for="defaultCountryCode">Country code</label>
+              </p-floatlabel>
+              <span class="text-xs text-color-secondary mt-1">
+                Added to local numbers when the sender needs international format — what
+                {{ e164Token }} prefixes. Defaults to 91.
+              </span>
+            </div>
           </div>
         </div>
 
@@ -221,7 +250,7 @@
           </div>
 
           <div class="flex flex-col gap-4">
-            @if (model.httpMethod === 'POST') {
+            @if (usesBody()) {
               <div class="flex flex-col gap-4">
                 <div class="flex flex-col gap-1 md:max-w-xs">
                   <p-floatlabel variant="on">
@@ -271,20 +300,55 @@
               <app-provider-param-table [params]="params()" (paramsChange)="params.set($event)" />
             </div>
 
+            <div class="flex flex-col gap-1 md:max-w-md">
+              <p-floatlabel variant="on">
+                <input
+                  pInputText
+                  [pSize]="inputSize"
+                  id="successContains"
+                  name="successContains"
+                  fluid="true"
+                  autocomplete="off"
+                  maxlength="200"
+                  [(ngModel)]="model.successContains"
+                />
+                <label for="successContains">Success marker</label>
+              </p-floatlabel>
+              <span class="text-xs text-color-secondary">
+                Optional — text the provider's reply must contain for the send to count. Many
+                gateways answer HTTP 200 with an error body; without this those sends are recorded
+                as delivered and billed. Leave blank to trust the HTTP status.
+              </span>
+            </div>
+
+            <!-- Mirrors the server's save-time consistency rules so the mistake is caught
+                 where it is made. Warning only — Save is never blocked here. -->
+            @if (requestWarnings().length) {
+              <div class="flex flex-col gap-2">
+                @for (warning of requestWarnings(); track warning) {
+                  <p-message [size]="inputSize" severity="warn" variant="simple">
+                    {{ warning }}
+                  </p-message>
+                }
+              </div>
+            }
+
             <!-- Token reference panel -->
             <div class="token-panel">
               <div class="token-panel__header">
                 <i class="pi pi-hashtag"></i>
                 <span>Available tokens</span>
+                <span class="token-panel__legend">Muted = not used by this mode or channel</span>
               </div>
               <div class="token-panel__grid">
                 @for (token of tokens; track token.token) {
-                  <div class="token-row">
+                  <div class="token-row" [class.token-row--muted]="!isTokenApplicable(token)">
                     <code class="token-chip">{{ token.token }}</code>
                     <span class="token-desc">{{ token.description }}</span>
                   </div>
                 }
               </div>
+              <p class="token-panel__note">{{ indexingNote }}</p>
             </div>
           </div>
         </div>

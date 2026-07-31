@@ -20,6 +20,7 @@ import { ProviderConnectionForm } from '../provider-connection-form/provider-con
   template: `
     <app-provider-connection-form
       [provider]="provider()"
+      [channel]="channel()"
       [loading]="loading()"
       [saving]="saving()"
       [defaultTemplateMode]="defaultTemplateMode()"

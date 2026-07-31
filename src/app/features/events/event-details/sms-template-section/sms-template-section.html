@@ -5,7 +5,7 @@
     <div class="flex flex-wrap justify-between items-center gap-3">
       <!-- Left: Search -->
       <div class="flex items-center gap-2 flex-1 min-w-0">
-        <p-iconfield class="flex-1 sm:max-w-sm">
+        <p-iconfield class="flex-1 sm:max-w-md">
           <p-inputicon class="pi pi-search" />
           <input
             pInputText
@@ -126,9 +126,29 @@
                   @switch (col.field) {
                     @case ('name') {
                       {{ template.name | defaultValue }}
+                      @if (hasModeMismatch(template)) {
+                        <p-tag
+                          class="ml-2"
+                          [rounded]="true"
+                          severity="warn"
+                          value="Shape mismatch"
+                          [pTooltip]="modeMismatchHint()"
+                          tooltipPosition="top"
+                        />
+                      }
+                      @if (hasSourceMismatch(template)) {
+                        <p-tag
+                          class="ml-2"
+                          [rounded]="true"
+                          severity="warn"
+                          value="Sender mismatch"
+                          [pTooltip]="sourceMismatchHint()"
+                          tooltipPosition="top"
+                        />
+                      }
                     }
                     @case ('smsTemplateId') {
-                      {{ template.smsTemplateId }}
+                      {{ template.smsTemplateId | defaultValue }}
                     }
                     @case ('senderId') {
                       {{ template.senderId | defaultValue }}

@@ -106,7 +106,8 @@
       }
     </div>
 
-    <!-- SMS Template ID (DLT ID) -->
+    <!-- Registered provider template id (the DLT id in India). Optional: only senders
+         whose request reads {{TEMPLATE_ID}} need one, so the server decides, not the form. -->
     <div class="flex flex-col gap-1">
       <p-floatlabel variant="on">
         <input
@@ -117,28 +118,18 @@
           [pSize]="inputSize"
           fluid="true"
           placeholder="e.g., 11071612345678901234"
-          required
-          minlength="20"
-          maxlength="200"
-          pattern="^[0-9]+$"
+          maxlength="100"
           #smsTemplateId="ngModel"
         />
-        <label for="smsTemplateId">DLT Template ID *</label>
+        <label for="smsTemplateId">Provider template ID</label>
       </p-floatlabel>
+      <small class="text-xs text-muted-color">
+        The template id registered with your SMS provider — the DLT template ID in India. Required
+        only when your sender's request uses the template-id token; leave blank otherwise.
+      </small>
       @if (smsTemplateId.invalid && smsTemplateId.touched) {
         <p-message [size]="inputSize" severity="error" variant="simple">
-          @if (smsTemplateId.hasError('required')) {
-            DLT Template ID is required.
-          }
-          @if (smsTemplateId.hasError('minlength')) {
-            DLT Template ID must be at least 20 characters.
-          }
-          @if (smsTemplateId.hasError('maxlength')) {
-            DLT Template ID must not exceed 200 characters.
-          }
-          @if (smsTemplateId.hasError('pattern')) {
-            DLT Template ID must contain only numbers.
-          }
+          Provider template ID must not exceed 100 characters.
         </p-message>
       }
     </div>
@@ -166,6 +157,20 @@
         <p-message [size]="inputSize" severity="error" variant="simple">
           Sender ID must not exceed 32 characters.
         </p-message>
+      }
+    </div>
+
+    <!-- Fixed at create time and never editable — shown so the author knows why this
+         editor takes variables or text. -->
+    <div class="flex flex-wrap items-center gap-2">
+      <span class="text-xs text-muted-color">Content shape:</span>
+      <p-tag [value]="modeLabel()" [rounded]="true" severity="secondary" />
+      @if (savedProviderSource()) {
+        <span class="text-xs text-muted-color">Uses:</span>
+        <p-tag [value]="providerSourceLabel()" [rounded]="true" severity="secondary" />
+      }
+      @if (isEditMode()) {
+        <span class="text-xs text-muted-color">set when the template was created</span>
       }
     </div>
 

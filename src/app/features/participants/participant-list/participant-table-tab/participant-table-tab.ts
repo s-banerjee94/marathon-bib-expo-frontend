@@ -30,6 +30,8 @@ import { CheckboxModule } from 'primeng/checkbox';
 import { CardModule } from 'primeng/card';
 import { ConfirmationService } from 'primeng/api';
 import { Participant } from '../../../../core/models/participant.model';
+import { UserRole } from '../../../../core/models/user.model';
+import { AuthService } from '../../../../core/services/auth.service';
 import { EventService } from '../../../../core/services/event.service';
 import { ParticipantService } from '../../../../core/services/participant.service';
 import { ErrorHandlerService } from '../../../../core/services/error-handler.service';
@@ -55,6 +57,7 @@ import {
 import { STORAGE_KEYS } from '../../../../shared/constants/storage-keys.constant';
 import { TableColumn } from '../../../../shared/models/table-config.model';
 import { ParticipantListState } from '../participant-list-state.service';
+import { ParticipantMessageDialog } from '../participant-message-dialog/participant-message-dialog';
 import { EmptyIllustration } from '../../../../shared/illustrations/empty-illustration';
 import { BreakpointService } from '../../../../core/services/breakpoint.service';
 
@@ -83,6 +86,7 @@ import { BreakpointService } from '../../../../core/services/breakpoint.service'
     CardModule,
     DefaultValuePipe,
     EmptyIllustration,
+    ParticipantMessageDialog,
   ],
 })
 export class ParticipantTableTab {
@@ -198,6 +202,18 @@ export class ParticipantTableTab {
 
   // Selection (PrimeNG two-way binding needs a regular array)
   selectedParticipants: Participant[] = [];
+
+  // Targeted message dialog (one participant at a time — a re-send of a template
+  // the participant says never arrived). The API 403s for DISTRIBUTOR, so the action
+  // is hidden for them rather than failing on click.
+  readonly canSendMessage = inject(AuthService).hasAnyRole([
+    UserRole.ROOT,
+    UserRole.ADMIN,
+    UserRole.ORGANIZER_ADMIN,
+    UserRole.ORGANIZER_USER,
+  ]);
+  showMessageDialog = signal(false);
+  messageTarget = signal<Participant | null>(null);
 
   // Skeleton rows for initial loading state
   skeletonRows = Array(5).fill({});
@@ -404,6 +420,12 @@ export class ParticipantTableTab {
           this.isLoading.set(false);
         },
       });
+  }
+
+  // ---------- Targeted message ----------
+  openMessageDialog(participant: Participant): void {
+    this.messageTarget.set(participant);
+    this.showMessageDialog.set(true);
   }
 
   // ---------- Delete (single + bulk) ----------

@@ -17,7 +17,10 @@ import {
   CreateSmsTemplateRequest,
   UpdateSmsTemplateRequest,
 } from '../../../../core/models/sms-template.model';
-import { TemplateMode } from '../../../../core/models/campaign-provider-style.model';
+import {
+  CampaignProviderSource,
+  TemplateMode,
+} from '../../../../core/models/campaign-provider-style.model';
 import { UserRole } from '../../../../core/models/user.model';
 import { SmsTemplateService } from '../../../../core/services/sms-template.service';
 import { CampaignProviderStyleService } from '../../../../core/services/campaign-provider-style.service';
@@ -76,9 +79,27 @@ export class SmsTemplateForm implements OnInit {
   loadError = signal(false);
   hasProvider = signal<boolean | null>(null);
   providerMode = signal<TemplateMode | null>(null);
+  // The mode the template was saved under. On edit this wins over the sender's current
+  // mode: if the org switched sender after authoring, following the sender would reshape
+  // the form and submit the field the template was not written for, which the server 400s.
+  savedRenderMode = signal<TemplateMode | null>(null);
   // PROVIDER_RENDERED → the approved gateway template is rendered by the provider and
   // we only supply positional #{...} variables; CLIENT_RENDERED → we send message text.
-  usesVariables = computed(() => this.providerMode() === 'PROVIDER_RENDERED');
+  usesVariables = computed(() => this.effectiveMode() === 'PROVIDER_RENDERED');
+  effectiveMode = computed(() =>
+    this.isEditMode() && this.savedRenderMode() ? this.savedRenderMode() : this.providerMode(),
+  );
+  // Read-only badge — the enum reads worse than what it means for the author.
+  modeLabel = computed(() => (this.usesVariables() ? 'Template variables' : 'Message text'));
+
+  // Which sender the template's registered ids belong to. A template built against one
+  // vendor account cannot be sent through the other, so it is shown alongside the shape.
+  // Whether it still matches the sender in force is flagged in the list, which already
+  // resolves the active sender — edit deliberately makes no style call.
+  savedProviderSource = signal<CampaignProviderSource | null>(null);
+  providerSourceLabel = computed(() =>
+    this.savedProviderSource() === 'ORGANIZATION' ? 'Your own sender' : 'Platform sender',
+  );
 
   private eventId!: number;
   private templateId: number | null = null;
@@ -158,7 +179,24 @@ export class SmsTemplateForm implements OnInit {
     this.templateValue.set(this.formData.template);
     this.originalBodyVariables = [...(t?.bodyVariables ?? [])];
     this.bodyVariables.set([...this.originalBodyVariables]);
+    this.savedRenderMode.set(t ? (t.renderMode ?? this.deriveRenderMode(t)) : null);
+    this.savedProviderSource.set(t?.providerSource ?? null);
+
+    // A new template follows the current sender; an existing one follows its own
+    // stamped mode, so the style lookup is a create-only concern.
+    if (this.isEditMode() && this.savedRenderMode()) {
+      this.loading.set(false);
+      return;
+    }
     this.loadStyle();
+  }
+
+  // Fallback for a template saved before renderMode existed: its content says which
+  // shape it was authored for.
+  private deriveRenderMode(template: SmsTemplate): TemplateMode | null {
+    if (template.bodyVariables?.length) return 'PROVIDER_RENDERED';
+    if (template.template?.trim().length) return 'CLIENT_RENDERED';
+    return null;
   }
 
   // A 200 with hasProvider=false → no sender yet (block authoring). A 404 → the event

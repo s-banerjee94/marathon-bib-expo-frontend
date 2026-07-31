@@ -1,4 +1,4 @@
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { BASE_URI } from '../../shared/constants/api.constant';
@@ -36,16 +36,35 @@ export class CampaignProviderService {
     return this.http.get<MessagingProviderResponse>(`${this.baseUrl(scope)}/${channel}`);
   }
 
+  // Switching a sender off (or deleting it) 409s while campaigns are still armed.
+  // Only the platform sender takes `force` — an organization owns both sides, so it is
+  // expected to disarm first. Never pass force without asking the user.
+  private forceParams(scope: CampaignProviderScope, force?: boolean): { params?: HttpParams } {
+    return force && scope.kind === 'SYSTEM' ? { params: new HttpParams().set('force', true) } : {};
+  }
+
   save(
     scope: CampaignProviderScope,
     channel: MessagingChannel,
     request: SaveMessagingProviderRequest,
+    force?: boolean,
   ): Observable<MessagingProviderResponse> {
-    return this.http.put<MessagingProviderResponse>(`${this.baseUrl(scope)}/${channel}`, request);
+    return this.http.put<MessagingProviderResponse>(
+      `${this.baseUrl(scope)}/${channel}`,
+      request,
+      this.forceParams(scope, force),
+    );
   }
 
-  remove(scope: CampaignProviderScope, channel: MessagingChannel): Observable<void> {
-    return this.http.delete<void>(`${this.baseUrl(scope)}/${channel}`);
+  remove(
+    scope: CampaignProviderScope,
+    channel: MessagingChannel,
+    force?: boolean,
+  ): Observable<void> {
+    return this.http.delete<void>(
+      `${this.baseUrl(scope)}/${channel}`,
+      this.forceParams(scope, force),
+    );
   }
 
   // 200 = provider call succeeded; 502 = provider call failed (surface to the user).

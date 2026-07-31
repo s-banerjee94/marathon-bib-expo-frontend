@@ -45,7 +45,13 @@ export const MESSAGE_PURPOSES: PurposeMeta[] = [
 export const HTTP_METHOD_OPTIONS: SelectOption[] = [
   { label: 'POST', value: 'POST' },
   { label: 'GET', value: 'GET' },
+  { label: 'PUT', value: 'PUT' },
+  { label: 'PATCH', value: 'PATCH' },
 ];
+
+// Verbs that carry a request body — the only ones for which body format and body
+// template are meaningful.
+export const BODY_CARRYING_METHODS: readonly string[] = ['POST', 'PUT', 'PATCH'];
 
 export const AUTH_TYPE_OPTIONS: SelectOption[] = [
   { label: 'API token', value: 'TOKEN' },
@@ -60,6 +66,8 @@ export const TEMPLATE_MODE_OPTIONS: SelectOption[] = [
 export const CONTENT_TYPE_OPTIONS: SelectOption[] = [
   { label: 'JSON body', value: 'JSON' },
   { label: 'Form-encoded body', value: 'FORM' },
+  { label: 'XML body', value: 'XML' },
+  { label: 'Plain text body', value: 'TEXT' },
 ];
 
 export const PARAM_LOCATION_OPTIONS: SelectOption[] = [
@@ -69,23 +77,60 @@ export const PARAM_LOCATION_OPTIONS: SelectOption[] = [
 
 // Substitution tokens the backend fills at send time. Surface as inline help next
 // to the request parameters and body template, where they may be embedded literally.
+// `modes` / `channels` limit where a token is meaningful; omitted means "always".
+// The panel dims the ones that don't apply to the current selection.
 export interface ProviderToken {
   token: string;
   description: string;
+  modes?: TemplateMode[];
+  channels?: MessagingChannel[];
 }
 
 export const PROVIDER_TOKENS: ProviderToken[] = [
-  { token: '{{RECIPIENT}}', description: 'Bare 10-digit phone number' },
-  { token: '{{RECIPIENT_E164}}', description: 'Phone in +91… E.164 form' },
-  { token: '{{MESSAGE}}', description: 'Rendered message text' },
+  {
+    token: '{{RECIPIENT}}',
+    description: 'Phone as stored (local, 10 digits)',
+    channels: ['SMS', 'WHATSAPP'],
+  },
+  {
+    token: '{{RECIPIENT_E164}}',
+    description: 'Phone as +<country code><number>',
+    channels: ['SMS', 'WHATSAPP'],
+  },
+  {
+    token: '{{RECIPIENT_CC}}',
+    description: 'Same, without the leading + — for gateways that reject it',
+    channels: ['SMS', 'WHATSAPP'],
+  },
+  { token: '{{RECIPIENT_EMAIL}}', description: 'Email address', channels: ['EMAIL'] },
+  { token: '{{SUBJECT}}', description: 'Subject line', channels: ['EMAIL'] },
+  {
+    token: '{{MESSAGE}}',
+    description: 'Finished message text',
+    modes: ['CLIENT_RENDERED'],
+  },
   { token: '{{TEMPLATE_ID}}', description: 'DLT / Content template id' },
   { token: '{{SENDER_ID}}', description: 'DLT sender / header id' },
-  { token: '{{VAR:0}}, {{VAR:1}}', description: 'Positional variables' },
-  { token: '{{VARIABLES_JSON}}', description: 'Variables map (Twilio ContentVariables)' },
+  {
+    token: '{{VAR:0}}, {{VAR:1}}',
+    description: 'Positional variables, zero-based',
+    modes: ['PROVIDER_RENDERED'],
+  },
+  {
+    token: '{{VARIABLES_JSON}}',
+    description: 'Variables map with one-based keys (Twilio ContentVariables)',
+    modes: ['PROVIDER_RENDERED'],
+  },
   { token: '{{API_KEY}}', description: 'Stored API token' },
   { token: '{{USERNAME}} / {{PASSWORD}}', description: 'Stored credentials' },
   { token: '{{BASIC_AUTH}}', description: 'base64(user:pass) for Authorization: Basic' },
 ];
+
+// {{VAR:n}} counts from 0 while {{VARIABLES_JSON}} emits keys from 1, so {{VAR:0}}
+// and key "1" are the same value. Existing rows depend on it, so it is documented
+// rather than fixed.
+export const TOKEN_INDEXING_NOTE =
+  '{{VAR:n}} counts from 0, but {{VARIABLES_JSON}} emits keys from 1 — {{VAR:0}} and key "1" are the same value.';
 
 export const CHANNEL_DEFAULT_TEMPLATE_MODE: Record<MessagingChannel, TemplateMode> = {
   SMS: 'CLIENT_RENDERED',

@@ -1,0 +1,121 @@
+<p-dialog
+  (onShow)="onShow()"
+  [(visible)]="visible"
+  [closable]="!isSending()"
+  [closeOnEscape]="!isSending()"
+  [draggable]="false"
+  [modal]="true"
+  [resizable]="false"
+  [style]="{ width: '95vw', maxWidth: '520px' }"
+  header="Send Message"
+>
+  @if (participant(); as p) {
+    <form #sendForm="ngForm" (ngSubmit)="onSubmit(sendForm)" class="flex flex-col gap-4 mt-2">
+      <!-- Recipient -->
+      <div class="flex flex-col gap-1 rounded-md border border-surface p-3">
+        <div class="flex items-center justify-between gap-2">
+          <span class="font-medium">{{ p.fullName }}</span>
+          <p-tag [rounded]="true" severity="secondary" value="BIB {{ p.bibNumber }}" />
+        </div>
+        @if (destination()) {
+          <span class="text-sm text-muted-color">{{ destination() }}</span>
+        }
+      </div>
+
+      @if (!destination()) {
+        <p-message [size]="inputSize" severity="warn" variant="simple">
+          This participant has no phone number on record.
+        </p-message>
+      }
+
+      <!-- Channel -->
+      <div class="flex flex-col gap-1">
+        <label class="text-sm font-medium" for="channel">Channel</label>
+        <p-selectbutton
+          (ngModelChange)="onChannelChange($event)"
+          [allowEmpty]="false"
+          [ngModel]="channel()"
+          [options]="channelOptions"
+          [size]="inputSize"
+          name="channel"
+          optionDisabled="disabled"
+          optionLabel="label"
+          optionValue="value"
+        />
+        <small class="text-sm text-muted-color">Email sending is not available yet.</small>
+      </div>
+
+      <!-- Template -->
+      <div class="flex flex-col gap-1">
+        <p-floatlabel variant="on">
+          <p-select
+            #templateCtrl="ngModel"
+            (ngModelChange)="onTemplateChange($event)"
+            [disabled]="providerMissing()"
+            [invalid]="shouldShowError(templateCtrl, sendForm.submitted)"
+            [loading]="loadingTemplates()"
+            [ngModel]="templateId()"
+            [options]="templates()"
+            [size]="inputSize"
+            fluid="true"
+            inputId="templateId"
+            name="templateId"
+            optionLabel="name"
+            optionValue="id"
+            required
+          />
+          <label for="templateId">{{ channelLabel() }} Template *</label>
+        </p-floatlabel>
+        @if (shouldShowError(templateCtrl, sendForm.submitted)) {
+          <p-message [size]="inputSize" severity="error" variant="simple">
+            A template is required.
+          </p-message>
+        }
+        @if (!loadingTemplates() && !providerMissing() && !hasOwnTemplates()) {
+          <small class="text-sm text-muted-color">
+            This event has no {{ channelLabel() }} templates of its own — only the active campaign's
+            template can be sent.
+          </small>
+        }
+      </div>
+
+      @if (providerMissing()) {
+        <p-message [size]="inputSize" severity="warn" variant="simple">
+          <span class="flex flex-wrap items-center gap-2">
+            No {{ channelLabel() }} sender is configured, so nothing can be sent on this channel
+            yet.
+            @if (canConfigureSenders) {
+              <a class="font-medium underline" routerLink="/campaign-providers" (click)="close()">
+                Configure campaign senders
+              </a>
+            }
+          </span>
+        </p-message>
+      }
+
+      <!-- A 200 can still carry a per-participant failure; show the backend's reason. -->
+      @if (failureReason(); as reason) {
+        <p-message [size]="inputSize" severity="error" variant="simple">{{ reason }}</p-message>
+      }
+
+      <!-- Actions -->
+      <div class="flex justify-end gap-3 border-t border-surface pt-4">
+        <p-button
+          (onClick)="close()"
+          [disabled]="isSending()"
+          [outlined]="true"
+          icon="pi pi-times"
+          label="Cancel"
+          severity="secondary"
+          type="button"
+        />
+        <p-button
+          [disabled]="!canSend()"
+          [icon]="isSending() ? 'pi pi-spin pi-spinner' : 'pi pi-send'"
+          [label]="isSending() ? 'Sending…' : 'Send'"
+          type="submit"
+        />
+      </div>
+    </form>
+  }
+</p-dialog>

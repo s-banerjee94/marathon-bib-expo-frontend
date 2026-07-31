@@ -344,6 +344,17 @@
                     icon="pi pi-eye"
                     severity="info"
                   />
+                  @if (canSendMessage) {
+                    <p-button
+                      (onClick)="openMessageDialog(participant)"
+                      ariaLabel="Send a message to this participant"
+                      [rounded]="true"
+                      [size]="buttonSize"
+                      [text]="true"
+                      icon="pi pi-send"
+                      severity="primary"
+                    />
+                  }
                   <p-button
                     (onClick)="onDelete(participant)"
                     ariaLabel="Delete participant"
@@ -835,6 +846,19 @@
                   severity="info"
                   tooltipPosition="top"
                 ></p-button>
+                @if (canSendMessage) {
+                  <p-button
+                    (onClick)="openMessageDialog(participant)"
+                    ariaLabel="Send a message to this participant"
+                    [rounded]="true"
+                    [size]="buttonSize"
+                    [text]="true"
+                    icon="pi pi-send"
+                    pTooltip="Send Message"
+                    severity="primary"
+                    tooltipPosition="top"
+                  ></p-button>
+                }
                 <p-button
                   (onClick)="onDelete(participant)"
                   ariaLabel="Delete participant"
@@ -890,4 +914,12 @@
       </p>
     }
   </div>
+}
+
+@if (canSendMessage) {
+  <app-participant-message-dialog
+    [(visible)]="showMessageDialog"
+    [eventId]="eventId()"
+    [participant]="messageTarget()"
+  />
 }

@@ -1,5 +1,6 @@
 <app-provider-connection-form
   [provider]="provider()"
+  [channel]="channel()"
   [loading]="loading()"
   [saving]="saving()"
   [removing]="removing()"
@@ -20,3 +21,5 @@
   }
 </app-provider-connection-form>
 <p-confirmpopup />
+<!-- Keyed so it doesn't collide with the un-keyed remove popup above. -->
+<p-confirmdialog key="forceOverride" [style]="{ width: '95vw', maxWidth: '480px' }" />
