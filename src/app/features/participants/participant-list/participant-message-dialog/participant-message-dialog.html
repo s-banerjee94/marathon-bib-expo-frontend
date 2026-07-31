@@ -71,13 +71,19 @@
             A template is required.
           </p-message>
         }
-        @if (!loadingTemplates() && !providerMissing() && !hasOwnTemplates()) {
+        @if (!loadingTemplates() && !providerMissing() && hasCampaignDefault()) {
           <small class="text-sm text-muted-color">
-            This event has no {{ channelLabel() }} templates of its own — only the active campaign's
-            template can be sent.
+            The campaign template is what bib collection sends automatically.
           </small>
         }
       </div>
+
+      @if (!loadingTemplates() && !providerMissing() && hasNothingToSend()) {
+        <p-message [size]="inputSize" severity="warn" variant="simple">
+          This event has no {{ channelLabel() }} templates and no armed bib collection campaign, so
+          there is nothing to send. Create a template in the event's Templates tab first.
+        </p-message>
+      }
 
       @if (providerMissing()) {
         <p-message [size]="inputSize" severity="warn" variant="simple">

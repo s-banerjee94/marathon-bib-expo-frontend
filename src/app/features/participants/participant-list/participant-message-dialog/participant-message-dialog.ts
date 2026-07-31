@@ -11,7 +11,8 @@ import {
 } from '@angular/core';
 import { FormsModule, NgForm } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { Observable } from 'rxjs';
+import { forkJoin, Observable, of } from 'rxjs';
+import { catchError, map } from 'rxjs/operators';
 import { DialogModule } from 'primeng/dialog';
 import { ButtonModule } from 'primeng/button';
 import { SelectModule } from 'primeng/select';
@@ -30,6 +31,7 @@ import { CampaignProviderStyle } from '../../../../core/models/campaign-provider
 import { ParticipantMessageService } from '../../../../core/services/participant-message.service';
 import { CampaignProviderStyleService } from '../../../../core/services/campaign-provider-style.service';
 import { SmsTemplateService } from '../../../../core/services/sms-template.service';
+import { SmsCampaignService } from '../../../../core/services/sms-campaign.service';
 import { WhatsAppService } from '../../../../core/services/whatsapp.service';
 import { ErrorHandlerService } from '../../../../core/services/error-handler.service';
 import { ToastService } from '../../../../core/services/toast.service';
@@ -39,6 +41,22 @@ import { shouldShowError } from '../../../../shared/utils/form.utils';
 interface TemplateOption {
   id: number;
   name: string;
+}
+
+// Everything the picker needs for one channel, cached together.
+interface ChannelTemplates {
+  options: TemplateOption[];
+  campaignTemplateName: string | null;
+}
+
+// The SMS and WhatsApp campaign shapes differ only in which template-name field
+// they carry, so the armed-campaign lookup reads both.
+interface CampaignLike {
+  name: string;
+  status: string;
+  triggerType?: string;
+  smsTemplateName?: string;
+  whatsAppTemplateName?: string;
 }
 
 // Sentinel for "send whatever the active bib-collection campaign sends" — the API
@@ -67,6 +85,7 @@ export class ParticipantMessageDialog {
   private messageService = inject(ParticipantMessageService);
   private providerStyleService = inject(CampaignProviderStyleService);
   private smsTemplateService = inject(SmsTemplateService);
+  private smsCampaignService = inject(SmsCampaignService);
   private whatsappService = inject(WhatsAppService);
   private errorHandler = inject(ErrorHandlerService);
   private toast = inject(ToastService);
@@ -87,7 +106,10 @@ export class ParticipantMessageDialog {
 
   channel = signal<ParticipantMessageChannel>('SMS');
   templateId = signal<number | null>(null);
-  templates = signal<TemplateOption[]>([]);
+  // The event's own templates, without the campaign-default sentinel.
+  eventTemplates = signal<TemplateOption[]>([]);
+  // Template name of the armed bib-collection campaign, or null when none is armed.
+  campaignTemplateName = signal<string | null>(null);
   loadingTemplates = signal(false);
   providerStyle = signal<CampaignProviderStyle | null>(null);
   loadingProvider = signal(false);
@@ -97,7 +119,7 @@ export class ParticipantMessageDialog {
 
   // Per-channel caches so switching back and forth doesn't refetch, and so a template
   // already picked for a channel survives a switch away and back.
-  private templateCache = new Map<ParticipantMessageChannel, TemplateOption[]>();
+  private templateCache = new Map<ParticipantMessageChannel, ChannelTemplates>();
   private providerCache = new Map<ParticipantMessageChannel, CampaignProviderStyle>();
   private templateIdByChannel = new Map<ParticipantMessageChannel, number | null>();
 
@@ -106,8 +128,22 @@ export class ParticipantMessageDialog {
 
   channelLabel = computed(() => (this.channel() === 'SMS' ? 'SMS' : 'WhatsApp'));
 
-  // Only the campaign-default sentinel is present when the event has no templates.
-  hasOwnTemplates = computed(() => this.templates().length > 1);
+  hasCampaignDefault = computed(() => this.campaignTemplateName() !== null);
+  hasOwnTemplates = computed(() => this.eventTemplates().length > 0);
+  // Nothing to send: no armed campaign to inherit from and no template to pick.
+  hasNothingToSend = computed(() => !this.hasCampaignDefault() && !this.hasOwnTemplates());
+
+  // The campaign option is only offered when a campaign is actually armed — omitting
+  // templateId otherwise is a guaranteed 400, since the server has nothing to resolve.
+  templates = computed<TemplateOption[]>(() => {
+    const name = this.campaignTemplateName();
+    return name
+      ? [
+          { id: CAMPAIGN_DEFAULT_TEMPLATE_ID, name: `Campaign template — ${name}` },
+          ...this.eventTemplates(),
+        ]
+      : this.eventTemplates();
+  });
 
   readonly canConfigureSenders = inject(AuthService).hasAnyRole([UserRole.ROOT, UserRole.ADMIN]);
 
@@ -153,41 +189,64 @@ export class ParticipantMessageDialog {
   }
 
   private loadChannelData(): void {
-    const channel = this.channel();
-    // Default to the campaign template — the common case is "send them the same thing
-    // again", and an explicit template is the fallback when no campaign is armed.
-    this.templateId.set(this.templateIdByChannel.get(channel) ?? CAMPAIGN_DEFAULT_TEMPLATE_ID);
-    this.loadTemplates(channel);
-    this.loadProviderStyle(channel);
+    this.loadTemplates(this.channel());
+    this.loadProviderStyle(this.channel());
+  }
+
+  // Applies a channel's templates and picks the default selection: the armed
+  // campaign's template when there is one, otherwise whatever the user last chose.
+  private applyChannelTemplates(channel: ParticipantMessageChannel, data: ChannelTemplates): void {
+    this.eventTemplates.set(data.options);
+    this.campaignTemplateName.set(data.campaignTemplateName);
+
+    const remembered = this.templateIdByChannel.get(channel);
+    if (remembered != null && this.templates().some((t) => t.id === remembered)) {
+      this.templateId.set(remembered);
+    } else {
+      this.templateId.set(data.campaignTemplateName ? CAMPAIGN_DEFAULT_TEMPLATE_ID : null);
+    }
   }
 
   private loadTemplates(channel: ParticipantMessageChannel): void {
     const cached = this.templateCache.get(channel);
     if (cached) {
-      this.templates.set(cached);
+      this.applyChannelTemplates(channel, cached);
       return;
     }
 
     const eventId = this.eventId();
-    this.templates.set([]);
+    this.eventTemplates.set([]);
+    this.campaignTemplateName.set(null);
     this.loadingTemplates.set(true);
 
     // Both template shapes carry the id/name this picker needs, so the branches
     // widen to a single observable type.
-    const request$: Observable<TemplateOption[]> =
+    const templates$: Observable<TemplateOption[]> =
       channel === 'SMS'
         ? this.smsTemplateService.getSmsTemplatesByEvent(eventId)
         : this.whatsappService.getTemplatesByEvent(eventId);
 
-    request$.subscribe({
-      next: (templates) => {
-        const options: TemplateOption[] = [
-          { id: CAMPAIGN_DEFAULT_TEMPLATE_ID, name: "Active bib collection campaign's template" },
-          ...templates.map((t) => ({ id: t.id, name: t.name })),
-        ];
-        this.templateCache.set(channel, options);
+    // The campaign lookup only decides whether to offer the inherit-from-campaign
+    // option, so a failure degrades to "not offered" rather than blocking the dialog.
+    const campaigns$: Observable<CampaignLike[]> =
+      channel === 'SMS'
+        ? this.smsCampaignService.getCampaignsByEvent(eventId)
+        : this.whatsappService.getCampaignsByEvent(eventId);
+
+    const campaignName$: Observable<string | null> = campaigns$.pipe(
+      map((campaigns) => this.armedBibCollectionTemplateName(campaigns)),
+      catchError(() => of(null)),
+    );
+
+    forkJoin({ templates: templates$, campaignTemplateName: campaignName$ }).subscribe({
+      next: ({ templates, campaignTemplateName }) => {
+        const data: ChannelTemplates = {
+          options: templates.map((t) => ({ id: t.id, name: t.name })),
+          campaignTemplateName,
+        };
+        this.templateCache.set(channel, data);
         // Ignore a response for a channel the user has already switched away from.
-        if (this.channel() === channel) this.templates.set(options);
+        if (this.channel() === channel) this.applyChannelTemplates(channel, data);
         this.loadingTemplates.set(false);
       },
       error: (error) => {
@@ -195,6 +254,17 @@ export class ParticipantMessageDialog {
         this.errorHandler.showError(error);
       },
     });
+  }
+
+  // Only an armed AUTO_BIB_COLLECTED campaign is what the server resolves an omitted
+  // templateId against. DRAFT does not count.
+  private armedBibCollectionTemplateName(campaigns: CampaignLike[]): string | null {
+    const armed = campaigns.find(
+      (c) =>
+        c.triggerType === 'AUTO_BIB_COLLECTED' && (c.status === 'ACTIVE' || c.status === 'SENDING'),
+    );
+    if (!armed) return null;
+    return armed.smsTemplateName ?? armed.whatsAppTemplateName ?? armed.name;
   }
 
   private loadProviderStyle(channel: ParticipantMessageChannel): void {
